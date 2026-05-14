@@ -1,6 +1,5 @@
-/* File parsing and basic geometry operations */
-#ifndef TMalign_basic_fun_h
-#define TMalign_basic_fun_h 1
+// File parsing and basic geometry operations
+#pragma once
 
 #include <cstdio>
 #include <cstdlib>
@@ -144,10 +143,10 @@ char AAmap(const string &AA)
     return 'X';
 }
 
-/* split a long string into vectors by whitespace 
- * line          - input string
- * line_vec      - output vector 
- * delimiter     - delimiter */
+// split a long string into vectors by whitespace
+// line          - input string
+// line_vec      - output vector
+// delimiter     - delimiter
 void split(const string &line, vector<string> &line_vec,
     const char delimiter=' ')
 {
@@ -168,7 +167,7 @@ void split(const string &line, vector<string> &line_vec,
     }
 }
 
-/* strip white space at the begining or end of string */
+// strip white space at the begining or end of string
 string Trim(const string &inputString)
 {
     string result = inputString;
@@ -1078,5 +1077,3 @@ void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
     }
     fp.close();
 }
-
-#endif
