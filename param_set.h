@@ -1,9 +1,9 @@
-/* These functions implement d0 normalization. The d0 for final TM-score
- * output is implemented by parameter_set4final. For both RNA alignment
- * and protein alignment, using d0 set by parameter_set4search yields
- * slightly better results during initial alignment-superposition iteration.
- */
-#include <math.h>
+// These functions implement d0 normalization. The d0 for final TM-score
+// output is implemented by parameter_set4final. For both RNA alignment
+// and protein alignment, using d0 set by parameter_set4search yields
+// slightly better results during initial alignment-superposition iteration.
+
+#include <cmath>
 #include "basic_fun.h"
 
 void parameter_set4search(const int xlen, const int ylen,

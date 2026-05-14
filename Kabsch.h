@@ -1,3 +1,5 @@
+#pragma once
+
 /**************************************************************************
 Implemetation of Kabsch algoritm for finding the best rotation matrix
 ---------------------------------------------------------------------------
@@ -23,7 +25,8 @@ bool Kabsch(double **x, double **y, int n, int mode, double *rms,
     int ip[] = { 0, 1, 3, 1, 2, 4, 3, 4, 5 };
     int ip2312[] = { 1, 2, 0, 1 };
 
-    int a_failed = 0, b_failed = 0;
+    int a_failed = 0;
+    int b_failed = 0;
     double epsilon = 0.00000001;
 
     //initialization
