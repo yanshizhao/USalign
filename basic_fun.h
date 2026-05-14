@@ -2,11 +2,11 @@
 #ifndef TMalign_basic_fun_h
 #define TMalign_basic_fun_h 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <ctime>
+#include <cstring>
 //#include <malloc.h>
 
 #include <sstream>
