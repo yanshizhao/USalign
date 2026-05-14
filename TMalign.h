@@ -8,6 +8,8 @@
 #include "Kabsch.h"
 #include "NWalign.h"
 
+using namespace std;
+
 //     1, collect those residues with dis<d;
 //     2, calculate TMscore
 int score_fun8( double **xa, double **ya, int n_ali, double d, int i_ali[],

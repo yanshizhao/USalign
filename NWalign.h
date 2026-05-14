@@ -7,8 +7,6 @@
 
 #define MAX(A,B) ((A)>(B)?(A):(B))
 
-using namespace std;
-
 const int gapopen_blosum62=-11;
 const int gapext_blosum62=-1;
 
@@ -80,7 +78,7 @@ void find_highest_align_score( int **S, int **P,
 
 /* calculate dynamic programming matrix using gotoh algorithm
  * S     - cumulative scorefor each cell
- * P     - string representation for path
+ * P     - std::string representation for path
  *         0 :   uninitialized, for gaps at N- & C- termini when glocal>0
  *         1 : \ match-mismatch
  *         2 : | vertical gap (insertion)
@@ -191,12 +189,12 @@ int calculate_score_gotoh(const int xlen,const int ylen, int **S,
 
 /* trace back dynamic programming path to diciper pairwise alignment */
 void trace_back_gotoh(const char *seqx, const char *seqy,
-    int ** JumpH, int ** JumpV, int ** P, string& seqxA, string& seqyA,
+    int ** JumpH, int ** JumpV, int ** P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
     int i,j;
     int gaplen,p;
-    char *buf=NULL;
+    char *buf=nullptr;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
     if (invmap_only!=1) buf=new char [MAX(xlen,ylen)+1];
@@ -267,14 +265,14 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
 /* trace back Smith-Waterman dynamic programming path to diciper 
  * pairwise local alignment */
 void trace_back_sw(const char *seqx, const char *seqy,
-    int **JumpH, int **JumpV, int **P, string& seqxA, string& seqyA,
+    int **JumpH, int **JumpV, int **P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
     int i;
     int j;
     int gaplen,p;
-    bool found_start_cell=false; // find the first non-zero cell in P
-    char *buf=NULL;
+    bool found_start_cell=false; // std::find the first non-zero cell in P
+    char *buf=nullptr;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
     if (invmap_only!=1) buf=new char [MAX(xlen,ylen)+1];
@@ -380,7 +378,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
  *               1: only return invmap
  *               2: return seqxA, seqyA and invmap */
 int NWalign_main(const char *seqx, const char *seqy, const int xlen,
-    const int ylen, string & seqxA, string & seqyA, const int mol_type,
+    const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
     int *invmap, const int invmap_only=0, const int glocal=0)
 {
     int **JumpH;
@@ -450,8 +448,8 @@ void get_seqID(int *invmap, const char *seqx, const char *seqy,
     //return L_ali?1.*Liden/L_ali:0;
 }
 
-void get_seqID(const string& seqxA, const string& seqyA,
-    string &seqM,double &Liden,int &L_ali)
+void get_seqID(const std::string& seqxA, const std::string& seqyA,
+    std::string &seqM,double &Liden,int &L_ali)
 {
     Liden=0;
     L_ali=0;
@@ -469,7 +467,7 @@ void get_seqID(const string& seqxA, const string& seqyA,
 }
 
 void output_NWalign_results(
-    const string xname, const string yname,
+    const std::string xname, const std::string yname,
     const char *chainID1, const char *chainID2,
     const int xlen, const int ylen, const char *seqM, 
     const char *seqxA, const char *seqyA, const double Liden,
@@ -512,14 +510,14 @@ void output_NWalign_results(
             Liden/xlen, Liden/ylen, Liden/L_ali,
             xlen, ylen, L_ali);
     }
-    cout << endl;
+    std::cout << std::endl;
 }
 
 /* extract pairwise sequence alignment from residue index vectors,
  * assuming that "sequence" contains two empty strings.
  * return length of alignment, including gap. */
-int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
-    const vector<string> resi_vec1, const vector<string> resi_vec2,
+int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *seqy,
+    const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const int byresi_opt)
 {
     sequence.clear();
@@ -547,13 +545,13 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     }
 
 
-    map<string,string> chainID_map1;
-    map<string,string> chainID_map2;
+    std::map<std::string,std::string> chainID_map1;
+    std::map<std::string,std::string> chainID_map2;
     if (byresi_opt==3)
     {
-        vector<string> chainID_vec;
-        string chainID;
-        stringstream ss;
+        std::vector<std::string> chainID_vec;
+        std::string chainID;
+        std::ostringstream ss;
         int i;
         for (i=0;i<xlen;i++)
         {
@@ -578,12 +576,12 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
                 ss.str("");
             }
         }
-        vector<string>().swap(chainID_vec);
+        std::vector<std::string>().swap(chainID_vec);
     }
-    string chainID1="";
-    string chainID2="";
-    string chainID1_prev="";
-    string chainID2_prev="";
+    std::string chainID1="";
+    std::string chainID2="";
+    std::string chainID1_prev="";
+    std::string chainID2_prev="";
     while(i1<xlen && i2<ylen)
     {
         if (byresi_opt==2)
@@ -643,8 +641,8 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
         }
         
     }
-    map<string,string>().swap(chainID_map1);
-    map<string,string>().swap(chainID_map2);
+    std::map<std::string,std::string>().swap(chainID_map1);
+    std::map<std::string,std::string>().swap(chainID_map2);
     chainID1.clear();
     chainID2.clear();
     chainID1_prev.clear();
@@ -654,9 +652,9 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
 
 /* extract pairwise sequence alignment from residue index vectors,
  * return length of alignment, including gap. */
-int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
-    const vector<string> resi_vec1, const vector<string> resi_vec2,
-    const vector<int> xlen_vec, const vector<int> ylen_vec,
+int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *seqy,
+    const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
+    const std::vector<int> xlen_vec, const std::vector<int> ylen_vec,
     const int chain_i, const int chain_j, const int byresi_opt)
 {
     sequence.clear();
