@@ -430,7 +430,7 @@ size_t get_PDB_lines(const string filename,
             chainID_list.push_back(i8_stream.str());
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
-            for (i=0;i<L;i++)
+            for (int i=0;i<L;i++)
             {
                 if  (compress_type==-1) cin>>x>>y>>z;
                 else if (compress_type) fin_gz>>x>>y>>z;
@@ -915,7 +915,8 @@ void file2chainlist(vector<string>&chain_list, const string &name,
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     string line;
     string filename;
-    int a,b;
+    int a;
+    int b;
     string sep;
     while (fp.good())
     {
@@ -965,9 +966,12 @@ void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     string line;
     string filename;
-    int a,b;
+    int a;
+    int b;
     size_t i;
-    string sep,filename1,filename2;
+    string sep;
+    string filename1;
+    string filename2;
     vector<string> line_vec;
     while (fp.good())
     {
