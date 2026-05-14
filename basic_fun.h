@@ -47,7 +47,7 @@ template <class A> void DeleteArray(A *** array, int Narray)
     for(int i=0; i<Narray; i++)
         if(*(*array+i)) delete [] *(*array+i);
     if(Narray) delete [] (*array);
-    (*array)=NULL;
+    (*array)=nullptr;
 }
 
 string AAmap(char A)
