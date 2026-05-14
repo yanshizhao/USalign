@@ -21,12 +21,9 @@
 
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
-using namespace std;
-
-
-void PrintErrorAndQuit(const string sErrorString)
+void PrintErrorAndQuit(const std::string sErrorString)
 {
-    cout << sErrorString << endl;
+    std::cout << sErrorString << std::endl;
     exit(1);
 }
 
@@ -80,7 +77,7 @@ inline double safe_stod(const std::string& s, double default_val = 0.0)
     catch (...) { return default_val; }
 }
 
-string AAmap(char A)
+std::string AAmap(char A)
 {
     if (A=='A') return "ALA";
     if (A=='B') return "ASX";
@@ -106,11 +103,11 @@ string AAmap(char A)
     if (A=='W') return "TRP";    
     if (A=='Y') return "TYR";
     if (A=='Z') return "GLX";
-    if ('a'<=A && A<='z') return "  "+string(1,char(toupper(A)));
+    if ('a'<=A && A<='z') return "  "+std::string(1,char(toupper(A)));
     return "UNK";
 }
 
-char AAmap(const string &AA)
+char AAmap(const std::string &AA)
 {
     if (AA.compare("ALA")==0 || AA.compare("DAL")==0) return 'A';
     if (AA.compare("ASX")==0) return 'B';
@@ -143,11 +140,11 @@ char AAmap(const string &AA)
     return 'X';
 }
 
-// split a long string into vectors by whitespace
-// line          - input string
-// line_vec      - output vector
+// split a long std::string into vectors by whitespace
+// line          - input std::string
+// line_vec      - output std::vector
 // delimiter     - delimiter
-void split(const string &line, vector<string> &line_vec,
+void split(const std::string &line, std::vector<std::string> &line_vec,
     const char delimiter=' ')
 {
     bool within_word = false;
@@ -167,10 +164,10 @@ void split(const string &line, vector<string> &line_vec,
     }
 }
 
-// strip white space at the begining or end of string
-string Trim(const string &inputString)
+// strip white space at the begining or end of std::string
+std::string Trim(const std::string &inputString)
 {
-    string result = inputString;
+    std::string result = inputString;
     int idxBegin = inputString.find_first_not_of(" \n\r\t");
     int idxEnd = inputString.find_last_not_of(" \n\r\t");
     if (idxBegin >= 0 && idxEnd >= 0)
@@ -178,25 +175,25 @@ string Trim(const string &inputString)
     return result;
 }
 
-size_t get_PDB_lines(const string filename,
-    vector<vector<string> >&PDB_lines, vector<string> &chainID_list,
-    vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
-    const string atom_opt, const bool autojustify, const int split_opt, 
-    const int het_opt, const vector<string>&chain2parse,
-    const vector<string>&model2parse)
+size_t get_PDB_lines(const std::string filename,
+    std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list,
+    std::vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
+    const std::string atom_opt, const bool autojustify, const int split_opt, 
+    const int het_opt, const std::vector<std::string>&chain2parse,
+    const std::vector<std::string>&model2parse)
 {
     size_t i=0; // resi i.e. atom index
-    string line;
+    std::string line;
     char chainID=0;
-    string resi="";
+    std::string resi="";
     bool select_atom=false;
     size_t model_idx=0;
-    vector<string> tmp_str_vec;
+    std::vector<std::string> tmp_str_vec;
 
     int compress_type=0; // uncompressed file
-    ifstream fin;
+    std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
-    ifstream fin_gz;
+    std::ifstream fin_gz;
 #else
     redi::ipstream fin_gz; // if file is compressed
     if (filename.size()>=3 && 
@@ -220,7 +217,7 @@ size_t get_PDB_lines(const string filename,
 
     if (infmt_opt==0||infmt_opt==-1) // PDB format
     {
-        map<string,char> aa3to1;
+        std::map<std::string,char> aa3to1;
         aa3to1["  A"]=aa3to1[" DA"]='a';
         aa3to1["  C"]=aa3to1[" DC"]='c';
         aa3to1["  G"]=aa3to1[" DG"]='g';
@@ -253,16 +250,16 @@ size_t get_PDB_lines(const string filename,
         aa3to1["PYL"]='O';
 
 
-        string atom;
-        string resn;
-        string model_index="1";
-        map<string, char> alt_id_dict; // resi -> alt_id
-        string resi_chain;
-        while ((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))
+        std::string atom;
+        std::string resn;
+        std::string model_index="1";
+        std::map<std::string, char> alt_id_dict; // resi -> alt_id
+        std::string resi_chain;
+        while ((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
         {
-            if  (compress_type==-1) getline(cin, line);
-            else if (compress_type) getline(fin_gz, line);
-            else                    getline(fin, line);
+            if  (compress_type==-1) std::getline(std::cin, line);
+            else if (compress_type) std::getline(fin_gz, line);
+            else                    std::getline(fin, line);
             if (infmt_opt==-1 && (line.compare(0,5,"loop_")==0 || 
                                   line.compare(0,1,"#")==0)) // PDBx/mmCIF
                 return get_PDB_lines(filename,PDB_lines,chainID_list, mol_vec,
@@ -272,7 +269,7 @@ size_t get_PDB_lines(const string filename,
             {
                 if (line.size()>=6 && line.compare(0,5,"MODEL")==0)
                     model_index=Trim(line.substr(5,9));
-                else if (find(model2parse.begin(),model2parse.end(),
+                else if (std::find(model2parse.begin(),model2parse.end(),
                     model_index)==model2parse.end()) continue;
             }
             if (i > 0)
@@ -283,7 +280,7 @@ size_t get_PDB_lines(const string filename,
             if (line.compare(0,3,"END")==0)
             {
                 if (split_opt) chainID=0;
-                map<string, char> ().swap(alt_id_dict);
+                std::map<std::string, char> ().swap(alt_id_dict);
             }
             if (line.size()>=54 && //(line[16]==' ' || line[16]=='A') && 
                ((line.compare(0, 6, "ATOM  ")==0) || 
@@ -329,16 +326,16 @@ size_t get_PDB_lines(const string filename,
                     else if (alt_id_dict[resi_chain]!=line[16]) continue;
 
                     if (chain2parse.size() && ( (line[21]==' ' && 
-                        find(chain2parse.begin(),chain2parse.end(), "_"
+                        std::find(chain2parse.begin(),chain2parse.end(), "_"
                             )==chain2parse.end())|| (line[21]!=' ' && 
-                        find(chain2parse.begin(), chain2parse.end(),
-                            string(1,line[21]))==chain2parse.end()))) continue;
+                        std::find(chain2parse.begin(), chain2parse.end(),
+                            std::string(1,line[21]))==chain2parse.end()))) continue;
                         
                     if (!chainID)
                     {
                         chainID=line[21];
                         model_idx++;
-                        stringstream i8_stream;
+                        std::ostringstream i8_stream;
                         i=0;
                         if (split_opt==2) // split by chain
                         {
@@ -367,7 +364,7 @@ size_t get_PDB_lines(const string filename,
                     {
                         chainID=line[21];
                         i=0;
-                        stringstream i8_stream;
+                        std::ostringstream i8_stream;
                         if (chainID==' ')
                         {
                             if (ter_opt>=1) i8_stream << ":_";
@@ -384,7 +381,7 @@ size_t get_PDB_lines(const string filename,
                     }
 
                     if (resi==line.substr(22,5) && atom_opt!="PC4'")
-                        cerr<<"Warning! Duplicated residue "<<resi<<endl;
+                        std::cerr<<"Warning! Duplicated residue "<<resi<<std::endl;
                     resi=line.substr(22,5); // including insertion code
 
                     PDB_lines.back().push_back(line);
@@ -395,87 +392,87 @@ size_t get_PDB_lines(const string filename,
             }
         }
 
-        map<string,char>().swap(aa3to1);
-        map<string, char>().swap(alt_id_dict); // resi -> alt_id
-        string ().swap(resi_chain);
+        std::map<std::string,char>().swap(aa3to1);
+        std::map<std::string, char>().swap(alt_id_dict); // resi -> alt_id
+        std::string ().swap(resi_chain);
     }
     else if (infmt_opt==1) // SPICKER format
     {
         size_t L=0;
         float x,y,z;
-        stringstream i8_stream;
-        while ((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))
+        std::ostringstream i8_stream;
+        while ((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
         {
             if  (compress_type==-1)
             {
-                cin>>L>>x>>y>>z;
-                getline(cin, line);
-                if (!cin.good()) break;
+                std::cin>>L>>x>>y>>z;
+                std::getline(std::cin, line);
+                if (!std::cin.good()) break;
             }
             else if (compress_type)
             {
                 fin_gz>>L>>x>>y>>z;
-                getline(fin_gz, line);
+                std::getline(fin_gz, line);
                 if (!fin_gz.good()) break;
             }
             else
             {
                 fin   >>L>>x>>y>>z;
-                getline(fin, line);
+                std::getline(fin, line);
                 if (!fin.good()) break;
             }
             model_idx++;
-            stringstream i8_stream;
+            std::ostringstream i8_stream;
             i8_stream << ':' << model_idx;
             chainID_list.push_back(i8_stream.str());
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
             for (int i=0;i<L;i++)
             {
-                if  (compress_type==-1) cin>>x>>y>>z;
+                if  (compress_type==-1) std::cin>>x>>y>>z;
                 else if (compress_type) fin_gz>>x>>y>>z;
                 else                    fin   >>x>>y>>z;
-                i8_stream<<"ATOM   "<<setw(4)<<i+1<<"  CA  UNK  "<<setw(4)
-                    <<i+1<<"    "<<setiosflags(ios::fixed)<<setprecision(3)
-                    <<setw(8)<<x<<setw(8)<<y<<setw(8)<<z;
+                i8_stream<<"ATOM   "<<std::setw(4)<<i+1<<"  CA  UNK  "<<std::setw(4)
+                    <<i+1<<"    "<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setw(8)<<x<<std::setw(8)<<y<<std::setw(8)<<z;
                 line=i8_stream.str();
-                i8_stream.str(string());
+                i8_stream.str(std::string());
                 PDB_lines.back().push_back(line);
             }
-            if  (compress_type==-1) getline(cin, line);
-            else if (compress_type) getline(fin_gz, line);
-            else                    getline(fin, line);
+            if  (compress_type==-1) std::getline(std::cin, line);
+            else if (compress_type) std::getline(fin_gz, line);
+            else                    std::getline(fin, line);
         }
     }
     else if (infmt_opt==2) // xyz format
     {
         size_t L=0;
-        stringstream i8_stream;
-        while ((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))
+        std::ostringstream i8_stream;
+        while ((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
         {
-            if (compress_type==-1)  getline(cin, line);
-            else if (compress_type) getline(fin_gz, line);
-            else                    getline(fin, line);
+            if (compress_type==-1)  std::getline(std::cin, line);
+            else if (compress_type) std::getline(fin_gz, line);
+            else                    std::getline(fin, line);
             L=safe_stoi(line.c_str());
-            if (compress_type==-1)  getline(cin, line);
-            else if (compress_type) getline(fin_gz, line);
-            else                    getline(fin, line);
+            if (compress_type==-1)  std::getline(std::cin, line);
+            else if (compress_type) std::getline(fin_gz, line);
+            else                    std::getline(fin, line);
             for (i=0;i<line.size();i++)
                 if (line[i]==' '||line[i]=='\t') break;
-            if (!((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))) break;
+            if (!((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))) break;
             chainID_list.push_back(':'+line.substr(0,i));
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
             for (i=0;i<L;i++)
             {
-                if (compress_type==-1)  getline(cin, line);
-                else if (compress_type) getline(fin_gz, line);
-                else                    getline(fin, line);
-                i8_stream<<"ATOM   "<<setw(4)<<i+1<<"  CA  "
-                    <<AAmap(line[0])<<"  "<<setw(4)<<i+1<<"    "
+                if (compress_type==-1)  std::getline(std::cin, line);
+                else if (compress_type) std::getline(fin_gz, line);
+                else                    std::getline(fin, line);
+                i8_stream<<"ATOM   "<<std::setw(4)<<i+1<<"  CA  "
+                    <<AAmap(line[0])<<"  "<<std::setw(4)<<i+1<<"    "
                     <<line.substr(2,8)<<line.substr(11,8)<<line.substr(20,8);
                 line=i8_stream.str();
-                i8_stream.str(string());
+                i8_stream.str(std::string());
                 PDB_lines.back().push_back(line);
                 if (line[0]>='a' && line[0]<='z') mol_vec.back()++; // RNA
                 else mol_vec.back()--;
@@ -485,26 +482,26 @@ size_t get_PDB_lines(const string filename,
     else if (infmt_opt==3) // PDBx/mmCIF format
     {
         bool loop_ = false; // not reading following content
-        map<string,int> _atom_site;
+        std::map<std::string,int> _atom_site;
         int atom_site_pos;
-        vector<string> line_vec;
-        string alt_id=".";  // alternative location indicator
-        string asym_id="."; // this is similar to chainID, except that
-                            // chainID is char while asym_id is a string
+        std::vector<std::string> line_vec;
+        std::string alt_id=".";  // alternative location indicator
+        std::string asym_id="."; // this is similar to chainID, except that
+                            // chainID is char while asym_id is a std::string
                             // with possibly multiple char
-        string prev_asym_id="";
-        string AA="";       // residue name
-        string atom="";
-        string prev_resi="";
-        string model_index=""; // the same as model_idx but type is string
-        stringstream i8_stream;
-        map<string, string> alt_id_dict; // resi -> alt_id
-        string resi_chain;
-        while ((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))
+        std::string prev_asym_id="";
+        std::string AA="";       // residue name
+        std::string atom="";
+        std::string prev_resi="";
+        std::string model_index=""; // the same as model_idx but type is std::string
+        std::ostringstream i8_stream;
+        std::map<std::string, std::string> alt_id_dict; // resi -> alt_id
+        std::string resi_chain;
+        while ((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
         {
-            if (compress_type==-1)  getline(cin, line);
-            else if (compress_type) getline(fin_gz, line);
-            else                    getline(fin, line);
+            if (compress_type==-1)  std::getline(std::cin, line);
+            else if (compress_type) std::getline(fin_gz, line);
+            else                    std::getline(fin, line);
             if (line.size()==0) continue;
             if (loop_) loop_ = (line.size()>=2)?(line.compare(0,2,"# ")):(line.compare(0,1,"#"));
             if (!loop_)
@@ -514,17 +511,17 @@ size_t get_PDB_lines(const string filename,
                 {
                     if (compress_type==-1)
                     {
-                        if (cin.good()) getline(cin, line);
+                        if (std::cin.good()) std::getline(std::cin, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of -");
                     }
                     else if (compress_type)
                     {
-                        if (fin_gz.good()) getline(fin_gz, line);
+                        if (fin_gz.good()) std::getline(fin_gz, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                     }
                     else
                     {
-                        if (fin.good()) getline(fin, line);
+                        if (fin.good()) std::getline(fin, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                     }
                     if (line.size()) break;
@@ -538,9 +535,9 @@ size_t get_PDB_lines(const string filename,
 
                 while(1)
                 {
-                    if  (compress_type==-1) getline(cin, line);
-                    else if (compress_type) getline(fin_gz, line);
-                    else                    getline(fin, line);
+                    if  (compress_type==-1) std::getline(std::cin, line);
+                    else if (compress_type) std::getline(fin_gz, line);
+                    else                    std::getline(fin, line);
                     if (line.size()==0) continue;
                     if (line.compare(0,11,"_atom_site.")) break;
                     _atom_site[Trim(line.substr(11))]=++atom_site_pos;
@@ -559,7 +556,7 @@ size_t get_PDB_lines(const string filename,
                     _atom_site.count("Cartn_z")==0)
                 {
                     loop_ = false;
-                    cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                    std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                     continue;
                 }
             }
@@ -613,13 +610,13 @@ size_t get_PDB_lines(const string filename,
             if (asym_id==".") asym_id=" ";
 
             if (chain2parse.size() && ( (asym_id==" " && 
-                find(chain2parse.begin(),chain2parse.end(), "_"
+                std::find(chain2parse.begin(),chain2parse.end(), "_"
                 )==chain2parse.end())|| (asym_id!=" " && 
-                find(chain2parse.begin(), chain2parse.end(),asym_id
+                std::find(chain2parse.begin(), chain2parse.end(),asym_id
                 )==chain2parse.end()))) continue;
 
             if (model2parse.size() && _atom_site.count("pdbx_PDB_model_num") &&
-                find(model2parse.begin(), model2parse.end(),
+                std::find(model2parse.begin(), model2parse.end(),
                     line_vec[_atom_site["pdbx_PDB_model_num"]]
                     )==model2parse.end()) continue;
 
@@ -644,7 +641,7 @@ size_t get_PDB_lines(const string filename,
                     //else
                         //chainID_list.push_back("");
                 }
-                map<string, string>().swap(alt_id_dict);
+                std::map<std::string, std::string>().swap(alt_id_dict);
             }
             
             if (_atom_site.count("auth_seq_id"))
@@ -690,25 +687,25 @@ size_t get_PDB_lines(const string filename,
             else mol_vec.back()--;
 
             if (prev_resi==resi && atom_opt!="PC4'")
-                cerr<<"Warning! Duplicated residue "<<resi<<endl;
+                std::cerr<<"Warning! Duplicated residue "<<resi<<std::endl;
             prev_resi=resi;
 
             i++;
             i8_stream<<"ATOM  "
-                <<setw(5)<<i<<" "<<atom<<" "<<AA<<" "<<asym_id[0]
-                <<setw(5)<<resi.substr(0,5)<<"   "
-                <<setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
-                <<setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
-                <<setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
+                <<std::setw(5)<<i<<" "<<atom<<" "<<AA<<" "<<asym_id[0]
+                <<std::setw(5)<<resi.substr(0,5)<<"   "
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
             PDB_lines.back().push_back(i8_stream.str());
-            i8_stream.str(string());
+            i8_stream.str(std::string());
         }
         _atom_site.clear();
         line_vec.clear();
         alt_id.clear();
         asym_id.clear();
         AA.clear();
-        map<string, string>().swap(alt_id_dict);
+        std::map<std::string, std::string>().swap(alt_id_dict);
         resi_chain.clear();
     }
 
@@ -725,18 +722,18 @@ size_t get_PDB_lines(const string filename,
  * if ter_opt ==0, read all sequences.
  * if split_opt >=1 and ter_opt ==0, each sequence is a separate entry.
  * if split_opt ==0 and ter_opt ==0, all sequences are combined into one */
-size_t get_FASTA_lines(const string filename,
-    vector<vector<string> >&FASTA_lines, vector<string> &chainID_list,
-    vector<int> &mol_vec, const int ter_opt=3, const int split_opt=0)
+size_t get_FASTA_lines(const std::string filename,
+    std::vector<std::vector<std::string> >&FASTA_lines, std::vector<std::string> &chainID_list,
+    std::vector<int> &mol_vec, const int ter_opt=3, const int split_opt=0)
 {
-    string line;
-    vector<string> tmp_str_vec;
+    std::string line;
+    std::vector<std::string> tmp_str_vec;
     size_t l;
     
     int compress_type=0; // uncompressed file
-    ifstream fin;
+    std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
-    ifstream fin_gz;
+    std::ifstream fin_gz;
 #else
     redi::ipstream fin_gz; // if file is compressed
     if (filename.size()>=3 && 
@@ -758,11 +755,11 @@ size_t get_FASTA_lines(const string filename,
         else fin.open(filename.c_str());
     }
 
-    while ((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))
+    while ((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
     {
-        if  (compress_type==-1) getline(cin, line);
-        else if (compress_type) getline(fin_gz, line);
-        else                    getline(fin, line);
+        if  (compress_type==-1) std::getline(std::cin, line);
+        else if (compress_type) std::getline(fin_gz, line);
+        else                    std::getline(fin, line);
 
         if (line.size()==0 || line[0]=='#') continue;
 
@@ -797,8 +794,8 @@ size_t get_FASTA_lines(const string filename,
     return FASTA_lines.size();
 }
 
-int read_PDB(const vector<string> &PDB_lines, double **a, char *seq,
-    vector<string> &resi_vec, const int read_resi)
+int read_PDB(const std::vector<std::string> &PDB_lines, double **a, char *seq,
+    std::vector<std::string> &resi_vec, const int read_resi)
 {
     size_t i;
     for (i=0;i<PDB_lines.size();i++)
@@ -848,21 +845,21 @@ void do_rotation(double **x, double **x1, int len, double t[3], double u[3][3])
 /* read user specified pairwise alignment from 'fname_lign' to 'sequence'.
  * This function should only be called by main function, as it will
  * terminate a program if wrong alignment is given */
-void read_user_alignment(vector<string>&sequence, const string &fname_lign,
+void read_user_alignment(std::vector<std::string>&sequence, const std::string &fname_lign,
     const int i_opt)
 {
     if (fname_lign == "")
         PrintErrorAndQuit("Please provide a file name for option -i!");
     // open alignment file
     int n_p = 0;// number of structures in alignment file
-    string line;
+    std::string line;
     
-    ifstream fileIn(fname_lign.c_str());
+    std::ifstream fileIn(fname_lign.c_str());
     if (fileIn.is_open())
     {
         while (fileIn.good())
         {
-            getline(fileIn, line);
+            std::getline(fileIn, line);
             if (line.compare(0, 1, ">") == 0)// Flag for a new structure
             {
                 if (n_p >= 2) break;
@@ -892,7 +889,7 @@ void read_user_alignment(vector<string>&sequence, const string &fname_lign,
 }
 
 
-inline bool isfile(const string& filename)
+inline bool isfile(const std::string& filename)
 {
     if (FILE *fp = fopen(filename.c_str(), "r"))
     {
@@ -907,20 +904,20 @@ inline bool isfile(const string& filename)
  * suffix_opt is the file name extension (suffix_opt).
  * This function should only be called by main function, as it will
  * terminate a program if wrong alignment is given */
-void file2chainlist(vector<string>&chain_list, const string &name,
-    const string &dir_opt, const string &suffix_opt)
+void file2chainlist(std::vector<std::string>&chain_list, const std::string &name,
+    const std::string &dir_opt, const std::string &suffix_opt)
 {
-    ifstream fp(name.c_str());
+    std::ifstream fp(name.c_str());
     if (! fp.is_open())
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
-    string line;
-    string filename;
+    std::string line;
+    std::string filename;
     int a;
     int b;
-    string sep;
+    std::string sep;
     while (fp.good())
     {
-        getline(fp, line);
+        std::getline(fp, line);
         if (! line.size()) continue;
         line=Trim(line);
         for (a=0;a<=2;a++)
@@ -949,7 +946,7 @@ void file2chainlist(vector<string>&chain_list, const string &name,
         if (filename.size()==0)
         {
             filename=dir_opt+line+suffix_opt;
-            cerr<<"WARNING! "<<filename<<" does not exist"<<endl;
+            std::cerr<<"WARNING! "<<filename<<" does not exist"<<std::endl;
         }
         else chain_list.push_back(filename);
         line.clear();
@@ -958,24 +955,24 @@ void file2chainlist(vector<string>&chain_list, const string &name,
     fp.close();
 }
 
-void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
-    const string &name, const string &dirpair_opt, const string &suffix_opt)
+void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::string>&chain2_list,
+    const std::string &name, const std::string &dirpair_opt, const std::string &suffix_opt)
 {
-    ifstream fp(name.c_str());
+    std::ifstream fp(name.c_str());
     if (! fp.is_open())
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
-    string line;
-    string filename;
+    std::string line;
+    std::string filename;
     int a;
     int b;
     size_t i;
-    string sep;
-    string filename1;
-    string filename2;
-    vector<string> line_vec;
+    std::string sep;
+    std::string filename1;
+    std::string filename2;
+    std::vector<std::string> line_vec;
     while (fp.good())
     {
-        getline(fp, line);
+        std::getline(fp, line);
         if (! line.size()) continue;
         line=Trim(line);
         split(line, line_vec, '\t');
@@ -997,7 +994,7 @@ void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
             }
             else
             {
-                cerr<<"WARNING! not a chain pair: "<<line<<endl;
+                std::cerr<<"WARNING! not a chain std::pair: "<<line<<std::endl;
                 for (i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
                 continue;
             }
@@ -1030,7 +1027,7 @@ void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
         if (filename.size()==0)
         {
             filename=dirpair_opt+filename1+suffix_opt;
-            cerr<<"WARNING! "<<filename<<" does not exist"<<endl;
+            std::cerr<<"WARNING! "<<filename<<" does not exist"<<std::endl;
             continue;
         }
         else
@@ -1065,7 +1062,7 @@ void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
         if (filename.size()==0)
         {
             filename=dirpair_opt+filename2+suffix_opt;
-            cerr<<"WARNING! "<<filename<<" does not exist"<<endl;
+            std::cerr<<"WARNING! "<<filename<<" does not exist"<<std::endl;
             continue;
         }
         else
