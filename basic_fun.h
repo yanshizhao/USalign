@@ -50,6 +50,37 @@ template <class A> void DeleteArray(A *** array, int Narray)
     (*array)=nullptr;
 }
 
+inline int safe_stoi(const char* s, int default_val = 0)
+{
+    if (!s || !*s) return default_val;
+    char* end = nullptr;
+    long val = strtol(s, &end, 10);
+    if (end == s || *end != '\0') return default_val;
+    if (val > INT_MAX || val < INT_MIN) return default_val;
+    return static_cast<int>(val);
+}
+
+inline int safe_stoi(const std::string& s, int default_val = 0)
+{
+    try { return std::stoi(s); }
+    catch (...) { return default_val; }
+}
+
+inline double safe_stod(const char* s, double default_val = 0.0)
+{
+    if (!s || !*s) return default_val;
+    char* end = nullptr;
+    double val = strtod(s, &end);
+    if (end == s || *end != '\0') return default_val;
+    return val;
+}
+
+inline double safe_stod(const std::string& s, double default_val = 0.0)
+{
+    try { return std::stod(s); }
+    catch (...) { return default_val; }
+}
+
 string AAmap(char A)
 {
     if (A=='A') return "ALA";
@@ -426,7 +457,7 @@ size_t get_PDB_lines(const string filename,
             if (compress_type==-1)  getline(cin, line);
             else if (compress_type) getline(fin_gz, line);
             else                    getline(fin, line);
-            L=atoi(line.c_str());
+            L=safe_stoi(line.c_str());
             if (compress_type==-1)  getline(cin, line);
             else if (compress_type) getline(fin_gz, line);
             else                    getline(fin, line);
@@ -773,9 +804,9 @@ int read_PDB(const vector<string> &PDB_lines, double **a, char *seq,
     size_t i;
     for (i=0;i<PDB_lines.size();i++)
     {
-        a[i][0] = atof(PDB_lines[i].substr(30, 8).c_str());
-        a[i][1] = atof(PDB_lines[i].substr(38, 8).c_str());
-        a[i][2] = atof(PDB_lines[i].substr(46, 8).c_str());
+        a[i][0] = safe_stod(PDB_lines[i].substr(30, 8).c_str());
+        a[i][1] = safe_stod(PDB_lines[i].substr(38, 8).c_str());
+        a[i][2] = safe_stod(PDB_lines[i].substr(46, 8).c_str());
         seq[i]  = AAmap(PDB_lines[i].substr(17, 3));
 
         if (read_resi>=2) resi_vec.push_back(PDB_lines[i].substr(22,5)+
