@@ -597,14 +597,14 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *
 
         if (chainID1==chainID2)
         {
-            if (atoi(resi_vec1[i1].substr(0,4).c_str())<
-                atoi(resi_vec2[i2].substr(0,4).c_str()))
+            if (safe_stoi(resi_vec1[i1].substr(0,4).c_str())<
+                safe_stoi(resi_vec2[i2].substr(0,4).c_str()))
             {
                 sequence[0]+=seqx[i1++];
                 sequence[1]+='-';
             }
-            else if (atoi(resi_vec1[i1].substr(0,4).c_str())>
-                     atoi(resi_vec2[i2].substr(0,4).c_str()))
+            else if (safe_stoi(resi_vec1[i1].substr(0,4).c_str())>
+                     safe_stoi(resi_vec2[i2].substr(0,4).c_str()))
             {
                 sequence[0]+='-';
                 sequence[1]+=seqy[i2++];
@@ -690,14 +690,14 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *
     i=j=0;
     while(i<xlen && j<ylen)
     {
-        if (atoi(resi_vec1[i+i1].substr(0,4).c_str())<
-            atoi(resi_vec2[j+i2].substr(0,4).c_str()))
+        if (safe_stoi(resi_vec1[i+i1].substr(0,4).c_str())<
+            safe_stoi(resi_vec2[j+i2].substr(0,4).c_str()))
         {
             sequence[0]+=seqx[i++];
             sequence[1]+='-';
         }
-        else if (atoi(resi_vec1[i+i1].substr(0,4).c_str())>
-                 atoi(resi_vec2[j+i2].substr(0,4).c_str()))
+        else if (safe_stoi(resi_vec1[i+i1].substr(0,4).c_str())>
+                 safe_stoi(resi_vec2[j+i2].substr(0,4).c_str()))
         {
             sequence[0]+='-';
             sequence[1]+=seqy[j++];

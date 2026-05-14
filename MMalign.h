@@ -809,7 +809,7 @@ size_t get_full_PDB_lines(const string filename,
         {
             if (compress_type) getline(fin_gz, line);
             else               getline(fin, line);
-            L=atoi(line.c_str());
+            L=safe_stoi(line.c_str());
             if (compress_type) getline(fin_gz, line);
             else               getline(fin, line);
             for (i=0;i<line.size();i++)
@@ -1023,9 +1023,9 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
             for (a=0;a<PDB_lines[chain_i].size();a++)
             {
                 line=PDB_lines[chain_i][a];
-                x[0]=atof(line.substr(30,8).c_str());
-                x[1]=atof(line.substr(38,8).c_str());
-                x[2]=atof(line.substr(46,8).c_str());
+                x[0]=safe_stod(line.substr(30,8).c_str());
+                x[1]=safe_stod(line.substr(38,8).c_str());
+                x[2]=safe_stod(line.substr(46,8).c_str());
                 if (mirror_opt) x[2]=-x[2];
                 transform(t, u, x, x1);
                 buf<<line.substr(0,30)<<setiosflags(ios::fixed)

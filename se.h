@@ -25,8 +25,8 @@ int se_main(
     bool   **path;        // for dynamic programming  
     double **val;         // for dynamic programming  
 
-    int *m1=NULL;
-    int *m2=NULL;
+    int *m1=nullptr;
+    int *m2=nullptr;
     double d;
     if (outfmt_opt<2)
     {

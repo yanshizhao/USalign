@@ -784,9 +784,9 @@ void output_flexalign_rasmol(const string xname, const string yname,
             line.compare(0, 6, "HETATM")==0)) // PDB format
         {
             if (line[16]!='A' && line[16]!=' ') continue;
-            x[0]=atof(line.substr(30,8).c_str());
-            x[1]=atof(line.substr(38,8).c_str());
-            x[2]=atof(line.substr(46,8).c_str());
+            x[0]=safe_stod(line.substr(30,8).c_str());
+            x[1]=safe_stod(line.substr(38,8).c_str());
+            x[2]=safe_stod(line.substr(46,8).c_str());
             if (mirror_opt) x[2]=-x[2];
             if (read_resi==1) resi=line.substr(22,5);
             else resi=line.substr(22,5)+line[21];
@@ -883,9 +883,9 @@ void output_flexalign_rasmol(const string xname, const string yname,
                     model_index=line_vec[_atom_site["pdbx_PDB_model_num"]];
                 }
 
-                x[0]=atof(line_vec[_atom_site["Cartn_x"]].c_str());
-                x[1]=atof(line_vec[_atom_site["Cartn_y"]].c_str());
-                x[2]=atof(line_vec[_atom_site["Cartn_z"]].c_str());
+                x[0]=safe_stod(line_vec[_atom_site["Cartn_x"]].c_str());
+                x[1]=safe_stod(line_vec[_atom_site["Cartn_y"]].c_str());
+                x[2]=safe_stod(line_vec[_atom_site["Cartn_z"]].c_str());
                 if (mirror_opt) x[2]=-x[2];
 
 
@@ -1425,9 +1425,9 @@ void output_flexalign_pymol(const string xname, const string yname,
             line.compare(0, 6, "HETATM")==0) // PDB format
         {
             infmt=0;
-            x[0]=atof(line.substr(30,8).c_str());
-            x[1]=atof(line.substr(38,8).c_str());
-            x[2]=atof(line.substr(46,8).c_str());
+            x[0]=safe_stod(line.substr(30,8).c_str());
+            x[1]=safe_stod(line.substr(38,8).c_str());
+            x[2]=safe_stod(line.substr(46,8).c_str());
             if (mirror_opt) x[2]=-x[2];
             if (read_resi==1) resi=line.substr(22,5);
             else resi=line.substr(22,5)+line[21];
@@ -1501,9 +1501,9 @@ void output_flexalign_pymol(const string xname, const string yname,
                 if (line_vec[_atom_site["group_PDB"]]!="ATOM" &&
                     line_vec[_atom_site["group_PDB"]]!="HETATM") break;
 
-                x[0]=atof(line_vec[_atom_site["Cartn_x"]].c_str());
-                x[1]=atof(line_vec[_atom_site["Cartn_y"]].c_str());
-                x[2]=atof(line_vec[_atom_site["Cartn_z"]].c_str());
+                x[0]=safe_stod(line_vec[_atom_site["Cartn_x"]].c_str());
+                x[1]=safe_stod(line_vec[_atom_site["Cartn_y"]].c_str());
+                x[2]=safe_stod(line_vec[_atom_site["Cartn_z"]].c_str());
                 if (mirror_opt) x[2]=-x[2];
 
 
