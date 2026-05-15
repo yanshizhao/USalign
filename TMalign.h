@@ -125,7 +125,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     for(i=0; i<n_init_max-1; i++)
     {
         n_init++;
-        L_ini[i]=(int) (Lali/pow(2.0, (double) i));
+        L_ini[i]=static_cast<int>(Lali/pow(2.0, static_cast<double>(i)));
         if(L_ini[i]<=L_ini_min)
         {
             L_ini[i]=L_ini_min;
@@ -279,7 +279,7 @@ double TMscore8_search_standard( double **r1, double **r2,
     for (i = 0; i<n_init_max - 1; i++)
     {
         n_init++;
-        L_ini[i] = (int)(Lali / pow(2.0, (double)i));
+        L_ini[i] = static_cast<int>(Lali / pow(2.0, static_cast<double>(i)));
         if (L_ini[i] <= L_ini_min)
         {
             L_ini[i] = L_ini_min;
@@ -1114,7 +1114,7 @@ void find_max_frag(double **x, int len, int *start_max,
     int start;
     int Lfr_max=0;
 
-    r_min= (int) (len*1.0/3.0); //minimum fragment, in case too small protein
+    r_min= static_cast<int>(len*1.0/3.0); //minimum fragment, in case too small protein
     if(r_min > fra_min) r_min=fra_min;
     
     int inc=0;
@@ -1160,7 +1160,7 @@ void find_max_frag(double **x, int len, int *start_max,
         if(Lfr_max < r_min)
         {
             inc++;
-            double dinc=pow(1.1, (double) inc) * dcu0;
+            double dinc=pow(1.1, static_cast<double>(inc)) * dcu0;
             dcu_cut= dinc*dinc;
         }
     }//while <;    
@@ -1221,8 +1221,8 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
 
         if(L_fr==L0)
         {
-            n1= (int)(L0*0.1); //my index starts from 0
-            n2= (int)(L0*0.89);
+            n1= static_cast<int>(L0*0.1); //my index starts from 0
+            n2= static_cast<int>(L0*0.89);
             j=0;
             for(i=n1; i<= n2; i++)
             {
@@ -1234,7 +1234,7 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
 
         int L1=L_fr;
         min_len=getmin(L1, ylen);    
-        min_ali= (int) (min_len/2.5); //minimum size of considered fragment 
+        min_ali= static_cast<int>(min_len/2.5); //minimum size of considered fragment 
         if(min_ali<=fra_min1)  min_ali=fra_min1;    
         n1 = -ylen+min_ali; 
         n2 = L1-min_ali;
@@ -1266,8 +1266,8 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
 
         if (L_fr==L0)
         {
-            n1= (int)(L0*0.1); //my index starts from 0
-            n2= (int)(L0*0.89);
+            n1= static_cast<int>(L0*0.1); //my index starts from 0
+            n2= static_cast<int>(L0*0.89);
 
             j=0;
             for(i=n1; i<= n2; i++)
@@ -1280,7 +1280,7 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
 
         int L2=L_fr;
         min_len=getmin(xlen, L2);    
-        min_ali= (int) (min_len/2.5); //minimum size of considered fragment 
+        min_ali= static_cast<int>(min_len/2.5); //minimum size of considered fragment 
         if(min_ali<=fra_min1)  min_ali=fra_min1;    
         n1 = -L2+min_ali; 
         n2 = xlen-min_ali;
@@ -1315,8 +1315,8 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
     int L0=getmin(xlen, ylen); //non-redundant to get_initial1
     if(L_fr==L0)
     {
-        int n1= (int)(L0*0.1); //my index starts from 0
-        int n2= (int)(L0*0.89);
+        int n1= static_cast<int>(L0*0.1); //my index starts from 0
+        int n2= static_cast<int>(L0*0.89);
 
         int j=0;
         for(int i=n1; i<= n2; i++)
@@ -1335,7 +1335,7 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
     {
         int L1=L_fr;
         int min_len=getmin(L1, ylen);    
-        int min_ali= (int) (min_len/2.5);              //minimum size of considered fragment 
+        int min_ali= static_cast<int>(min_len/2.5);              //minimum size of considered fragment 
         if(min_ali<=fra_min1)  min_ali=fra_min1;    
         int n1, n2;
         n1 = -ylen+min_ali; 
@@ -1367,7 +1367,7 @@ double get_initial_fgt(double **r1, double **r2, double **xtm, double **ytm,
     {
         int L2=L_fr;
         int min_len=getmin(xlen, L2);    
-        int min_ali= (int) (min_len/2.5);              //minimum size of considered fragment 
+        int min_ali= static_cast<int>(min_len/2.5);              //minimum size of considered fragment 
         if(min_ali<=fra_min1)  min_ali=fra_min1;    
         int n1, n2;
         n1 = -L2+min_ali; 

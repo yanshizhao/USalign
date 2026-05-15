@@ -171,7 +171,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     for(i=0; i<n_init_max-1; i++)
     {
         n_init++;
-        L_ini[i]=(int) (Lali/pow(2.0, (double) i));
+        L_ini[i]=static_cast<int>(Lali/pow(2.0, static_cast<double>(i)));
         if(L_ini[i]<=L_ini_min)
         {
             L_ini[i]=L_ini_min;
@@ -337,7 +337,7 @@ double TMscore8_search_standard( double **r1, double **r2,
     for (i = 0; i<n_init_max - 1; i++)
     {
         n_init++;
-        L_ini[i] = (int)(Lali / pow(2.0, (double)i));
+        L_ini[i] = static_cast<int>(Lali / pow(2.0, static_cast<double>(i)));
         if (L_ini[i] <= L_ini_min)
         {
             L_ini[i] = L_ini_min;
