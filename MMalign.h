@@ -5,7 +5,8 @@ void print_assign_list(int *assign1_list, const int chain1_num,
     const vector<string> &chainID_list1,
     const vector<string> &chainID_list2)
 {
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<chain1_num;i++)
     {
         j=assign1_list[i];
@@ -40,11 +41,15 @@ bool adjust_dimer_assignment(
     const vector<vector<string> >&seqxA_mat,
     const vector<vector<string> >&seqyA_mat)
 {
-    /* check currently assigned chains */
-    int i1,i2,j1,j2;
+    // check currently assigned chains
+    int i1;
+    int i2;
+    int j1;
+    int j2;
     i1=i2=j1=j2=-1;    
     int chain1_num=xa_vec.size();
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<chain1_num;i++)
     {
         if (assign1_list[i]>=0)
@@ -62,17 +67,21 @@ bool adjust_dimer_assignment(
         }
     }
 
-    /* normalize d0 by L */
+    // normalize d0 by L
     int xlen=xlen_vec[i1]+xlen_vec[i2];
     int ylen=ylen_vec[j1]+ylen_vec[j2];
     int mol_type=mol_vec1[i1]+mol_vec1[i2]+
                  mol_vec2[j1]+mol_vec2[j2];
-    double D0_MIN, d0, d0_search;
+    double D0_MIN;
+    double d0;
+    double d0_search;
     double Lnorm=getmin(xlen,ylen);
     parameter_set4final(getmin(xlen,ylen), D0_MIN, Lnorm, d0, 
         d0_search, mol_type);
 
-    double **xa,**ya, **xt;
+    double **xa;
+    double **ya;
+    double **xt;
     NewArray(&xa, xlen, 3);
     NewArray(&ya, ylen, 3);
     NewArray(&xt, xlen, 3);
@@ -84,7 +93,7 @@ bool adjust_dimer_assignment(
     size_t L_ali=0; // index of residue in aligned region
     size_t r=0;     // index of residue in full alignment
 
-    /* total score using current assignment */
+    // total score using current assignment
     L_ali=0;
     i=j=-1;
     for (r=0;r<seqxA_mat[i1][j1].size();r++)
@@ -126,7 +135,7 @@ bool adjust_dimer_assignment(
     }
     total_score1/=Lnorm;
 
-    /* total score using reversed assignment */
+    // total score using reversed assignment
     L_ali=0;
     i=j=-1;
     for (r=0;r<seqxA_mat[i1][j2].size();r++)
@@ -168,7 +177,7 @@ bool adjust_dimer_assignment(
     }
     total_score2/=Lnorm;
 
-    /* swap chain assignment */
+    // swap chain assignment
     if (total_score1<total_score2)
     {
         assign1_list[i1]=j2;
@@ -177,14 +186,14 @@ bool adjust_dimer_assignment(
         assign2_list[j2]=i1;
     }
 
-    /* clean up */
+    // clean up
     DeleteArray(&xa, xlen);
     DeleteArray(&ya, ylen);
     DeleteArray(&xt, xlen);
     return total_score1<total_score2;
 }
 
-/* count how many chains are paired */
+// count how many chains are paired
 int count_assign_pair(int *assign1_list,const int chain1_num)
 {
     int pair_num=0;
@@ -194,17 +203,18 @@ int count_assign_pair(int *assign1_list,const int chain1_num)
 }
 
 
-/* assign chain-chain correspondence */
+// assign chain-chain correspondence
 double enhanced_greedy_search(double **TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num)
 {
     double total_score=0;
     double tmp_score=0;
-    int i,j;
+    int i;
+    int j;
     int maxi=0;
     int maxj=0;
 
-    /* initialize parameters */
+    // initialize parameters
     for (i=0;i<chain1_num;i++) assign1_list[i]=-1;
     for (j=0;j<chain2_num;j++) assign2_list[j]=-1;
 
@@ -238,7 +248,7 @@ double enhanced_greedy_search(double **TMave_mat,int *assign1_list,
     //cout<<"assign2_list={";
     //for (j=0;j<chain2_num;j++) cout<<assign2_list[j]<<","; cout<<"}"<<endl;
 
-    /* iterative refinemnt */
+    // iterative refinemnt
     double delta_score;
     int *assign1_tmp=new int [chain1_num];
     int *assign2_tmp=new int [chain2_num];
@@ -291,7 +301,7 @@ double enhanced_greedy_search(double **TMave_mat,int *assign1_list,
         if (delta_score<=0) break; // cannot swap any chain pair
     }
 
-    /* clean up */
+    // clean up
     delete[]assign1_tmp;
     delete[]assign2_tmp;
     return total_score;
@@ -355,7 +365,8 @@ double calMMscore(double **TMave_mat,int *assign1_list,
     double **xt, double t[3], double u[3][3], const int L)
 {
     int Nali=0; // number of aligned chain
-    int i,j;
+    int i;
+    int j;
     double MMscore=0;
     for (i=0;i<chain1_num;i++)
     {
@@ -379,11 +390,11 @@ double calMMscore(double **TMave_mat,int *assign1_list,
     double TMscore=0;
     if (Nali>=3)
     {
-        /* Kabsch superposition */
+        // Kabsch superposition
         Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
         do_rotation(r1, xt, Nali, t, u);
 
-        /* calculate pseudo-TMscore */
+        // calculate pseudo-TMscore
         double dd=0;
         for (i=0;i<Nali;i++)
         {
@@ -412,7 +423,8 @@ double check_heterooligomer(double **TMave_mat, const int chain1_num,
     double het_deg=0;
     double min_TM=-1;
     double max_TM=-1;
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<chain1_num;i++)
     {
         for (j=0;j<chain2_num;j++)
@@ -427,7 +439,7 @@ double check_heterooligomer(double **TMave_mat, const int chain1_num,
     return het_deg;
 }
 
-/* reassign chain-chain correspondence, specific for homooligomer */
+// reassign chain-chain correspondence, specific for homooligomer
 double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
     double **xcentroids, double **ycentroids, const double d0MM,
@@ -435,8 +447,10 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
 {
     double MMscore_max=0;
     double MMscore=0;
-    int i,j;
-    int c1,c2;
+    int i;
+    int j;
+    int c1;
+    int c2;
     int max_i=-1; // the chain pair whose monomer u t yields highest MMscore
     int max_j=-1;
 
@@ -447,7 +461,9 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     NewArray(&xt, chain1_num, 3);
     double t[3];
     double u[3][3];
-    int ui,uj,ut_idx;
+    int ui;
+    int uj;
+    int ut_idx;
     double TMscore=0; // pseudo TM-score
     double TMsum  =0;
     double TMnow  =0;
@@ -492,13 +508,13 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
             }
             //cout<<"sorting "<<total_pair<<" chain pairs"<<endl;
 
-            /* initial assignment */
+            // initial assignment
             assign1_tmp[c1]=c2;
             assign2_tmp[c2]=c1;
             TMsum=TMave_mat[c1][c2];
             TMscore=ut_tmc_mat[c1*chain2_num+c2];
 
-            /* further assignment */
+            // further assignment
             sort(ut_tm_vec.begin(), ut_tm_vec.end()); // sort in ascending order
             for (ut_idx=total_pair-1;ut_idx>=0;ut_idx--)
             {
@@ -514,7 +530,7 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
                     //<<"\ti="<<i<<"\tj="<<j<<"\ttm="<<ut_tm_vec[ut_idx].first<<endl;
             }
 
-            /* final MMscore */
+            // final MMscore
             MMscore=(TMsum/L)*(TMscore/chain_num);
             if (max_i<0 || max_j<0 || MMscore>MMscore_max)
             {
@@ -536,7 +552,7 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
         }
     }
 
-    /* clean up */
+    // clean up
     delete[]assign1_tmp;
     delete[]assign2_tmp;
     delete[]ut_tmc_mat;
@@ -545,14 +561,15 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
-/* reassign chain-chain correspondence, specific for heterooligomer */
+// reassign chain-chain correspondence, specific for heterooligomer
 double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
     double **xcentroids, double **ycentroids, const double d0MM, const int L)
 {
     double MMscore_old=0;
     double MMscore=0;
-    int i,j;
+    int i;
+    int j;
 
     double **r1;
     double **r2;
@@ -564,7 +581,7 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     double t[3];
     double u[3][3];
 
-    /* calculate MMscore */
+    // calculate MMscore
     MMscore=MMscore_old=calMMscore(TMave_mat, assign1_list, chain1_num,
         chain2_num, xcentroids, ycentroids, d0MM, r1, r2, xt, t, u, L);
     //cout<<"MMscore="<<MMscore<<endl;
@@ -646,7 +663,7 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     MMscore=MMscore_old;
     //cout<<"MMscore="<<MMscore<<endl;
 
-    /* clean up */
+    // clean up
     delete[]assign1_tmp;
     delete[]assign2_tmp;
     DeleteArray(&r1, chain_num);
@@ -655,24 +672,36 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
+// C++ string overload (real implementation)
 void copy_chain_data(const vector<vector<double> >&a_vec_i,
     const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
-    const int len,double **a,char *seq,char *sec)
+    const int len,double **a,std::string &seq,char *sec)
 {
     int r;
+    seq.clear();
+    seq.reserve(len);
     for (r=0;r<len;r++)
     {
         a[r][0]=a_vec_i[r][0];
         a[r][1]=a_vec_i[r][1];
         a[r][2]=a_vec_i[r][2];
-        seq[r]=seq_vec_i[r];
+        seq += seq_vec_i[r];
         sec[r]=sec_vec_i[r];
     }
-    seq[len]=0;
     sec[len]=0;
 }
 
-/* clear chains with L<3 */
+// char* wrapper
+void copy_chain_data(const vector<vector<double> >&a_vec_i,
+    const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
+    const int len,double **a,char *seq,char *sec)
+{
+    std::string seq_str;
+    copy_chain_data(a_vec_i, seq_vec_i, sec_vec_i, len, a, seq_str, sec);
+    strcpy(seq, seq_str.c_str());
+}
+
+// clear chains with L<3
 void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_opt)
 {
     int chain_i;
@@ -777,7 +806,9 @@ size_t get_full_PDB_lines(const string filename,
     else if (infmt_opt==1) // SPICKER format
     {
         size_t L=0;
-        float x,y,z;
+        float x;
+        float y;
+        float z;
         stringstream i8_stream;
         while (compress_type?fin_gz.good():fin.good())
         {
@@ -991,7 +1022,8 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
     const int mirror_opt, double **ut_mat, const string&fname_super)
 {
     size_t i;
-    int chain_i,a;
+    int chain_i;
+    int a;
     string name;
     int chainnum;
     double x[3];  // before transform
@@ -1001,7 +1033,8 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
     int m=0;
     double t[3];
     double u[3][3];
-    int ui,uj;
+    int ui;
+    int uj;
     stringstream buf;
     string filename;
     int het_opt=1;
@@ -1059,12 +1092,14 @@ void parse_chain_list(const vector<string>&chain_list,
     const vector<string> &chain2parse, const vector<string> &model2parse)
 {
     size_t i;
-    int chain_i,r;
+    int chain_i;
+    int r;
     string name;
     int chainnum;
     double **xa;
     int len;
-    char *seq,*sec;
+    char *seq;
+    char *sec;
 
     vector<vector<string> >PDB_lines;
     vector<double> tmp_atom_array(3,0);
@@ -1109,7 +1144,7 @@ void parse_chain_list(const vector<string>&chain_list,
                 make_sec(seq, xa, len, sec,atom_opt);
             else make_sec(xa, len, sec); // secondary structure assignment
             
-            /* store in vector */
+            // store in vector
             tmp_chain_array.assign(len,tmp_atom_array);
             vector<char>tmp_seq_array(len+1,0);
             vector<char>tmp_sec_array(len+1,0);
@@ -1126,7 +1161,7 @@ void parse_chain_list(const vector<string>&chain_list,
             sec_vec.push_back(tmp_sec_array);
             len_vec.push_back(len);
 
-            /* clean up */
+            // clean up
             tmp_chain_array.clear();
             tmp_seq_array.clear();
             tmp_sec_array.clear();
@@ -1177,7 +1212,9 @@ int copy_chain_pair_data(
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence)
 {
-    int i,j,r;
+    int i;
+    int j;
+    int r;
     for (i=0;i<sequence.size();i++) sequence[i].clear();
     sequence.clear();
     sequence.push_back("");
@@ -1232,7 +1269,8 @@ double MMalign_search(
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
 {
     double total_score=0;
-    int i,j;
+    int i;
+    int j;
     int xlen=0;
     int ylen=0;
     for (i=0;i<chain1_num;i++)
@@ -1255,12 +1293,18 @@ double MMalign_search(
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
-    /* declare variable specific to this pair of TMalign */
-    double t0[3], u0[3][3];
-    double TM1, TM2;
+    // declare variable specific to this pair of TMalign
+    double t0[3];
+    double u0[3][3];
+    double TM1;
+    double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-    double d0_0, TM_0;
-    double d0A, d0B, d0u, d0a;
+    double d0_0;
+    double TM_0;
+    double d0A;
+    double d0B;
+    double d0u;
+    double d0a;
     double d0_out=5.0;
     string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
@@ -1273,7 +1317,7 @@ double MMalign_search(
     double Lnorm_ass=len_aa+len_na;
     vector<double> do_vec;
 
-    /* entry function for structure alignment */
+    // entry function for structure alignment
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
@@ -1281,7 +1325,7 @@ double MMalign_search(
         xlen, ylen, sequence, Lnorm_ass, d0_scale,
         i_opt, false, true, false, fast_opt, mol_type, -1);
 
-    /* clean up */
+    // clean up
     delete [] seqx;
     delete [] seqy;
     delete [] secx;
@@ -1290,7 +1334,7 @@ double MMalign_search(
     DeleteArray(&ya,ylen);
     do_vec.clear();
 
-    /* re-compute chain level alignment */
+    // re-compute chain level alignment
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -1329,7 +1373,7 @@ double MMalign_search(
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
-            /* declare variable specific to this pair of TMalign */
+            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             seqM.clear();
             seqxA.clear();
@@ -1347,21 +1391,21 @@ double MMalign_search(
                 sequence_tmp.push_back(seqyA_mat[i][j]);
             }
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence_tmp, Lnorm_ass, d0_scale,
                 byresi_opt, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
-            /* print result */
+            // print result
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
 
             TMave_mat[i][j]=TM4*Lnorm_ass;
             if (assign1_list[i]==j) total_score+=TMave_mat[i][j];
 
-            /* clean up */
+            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
@@ -1418,7 +1462,8 @@ void MMalign_final(
     const bool fast_opt, const bool full_opt, const int mirror_opt,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2)
 {
-    int i,j;
+    int i;
+    int j;
     int xlen=0;
     int ylen=0;
     for (i=0;i<chain1_num;i++) xlen+=xlen_vec[i];
@@ -1437,12 +1482,18 @@ void MMalign_final(
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
-    /* declare variable specific to this pair of TMalign */
-    double t0[3], u0[3][3];
-    double TM1, TM2;
+    // declare variable specific to this pair of TMalign
+    double t0[3];
+    double u0[3][3];
+    double TM1;
+    double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-    double d0_0, TM_0;
-    double d0A, d0B, d0u, d0a;
+    double d0_0;
+    double TM_0;
+    double d0A;
+    double d0B;
+    double d0u;
+    double d0a;
     double d0_out=5.0;
     string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
@@ -1454,7 +1505,7 @@ void MMalign_final(
     vector<double>do_vec;
     double Lnorm_ass=len_aa+len_na;
 
-    /* entry function for structure alignment */
+    // entry function for structure alignment
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
@@ -1462,7 +1513,7 @@ void MMalign_final(
         xlen, ylen, sequence, Lnorm_ass, d0_scale,
         3, a_opt, false, d_opt, fast_opt, mol_type, -1);
 
-    /* prepare full complex alignment */
+    // prepare full complex alignment
     string chainID1="";
     string chainID2="";
     sequence.clear();
@@ -1486,7 +1537,7 @@ void MMalign_final(
         aln_start=aln_end;
     }
 
-    /* prepare unaligned region */
+    // prepare unaligned region
     for (i=0;i<chain1_num;i++)
     {
         if (assign1_list[i]>=0) continue;
@@ -1510,7 +1561,7 @@ void MMalign_final(
         sequence[2]+=string(ylen_vec[j],' ')+'*';
     }
 
-    /* print alignment */
+    // print alignment
     output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
         xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
@@ -1520,7 +1571,7 @@ void MMalign_final(
         split_opt, o_opt, fname_super,
         false, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
 
-    /* clean up */
+    // clean up
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
@@ -1540,7 +1591,7 @@ void MMalign_final(
     if (outfmt_opt<=2)
     cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<endl;
 
-    /* re-compute chain level alignment */
+    // re-compute chain level alignment
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -1568,7 +1619,7 @@ void MMalign_final(
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
         
-            /* declare variable specific to this pair of TMalign */
+            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             rmsd0 = 0.0;
             Liden=0;
@@ -1581,7 +1632,7 @@ void MMalign_final(
             sequence[0]=seqxA_mat[i][j];
             sequence[1]=seqyA_mat[i][j];
         
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1594,7 +1645,7 @@ void MMalign_final(
             //d0B=d0u;
             TMave_mat[i][j]=TM4*Lnorm_ass;
         
-            /* print result */
+            // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
                 xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
@@ -1604,7 +1655,7 @@ void MMalign_final(
                 "", outfmt_opt, ter_opt, false, split_opt, 0,
                 "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
         
-            /* clean up */
+            // clean up
             seqxA.clear();
             seqM.clear();
             seqyA.clear();
@@ -1646,7 +1697,8 @@ void MMalign_se_final(
     const bool fast_opt, const bool full_opt, const int mirror_opt,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2)
 {
-    int i,j;
+    int i;
+    int j;
     int xlen=0;
     int ylen=0;
     for (i=0;i<chain1_num;i++) xlen+=xlen_vec[i];
@@ -1665,12 +1717,18 @@ void MMalign_se_final(
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
-    /* declare variable specific to this pair of TMalign */
-    double t0[3], u0[3][3];
-    double TM1, TM2;
+    // declare variable specific to this pair of TMalign
+    double t0[3];
+    double u0[3][3];
+    double TM1;
+    double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-    double d0_0, TM_0;
-    double d0A, d0B, d0u, d0a;
+    double d0_0;
+    double TM_0;
+    double d0A;
+    double d0B;
+    double d0u;
+    double d0a;
     double d0_out=5.0;
     string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
@@ -1688,7 +1746,7 @@ void MMalign_se_final(
     t0[0]   =t0[1]   =t0[2]   =0;
     int *invmap = new int[ylen+1];
 
-    /* entry function for structure alignment */
+    // entry function for structure alignment
     se_main(xa, ya, seqx, seqy, 
         TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
@@ -1697,7 +1755,7 @@ void MMalign_se_final(
         3, a_opt, false, d_opt, fast_opt, mol_type, invmap);
     delete [] invmap;
 
-    /* prepare full complex alignment */
+    // prepare full complex alignment
     string chainID1="";
     string chainID2="";
     sequence.clear();
@@ -1721,7 +1779,7 @@ void MMalign_se_final(
         aln_start=aln_end;
     }
 
-    /* prepare unaligned region */
+    // prepare unaligned region
     for (i=0;i<chain1_num;i++)
     {
         if (assign1_list[i]>=0) continue;
@@ -1745,7 +1803,7 @@ void MMalign_se_final(
         sequence[2]+=string(ylen_vec[j],' ')+'*';
     }
 
-    /* print alignment */
+    // print alignment
     output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
         xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
@@ -1755,7 +1813,7 @@ void MMalign_se_final(
         split_opt, o_opt, fname_super,
         false, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
 
-    /* clean up */
+    // clean up
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
@@ -1775,7 +1833,7 @@ void MMalign_se_final(
     if (outfmt_opt<=2)
     cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<endl;
 
-    /* re-compute chain level alignment */
+    // re-compute chain level alignment
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -1803,7 +1861,7 @@ void MMalign_se_final(
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
         
-            /* declare variable specific to this pair of TMalign */
+            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             rmsd0 = 0.0;
             Liden=0;
@@ -1816,7 +1874,7 @@ void MMalign_se_final(
             sequence[0]=seqxA_mat[i][j];
             sequence[1]=seqyA_mat[i][j];
         
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1829,7 +1887,7 @@ void MMalign_se_final(
             //d0B=d0u;
             TMave_mat[i][j]=TM4*Lnorm_ass;
         
-            /* print result */
+            // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
                 xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
@@ -1839,7 +1897,7 @@ void MMalign_se_final(
                 "", outfmt_opt, ter_opt, false, split_opt, 0,
                 "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
         
-            /* clean up */
+            // clean up
             seqxA.clear();
             seqM.clear();
             seqyA.clear();
@@ -1868,7 +1926,8 @@ void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
     int *assign1_tmp,  int *assign2_tmp,  double **TMave_tmp)
 {
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<sequence.size();i++) sequence[i].clear();
     sequence.clear();
     sequence.push_back("");
@@ -1906,9 +1965,10 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     double d0_scale, bool fast_opt, map<int,int> &chainmap,
     const int byresi_opt=0)
 {
-    /* tmp assignment */
+    // tmp assignment
     double total_score;
-    int *assign1_tmp, *assign2_tmp;
+    int *assign1_tmp;
+    int *assign2_tmp;
     assign1_tmp=new int[chain1_num];
     assign2_tmp=new int[chain2_num];
     double **TMave_tmp;
@@ -1931,7 +1991,8 @@ void MMalign_iter(double & max_total_score, const int max_iter,
             sequence, d0_scale, fast_opt, 3, byresi_opt);
         if (chainmap.size())
         {
-            int i,j;
+            int i;
+            int j;
             for (i=0;i<chain1_num;i++) for (j=0;j<chain2_num;j++)
                 if (!chainmap.count(i) || chainmap[i]!=j) TMave_tmp[i][j]=-1;
         }
@@ -1950,7 +2011,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
                 seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
     }
 
-    /* clean up everything */
+    // clean up everything
     delete [] assign1_tmp;
     delete [] assign2_tmp;
     DeleteArray(&TMave_tmp,chain1_num);
@@ -1967,8 +2028,11 @@ void NWDP_TM_dimer(bool **path, double **val, double **x, double **y,
     int len1, int len2, bool **mask,
     double t[3], double u[3][3], double d02, double gap_open, int j2i[])
 {
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     //initialization
     for(i=0; i<=len1; i++)
@@ -1985,7 +2049,8 @@ void NWDP_TM_dimer(bool **path, double **val, double **x, double **y,
         path[0][j]=false; //not from diagonal
         j2i[j]=-1;    //all are not aligned, only use j2i[1:len2]
     }      
-    double xx[3], dij;
+    double xx[3];
+    double dij;
 
 
     //decide matrix and path
@@ -2057,8 +2122,11 @@ void NWDP_TM_dimer(bool **path, double **val, const char *secx, const char *secy
     const int len1, const int len2, bool **mask, const double gap_open, int j2i[])
 {
 
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     //initialization
     for(i=0; i<=len1; i++)
@@ -2146,9 +2214,15 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     double rmsd; 
     int *invmap=new int[ylen+1];
     
-    int iteration, i, j, k;
-    double tmscore, tmscore_max, tmscore_old=0;    
-    int score_sum_method=8, simplify_step=40;
+    int iteration;
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double tmscore_max;
+    double tmscore_old=0;
+    int score_sum_method=8;
+    int simplify_step=40;
     tmscore_max=-1;
 
     //double d01=d0+1.5;
@@ -2215,7 +2289,8 @@ bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
     bool **mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
-    double GL, rmsd;
+    double GL;
+    double rmsd;
     double t[3];
     double u[3][3];
 
@@ -2318,7 +2393,8 @@ void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
         y2x0, D0_MIN,d0);
 
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
     
     double gap_open=-1.0;
@@ -2357,7 +2433,7 @@ int TMalign_dimer_main(double **xa, double **ya,
     double **r1, **r2;    // for Kabsch rotation
 
     /***********************/
-    /* allocate memory     */
+    // allocate memory    
     /***********************/
     int minlen = min(xlen, ylen);
     NewArray(&score, xlen+1, ylen+1);
@@ -2370,7 +2446,7 @@ int TMalign_dimer_main(double **xa, double **ya,
     NewArray(&r2, minlen, 3);
 
     /***********************/
-    /*    parameter set    */
+    //    parameter set   
     /***********************/
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
         score_d8, d0, d0_search, dcu0);
@@ -2380,7 +2456,8 @@ int TMalign_dimer_main(double **xa, double **ya,
     int i;
     int *invmap0         = new int[ylen+1];
     int *invmap          = new int[ylen+1];
-    double TM, TMmax=-1;
+    double TM;
+    double TMmax=-1;
     for(i=0; i<ylen; i++) invmap0[i]=-1;
 
     double ddcc=0.4;
@@ -2436,7 +2513,7 @@ int TMalign_dimer_main(double **xa, double **ya,
     }
 
     /******************************************************/
-    /*    get initial alignment with gapless threading    */
+    //    get initial alignment with gapless threading   
     /******************************************************/
     if (!bAlignStick)
     {
@@ -2473,7 +2550,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         }
 
         /************************************************************/
-        /*    get initial alignment based on secondary structure    */
+        //    get initial alignment based on secondary structure   
         /************************************************************/
         get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap,
@@ -2513,7 +2590,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         }
 
         /************************************************************/
-        /*    get initial alignment based on local superposition    */
+        //    get initial alignment based on local superposition   
         /************************************************************/
         //=initial5 in original TM-align
         if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa, ya,
@@ -2559,7 +2636,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         }
 
         /********************************************************************/
-        /* get initial alignment by local superposition+secondary structure */
+        // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
         get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa, ya,
@@ -2601,7 +2678,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         }
 
         /*******************************************************************/
-        /*    get initial alignment based on fragment gapless threading    */
+        //    get initial alignment based on fragment gapless threading   
         /*******************************************************************/
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa, ya, xlen, ylen,
@@ -2721,7 +2798,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         return 1;
     }
 
-    /* last TM-score pre-termination */
+    // last TM-score pre-termination
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
@@ -2750,7 +2827,8 @@ int TMalign_dimer_main(double **xa, double **ya,
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    int *m1, *m2;
+    int *m1;
+    int *m2;
     double d;
     m1=new int[xlen]; //alignd index in x
     m2=new int[ylen]; //alignd index in y
@@ -2863,7 +2941,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         TM_0=TM5;
     }
 
-    /* derive alignment from superposition */
+    // derive alignment from superposition
     int ali_len=xlen+ylen; //maximum length of alignment
     seqxA.assign(ali_len,'-');
     seqM.assign( ali_len,' ');
@@ -2872,7 +2950,9 @@ int TMalign_dimer_main(double **xa, double **ya,
     //do_rotation(xa, xt, xlen, t, u);
     do_rotation(xa, xt, xlen, t0, u0);
 
-    int kk=0, i_old=0, j_old=0;
+    int kk=0;
+    int i_old=0;
+    int j_old=0;
     d=0;
     for(int k=0; k<n_ali8; k++)
     {
@@ -2926,7 +3006,7 @@ int TMalign_dimer_main(double **xa, double **ya,
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
 
-    /* free memory */
+    // free memory
     clean_up_after_approx_TM(invmap0, invmap, score, path, val,
         xtm, ytm, xt, r1, r2, xlen, minlen);
     delete [] m1;
@@ -2947,7 +3027,8 @@ void MMalign_dimer(double & total_score,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt)
 {
-    int i,j;
+    int i;
+    int j;
     int xlen=0;
     int ylen=0;
     vector<int> xlen_dimer;
@@ -2968,7 +3049,9 @@ void MMalign_dimer(double & total_score,
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) mask[i][j]=false;
     for (i=0;i<xlen_dimer[0]+1;i++) mask[i][0]=true;
     for (j=0;j<ylen_dimer[0]+1;j++) mask[0][j]=true;
-    int c,prev_xlen,prev_ylen;
+    int c;
+    int prev_xlen;
+    int prev_ylen;
     prev_xlen=1;
     prev_ylen=1;
     for (c=0;c<xlen_dimer.size();c++)
@@ -2993,12 +3076,18 @@ void MMalign_dimer(double & total_score,
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
-    /* declare variable specific to this pair of TMalign */
-    double t0[3], u0[3][3];
-    double TM1, TM2;
+    // declare variable specific to this pair of TMalign
+    double t0[3];
+    double u0[3][3];
+    double TM1;
+    double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-    double d0_0, TM_0;
-    double d0A, d0B, d0u, d0a;
+    double d0_0;
+    double TM_0;
+    double d0A;
+    double d0B;
+    double d0u;
+    double d0a;
     double d0_out=5.0;
     string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
@@ -3017,7 +3106,7 @@ void MMalign_dimer(double & total_score,
         xlen, ylen, mask, sequence, Lnorm_ass, d0_scale,
         1, false, true, false, fast_opt, mol_type, -1);
 
-    /* clean up TM-align */
+    // clean up TM-align
     delete [] seqx;
     delete [] seqy;
     delete [] secx;
@@ -3026,7 +3115,7 @@ void MMalign_dimer(double & total_score,
     DeleteArray(&ya,ylen);
     DeleteArray(&mask,xlen+1);
 
-    /* re-compute chain level alignment */
+    // re-compute chain level alignment
     total_score=0;
     for (i=0;i<chain1_num;i++)
     {
@@ -3066,7 +3155,7 @@ void MMalign_dimer(double & total_score,
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
-            /* declare variable specific to this pair of TMalign */
+            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             seqM.clear();
             seqxA.clear();
@@ -3078,14 +3167,14 @@ void MMalign_dimer(double & total_score,
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
                 0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
-            /* print result */
+            // print result
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
 
@@ -3096,7 +3185,7 @@ void MMalign_dimer(double & total_score,
                 else        total_score+=TMave_mat[i][j];
             }
 
-            /* clean up */
+            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
@@ -3128,8 +3217,9 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap)
 {
-    /* tmp assignment */
-    int *assign1_tmp, *assign2_tmp;
+    // tmp assignment
+    int *assign1_tmp;
+    int *assign2_tmp;
     assign1_tmp=new int[chain1_num];
     assign2_tmp=new int[chain2_num];
     double **TMave_tmp;
@@ -3162,7 +3252,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
         TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, fast_opt, chainmap);
 
-    /* clean up everything */
+    // clean up everything
     delete [] assign1_tmp;
     delete [] assign2_tmp;
     DeleteArray(&TMave_tmp,chain1_num);
@@ -3173,7 +3263,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     return;
 }
 
-/* return the number of chains that are trimmed */
+// return the number of chains that are trimmed
 int trimComplex(vector<vector<vector<double> > >&a_trim_vec,
     vector<vector<char> >&seq_trim_vec, vector<vector<char> >&sec_trim_vec,
     vector<int>&len_trim_vec,
@@ -3184,8 +3274,10 @@ int trimComplex(vector<vector<vector<double> > >&a_trim_vec,
 {
     int trim_chain_count=0;
     int chain_num=a_vec.size();
-    int i,j;
-    int r1,r2;
+    int i;
+    int j;
+    int r1;
+    int r2;
     double dinter;
     double dinter_min;
     vector<pair<double,int> >dinter_vec;
@@ -3194,7 +3286,8 @@ int trimComplex(vector<vector<vector<double> > >&a_trim_vec,
     vector<vector<double> >  a_empty;
     vector<double> xcoor(3,0);
     vector<double> ycoor(3,0);
-    int xlen,ylen;
+    int xlen;
+    int ylen;
     int Lchain_max;
     double expand=2;
     for (i=0;i<chain_num;i++)
@@ -3266,7 +3359,8 @@ void writeTrimComplex(vector<vector<vector<double> > >&a_trim_vec,
     vector<string>&chainID_list, vector<int>&mol_vec,
     const string &atom_opt, string filename)
 {
-    int c,r;
+    int c;
+    int r;
     int a=0;
     string chainID;
     string atom;
@@ -3304,7 +3398,8 @@ void output_dock_rotation_matrix(const char* fname_matrix,
     double ** ut_mat, int *assign1_list)
 {
     stringstream ss;
-    int i,k;
+    int i;
+    int k;
     for (i=0;i<xname_vec.size();i++)
     {
         if (assign1_list[i]<0) continue;

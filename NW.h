@@ -18,8 +18,11 @@ void NWDP_TM(double **score, bool **path, double **val,
     int len1, int len2, double gap_open, int j2i[])
 {
 
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     //initialization
     for(i=0; i<=len1; i++)
@@ -100,8 +103,11 @@ void NWDP_TM(bool **path, double **val, double **x, double **y,
     int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, int j2i[])
 {
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     //initialization. use old val[i][0] and val[0][j] initialization
     //to minimize difference from TMalign fortran version
@@ -186,8 +192,11 @@ void NWDP_TM(bool **path, double **val, double **x, double **y,
 void NWDP_SE(bool **path, double **val, double **x, double **y,
     int len1, int len2, double d02, double gap_open, int j2i[])
 {
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     for(i=0; i<=len1; i++)
     {
@@ -268,8 +277,11 @@ void NWDP_SE(bool **path, double **val, double **x, double **y,
         NWDP_SE(path, val, x, y, len1, len2, d02, gap_open, j2i);
         return;
     }
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     int L=(len2>len1)?len2:len1;
     int int_min=L*(gap_open-1);
@@ -283,7 +295,7 @@ void NWDP_SE(bool **path, double **val, double **x, double **y,
         }
     }
 
-    /* fill in old j2i */
+    // fill in old j2i
     int k=0;
     for (j=0; j<len2; j++)
     {
@@ -361,8 +373,11 @@ void NWDP_TM(bool **path, double **val, const char *secx, const char *secy,
     const int len1, const int len2, const double gap_open, int j2i[])
 {
 
-    int i, j;
-    double h, v, d;
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
 
     //initialization
     for(i=0; i<=len1; i++)

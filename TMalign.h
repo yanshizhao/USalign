@@ -2868,23 +2868,23 @@ void output_results(const string xname, const string yname,
             printf("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
         if (d_opt)
             printf("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
-        printf("(You should use TM-score normalized by length of the reference structure)\n");
+        cout << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
         printf("\n(\":\" denotes residue pairs of d <%4.1f Angstrom, ", d0_out);
         printf("\".\" denotes other aligned residues)\n");
-        printf("%s\n", seqxA);
-        printf("%s\n", seqM);
-        printf("%s\n", seqyA);
+        cout << seqxA << "\n";
+        cout << seqM << "\n";
+        cout << seqyA << "\n";
     }
     else if (outfmt_opt==1)
     {
         printf(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname.c_str(), chainID1.c_str(), xlen, d0B, Liden/xlen, TM2);
-        printf("%s\n", seqxA);
+        cout << seqxA << "\n";
         printf(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             yname.c_str(), chainID2.c_str(), ylen, d0A, Liden/ylen, TM1);
-        printf("%s\n", seqyA);
+        cout << seqyA << "\n";
 
         printf("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
@@ -2901,7 +2901,7 @@ void output_results(const string xname, const string yname,
         if(d_opt)
             printf("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
 
-        printf("$$$$\n");
+        cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {
@@ -2960,7 +2960,7 @@ void output_mTMalign_results(const string xname, const string yname,
     }
     else if (outfmt_opt==1)
     {
-        printf("%s\n", seqM);
+        cout << seqM << "\n";
 
         printf("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
@@ -2977,7 +2977,7 @@ void output_mTMalign_results(const string xname, const string yname,
         if(d_opt)
             printf("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
 
-        printf("$$$$\n");
+        cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {

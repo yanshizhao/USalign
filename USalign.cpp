@@ -1,4 +1,4 @@
-/* command line argument parsing and document of US-align main program */
+// command line argument parsing and document of US-align main program
 
 #include "MMalign.h"
 #include "SOIalign.h"
@@ -247,7 +247,7 @@ void print_help(bool h_opt=false)
     exit(EXIT_SUCCESS);
 }
 
-/* TMalign, RNAalign, CPalign, TMscore */
+// TMalign, RNAalign, CPalign, TMscore
 int TMalign(string &xname, string &yname, const string &fname_super,
     const string &fname_lign, const string &fname_matrix,
     vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
@@ -264,7 +264,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     const vector<string> &chain1_list, const vector<string> &chain2_list,
     const bool se_opt, const bool do_opt)
 {
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -276,8 +276,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *seqx, *seqy;       // for the protein sequence 
     char   *secx, *secy;       // for the secondary structure 
+    char   *seqx, *seqy;       // for the protein sequence
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -287,10 +287,10 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     int read_resi=byresi_opt;  // whether to read residue index
     if (byresi_opt==0 && o_opt) read_resi=2;
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain1_list.size();i++)
     {
-        /* parse chain 1 */
+        // parse chain 1
         xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
             ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
@@ -329,7 +329,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 if (dirpair_opt.size() && j!=i) continue;
-                /* parse chain 2 */
+                // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
@@ -368,15 +368,20 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                          make_sec(seqy, ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence,
-                        seqx,seqy,resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
-                    /* declare variable specific to this pair of TMalign */
-                    double t0[3], u0[3][3];
-                    double TM1, TM2;
+                    // declare variable specific to this pair of TMalign
+                    double t0[3];
+                    double u0[3][3];
+                    double TM1;
+                    double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0, TM_0;
-                    double d0A, d0B, d0u, d0a;
+                    double d0_0;
+                    double TM_0;
+                    double d0A;
+                    double d0B;
+                    double d0u;
+                    double d0a;
                     double d0_out=5.0;
                     string seqM, seqxA, seqyA;// for output alignment
                     double rmsd0 = 0.0;
@@ -388,7 +393,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                     bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:fast_opt;
                     vector<double> do_vec;
 
-                    /* entry function for structure alignment */
+                    // entry function for structure alignment
                     if (cp_opt) CPalign_main(
                         xa, ya, seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
@@ -417,7 +422,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                         if (outfmt_opt>=2) 
                         {
                             Liden=L_ali=0;
-                            int r1,r2;
+                            int r1;
+                            int r2;
                             for (r2=0;r2<ylen;r2++)
                             {
                                 r1=invmap[r2];
@@ -438,7 +444,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                         i_opt, a_opt, u_opt, d_opt, force_fast_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
 
-                    /* print result */
+                    // print result
                     if (outfmt_opt==0) print_version();
                     int left_num=0;
                     int right_num=0;
@@ -492,12 +498,11 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                         cout<<"###############\t###############\t#########"<<endl;
                     }
 
-                    /* Done! Free memory */
+                    // Done! Free memory
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
-                    delete [] seqy;
                     delete [] secy;
                     resi_vec2.clear();
                     do_vec.clear();
@@ -514,7 +519,6 @@ int TMalign(string &xname, string &yname, const string &fname_super,
             } // j
             PDB_lines1[chain_i].clear();
             DeleteArray(&xa, xlen);
-            delete [] seqx;
             delete [] secx;
             resi_vec1.clear();
         } // chain_i
@@ -536,7 +540,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     return 0;
 }
 
-/* MMalign if more than two chains. TMalign if only one chain */
+// MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
     const string &fname_matrix, vector<string> &sequence,
@@ -552,7 +556,7 @@ int MMalign(const string &xname, const string &yname,
     const vector<string> &chain1_list, const vector<string> &chain2_list,
     const int byresi_opt,const string&chainmapfile, const bool se_opt)
 {
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<vector<double> > > xa_vec; // structure of complex1
     vector<vector<vector<double> > > ya_vec; // structure of complex2
     vector<vector<char> >seqx_vec; // sequence of complex1
@@ -567,15 +571,15 @@ int MMalign(const string &xname, const string &yname,
     vector<int> ylen_vec;          // length of complex2
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
+    char   *seqx, *seqy;           // for the protein sequence
     double **xa, **ya;             // structure of single chain
-    char   *seqx, *seqy;           // for the protein sequence 
     char   *secx, *secy;           // for the secondary structure 
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
 
-    /* parse complex */
+    // parse complex
     parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
         xlen_vec, chainID_list1, ter_opt, split_opt, mol_opt, infmt1_opt,
         atom_opt, autojustify, mirror_opt, het_opt, xlen_aa, xlen_na, o_opt, 
@@ -600,7 +604,8 @@ int MMalign(const string &xname, const string &yname,
     if (chainmapfile.size())
     {
         string line;
-        int chainidx1,chainidx2;
+        int chainidx1;
+        int chainidx2;
         vector<string> line_vec;
         ifstream fin;
         bool fromStdin=(chainmapfile=="-");
@@ -652,14 +657,13 @@ int MMalign(const string &xname, const string &yname,
             cerr<<"ERROR! cannot map any chain pair from "<<chainmapfile<<endl;
     }
 
-
-    /* perform monomer alignment if there is only one chain */
+    // perform monomer alignment if there is only one chain
     if (xa_vec.size()==1 && ya_vec.size()==1)
     {
         xlen = xlen_vec[0];
         ylen = ylen_vec[0];
-        seqx = new char[xlen+1];
-        seqy = new char[ylen+1];
+        seqx = new char[xlen + 1];
+        seqy = new char[ylen + 1];
         secx = new char[xlen+1];
         secy = new char[ylen+1];
         NewArray(&xa, xlen, 3);
@@ -667,12 +671,18 @@ int MMalign(const string &xname, const string &yname,
         copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
         
-        /* declare variable specific to this pair of TMalign */
-        double t0[3], u0[3][3];
-        double TM1, TM2;
+        // declare variable specific to this pair of TMalign
+        double t0[3];
+        double u0[3][3];
+        double TM1;
+        double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-        double d0_0, TM_0;
-        double d0A, d0B, d0u, d0a;
+        double d0_0;
+        double TM_0;
+        double d0A;
+        double d0B;
+        double d0u;
+        double d0a;
         double d0_out=5.0;
         string seqM, seqxA, seqyA;// for output alignment
         double rmsd0 = 0.0;
@@ -683,10 +693,9 @@ int MMalign(const string &xname, const string &yname,
         int n_ali8=0;
         vector<double> do_vec;
         
-        if (byresi_opt) extract_aln_from_resi(sequence,
-            seqx,seqy,resi_vec1,resi_vec2,byresi_opt);
+        if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
-        /* entry function for structure alignment */
+        // entry function for structure alignment
         if (se_opt)
         {
             int *invmap = new int[ylen+1];
@@ -705,7 +714,8 @@ int MMalign(const string &xname, const string &yname,
             if (outfmt_opt>=2) 
             {
                 Liden=L_ali=0;
-                int r1,r2;
+                int r1;
+                int r2;
                 for (r2=0;r2<ylen;r2++)
                 {
                     r1=invmap[r2];
@@ -725,7 +735,7 @@ int MMalign(const string &xname, const string &yname,
             i_opt, a_opt, false, d_opt, fast_opt,
             mol_vec1[0]+mol_vec2[0],TMcut);
 
-        /* print result */
+        // print result
         output_results(
             xname.substr(dir1_opt.size()),
             yname.substr(dir2_opt.size()),
@@ -737,12 +747,12 @@ int MMalign(const string &xname, const string &yname,
             outfmt_opt, ter_opt, true, split_opt, o_opt, fname_super,
             0, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
 
-        /* clean up */
+        // clean up
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
-        delete[]seqx;
-        delete[]seqy;
+        
+        
         delete[]secx;
         delete[]secy;
         DeleteArray(&xa,xlen);
@@ -764,14 +774,16 @@ int MMalign(const string &xname, const string &yname,
         return 0;
     }
 
-    /* declare TM-score tables */
+    // declare TM-score tables
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
     int chain_num =MAX(chain1_num,chain2_num);
     vector<string> tmp_str_vec(chain2_num,"");
     double **TMave_mat;
     double **ut_mat; // rotation matrices for all-against-all alignment
-    int ui,uj,ut_idx;
+    int ui;
+    int uj;
+    int ut_idx;
     NewArray(&TMave_mat,chain_num,chain_num);
     NewArray(&ut_mat,chain1_num*chain2_num,4*3);
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
@@ -779,9 +791,10 @@ int MMalign(const string &xname, const string &yname,
     vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
 
     double maxTMmono=-1;
-    int maxTMmono_i,maxTMmono_j;
+    int maxTMmono_i;
+    int maxTMmono_j;
 
-    /* get all-against-all alignment */
+    // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
     for (i=0;i<chain1_num;i++)
     {
@@ -791,7 +804,7 @@ int MMalign(const string &xname, const string &yname,
             for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
             continue;
         }
-        seqx = new char[xlen+1];
+        seqx = new char[xlen + 1];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
@@ -823,18 +836,24 @@ int MMalign(const string &xname, const string &yname,
                 TMave_mat[i][j]=TMave_mat[j][i]=-1;
                 continue;
             }
-            seqy = new char[ylen+1];
+            seqy = new char[ylen + 1];
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
-            /* declare variable specific to this pair of TMalign */
-            double t0[3], u0[3][3];
-            double TM1, TM2;
+            // declare variable specific to this pair of TMalign
+            double t0[3];
+            double u0[3][3];
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -850,7 +869,7 @@ int MMalign(const string &xname, const string &yname,
             
             if (byresi_opt)
             {
-                int total_aln=extract_aln_from_resi(sequence, seqx,seqy,
+                int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
                     resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
                 seqxA_mat[i][j]=sequence[0];
                 seqyA_mat[i][j]=sequence[1];
@@ -864,14 +883,14 @@ int MMalign(const string &xname, const string &yname,
                     seqxA.clear();
                     seqyA.clear();
 
-                    delete[]seqy;
+                    
                     delete[]secy;
                     DeleteArray(&ya,ylen);
                     continue;
                 }
             }
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             if (se_opt)
             {
                 int *invmap = new int[ylen+1];
@@ -890,7 +909,8 @@ int MMalign(const string &xname, const string &yname,
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
-                    int r1,r2;
+                    int r1;
+                    int r2;
                     for (r2=0;r2<ylen;r2++)
                     {
                         r1=invmap[r2];
@@ -910,7 +930,7 @@ int MMalign(const string &xname, const string &yname,
                 i_opt, false, true, false, fast_opt,
                 mol_vec1[i]+mol_vec2[j],TMcut);
 
-            /* store result */
+            // store result
             for (ui=0;ui<3;ui++)
                 for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
             for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
@@ -924,23 +944,23 @@ int MMalign(const string &xname, const string &yname,
                 maxTMmono_j=j;
             }
 
-            /* clean up */
+            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
 
-            delete[]seqy;
+            
             delete[]secy;
             DeleteArray(&ya,ylen);
             do_vec.clear();
         }
 
-        delete[]seqx;
+        
         delete[]secx;
         DeleteArray(&xa,xlen);
     }
 
-    /* calculate initial chain-chain assignment */
+    // calculate initial chain-chain assignment
     int *assign1_list; // value is index of assigned chain2
     int *assign2_list; // value is index of assigned chain1
     assign1_list=new int[chain1_num];
@@ -949,19 +969,22 @@ int MMalign(const string &xname, const string &yname,
         assign2_list, chain1_num, chain2_num);
     if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
 
-    /* refine alignment for large oligomers */
+    // refine alignment for large oligomers
     int aln_chain_num=count_assign_pair(assign1_list,chain1_num);
     bool is_oligomer=(aln_chain_num>=3);
     if (aln_chain_num==2 && chainmap.size()==0 && !se_opt) // dimer alignment
     {
-        int na_chain_num1,na_chain_num2,aa_chain_num1,aa_chain_num2;
+        int na_chain_num1;
+        int na_chain_num2;
+        int aa_chain_num1;
+        int aa_chain_num2;
         count_na_aa_chain_num(na_chain_num1,aa_chain_num1,mol_vec1);
         count_na_aa_chain_num(na_chain_num2,aa_chain_num2,mol_vec2);
 
-        /* align protein-RNA hybrid dimer to another hybrid dimer */
+        // align protein-RNA hybrid dimer to another hybrid dimer
         if (na_chain_num1==1 && na_chain_num2==1 && 
             aa_chain_num1==1 && aa_chain_num2==1) is_oligomer=false;
-        /* align pure protein dimer or pure RNA dimer */
+        // align pure protein dimer or pure RNA dimer
         else if ((getmin(na_chain_num1,na_chain_num2)==0 && 
                     aa_chain_num1==2 && aa_chain_num2==2) ||
                  (getmin(aa_chain_num1,aa_chain_num2)==0 && 
@@ -976,7 +999,7 @@ int MMalign(const string &xname, const string &yname,
 
     if ((aln_chain_num>=3 || is_oligomer) && chainmap.size()==0 && !se_opt) // oligomer alignment
     {
-        /* extract centroid coordinates */
+        // extract centroid coordinates
         double **xcentroids;
         double **ycentroids;
         NewArray(&xcentroids, chain1_num, 3);
@@ -985,7 +1008,7 @@ int MMalign(const string &xname, const string &yname,
             calculate_centroids(xa_vec, chain1_num, xcentroids),
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
-        /* refine enhanced greedy search with centroid superposition */
+        // refine enhanced greedy search with centroid superposition
         //double het_deg=check_heterooligomer(TMave_mat, chain1_num, chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
@@ -1004,14 +1027,15 @@ int MMalign(const string &xname, const string &yname,
                 xcentroids, d0MM, len_aa+len_na);
         }
 
-        /* clean up */
+        // clean up
         DeleteArray(&xcentroids, chain1_num);
         DeleteArray(&ycentroids, chain2_num);
     }
 
-    /* store initial assignment */
+    // store initial assignment
     int init_pair_num=count_assign_pair(assign1_list,chain1_num);
-    int *assign1_init, *assign2_init;
+    int *assign1_init;
+    int *assign2_init;
     assign1_init=new int[chain1_num];
     assign2_init=new int[chain2_num];
     double **TMave_init;
@@ -1023,7 +1047,7 @@ int MMalign(const string &xname, const string &yname,
         seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat,
         seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init);
 
-    /* perform iterative alignment */
+    // perform iterative alignment
     double max_total_score=0; // ignore old total_score because previous
                               // score was from monomeric chain superpositions
     int max_iter=5-(int)((len_aa+len_na)/200);
@@ -1049,8 +1073,7 @@ int MMalign(const string &xname, const string &yname,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
             0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
 
-
-        /* extract centroid coordinates */
+        // extract centroid coordinates
         double **xcentroids;
         double **ycentroids;
         NewArray(&xcentroids, chain1_num, 3);
@@ -1059,7 +1082,7 @@ int MMalign(const string &xname, const string &yname,
             calculate_centroids(xa_vec, chain1_num, xcentroids),
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
-        /* refine enhanced greedy search with centroid superposition */
+        // refine enhanced greedy search with centroid superposition
         //double het_deg=check_heterooligomer(TMave_mat, chain1_num, chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
@@ -1069,12 +1092,12 @@ int MMalign(const string &xname, const string &yname,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        /* clean up */
+        // clean up
         DeleteArray(&xcentroids, chain1_num);
         DeleteArray(&ycentroids, chain2_num);
     }
 
-    /* sometime MMalign_iter is even worse than monomer alignment */
+    // sometime MMalign_iter is even worse than monomer alignment
     if (byresi_opt==0 && max_total_score<maxTMmono)
     {
         copy_chain_assign_data(chain1_num, chain2_num, sequence,
@@ -1124,7 +1147,7 @@ int MMalign(const string &xname, const string &yname,
         }
     } 
 
-    /* final alignment */
+    // final alignment
     if (outfmt_opt==0) print_version();
     if (se_opt) MMalign_se_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
         chainID_list1, chainID_list2,
@@ -1147,7 +1170,7 @@ int MMalign(const string &xname, const string &yname,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
         a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
 
-    /* clean up everything */
+    // clean up everything
     delete [] assign1_list;
     delete [] assign2_list;
     DeleteArray(&TMave_mat,chain_num);
@@ -1181,8 +1204,7 @@ int MMalign(const string &xname, const string &yname,
     return 1;
 }
 
-
-/* alignment individual chains to a complex. */
+// alignment individual chains to a complex.
 int MMdock(const string &xname, const string &yname, const string &fname_super, 
     const string &fname_matrix, vector<string> &sequence, const double Lnorm_ass,
     const double d0_scale, const bool m_opt, const int o_opt,
@@ -1197,7 +1219,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     const vector<string> &chain1_list, const vector<string> &chain2_list,
     const bool do_opt)
 {
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<vector<double> > > xa_vec; // structure of complex1
     vector<vector<vector<double> > > ya_vec; // structure of complex2
     vector<vector<char> >seqx_vec; // sequence of complex1
@@ -1212,15 +1234,15 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<int> ylen_vec;          // length of complex2
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
+    char   *seqx, *seqy;           // for the protein sequence
     double **xa, **ya;             // structure of single chain
-    char   *seqx, *seqy;           // for the protein sequence 
     char   *secx, *secy;           // for the secondary structure 
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
 
-    /* parse complex */
+    // parse complex
     parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
         xlen_vec, chainID_list1, ter_opt, split_opt, mol_opt, infmt1_opt,
         atom_opt, autojustify, mirror_opt, het_opt, xlen_aa, xlen_na, o_opt, 
@@ -1240,13 +1262,13 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         len_na=(xlen_na+ylen_na)/2;
     }
 
-    /* perform monomer alignment if there is only one chain */
+    // perform monomer alignment if there is only one chain
     if (xa_vec.size()==1 && ya_vec.size()==1)
     {
         xlen = xlen_vec[0];
         ylen = ylen_vec[0];
-        seqx = new char[xlen+1];
-        seqy = new char[ylen+1];
+        seqx = new char[xlen + 1];
+        seqy = new char[ylen + 1];
         secx = new char[xlen+1];
         secy = new char[ylen+1];
         NewArray(&xa, xlen, 3);
@@ -1254,12 +1276,18 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
         
-        /* declare variable specific to this pair of TMalign */
-        double t0[3], u0[3][3];
-        double TM1, TM2;
+        // declare variable specific to this pair of TMalign
+        double t0[3];
+        double u0[3][3];
+        double TM1;
+        double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-        double d0_0, TM_0;
-        double d0A, d0B, d0u, d0a;
+        double d0_0;
+        double TM_0;
+        double d0A;
+        double d0B;
+        double d0u;
+        double d0a;
         double d0_out=5.0;
         string seqM, seqxA, seqyA;// for output alignment
         double rmsd0 = 0.0;
@@ -1270,7 +1298,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         int n_ali8=0;
         vector<double> do_vec;
 
-        /* entry function for structure alignment */
+        // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -1280,7 +1308,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             0, a_opt, u_opt, d_opt, fast_opt,
             mol_vec1[0]+mol_vec2[0],TMcut);
 
-        /* print result */
+        // print result
         output_results(
             xname.substr(dir1_opt.size()),
             yname.substr(dir2_opt.size()),
@@ -1296,12 +1324,12 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             yname.substr(dir2_opt.size()).c_str(), chainID_list2[0].c_str(),
             sqrt((TM1*TM1+TM2*TM2)/2));
 
-        /* clean up */
+        // clean up
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
-        delete[]seqx;
-        delete[]seqy;
+        
+        
         delete[]secx;
         delete[]secy;
         DeleteArray(&xa,xlen);
@@ -1323,7 +1351,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         return 0;
     }
 
-    /* declare TM-score tables */
+    // declare TM-score tables
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
     vector<string> tmp_str_vec(chain2_num,"");
@@ -1333,7 +1361,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
 
-    /* trimComplex */
+    // trimComplex
     vector<vector<vector<double> > > ya_trim_vec; // structure of complex2
     vector<vector<char> >seqy_trim_vec; // sequence of complex2
     vector<vector<char> >secy_trim_vec; // secondary structure of complex2
@@ -1355,7 +1383,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     char   *secy_trim;           // for the secondary structure
     double **xt;
 
-    /* get all-against-all alignment */
+    // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
     for (i=0;i<chain1_num;i++)
     {
@@ -1365,7 +1393,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
             continue;
         }
-        seqx = new char[xlen+1];
+        seqx = new char[xlen + 1];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
@@ -1385,18 +1413,24 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            seqy = new char[ylen+1];
+            seqy = new char[ylen + 1];
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
-            /* declare variable specific to this pair of TMalign */
-            double t0[3], u0[3][3];
-            double TM1, TM2;
+            // declare variable specific to this pair of TMalign
+            double t0[3];
+            double u0[3][3];
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -1410,7 +1444,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             int Lnorm_tmp=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             if (trim_chain_count && ylen_trim_vec[j]<ylen)
             {
                 ylen_trim = ylen_trim_vec[j];
@@ -1469,23 +1503,23 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     mol_vec1[i]+mol_vec2[j],TMcut);
             }
             
-            /* store result */
+            // store result
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
             TMave_mat[i][j]=TM4*Lnorm_tmp;
 
-            /* clean up */
+            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
             do_vec.clear();
 
-            delete[]seqy;
+            
             delete[]secy;
             DeleteArray(&ya,ylen);
         }
 
-        delete[]seqx;
+        
         delete[]secx;
         DeleteArray(&xa,xlen);
     }
@@ -1494,7 +1528,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<vector<char> >().swap(secy_trim_vec);
     vector<int> ().swap(ylen_trim_vec);
 
-    /* calculate initial chain-chain assignment */
+    // calculate initial chain-chain assignment
     int *assign1_list; // value is index of assigned chain2
     int *assign2_list; // value is index of assigned chain1
     assign1_list=new int[chain1_num];
@@ -1502,11 +1536,12 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     enhanced_greedy_search(TMave_mat, assign1_list,
         assign2_list, chain1_num, chain2_num);
 
-    /* final alignment */
+    // final alignment
     if (outfmt_opt==0) print_version();
     double **ut_mat; // rotation matrices for all-against-all alignment
     NewArray(&ut_mat,chain1_num,4*3);
-    int ui,uj;
+    int ui;
+    int uj;
     vector<string>xname_vec;
     vector<string>yname_vec;
     vector<double>TM_vec;
@@ -1528,23 +1563,29 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         yname_vec.push_back(yname+chainID_list2[j]);
 
         xlen =xlen_vec[i];
-        seqx = new char[xlen+1];
+        seqx = new char[xlen + 1];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,secx);
 
         ylen =ylen_vec[j];
-        seqy = new char[ylen+1];
+        seqy = new char[ylen + 1];
         secy = new char[ylen+1];
         NewArray(&ya, ylen, 3);
         copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,secy);
 
-        /* declare variable specific to this pair of TMalign */
-        double t0[3], u0[3][3];
-        double TM1, TM2;
+        // declare variable specific to this pair of TMalign
+        double t0[3];
+        double u0[3][3];
+        double TM1;
+        double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-        double d0_0, TM_0;
-        double d0A, d0B, d0u, d0a;
+        double d0_0;
+        double TM_0;
+        double d0A;
+        double d0B;
+        double d0u;
+        double d0a;
         double d0_out=5.0;
         string seqM, seqxA, seqyA;// for output alignment
         double rmsd0 = 0.0;
@@ -1561,7 +1602,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         sequence.push_back(seqxA_mat[i][j]);
         sequence.push_back(seqyA_mat[i][j]);
             
-        /* entry function for structure alignment */
+        // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -1590,16 +1631,16 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             false, a_opt, u_opt, d_opt, mirror_opt,
             resi_vec1, resi_vec2);
         
-        /* clean up */
+        // clean up
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
 
-        delete[]seqy;
+        
         delete[]secy;
         DeleteArray(&ya,ylen);
 
-        delete[]seqx;
+        
         delete[]secx;
         DeleteArray(&xa,xlen);
         do_vec.clear();
@@ -1629,8 +1670,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     if (o_opt) output_dock(chain1_list, ter_opt, split_opt, infmt1_opt,
         atom_opt, mirror_opt, ut_mat, fname_super);
 
-
-    /* clean up everything */
+    // clean up everything
     vector<double>().swap(TM_vec);
     vector<string>().swap(xname_vec);
     vector<string>().swap(yname_vec);
@@ -1670,7 +1710,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     const vector<string> &chain_list, const vector<string> &chain2parse,
     const vector<string> &model2parse, const bool se_opt)
 {
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<vector<double> > >a_vec;  // atomic structure
     vector<vector<vector<double> > >ua_vec; // unchanged atomic structure 
     vector<vector<char> >seq_vec;  // sequence of complex
@@ -1680,13 +1720,13 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<int> len_vec;           // length of complex
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
+    char   *seqx, *seqy;           // for the protein sequence
     double **xa, **ya;             // structure of single chain
-    char   *seqx, *seqy;           // for the protein sequence 
     char   *secx, *secy;           // for the secondary structure 
     int    len_aa,len_na;          // total length of protein and RNA/DNA
     vector<string> resi_vec;       // residue index for chain
 
-    /* parse chain list */
+    // parse chain list
     parse_chain_list(chain_list, a_vec, seq_vec, sec_vec, mol_vec,
         len_vec, chainID_list, ter_opt, split_opt, mol_opt, infmt_opt,
         atom_opt, autojustify, false, het_opt, len_aa, len_na, o_opt,
@@ -1708,7 +1748,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     total_len-=xlen;
     if (total_len>750) fast_opt=true;
 
-    /* get all-against-all alignment */
+    // get all-against-all alignment
     double **TMave_mat;
     NewArray(&TMave_mat,chain_num,chain_num);
     vector<string> tmp_str_vec(chain_num,"");
@@ -1719,7 +1759,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     {
         xlen=len_vec[i];
         if (xlen<3) continue;
-        seqx = new char[xlen+1];
+        seqx = new char[xlen + 1];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
@@ -1728,17 +1768,23 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             ylen=len_vec[j];
             if (ylen<3) continue;
-            seqy = new char[ylen+1];
+            seqy = new char[ylen + 1];
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
             
-            /* declare variable specific to this pair of TMalign */
-            double t0[3], u0[3][3];
-            double TM1, TM2;
+            // declare variable specific to this pair of TMalign
+            double t0[3];
+            double u0[3][3];
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -1749,7 +1795,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int n_ali8=0;
             vector<double> do_vec;
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             if (se_opt)
             {
                 int *invmap = new int[ylen+1];
@@ -1767,7 +1813,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
-                    int r1,r2;
+                    int r1;
+                    int r2;
                     for (r2=0;r2<ylen;r2++)
                     {
                         r1=invmap[r2];
@@ -1787,7 +1834,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 0, false, u_opt, false, fast_opt,
                 mol_type,TMcut);
 
-            /* store result */
+            // store result
             TMave_mat[i][j]=TMave_mat[j][i]=TM4;
             seqxA_mat[i][j]=seqyA_mat[j][i]=seqxA;
             seqyA_mat[i][j]=seqxA_mat[j][i]=seqyA;
@@ -1802,23 +1849,23 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 outfmt_opt, ter_opt, true, split_opt, o_opt, "",
                 0, a_opt, false, d_opt, false, resi_vec, resi_vec);
 
-            /* clean up */
+            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
 
-            delete[]seqy;
+            
             delete[]secy;
             DeleteArray(&ya,ylen);
             do_vec.clear();
         }
 
-        delete[]seqx;
+        
         delete[]secx;
         DeleteArray(&xa,xlen);
     }
 
-    /* representative related variables */   
+    // representative related variables
     int r;
     int repr_idx=0;
     vector<string>xname_vec;
@@ -1832,10 +1879,15 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<string> msa(ylen,""); // row is position along msa; column is sequence
 
     int compare_num;
-    double TM1_total, TM2_total;
+    double TM1_total;
+    double TM2_total;
     double TM3_total, TM4_total, TM5_total;     // for a_opt, u_opt, d_opt
-    double d0_0_total, TM_0_total;
-    double d0A_total, d0B_total, d0u_total, d0a_total;
+    double d0_0_total;
+    double TM_0_total;
+    double d0A_total;
+    double d0B_total;
+    double d0u_total;
+    double d0a_total;
     double d0_out_total;
     double rmsd0_total;
     int L_ali_total;                // Aligned length in standard_TMscore
@@ -1843,7 +1895,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     double TM_ali_total, rmsd_ali_total;  // TMscore and rmsd in standard_TMscore
     int n_ali_total;
     int n_ali8_total;
-    int xlen_total, ylen_total;
+    int xlen_total;
+    int ylen_total;
     double TM4_total_max=0;
 
     int max_iter=5-(int)(total_len/200);
@@ -1857,7 +1910,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<vector<double> > seqID_mat(chain_num,seqID_vec);
     for (iter=0; iter<max_iter; iter++)
     {
-        /* select representative */   
+        // select representative
         for (j=0; j<chain_num; j++) TMave_list[j]=0;
         for (i=0; i<chain_num; i++ )
         {
@@ -1879,7 +1932,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         }
         //cout<<"repr="<<repr_idx<<"; "<<chain_list[repr_idx]<<"; TM="<<repr_TM<<endl;
 
-        /* superpose */
+        // superpose
         yname=chain_list[repr_idx].substr(dir_opt.size())+chainID_list[repr_idx];
         double **xt;
         vector<pair<double,int> >TM_pair_vec; // TM vs chain
@@ -1887,7 +1940,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         for (i=0; i<chain_num; i++) assign_list[i]=-1;
         assign_list[repr_idx]=repr_idx;
         //ylen = len_vec[repr_idx];
-        //seqy = new char[ylen+1];
+        //seqy = new char[ylen + 1];
         //secy = new char[ylen+1];
         //NewArray(&ya, ylen, 3);
         //copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
@@ -1910,7 +1963,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             i=TM_pair_vec[tm_idx].second;
             xlen = len_vec[i];
-            seqx = new char[xlen+1];
+            seqx = new char[xlen + 1];
             secx = new char[xlen+1];
             NewArray(&xa, xlen, 3);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
@@ -1926,7 +1979,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             j=maxj;
             assign_list[i]=j;
             ylen = len_vec[j];
-            seqy = new char[ylen+1];
+            seqy = new char[ylen + 1];
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j], ylen,ya,seqy,secy);
@@ -1936,12 +1989,18 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             //cout<<"tm_idx="<<tm_idx<<"\ti="<<i<<"\tj="<<j<<endl;
             //cout<<"superpose "<<xname_vec[i]<<" to "<<xname_vec[j]<<endl;
 
-            /* declare variable specific to this pair of TMalign */
-            double t0[3], u0[3][3];
-            double TM1, TM2;
+            // declare variable specific to this pair of TMalign
+            double t0[3];
+            double u0[3][3];
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -1952,7 +2011,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int n_ali8=0;
             vector<double> do_vec;
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             if (se_opt)
             {
                 int *invmap = new int[ylen+1];
@@ -1970,7 +2029,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
-                    int r1,r2;
+                    int r1;
+                    int r2;
                     for (r2=0;r2<ylen;r2++)
                     {
                         r1=invmap[r2];
@@ -2012,33 +2072,33 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             }
             DeleteArray(&xt, xlen);
         
-            /* clean up */
+            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
 
-            delete[]seqx;
+            
             delete[]secx;
             DeleteArray(&xa,xlen);
         
-            delete[]seqy;
+            
             delete[]secy;
             DeleteArray(&ya,ylen);
             do_vec.clear();
         }
         ylen = len_vec[repr_idx];
-        seqy = new char[ylen+1];
+        seqy = new char[ylen + 1];
         secy = new char[ylen+1];
         NewArray(&ya, ylen, 3);
         copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
 
-        /* recover alignment */ 
+        // recover alignment
         int    ylen_ext=ylen;        // chain length
         double **ya_ext;             // structure of single chain
-        char   *seqy_ext;            // for the protein sequence 
-        char   *secy_ext;            // for the secondary structure 
+        char   *seqy_ext;            // for the protein sequence
+    char   *secy_ext;            // for the secondary structure 
         for (r=0;r<msa.size();r++) msa[r].clear(); msa.clear();
         msa.assign(ylen,""); // row is position along msa; column is sequence
         vector<string> msa_ext;      // row is position along msa; column is sequence
@@ -2052,16 +2112,21 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             assign_list[i]=tm_idx+1;
 
             xlen = len_vec[i];
-            seqx = new char[xlen+1];
+            seqx = new char[xlen + 1];
             secx = new char[xlen+1];
             NewArray(&xa, xlen, 3);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
         
-            /* declare variable specific to this pair of TMalign */
-            double TM1, TM2;
+            // declare variable specific to this pair of TMalign
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -2079,7 +2144,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
                 0, a_opt, u_opt, d_opt, mol_type, 1, invmap);
 
-            int rx=0,ry=0;
+            int rx=0;
+            int ry=0;
             ylen_ext=seqxA.size();
             NewArray(&ya_ext, ylen_ext, 3);             // structure of single chain
             seqy_ext= new char[ylen_ext+1];            // for the protein sequence 
@@ -2113,14 +2179,14 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 ry+=(seqyA[r]!='-');
             }
 
-            /* copy ya_ext to ya */
-            delete[]seqy;
+            // copy ya_ext to ya
+            
             delete[]secy;
             DeleteArray(&ya,ylen);
 
             ylen=ylen_ext;
             NewArray(&ya,ylen,3);
-            seqy = new char[ylen+1];
+            seqy = new char[ylen + 1];
             secy = new char[ylen+1];
             for (r=0;r<ylen;r++)
             {
@@ -2138,14 +2204,14 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             //for (r=0;r<ylen_ext;r++) cout<<"["<<r<<"]\t"<<msa_ext[r]<<'\t'<<seqy[r]<<'\t'
                     //<<ya[r][0]<<'\t'<<ya[r][1]<<'\t'<<ya[r][2]<<'\t'<<secy[r]<<endl;
 
-            /* clean up */
+            // clean up
             tmp_gap.clear();
             delete[]invmap;
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
 
-            delete[]seqx;
+            
             delete[]secx;
             DeleteArray(&xa,xlen);
 
@@ -2185,7 +2251,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             seqxA.clear();
         }
 
-        /* recover statistics such as TM-score */ 
+        // recover statistics such as TM-score
         compare_num=0;
         TM1_total=0, TM2_total=0;
         TM3_total=0, TM4_total=0, TM5_total=0;
@@ -2203,7 +2269,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             xlen=len_vec[i];
             if (xlen<3) continue;
-            seqx = new char[xlen+1];
+            seqx = new char[xlen + 1];
             secx = new char[xlen+1];
             NewArray(&xa, xlen, 3);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
@@ -2212,18 +2278,23 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 ylen=len_vec[j];
                 if (ylen<3) continue;
                 compare_num++;
-                seqy = new char[ylen+1];
+                seqy = new char[ylen + 1];
                 secy = new char[ylen+1];
                 NewArray(&ya, ylen, 3);
                 copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
                 sequence[0]=seqxA_mat[i][j];
                 sequence[1]=seqyA_mat[i][j];
             
-                /* declare variable specific to this pair of TMalign */
-                double TM1, TM2;
+                // declare variable specific to this pair of TMalign
+                double TM1;
+                double TM2;
                 double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                double d0_0, TM_0;
-                double d0A, d0B, d0u, d0a;
+                double d0_0;
+                double TM_0;
+                double d0A;
+                double d0B;
+                double d0u;
+                double d0a;
                 double d0_out=5.0;
                 string seqM, seqxA, seqyA;// for output alignment
                 double rmsd0 = 0.0;
@@ -2281,18 +2352,18 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 n_ali_total+=n_ali;
                 n_ali8_total+=n_ali8;
 
-                /* clean up */
+                // clean up
                 delete[]invmap;
                 seqM.clear();
                 seqxA.clear();
                 seqyA.clear();
 
-                delete[]seqy;
+                
                 delete[]secy;
                 DeleteArray(&ya,ylen);
                 do_vec.clear();
             }
-            delete[]seqx;
+            
             delete[]secx;
             DeleteArray(&xa,xlen);
         }
@@ -2369,8 +2440,10 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     if (m_opt || o_opt)
     {
         double **ut_mat; // rotation matrices for all-against-all alignment
-        int ui,uj;
-        double t[3], u[3][3];
+        int ui;
+        int uj;
+        double t[3];
+        double u[3][3];
         double rmsd;
         NewArray(&ut_mat,chain_num,4*3);
         for (i=0;i<chain_num;i++)
@@ -2410,7 +2483,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         DeleteArray(&ut_mat,chain_num);
     }
 
-    /* clean up */
+    // clean up
     vector<string>().swap(msa);
     vector<string>().swap(tmp_str_vec);
     vector<vector<string> >().swap(seqxA_mat);
@@ -2434,7 +2507,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     return 1;
 }
 
-/* sequence order independent alignment */
+// sequence order independent alignment
 int SOIalign(string &xname, string &yname, const string &fname_super,
     const string &fname_lign, const string &fname_matrix,
     vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
@@ -2451,7 +2524,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     const vector<string> &chain2_list, const bool se_opt,
     const int closeK_opt, const int mm_opt)
 {
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -2463,10 +2536,10 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *seqx, *seqy;       // for the protein sequence 
     char   *secx, *secy;       // for the secondary structure 
     int    **secx_bond;        // boundary of secondary structure
     int    **secy_bond;        // boundary of secondary structure
+    char   *seqx, *seqy;       // for the protein sequence
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -2477,10 +2550,10 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int read_resi=0;  // whether to read residue index
     if (o_opt) read_resi=2;
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain1_list.size();i++)
     {
-        /* parse chain 1 */
+        // parse chain 1
         xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
             ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt, 
@@ -2526,7 +2599,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 if (dirpair_opt.size() && i!=j) continue;
-                /* parse chain 2 */
+                // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
@@ -2572,12 +2645,18 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         assign_sec_bond(secy_bond, secy, ylen);
                     }
 
-                    /* declare variable specific to this pair of TMalign */
-                    double t0[3], u0[3][3];
-                    double TM1, TM2;
+                    // declare variable specific to this pair of TMalign
+                    double t0[3];
+                    double u0[3][3];
+                    double TM1;
+                    double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0, TM_0;
-                    double d0A, d0B, d0u, d0a;
+                    double d0_0;
+                    double TM_0;
+                    double d0A;
+                    double d0B;
+                    double d0u;
+                    double d0a;
                     double d0_out=5.0;
                     string seqM, seqxA, seqyA;// for output alignment
                     double rmsd0 = 0.0;
@@ -2590,7 +2669,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     int *invmap = new int[ylen+1];
                     double *dist_list = new double[ylen+1];
 
-                    /* entry function for structure alignment */
+                    // entry function for structure alignment
                     if (se_opt) 
                     {
                         u0[0][0]=u0[1][1]=u0[2][2]=1;
@@ -2610,7 +2689,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         if (outfmt_opt>=2) 
                         {
                             Liden=L_ali=0;
-                            int r1,r2;
+                            int r1;
+                            int r2;
                             for (r2=0;r2<ylen;r2++)
                             {
                                 r1=invmap[r2];
@@ -2631,7 +2711,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         mol_vec1[chain_i]+mol_vec2[chain_j], dist_list,
                         secx_bond, secy_bond, mm_opt);
 
-                    /* print result */
+                    // print result
                     if (outfmt_opt==0) print_version();
                     output_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
@@ -2650,7 +2730,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     {
                         cout<<"###############\t###############\t#########"<<endl;
                         cout<<"#Aligned atom 1\tAligned atom 2 \tDistance#"<<endl;
-                        int r1,r2;
+                        int r1;
+                        int r2;
                         for (r2=0;r2<ylen;r2++)
                         {
                             r1=invmap[r2];
@@ -2663,7 +2744,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         cout<<"###############\t###############\t#########"<<endl;
                     }
 
-                    /* Done! Free memory */
+                    // Done! Free memory
                     delete [] invmap;
                     delete [] dist_list;
                     seqM.clear();
@@ -2671,7 +2752,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
                     if (closeK_opt>=3) DeleteArray(&yk, ylen*closeK_opt);
-                    delete [] seqy;
                     delete [] secy;
                     resi_vec2.clear();
                     if (mm_opt==6) DeleteArray(&secy_bond, ylen);
@@ -2689,7 +2769,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             PDB_lines1[chain_i].clear();
             DeleteArray(&xa, xlen);
             if (closeK_opt>=3) DeleteArray(&xk, xlen*closeK_opt);
-            delete [] seqx;
             delete [] secx;
             resi_vec1.clear();
             if (mm_opt==6) DeleteArray(&secx_bond, xlen);
@@ -2727,7 +2806,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     const int byresi_opt, const vector<string> &chain1_list,
     const vector<string> &chain2_list, const int hinge_opt)
 {
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -2739,8 +2818,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *seqx, *seqy;       // for the protein sequence 
     char   *secx, *secy;       // for the secondary structure 
+    char   *seqx, *seqy;       // for the protein sequence
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -2750,10 +2829,10 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     int read_resi=byresi_opt;  // whether to read residue index
     if (byresi_opt==0 && o_opt) read_resi=2;
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain1_list.size();i++)
     {
-        /* parse chain 1 */
+        // parse chain 1
         xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1,
             mol_vec1, ter_opt, infmt1_opt, atom_opt, autojustify,
@@ -2792,7 +2871,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 if (dirpair_opt.size() && i!=j) continue;
-                /* parse chain 2 */
+                // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
@@ -2831,15 +2910,20 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                          make_sec(seqy, ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence,
-                        seqx,seqy,resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
-                    /* declare variable specific to this pair of TMalign */
-                    double t0[3], u0[3][3];
-                    double TM1, TM2;
+                    // declare variable specific to this pair of TMalign
+                    double t0[3];
+                    double u0[3][3];
+                    double TM1;
+                    double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0, TM_0;
-                    double d0A, d0B, d0u, d0a;
+                    double d0_0;
+                    double TM_0;
+                    double d0A;
+                    double d0B;
+                    double d0u;
+                    double d0a;
                     double d0_out=5.0;
                     string seqM, seqxA, seqyA;// for output alignment
                     double rmsd0 = 0.0;
@@ -2852,7 +2936,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     vector<vector<double> >tu_vec;
                     vector<double> do_vec;
 
-                    /* entry function for structure alignment */
+                    // entry function for structure alignment
                     int hingeNum=flexalign_main(
                         xa, ya, seqx, seqy, secx, secy,
                         t0, u0, tu_vec, TM1, TM2, TM3, TM4, TM5,
@@ -2866,16 +2950,22 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     if (hinge_opt && hingeNum<=1 &&
                         n_ali8<0.6*getmin(xlen,ylen))
                     {
-                        double t0_h[3], u0_h[3][3];
-                        double TM1_h, TM2_h;
-                        double TM3_h, TM4_h, TM5_h;
-                        double d0_0_h, TM_0_h;
+                        double t0_h[3];
+                        double u0_h[3][3];
+                        double TM1_h;
+                        double TM2_h;
+                        double TM3_h;
+                        double TM4_h;
+                        double TM5_h;
+                        double d0_0_h;
+                        double TM_0_h;
                         double d0_out_h=5.0;
                         string seqM_h, seqxA_h, seqyA_h;
                         double rmsd0_h = 0.0;
                         int L_ali_h;
                         double Liden_h=0;
-                        double TM_ali_h, rmsd_ali_h;
+                        double TM_ali_h;
+                        double rmsd_ali_h;
                         int n_ali_h=0;
                         int n_ali8_h=0;
                         vector<vector<double> >tu_vec_h(1,tu_vec[0]);
@@ -2930,7 +3020,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         do_vec_h.clear();
                     }
 
-                    /* print result */
+                    // print result
                     if (outfmt_opt==0) print_version();
                     output_flexalign_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
@@ -2946,13 +3036,12 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
                         resi_vec1, resi_vec2);
 
-                    /* Done! Free memory */
+                    // Done! Free memory
                     tu_vec.clear();
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
-                    delete [] seqy;
                     delete [] secy;
                     resi_vec2.clear();
                     do_vec.clear();
@@ -2969,7 +3058,6 @@ int flexalign(string &xname, string &yname, const string &fname_super,
             } // j
             PDB_lines1[chain_i].clear();
             DeleteArray(&xa, xlen);
-            delete [] seqx;
             delete [] secx;
             resi_vec1.clear();
         } // chain_i
@@ -2991,17 +3079,15 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     return 0;
 }
 
-
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
-
 
     clock_t t1, t2;
     t1 = clock();
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname       = "";
     string yname       = "";
@@ -3009,7 +3095,8 @@ int main(int argc, char *argv[])
     string fname_lign  = ""; // file name for user alignment
     string fname_matrix= ""; // file name for output matrix
     vector<string> sequence; // get value from alignment file
-    double Lnorm_ass, d0_scale;
+    double Lnorm_ass;
+    double d0_scale;
 
     bool h_opt = false; // print full help message
     bool v_opt = false; // print version
@@ -3056,7 +3143,7 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( !strcmp(argv[i],"-o") )
+        if ( string(argv[i]) == "-o" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -o");
@@ -3071,7 +3158,7 @@ int main(int argc, char *argv[])
             }
             i++;
         }
-        else if ( !strcmp(argv[i],"-rasmol") )
+        else if ( string(argv[i]) == "-rasmol" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -rasmol");
@@ -3086,7 +3173,7 @@ int main(int argc, char *argv[])
             }
             i++;
         }
-        else if ( !strcmp(argv[i],"-chimerax") )
+        else if ( string(argv[i]) == "-chimerax" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chimerax");
@@ -3101,68 +3188,68 @@ int main(int argc, char *argv[])
             }
             i++;
         }
-        else if ( !strcmp(argv[i],"-u") || !strcmp(argv[i],"-L") )
+        else if ( string(argv[i]) == "-u" || string(argv[i]) == "-L" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -u or -L");
-            Lnorm_ass = atof(argv[i + 1]); u_opt = true; i++;
+            Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
             if (Lnorm_ass<=0) PrintErrorAndQuit(
                 "ERROR! The value for -u or -L should be >0");
         }
-        else if ( !strcmp(argv[i],"-a") )
+        else if ( string(argv[i]) == "-a" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -a");
-            if (!strcmp(argv[i + 1], "T"))      a_opt=true;
-            else if (!strcmp(argv[i + 1], "F")) a_opt=false;
+            if (string(argv[i + 1]) == "T")      a_opt=true;
+            else if (string(argv[i + 1]) == "F") a_opt=false;
             else 
             {
-                a_opt=atoi(argv[i + 1]);
+                a_opt=safe_stoi(argv[i + 1]);
                 if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
             i++;
         }
-        else if ( !strcmp(argv[i],"-full") )
+        else if ( string(argv[i]) == "-full" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -full");
-            if (!strcmp(argv[i + 1], "T"))      full_opt=true;
-            else if (!strcmp(argv[i + 1], "F")) full_opt=false;
+            if (string(argv[i + 1]) == "T")      full_opt=true;
+            else if (string(argv[i + 1]) == "F") full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
             i++;
         }
-        else if ( !strcmp(argv[i],"-d") )
+        else if ( string(argv[i]) == "-d" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -d");
-            d0_scale = atof(argv[i + 1]); d_opt = true; i++;
+            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-closeK") )
+        else if ( string(argv[i]) == "-closeK" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -closeK");
-            closeK_opt = atoi(argv[i + 1]); i++;
+            closeK_opt = safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-hinge") )
+        else if ( string(argv[i]) == "-hinge" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -hinge");
-            hinge_opt = atoi(argv[i + 1]); i++;
+            hinge_opt = safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-v") )
+        else if ( string(argv[i]) == "-v" )
         {
             v_opt = true;
         }
-        else if ( !strcmp(argv[i],"-do") )
+        else if ( string(argv[i]) == "-do" )
         {
             do_opt = true;
         }
-        else if ( !strcmp(argv[i],"-h") )
+        else if ( string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if ( !strcmp(argv[i],"-i") )
+        else if ( string(argv[i]) == "-i" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -i");
@@ -3170,7 +3257,7 @@ int main(int argc, char *argv[])
                 PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
             fname_lign = argv[i + 1];      i_opt = 1; i++;
         }
-        else if (!strcmp(argv[i], "-I") )
+        else if (string(argv[i]) == "-I" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -I");
@@ -3178,89 +3265,89 @@ int main(int argc, char *argv[])
                 PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
             fname_lign = argv[i + 1];      i_opt = 3; i++;
         }
-        else if (!strcmp(argv[i], "-chainmap") )
+        else if (string(argv[i]) == "-chainmap" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chainmap");
             chainmapfile = argv[i + 1]; i++;
         }
-        else if (!strcmp(argv[i], "-chain1") )
+        else if (string(argv[i]) == "-chain1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-chain2") )
+        else if (string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model1") )
+        else if (string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model2") )
+        else if (string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
             split(argv[i+1],model2parse2,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-m") )
+        else if (string(argv[i]) == "-m" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -m");
             fname_matrix = argv[i + 1];    m_opt = true; i++;
         }// get filename for rotation matrix
-        else if (!strcmp(argv[i], "-fast"))
+        else if (string(argv[i]) == "-fast")
         {
             fast_opt = true;
         }
-        else if (!strcmp(argv[i], "-se"))
+        else if (string(argv[i]) == "-se")
         {
             se_opt = true;
         }
-        else if ( !strcmp(argv[i],"-infmt1") )
+        else if ( string(argv[i]) == "-infmt1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -infmt1");
-            infmt1_opt=atoi(argv[i + 1]); i++;
+            infmt1_opt=safe_stoi(argv[i + 1]); i++;
             if (infmt1_opt<-1 || infmt1_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt1 can only be -1, 0, 1, 2, or 3");
         }
-        else if ( !strcmp(argv[i],"-infmt2") )
+        else if ( string(argv[i]) == "-infmt2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -infmt2");
-            infmt2_opt=atoi(argv[i + 1]); i++;
+            infmt2_opt=safe_stoi(argv[i + 1]); i++;
             if (infmt2_opt<-1 || infmt2_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt2 can only be -1, 0, 1, 2, or 3");
         }
-        else if ( !strcmp(argv[i],"-ter") )
+        else if ( string(argv[i]) == "-ter" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -ter");
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") )
+        else if ( string(argv[i]) == "-split" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -split");
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") )
+        else if ( string(argv[i]) == "-atom" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -atom");
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") )
+        else if ( string(argv[i]) == "-mol" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -mol");
@@ -3272,83 +3359,83 @@ int main(int argc, char *argv[])
                     "following:\nauto, prot (the same as 'protein'), and "
                     "RNA (the same as 'DNA').");
         }
-        else if ( !strcmp(argv[i],"-dir") )
+        else if ( string(argv[i]) == "-dir" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -dir");
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dirpair") )
+        else if ( string(argv[i]) == "-dirpair" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -dirpair");
             dirpair_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir1") )
+        else if ( string(argv[i]) == "-dir1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -dir1");
             dir1_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir2") )
+        else if ( string(argv[i]) == "-dir2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -dir2");
             dir2_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-suffix") )
+        else if ( string(argv[i]) == "-suffix" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -suffix");
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-outfmt") )
+        else if ( string(argv[i]) == "-outfmt" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -outfmt");
-            outfmt_opt=atoi(argv[i + 1]); i++;
+            outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-TMcut") )
+        else if ( string(argv[i]) == "-TMcut" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -TMcut");
-            TMcut=atof(argv[i + 1]); i++;
+            TMcut=safe_stod(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-byresi")  || 
-                  !strcmp(argv[i],"-tmscore") ||
-                  !strcmp(argv[i],"-TMscore"))
+        else if ( string(argv[i]) == "-byresi"  || 
+                  string(argv[i]) == "-tmscore" ||
+                  string(argv[i]) == "-TMscore")
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -byresi");
-            byresi_opt=atoi(argv[i + 1]); i++;
+            byresi_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-seq") )
+        else if ( string(argv[i]) == "-seq" )
         {
             byresi_opt=5;
         }
-        else if ( !strcmp(argv[i],"-cp") )
+        else if ( string(argv[i]) == "-cp" )
         {
             mm_opt=3;
         }
-        else if ( !strcmp(argv[i],"-mirror") )
+        else if ( string(argv[i]) == "-mirror" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -mirror");
-            mirror_opt=atoi(argv[i + 1]); i++;
+            mirror_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") )
+        else if ( string(argv[i]) == "-het" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -het");
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
             if (het_opt!=0 && het_opt!=1 && het_opt!=2)
                 PrintErrorAndQuit("-het must be 0, 1, or 2");
         }
-        else if ( !strcmp(argv[i],"-mm") )
+        else if ( string(argv[i]) == "-mm" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -mm");
-            mm_opt=atoi(argv[i + 1]); i++;
+            mm_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
@@ -3487,8 +3574,7 @@ int main(int argc, char *argv[])
     if (chainmapfile.size() && mm_opt!=1)
         PrintErrorAndQuit("ERROR! -chainmap must be used with -mm 1");
 
-
-    /* read initial alignment file from 'align.txt' */
+    // read initial alignment file from 'align.txt'
     if (i_opt) read_user_alignment(sequence, fname_lign, i_opt);
 
     if (byresi_opt==6 || byresi_opt==7) mm_opt=1;
@@ -3497,7 +3583,7 @@ int main(int argc, char *argv[])
     if (m_opt && fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
 
-    /* parse file list */
+    // parse file list
     int i; 
     if (dirpair_opt.size())
         file2chainpairlist(chain1_list,chain2_list, xname, dirpair_opt, suffix_opt);
@@ -3591,7 +3677,7 @@ int main(int argc, char *argv[])
         byresi_opt, chain1_list, chain2_list, hinge_opt);
     else cerr<<"WARNING! -mm "<<mm_opt<<" not implemented"<<endl;
 
-    /* clean up */
+    // clean up
     vector<string>().swap(chain1_list);
     vector<string>().swap(chain2_list);
     vector<string>().swap(chain2parse1);

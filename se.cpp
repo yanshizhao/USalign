@@ -115,13 +115,14 @@ int main(int argc, char *argv[])
     if (argc < 2) print_help();
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname       = "";
     string yname       = "";
     string fname_lign  = ""; // file name for user alignment
     vector<string> sequence; // get value from alignment file
-    double Lnorm_ass, d0_scale;
+    double Lnorm_ass;
+    double d0_scale;
 
     bool h_opt = false; // print full help message
     bool i_opt = false; // flag for -i, stick to user given alignment
@@ -151,109 +152,109 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( (!strcmp(argv[i],"-u") || 
-              !strcmp(argv[i],"-L")) && i < (argc-1) )
+        if ( (string(argv[i]) == "-u" || 
+              string(argv[i]) == "-L") && i < (argc-1) )
         {
-            Lnorm_ass = atof(argv[i + 1]); u_opt = true; i++;
+            Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-a") && i < (argc-1) )
+        else if ( string(argv[i]) == "-a" && i < (argc-1) )
         {
-            if (!strcmp(argv[i + 1], "T"))      a_opt=true;
-            else if (!strcmp(argv[i + 1], "F")) a_opt=false;
+            if (string(argv[i + 1]) == "T")      a_opt=true;
+            else if (string(argv[i + 1]) == "F") a_opt=false;
             else PrintErrorAndQuit("Wrong value for option -a! It should be T or F");
             i++;
         }
-        else if ( !strcmp(argv[i],"-d") && i < (argc-1) )
+        else if ( string(argv[i]) == "-d" && i < (argc-1) )
         {
-            d0_scale = atof(argv[i + 1]); d_opt = true; i++;
+            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-do") )
+        else if ( string(argv[i]) == "-do" )
         {
             do_opt = true;
         }
-        else if ( !strcmp(argv[i],"-h") )
+        else if ( string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if ((!strcmp(argv[i],"-i")||!strcmp(argv[i],"-I")) && i<(argc-1))
+        else if ((string(argv[i]) == "-i"||string(argv[i]) == "-I") && i<(argc-1))
         {
             fname_lign = argv[i + 1];      i_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-infmt1") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt1" && i < (argc-1) )
         {
-            infmt1_opt=atoi(argv[i + 1]); i++;
+            infmt1_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-infmt2") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt2" && i < (argc-1) )
         {
-            infmt2_opt=atoi(argv[i + 1]); i++;
+            infmt2_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-ter") && i < (argc-1) )
+        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        else if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") && i < (argc-1) )
+        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir1") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir1" && i < (argc-1) )
         {
             dir1_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir2") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir2" && i < (argc-1) )
         {
             dir2_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-suffix") && i < (argc-1) )
+        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-outfmt") && i < (argc-1) )
+        else if ( string(argv[i]) == "-outfmt" && i < (argc-1) )
         {
-            outfmt_opt=atoi(argv[i + 1]); i++;
+            outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( (!strcmp(argv[i],"-byresi") || !strcmp(argv[i],"-TMscore") ||
-                   !strcmp(argv[i],"-tmscore") ) && i < (argc-1) )
+        else if ( (string(argv[i]) == "-byresi" || string(argv[i]) == "-TMscore" ||
+                   string(argv[i]) == "-tmscore" ) && i < (argc-1) )
         {
-            byresi_opt=atoi(argv[i + 1]); i++;
+            byresi_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if (!strcmp(argv[i], "-chain1") )
+        else if (string(argv[i]) == "-chain1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-chain2") )
+        else if (string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model1") )
+        else if (string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model2") )
+        else if (string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
@@ -311,12 +312,12 @@ int main(int argc, char *argv[])
     if (split_opt<0 || split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
-    /* read initial alignment file from 'align.txt' */
+    // read initial alignment file from 'align.txt'
     if (i_opt) read_user_alignment(sequence, fname_lign, false);
 
     if (byresi_opt) i_opt=true;
     
-    /* parse file list */
+    // parse file list
     if (dir1_opt.size()+dir_opt.size()==0) chain1_list.push_back(xname);
     else file2chainlist(chain1_list, xname, dir_opt+dir1_opt, suffix_opt);
 
@@ -330,7 +331,7 @@ int main(int argc, char *argv[])
         cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
             <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
 
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -341,7 +342,6 @@ int main(int argc, char *argv[])
     int    chain_i,chain_j;    // chain index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *seqx, *seqy;       // for the protein sequence 
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -351,10 +351,10 @@ int main(int argc, char *argv[])
     double t0[3]={0,0,0};
     double u0[3][3]={{1,0,0},{0,1,0},{0,0,1}};
 
-    /* loop over file names */
+    // loop over file names
     for (int i=0;i<chain1_list.size();i++)
     {
-        /* parse chain 1 */
+        // parse chain 1
         xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
             ter_opt, infmt1_opt, atom_opt, false, split_opt, het_opt,
@@ -377,13 +377,13 @@ int main(int argc, char *argv[])
                 continue;
             }
             NewArray(&xa, xlen, 3);
-            seqx = new char[xlen + 1];
-            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
+            string seqx;
+            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, byresi_opt);
 
             for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
-                /* parse chain 2 */
+                // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
@@ -409,18 +409,23 @@ int main(int argc, char *argv[])
                         continue;
                     }
                     NewArray(&ya, ylen, 3);
-                    seqy = new char[ylen + 1];
+                    string seqy;
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, byresi_opt);
 
                     if (byresi_opt) extract_aln_from_resi(sequence,
-                        seqx,seqy,resi_vec1,resi_vec2,byresi_opt);
+                        seqx.c_str(), seqy.c_str(), resi_vec1, resi_vec2, byresi_opt);
 
-                    /* declare variable specific to this pair of TMalign */
-                    double TM1, TM2;
+                    // declare variable specific to this pair of TMalign
+                    double TM1;
+                    double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0, TM_0;
-                    double d0A, d0B, d0u, d0a;
+                    double d0_0;
+                    double TM_0;
+                    double d0A;
+                    double d0B;
+                    double d0u;
+                    double d0a;
                     double d0_out=5.0;
                     string seqM, seqxA, seqyA;// for output alignment
                     double rmsd0 = 0.0;
@@ -432,7 +437,7 @@ int main(int argc, char *argv[])
                     int *invmap = new int[ylen+1];
                     vector<double> do_vec;
 
-                    /* entry function for structure alignment */
+                    // entry function for structure alignment
                     se_main(
                         xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -443,10 +448,10 @@ int main(int argc, char *argv[])
                         mol_vec1[chain_i]+mol_vec2[chain_j], 
                         outfmt_opt, invmap);
 
-                    if (outfmt_opt>=2) 
-                        get_seqID(invmap, seqx, seqy, ylen, Liden, n_ali);
+                    if (outfmt_opt>=2)
+                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);
 
-                    /* print result */
+                    // print result
                     output_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()).c_str(),
                         yname.substr(dir2_opt.size()+dir_opt.size()).c_str(),
@@ -491,13 +496,12 @@ int main(int argc, char *argv[])
                         cout<<"###############\t###############\t#########"<<endl;
                     }
 
-                    /* Done! Free memory */
+                    // Done! Free memory
                     delete [] invmap;
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
-                    delete [] seqy;
                     resi_vec2.clear();
                     do_vec.clear();
                 } // chain_j
@@ -512,7 +516,6 @@ int main(int argc, char *argv[])
                 }
             } // j
             DeleteArray(&xa, xlen);
-            delete [] seqx;
             resi_vec1.clear();
         } // chain_i
         xname.clear();

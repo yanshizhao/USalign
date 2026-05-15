@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname     = "";
     int    ter_opt   =1;     // TER, END, or different chainID
@@ -73,48 +73,48 @@ int main(int argc, char *argv[])
     int nameIdx = 0;
     for(int i = 1; i < argc; i++)
     {
-        if ( !strcmp(argv[i],"-ter") && i < (argc-1) )
+        if ( string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        else if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") && i < (argc-1) )
+        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") )
+        else if ( string(argv[i]) == "-mol" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -mol");
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-suffix") && i < (argc-1) )
+        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-infmt") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            infmt_opt=atoi(argv[i + 1]); i++;
+            infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if (!strcmp(argv[i], "-chain") )
+        else if (string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
             split(argv[i+1],chain2parse,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model") )
+        else if (string(argv[i]) == "-model" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model");
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     else if (mol_opt=="RNA" && atom_opt=="auto")
         atom_opt=" C3'";
 
-    /* parse file list */
+    // parse file list
     if (dir_opt.size()==0)
         chain_list.push_back(xname);
     else
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         line.clear();
     }
 
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines; // text of chain
     vector<int> mol_vec;              // molecule type of chain
     vector<string> chainID_list;      // list of chainID1
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
     int    xchainnum;                 // number of chains in a PDB file
     string sequence;                  // amino acid sequence
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain_list.size();i++)
     {
         xname=chain_list[i];

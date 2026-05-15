@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    /* get argument */
+    // get argument
     string filename="";
     string list_opt="";
 
@@ -52,9 +52,10 @@ int main(int argc, char *argv[])
 
     ifstream fin(filename.c_str());
 
-    /* list all entries in xyz file */
+    // list all entries in xyz file
     string line;
-    int L,i;
+    int L;
+    int i;
     int start_pos,end_pos; // position of starting and ending character
     if (list_opt.size()==0)
     {
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
         {
             start_pos=fin.tellg();
             getline(fin, line);
-            L=atoi(line.c_str());
+            L=safe_stoi(line.c_str());
             getline(fin, line);
             if (!fin.good()) break;
             for(i=0;i<line.size();i++) if(line[i]==' '||line[i]=='\t') break;
@@ -75,14 +76,14 @@ int main(int argc, char *argv[])
         }
         fin.close();
         fp.close();
-        /* clean up */
+        // clean up
         line.clear();
         filename.clear();
         list_opt.clear();
         return 0;
     }
 
-    /* read entry list */
+    // read entry list
     vector<string> chain_list;
     ifstream fp;
     if (list_opt=="-")
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
         fp.close();
     }
 
-    /* read xyz index */
+    // read xyz index
     /* In xyz file, each line has 28 chacters plus an additional '\n'. In PDB
      * file, a residue number has up to 4 digits, which means a PDB chain
      * usually has up to 9999 residues. 29*9999 == 289971 < 300000 */
@@ -134,7 +135,7 @@ int main(int argc, char *argv[])
     fp.close();
     fin.close();
 
-    /* clean up */
+    // clean up
     /* No need to flush, because any input from cin, output to cerr, or
      * or program termination forces cout.flush() */
     delete[]buf;

@@ -1,8 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <ctime>
+#include <cstring>
 
 #include <sstream>
 #include <iostream>
@@ -54,7 +54,7 @@ void PrintErrorAndQuit(const string sErrorString)
     exit(1);
 }
 
-/* strip white space at the begining or end of string */
+// strip white space at the begining or end of string
 string Trim(const string &inputString)
 {
     string result = inputString;
@@ -93,7 +93,8 @@ void write_mmcif_to_pdb(const string filename,
     const vector<vector<string> >&PDB_lines,
     const vector<string> &chainID_list, const int split_opt)
 {
-    size_t c,r;
+    size_t c;
+    size_t r;
     
     ofstream fout;
     if (split_opt)
@@ -155,14 +156,16 @@ size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
     const vector<string> &chainID_list)
 {
     size_t changed_chains=0;
-    size_t c,r,i;
+    size_t c;
+    size_t r;
+    size_t i;
     string chainID;
     
     string chainID_string="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     vector<bool> chainID_taken(chainID_string.size(),false);
     vector<bool> chainID_accept(chainID_list.size(),false);
 
-    /* accept all single character chain ID */
+    // accept all single character chain ID
     for (c=0;c<PDB_lines.size();c++)
     {
         if (PDB_lines[c].size()==0) continue;
@@ -178,7 +181,7 @@ size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
         }
     }
 
-    /* accept all remaining non-conflicting chain ID */
+    // accept all remaining non-conflicting chain ID
     for (c=0;c<PDB_lines.size();c++)
     {
         if (PDB_lines[c].size()==0 || chainID_accept[c]) continue;
@@ -193,7 +196,7 @@ size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
         }
     }
 
-    /* resolve remaining chain ID */
+    // resolve remaining chain ID
     for (c=0;c<PDB_lines.size();c++)
     {
         if (PDB_lines[c].size()==0 || chainID_accept[c]) continue;
@@ -222,7 +225,7 @@ size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
     if (changed_chains)
         cerr<<"WARNING! Changed "<<changed_chains<<" chain ID(s)"<<endl;
     
-    /* clean up*/
+    // clean up
     chainID.clear();
     string().swap(chainID_string);
     vector<bool>().swap(chainID_taken);
@@ -482,7 +485,7 @@ int main(int argc, char *argv[])
     if (argc < 2) print_help();
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname       = "";
     string yname       = "";
@@ -494,21 +497,21 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-mol") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
-            mol_opt=atoi(argv[i + 1]); i++;
+            mol_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-chain") && i < (argc-1) )
+        else if ( string(argv[i]) == "-chain" && i < (argc-1) )
         {
             chain_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
@@ -537,7 +540,7 @@ int main(int argc, char *argv[])
     bool lig_opt=(het_opt>=2);
     bool mse_opt=(het_opt>=1);
 
-    /* parse structure */
+    // parse structure
     vector<vector<string> >PDB_lines;
     vector<string> chainID_list;
     get_all_mmcif_lines(xname, chain_opt, PDB_lines, chainID_list,
@@ -545,7 +548,7 @@ int main(int argc, char *argv[])
     if (!split_opt) resolve_chainID_for_mmcif(PDB_lines,chainID_list);
     write_mmcif_to_pdb(yname, PDB_lines, chainID_list, split_opt);
     
-    /* clean up */
+    // clean up
     vector<vector<string> >().swap(PDB_lines);
     vector<string>().swap(chainID_list);
     chain_opt.clear();

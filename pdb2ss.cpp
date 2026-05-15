@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname     = "";
     int    ter_opt   =3;     // TER, END, or different chainID
@@ -77,46 +77,46 @@ int main(int argc, char *argv[])
     int nameIdx = 0;
     for(int i = 1; i < argc; i++)
     {
-        if ( !strcmp(argv[i],"-ter") && i < (argc-1) )
+        if ( string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        else if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") && i < (argc-1) )
+        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-suffix") && i < (argc-1) )
+        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-infmt") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            infmt_opt=atoi(argv[i + 1]); i++;
+            infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if (!strcmp(argv[i], "-chain") )
+        else if (string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
             split(argv[i+1],chain2parse,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model") )
+        else if (string(argv[i]) == "-model" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model");
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     if (split_opt<0 || split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
-    /* parse file list */
+    // parse file list
     if (dir_opt.size()==0)
         chain_list.push_back(xname);
     else
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
         line.clear();
     }
 
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines; // text of chain
     vector<int> mol_vec;              // molecule type of chain
     vector<string> chainID_list;      // list of chainID1
@@ -178,13 +178,11 @@ int main(int argc, char *argv[])
     int    l;                         // residue index
     int    chain_i;                   // chain index
     int    xlen;                      // chain length
-    int    xchainnum;                 // number of chains in a PDB file
-    char   *seqx;                     // for the protein sequence 
-    char   *secx;                     // for the secondary structure 
+    int    xchainnum;                 // number of chains in a PDB file    char   *secx;                     // for the secondary structure 
     double **xa;                      // for input vectors xa[0...xlen-1][0..2] and
     vector<string> resi_vec;          // residue index for chain
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain_list.size();i++)
     {
         xname=chain_list[i];
@@ -209,7 +207,7 @@ int main(int argc, char *argv[])
                 continue;
             }
             NewArray(&xa, xlen, 3);
-            seqx = new char[xlen + 1];
+            string seqx;
             secx = new char[xlen + 1];
             xlen = read_PDB(PDB_lines[chain_i], xa, seqx, resi_vec, 0);
             if (mol_vec[chain_i]>0) make_sec(seqx,xa, xlen, secx,atom_opt);
@@ -221,7 +219,6 @@ int main(int argc, char *argv[])
 
             PDB_lines[chain_i].clear();
             DeleteArray(&xa, xlen);
-            delete [] seqx;
             delete [] secx;
         } // chain_i
         xname.clear();

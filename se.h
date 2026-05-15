@@ -5,6 +5,30 @@
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
+// C++ string overload (forward bridge)
+int se_main(
+    double **xa, double **ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen, const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, int *invmap, const int hinge=0)
+{
+    return se_main(xa, ya, seqx.c_str(), seqy.c_str(),
+        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence,
+        Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt, mol_type,
+        outfmt_opt, invmap, hinge);
+}
+
 int se_main(
     double **xa, double **ya, const char *seqx, const char *seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -20,7 +44,10 @@ int se_main(
 {
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
+    double score_d8;
+    double d0;
+    double d0_search;
+    double dcu0; //for TMscore search
     double **score;       // Input score table for dynamic programming
     bool   **path;        // for dynamic programming  
     double **val;         // for dynamic programming  
@@ -35,13 +62,14 @@ int se_main(
     }
 
     /***********************/
-    /* allocate memory     */
+    // allocate memory    
     /***********************/
     NewArray(&score, xlen+1, ylen+1);
     NewArray(&path, xlen+1, ylen+1);
     NewArray(&val, xlen+1, ylen+1);
     int *invmap0          = new int[ylen+1];
-    int i,j;
+    int i;
+    int j;
     if (hinge==0) for (j=0;j<=ylen;j++) invmap0[j]=-1;
     else for (j=0;j<ylen;j++) invmap0[j]=invmap[j];
     vector<char> seqM_char;
@@ -56,7 +84,7 @@ int se_main(
         }
     }
 
-    /* set d0 */
+    // set d0
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
         score_d8, d0, d0_search, dcu0); // set score_d8
     parameter_set4final(xlen, D0_MIN, Lnorm,
@@ -77,7 +105,7 @@ int se_main(
         }
     }
 
-    /* perform alignment */
+    // perform alignment
     if (hinge==0) for(j=0; j<ylen; j++) invmap[j]=-1;
     if (!i_opt) NWDP_SE(path, val, xa, ya, xlen, ylen, d0*d0, 0, invmap, hinge);
     else
@@ -156,7 +184,7 @@ int se_main(
         return 0;
     }
 
-    /* extract aligned sequence */
+    // extract aligned sequence
     int ali_len=xlen+ylen; //maximum length of alignment
     seqxA.assign(ali_len,'-');
     seqM.assign( ali_len,' ');
@@ -164,7 +192,9 @@ int se_main(
     do_vec.clear();
     do_vec.assign(ali_len,0);
     
-    int kk=0, i_old=0, j_old=0;
+    int kk = 0;
+    int i_old = 0;
+    int j_old = 0;
     d=0;
     Liden=0;
     for(int k=0; k<n_ali8; k++)
@@ -229,7 +259,7 @@ int se_main(
         }
     }
 
-    /* free memory */
+    // free memory
     delete [] invmap0;
     delete [] m1;
     delete [] m2;

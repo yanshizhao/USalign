@@ -896,8 +896,8 @@ void output_TMscore_results(
             printf("TM-score    = %5.5f  (if scaled by user-specified d0= %.2f, and LN= %d)\n", TM5, d0_scale, ylen);
     
 
-        printf("\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n");
-        printf(" i          t(i)         u(i,1)         u(i,2)         u(i,3)\n");
+        cout << "\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n";
+        cout << " i          t(i)         u(i,1)         u(i,2)         u(i,3)\n";
         printf(" 1 %17.10f %14.10f %14.10f %14.10f\n",t[0],u[0][0],u[0][1],u[0][2]);
         printf(" 2 %17.10f %14.10f %14.10f %14.10f\n",t[1],u[1][0],u[1][1],u[1][2]);
         printf(" 3 %17.10f %14.10f %14.10f %14.10f\n",t[2],u[2][0],u[2][1],u[2][2]);
@@ -912,20 +912,20 @@ void output_TMscore_results(
         printf("\nSuperposition in the TM-score: Length(d<%3.1f)= %d\n", d0_out, L_lt_d);
         //printf("\nSuperposition in the TM-score: Length(d<%3.1f)= %d  RMSD=%6.2f\n", d0_out, L_lt_d, rmsd_d0_out);
         printf("(\":\" denotes the residue pairs of distance <%4.1f Angstrom)\n", d0_out);
-        printf("%s\n", seqxA);
-        printf("%s\n", seqM);
-        printf("%s\n", seqyA);
-        printf("%s\n", seq_scale.c_str());
+        cout << seqxA << "\n";
+        cout << seqM << "\n";
+        cout << seqyA << "\n";
+        cout << seq_scale.c_str() << "\n";
         seq_scale.clear();
     }
     else if (outfmt_opt==1)
     {
         printf(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname.c_str(), chainID1.c_str(), xlen, d0B, Liden/xlen, TM2);
-        printf("%s\n", seqxA);
+        cout << seqxA << "\n";
         printf(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             yname.c_str(), chainID2.c_str(), ylen, d0A, Liden/ylen, TM1);
-        printf("%s\n", seqyA);
+        cout << seqyA << "\n";
 
         printf("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
@@ -939,7 +939,7 @@ void output_TMscore_results(
         if(d_opt)
             printf("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
 
-        printf("$$$$\n");
+        cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {

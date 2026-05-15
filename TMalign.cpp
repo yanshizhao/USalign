@@ -1,4 +1,4 @@
-/* command line argument parsing and document of TMalign main program */
+// command line argument parsing and document of TMalign main program
 
 #include "TMalign.h"
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
     t1 = clock();
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname       = "";
     string yname       = "";
@@ -174,7 +174,8 @@ int main(int argc, char *argv[])
     string fname_lign  = ""; // file name for user alignment
     string fname_matrix= ""; // file name for output matrix
     vector<string> sequence; // get value from alignment file
-    double Lnorm_ass, d0_scale;
+    double Lnorm_ass;
+    double d0_scale;
 
     bool h_opt = false; // print full help message
     bool v_opt = false; // print version
@@ -212,159 +213,159 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( !strcmp(argv[i],"-o") && i < (argc-1) )
+        if ( string(argv[i]) == "-o" && i < (argc-1) )
         {
             fname_super = argv[i + 1];     o_opt = true; i++;
         }
-        else if ( (!strcmp(argv[i],"-u") || 
-                   !strcmp(argv[i],"-L")) && i < (argc-1) )
+        else if ( (string(argv[i]) == "-u" || 
+                   string(argv[i]) == "-L") && i < (argc-1) )
         {
-            Lnorm_ass = atof(argv[i + 1]); u_opt = true; i++;
+            Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-a") && i < (argc-1) )
+        else if ( string(argv[i]) == "-a" && i < (argc-1) )
         {
-            if (!strcmp(argv[i + 1], "T"))      a_opt=true;
-            else if (!strcmp(argv[i + 1], "F")) a_opt=false;
+            if (string(argv[i + 1]) == "T")      a_opt=true;
+            else if (string(argv[i + 1]) == "F") a_opt=false;
             else 
             {
-                a_opt=atoi(argv[i + 1]);
+                a_opt=safe_stoi(argv[i + 1]);
                 if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
             i++;
         }
-        else if ( !strcmp(argv[i],"-d") && i < (argc-1) )
+        else if ( string(argv[i]) == "-d" && i < (argc-1) )
         {
-            d0_scale = atof(argv[i + 1]); d_opt = true; i++;
+            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-v") )
+        else if ( string(argv[i]) == "-v" )
         {
             v_opt = true;
         }
-        else if ( !strcmp(argv[i],"-h") )
+        else if ( string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if ( !strcmp(argv[i],"-i") && i < (argc-1) )
+        else if ( string(argv[i]) == "-i" && i < (argc-1) )
         {
             if (i_opt==3)
                 PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
             fname_lign = argv[i + 1];      i_opt = 1; i++;
         }
-        else if (!strcmp(argv[i], "-I") && i < (argc-1) )
+        else if (string(argv[i]) == "-I" && i < (argc-1) )
         {
             if (i_opt==1)
                 PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
             fname_lign = argv[i + 1];      i_opt = 3; i++;
         }
-        else if (!strcmp(argv[i], "-chain1") )
+        else if (string(argv[i]) == "-chain1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-chain2") )
+        else if (string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model1") )
+        else if (string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model2") )
+        else if (string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
             split(argv[i+1],model2parse2,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-m") && i < (argc-1) )
+        else if (string(argv[i]) == "-m" && i < (argc-1) )
         {
             fname_matrix = argv[i + 1];    m_opt = true; i++;
         }// get filename for rotation matrix
-        else if (!strcmp(argv[i], "-fast"))
+        else if (string(argv[i]) == "-fast")
         {
             fast_opt = true;
         }
-        else if ( !strcmp(argv[i],"-infmt1") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt1" && i < (argc-1) )
         {
-            infmt1_opt=atoi(argv[i + 1]); i++;
+            infmt1_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-infmt2") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt2" && i < (argc-1) )
         {
-            infmt2_opt=atoi(argv[i + 1]); i++;
+            infmt2_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-ter") && i < (argc-1) )
+        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        else if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") && i < (argc-1) )
+        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir1") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir1" && i < (argc-1) )
         {
             dir1_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir2") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir2" && i < (argc-1) )
         {
             dir2_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-pair") )
+        else if ( string(argv[i]) == "-pair" )
         {
             pair_opt=true;
         }
-        else if ( !strcmp(argv[i],"-suffix") && i < (argc-1) )
+        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-outfmt") && i < (argc-1) )
+        else if ( string(argv[i]) == "-outfmt" && i < (argc-1) )
         {
-            outfmt_opt=atoi(argv[i + 1]); i++;
+            outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-TMcut") && i < (argc-1) )
+        else if ( string(argv[i]) == "-TMcut" && i < (argc-1) )
         {
-            TMcut=atof(argv[i + 1]); i++;
+            TMcut=safe_stod(argv[i + 1]); i++;
         }
-        else if ((!strcmp(argv[i],"-byresi") || !strcmp(argv[i],"-tmscore") ||
-                  !strcmp(argv[i],"-TMscore")) && i < (argc-1) )
+        else if ((string(argv[i]) == "-byresi" || string(argv[i]) == "-tmscore" ||
+                  string(argv[i]) == "-TMscore") && i < (argc-1) )
         {
-            byresi_opt=atoi(argv[i + 1]); i++;
+            byresi_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-seq") )
+        else if ( string(argv[i]) == "-seq" )
         {
             byresi_opt=5;
         }
-        else if ( !strcmp(argv[i],"-cp") )
+        else if ( string(argv[i]) == "-cp" )
         {
             cp_opt=1;
         }
-        else if ( !strcmp(argv[i],"-mirror") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mirror" && i < (argc-1) )
         {
-            mirror_opt=atoi(argv[i + 1]); i++;
+            mirror_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
@@ -432,7 +433,7 @@ int main(int argc, char *argv[])
     if (cp_opt && i_opt)
         PrintErrorAndQuit("-cp cannot be used with -i or -I");
 
-    /* read initial alignment file from 'align.txt' */
+    // read initial alignment file from 'align.txt'
     if (i_opt) read_user_alignment(sequence, fname_lign, i_opt);
 
     if (byresi_opt) i_opt=3;
@@ -440,7 +441,7 @@ int main(int argc, char *argv[])
     if (m_opt && fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
 
-    /* parse file list */
+    // parse file list
     if (dir1_opt.size()+dir_opt.size()==0) chain1_list.push_back(xname);
     else file2chainlist(chain1_list, xname, dir_opt+dir1_opt, suffix_opt);
 
@@ -454,7 +455,7 @@ int main(int argc, char *argv[])
         cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
             <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
 
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -465,9 +466,7 @@ int main(int argc, char *argv[])
     int    chain_i,chain_j;    // chain index
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *seqx, *seqy;       // for the protein sequence 
-    char   *secx, *secy;       // for the secondary structure 
+    int    xchainnum,ychainnum;// number of chains in a PDB file    char   *secx, *secy;       // for the secondary structure 
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -477,10 +476,10 @@ int main(int argc, char *argv[])
     int read_resi=byresi_opt;  // whether to read residue index
     if (byresi_opt==0 && o_opt) read_resi=2;
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain1_list.size();i++)
     {
-        /* parse chain 1 */
+        // parse chain 1
         xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
             ter_opt, infmt1_opt, atom_opt, false, split_opt, het_opt,
@@ -508,18 +507,18 @@ int main(int argc, char *argv[])
                 continue;
             }
             NewArray(&xa, xlen, 3);
-            seqx = new char[xlen + 1];
+            string seqx;
             secx = new char[xlen + 1];
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
                 resi_vec1, read_resi);
             if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx,xa, xlen, secx,atom_opt);
+            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, secx,atom_opt);
             else make_sec(xa, xlen, secx); // secondary structure assignment
 
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 if (pair_opt && j!=i) continue;
-                /* parse chain 2 */
+                // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
@@ -550,23 +549,28 @@ int main(int argc, char *argv[])
                         continue;
                     }
                     NewArray(&ya, ylen, 3);
-                    seqy = new char[ylen + 1];
+                    string seqy;
                     secy = new char[ylen + 1];
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, read_resi);
                     if (mol_vec2[chain_j]>0)
-                         make_sec(seqy, ya, ylen, secy, atom_opt);
+                         make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence,
-                        seqx,seqy,resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
-                    /* declare variable specific to this pair of TMalign */
-                    double t0[3], u0[3][3];
-                    double TM1, TM2;
+                    // declare variable specific to this pair of TMalign
+                    double t0[3];
+                    double u0[3][3];
+                    double TM1;
+                    double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0, TM_0;
-                    double d0A, d0B, d0u, d0a;
+                    double d0_0;
+                    double TM_0;
+                    double d0A;
+                    double d0B;
+                    double d0u;
+                    double d0a;
                     double d0_out=5.0;
                     string seqM, seqxA, seqyA;// for output alignment
                     double rmsd0 = 0.0;
@@ -577,9 +581,9 @@ int main(int argc, char *argv[])
                     int n_ali8=0;
                     vector<double> do_vec;
 
-                    /* entry function for structure alignment */
+                    // entry function for structure alignment
                     if (cp_opt) CPalign_main(
-                        xa, ya, seqx, seqy, secx, secy,
+                        xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
@@ -588,7 +592,7 @@ int main(int argc, char *argv[])
                         i_opt, a_opt, u_opt, d_opt, fast_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
                     else TMalign_main(
-                        xa, ya, seqx, seqy, secx, secy,
+                        xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
@@ -597,7 +601,7 @@ int main(int argc, char *argv[])
                         i_opt, a_opt, u_opt, d_opt, fast_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
 
-                    /* print result */
+                    // print result
                     if (outfmt_opt==0) print_version();
                     output_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()),
@@ -616,12 +620,11 @@ int main(int argc, char *argv[])
                         i_opt, a_opt, u_opt, d_opt,mirror_opt,
                         resi_vec1, resi_vec2 );
 
-                    /* Done! Free memory */
+                    // Done! Free memory
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
-                    delete [] seqy;
                     delete [] secy;
                     resi_vec2.clear();
                     do_vec.clear();
@@ -638,7 +641,6 @@ int main(int argc, char *argv[])
             } // j
             PDB_lines1[chain_i].clear();
             DeleteArray(&xa, xlen);
-            delete [] seqx;
             delete [] secx;
             resi_vec1.clear();
         } // chain_i

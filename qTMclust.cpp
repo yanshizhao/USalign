@@ -123,7 +123,8 @@ void read_init_cluster(const string&filename,
     string line;
     vector<string> line_vec;
     map<string, bool> tmp_map;
-    size_t i,j;
+    size_t i;
+    size_t j;
     fin.open(filename.c_str());
     while (fin.good())
     {
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
     t1 = clock();
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname       = "";
     double TMcut       = 0.5;
@@ -159,7 +160,8 @@ int main(int argc, char *argv[])
     string fname_init  = "";
     string fname_lign  = ""; // file name for user alignment
     vector<string> sequence; // get value from alignment file
-    double Lnorm_ass, d0_scale;
+    double Lnorm_ass;
+    double d0_scale;
 
     bool h_opt = false; // print full help message
     int  i_opt = 0;     // 3 for -I, stick to user given alignment
@@ -185,97 +187,97 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( (!strcmp(argv[i],"-u")||!strcmp(argv[i],"-L")) && i < (argc-1) )
+        if ( (string(argv[i]) == "-u"||string(argv[i]) == "-L") && i < (argc-1) )
         {
             PrintErrorAndQuit("Sorry! -u has not been implemented yet");
-            Lnorm_ass = atof(argv[i + 1]); u_opt = true; i++;
+            Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
         }
-        else if ( !strcmp(argv[i],"-d") && i < (argc-1) )
+        else if ( string(argv[i]) == "-d" && i < (argc-1) )
         {
             PrintErrorAndQuit("Sorry! -d has not been implemented yet");
-            d0_scale = atof(argv[i + 1]); d_opt = true; i++;
+            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if (!strcmp(argv[i], "-I") && i < (argc-1) )
+        else if (string(argv[i]) == "-I" && i < (argc-1) )
         {
             fname_lign = argv[i + 1];      i_opt = 3; i++;
         }
-        else if ( !strcmp(argv[i],"-o") && i < (argc-1) )
+        else if ( string(argv[i]) == "-o" && i < (argc-1) )
         {
             fname_clust = argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-a") && i < (argc-1))
+        else if ( string(argv[i]) == "-a" && i < (argc-1))
         {
             PrintErrorAndQuit("Sorry! -a is not used for clustering");
         }
-        else if ( !strcmp(argv[i],"-s") && i < (argc-1) )
+        else if ( string(argv[i]) == "-s" && i < (argc-1) )
         {
-            s_opt=atoi(argv[i + 1]); i++;
+            s_opt=safe_stoi(argv[i + 1]); i++;
             if (s_opt<1 || s_opt>6)
                 PrintErrorAndQuit("-s must be within 1 to 6");
         }
-        else if ( !strcmp(argv[i],"-h") )
+        else if ( string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if (!strcmp(argv[i], "-fast"))
+        else if (string(argv[i]) == "-fast")
         {
             fast_opt = true;
         }
-        else if ( !strcmp(argv[i],"-infmt") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            infmt_opt=atoi(argv[i + 1]); i++;
+            infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-ter") && i < (argc-1) )
+        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        else if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") && i < (argc-1) )
+        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-suffix") && i < (argc-1) )
+        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-TMcut") && i < (argc-1) )
+        else if ( string(argv[i]) == "-TMcut" && i < (argc-1) )
         {
-            TMcut=atof(argv[i + 1]); i++;
+            TMcut=safe_stod(argv[i + 1]); i++;
             if (TMcut>1 or TMcut<0.45)
                 PrintErrorAndQuit("TMcut must be in the range of [0.45,1)");
         }
-        else if ( !strcmp(argv[i],"-byresi") && i < (argc-1) )
+        else if ( string(argv[i]) == "-byresi" && i < (argc-1) )
         {
             PrintErrorAndQuit("Sorry! -byresi has not been implemented yet");
-            byresi_opt=atoi(argv[i + 1]); i++;
+            byresi_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-init") && i < (argc-1) )
+        else if ( string(argv[i]) == "-init" && i < (argc-1) )
         {
             read_init_cluster(argv[i+1],init_cluster); i++;
         }
-        else if (!strcmp(argv[i], "-chain") )
+        else if (string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
             split(argv[i+1],chain2parse,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model") )
+        else if (string(argv[i]) == "-model" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model");
@@ -310,16 +312,16 @@ int main(int argc, char *argv[])
     if (split_opt<0 || split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
-    /* read initial alignment file from 'align.txt' */
+    // read initial alignment file from 'align.txt'
     if (i_opt) read_user_alignment(sequence, fname_lign, i_opt);
 
     if (byresi_opt) i_opt=3;
 
-    /* parse file list */
+    // parse file list
     if (dir_opt.size()==0) chain_list.push_back(xname);
     else file2chainlist(chain_list, xname, dir_opt, suffix_opt);
 
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines; // text of chain
     vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
     vector<string> chainID_list;      // list of chainID
@@ -336,7 +338,7 @@ int main(int argc, char *argv[])
     vector<vector<char> > sec_vec;
     vector<vector<vector<float> > >xyz_vec;
 
-    /* parse files */
+    // parse files
     string chain_name;
     vector<char>  seq_tmp;
     vector<char>  sec_tmp;
@@ -430,7 +432,7 @@ int main(int argc, char *argv[])
     vector<vector<string> >().swap(PDB_lines);
     size_t Nstruct=chainLen_list.size();
 
-    /* sort by chain length */
+    // sort by chain length
     stable_sort(chainLen_list.begin(),chainLen_list.end(),
         greater<pair<int,int> >());
     cout<<"Clustering "<<chainLen_list.size()
@@ -440,7 +442,7 @@ int main(int argc, char *argv[])
         <<"Shortest chain "<<chainID_list[chainLen_list.back().second]<<'\t'
         <<chainLen_list.back().first<<" residues."<<endl;
 
-    /* set the first cluster */
+    // set the first cluster
     vector<size_t> clust_mem_vec(Nstruct,-1); // cluster membership
     vector<size_t> clust_repr_vec; // the same as number of clusters
     size_t chain_i=chainLen_list[0].second;
@@ -448,7 +450,7 @@ int main(int argc, char *argv[])
     clust_mem_vec[chain_i]=0;
     map<size_t,size_t> clust_repr_map;
 
-    /* perform alignment */
+    // perform alignment
     size_t chain_j;
     const double fast_lb=50.;  // proteins shorter than fast_lb never use -fast
     const double fast_ub=1000.;// proteins longer than fast_ub always use -fast
@@ -532,12 +534,18 @@ int main(int argc, char *argv[])
                 ya[r][2]=xyz_vec[chain_j][r][2];
             }
 
-            /* declare variable specific to this pair of HwRMSD */
-            double t0[3], u0[3][3];
-            double TM1, TM2;
+            // declare variable specific to this pair of HwRMSD
+            double t0[3];
+            double u0[3][3];
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -548,7 +556,7 @@ int main(int argc, char *argv[])
             int n_ali8=0;
             int *invmap = new int[ylen+1];
 
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             HwRMSD_main(
                 xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
                 &sec_vec[chain_i][0], &sec_vec[chain_j][0], t0, u0,
@@ -583,14 +591,14 @@ int main(int argc, char *argv[])
                     HwRMSDscore_list.push_back(make_pair(TM,index_vec[j]));
             }
 
-            /* clean up after each HwRMSD */
+            // clean up after each HwRMSD
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
             DeleteArray(&ya, ylen);
             delete [] invmap;
 
-            /* if a good hit is guaranteed to be found, stop the loop */
+            // if a good hit is guaranteed to be found, stop the loop
             if (TM>=ub_HwRMSD) break;
         }
 
@@ -646,12 +654,18 @@ int main(int argc, char *argv[])
             Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
             bool overwrite_fast_opt=(fast_opt==true || Lave>=fast_ub);
             
-            /* declare variable specific to this pair of TMalign */
-            double t0[3], u0[3][3];
-            double TM1, TM2;
+            // declare variable specific to this pair of TMalign
+            double t0[3];
+            double u0[3][3];
+            double TM1;
+            double TM2;
             double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt
-            double d0_0, TM_0;
-            double d0A, d0B, d0u, d0a;
+            double d0_0;
+            double TM_0;
+            double d0A;
+            double d0B;
+            double d0u;
+            double d0a;
             double d0_out=5.0;
             string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
@@ -662,7 +676,7 @@ int main(int argc, char *argv[])
             int n_ali8=0;
             vector<double> do_vec;
             
-            /* entry function for structure alignment */
+            // entry function for structure alignment
             int status=TMalign_main(
                 xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
                 &sec_vec[chain_i][0], &sec_vec[chain_j][0],
@@ -758,13 +772,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* clean up */
+    // clean up
     mol_vec.clear();
     xyz_vec.clear();
     seq_vec.clear();
     sec_vec.clear();
 
-    /* print out cluster */
+    // print out cluster
     stringstream txt;
     for (j=0;j<clust_repr_vec.size();j++)
     {
@@ -785,7 +799,7 @@ int main(int argc, char *argv[])
     }
     else cout<<txt.str()<<endl;
 
-    /* clean up */
+    // clean up
     txt.str(string());
     clust_repr_vec.clear();
     clust_mem_vec.clear();

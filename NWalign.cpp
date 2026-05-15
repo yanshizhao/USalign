@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     t1 = clock();
 
     /**********************/
-    /*    get argument    */
+    //    get argument   
     /**********************/
     string xname     ="";
     string yname     ="";
@@ -124,84 +124,84 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( !strcmp(argv[i],"-h") )
+        if ( string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if ( !strcmp(argv[i],"-infmt1") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt1" && i < (argc-1) )
         {
-            infmt1_opt=atoi(argv[i + 1]); i++;
+            infmt1_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-infmt2") && i < (argc-1) )
+        else if ( string(argv[i]) == "-infmt2" && i < (argc-1) )
         {
-            infmt2_opt=atoi(argv[i + 1]); i++;
+            infmt2_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-ter") && i < (argc-1) )
+        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=atoi(argv[i + 1]); i++;
+            ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-split") && i < (argc-1) )
+        else if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=atoi(argv[i + 1]); i++;
+            split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-atom") && i < (argc-1) )
+        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-mol") && i < (argc-1) )
+        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir1") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir1" && i < (argc-1) )
         {
             dir1_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-dir2") && i < (argc-1) )
+        else if ( string(argv[i]) == "-dir2" && i < (argc-1) )
         {
             dir2_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-suffix") && i < (argc-1) )
+        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( !strcmp(argv[i],"-outfmt") && i < (argc-1) )
+        else if ( string(argv[i]) == "-outfmt" && i < (argc-1) )
         {
-            outfmt_opt=atoi(argv[i + 1]); i++;
+            outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-glocal") && i < (argc-1) )
+        else if ( string(argv[i]) == "-glocal" && i < (argc-1) )
         {
-            glocal=atoi(argv[i + 1]); i++;
+            glocal=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( !strcmp(argv[i],"-het") && i < (argc-1) )
+        else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=atoi(argv[i + 1]); i++;
+            het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if (!strcmp(argv[i], "-chain1") )
+        else if (string(argv[i]) == "-chain1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-chain2") )
+        else if (string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model1") )
+        else if (string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
-        else if (!strcmp(argv[i], "-model2") )
+        else if (string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
     if (split_opt<0 || split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
-    /* parse file list */
+    // parse file list
     if (dir1_opt.size()+dir_opt.size()==0) chain1_list.push_back(xname);
     else file2chainlist(chain1_list, xname, dir_opt+dir1_opt, suffix_opt);
 
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
     if (outfmt_opt==2)
         cout<<"#sequence1\tsequence2\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
 
-    /* declare previously global variables */
+    // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -271,13 +271,12 @@ int main(int argc, char *argv[])
     int  chain_i,chain_j;    // chain index
     int  xlen, ylen;         // chain length
     int  xchainnum,ychainnum;// number of chains in a PDB file
-    char *seqx, *seqy;       // for the protein sequence 
     int  l;                  // residue index
 
-    /* loop over file names */
+    // loop over file names
     for (i=0;i<chain1_list.size();i++)
     {
-        /* parse chain 1 */
+        // parse chain 1
         xname=chain1_list[i];
         if (infmt1_opt>=4) xchainnum=get_FASTA_lines(xname, PDB_lines1, 
                 chainID_list1, mol_vec1, ter_opt, split_opt);
@@ -302,15 +301,17 @@ int main(int argc, char *argv[])
                     <<". Chain length 0."<<endl;
                 continue;
             }
-            seqx = new char[xlen + 1];
-            if (infmt1_opt>=4) strcpy(seqx,PDB_lines1[chain_i][0].c_str());
-            else for (l=0;l<xlen;l++)
-                seqx[l]=AAmap(PDB_lines1[chain_i][l].substr(17,3));
-            seqx[xlen]=0;
+            string seqx;
+            if (infmt1_opt>=4) seqx = PDB_lines1[chain_i][0];
+            else {
+                seqx.reserve(xlen);
+                for (l=0;l<xlen;l++)
+                    seqx += AAmap(PDB_lines1[chain_i][l].substr(17,3));
+            }
             
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
-                /* parse chain 2 */
+                // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
@@ -340,12 +341,14 @@ int main(int argc, char *argv[])
                             <<". Chain length 0."<<endl;
                         continue;
                     }
-                    seqy = new char[ylen + 1];
-                    if (infmt2_opt>=4) 
-                        strcpy(seqy,PDB_lines2[chain_j][0].c_str());
-                    else for (l=0;l<ylen;l++)
-                        seqy[l]=AAmap(PDB_lines2[chain_j][l].substr(17,3));
-                    seqy[ylen]=0;
+                    string seqy;
+                    if (infmt2_opt>=4)
+                        seqy = PDB_lines2[chain_j][0];
+                    else {
+                        seqy.reserve(ylen);
+                        for (l=0;l<ylen;l++)
+                            seqy += AAmap(PDB_lines2[chain_j][l].substr(17,3));
+                    }
 
                     int L_ali;                // Aligned length
                     double Liden=0;
@@ -356,7 +359,7 @@ int main(int argc, char *argv[])
                         seqxA, seqyA, mol_vec1[chain_i]+mol_vec2[chain_j],
                         invmap, (outfmt_opt>=2)?1:0, glocal);
                     
-                    if (outfmt_opt>=2) get_seqID(invmap, seqx, seqy, 
+                    if (outfmt_opt>=2) get_seqID(invmap, seqx.c_str(), seqy.c_str(),
                         ylen, Liden, L_ali);
                     else get_seqID(seqxA, seqyA, seqM, Liden, L_ali);
 
@@ -368,11 +371,10 @@ int main(int argc, char *argv[])
                         xlen, ylen, seqM.c_str(), seqxA.c_str(),
                         seqyA.c_str(), Liden, L_ali, aln_score, outfmt_opt);
 
-                    /* Done! Free memory */
+                    // Done! Free memory
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    delete [] seqy;
                     delete [] invmap;
                 } // chain_j
                 if (chain2_list.size()>1)
@@ -386,7 +388,6 @@ int main(int argc, char *argv[])
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            delete [] seqx;
         } // chain_i
         xname.clear();
         PDB_lines1.clear();

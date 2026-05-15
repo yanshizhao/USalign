@@ -484,24 +484,24 @@ void output_NWalign_results(
             L_ali, aln_score, Liden/L_ali);
         printf("Seq_ID= %6.5f (if normalized by length of Chain_1\n", Liden/xlen);
         printf("Seq_ID= %6.5f (if normalized by length of Chain_2\n", Liden/ylen);
-        printf("(You should use Seq_ID normalized by length of the reference structure)\n");
+        std::cout << "(You should use Seq_ID normalized by length of the reference structure)\n";
     
         //output alignment
         printf("\n(\":\" denotes pairs with identical residue type)\n");
-        printf("%s\n", seqxA);
-        printf("%s\n", seqM);
-        printf("%s\n", seqyA);
+        std::cout << seqxA << "\n";
+        std::cout << seqM << "\n";
+        std::cout << seqyA << "\n";
     }
     else if (outfmt_opt==1)
     {
         printf(">%s%s\tL=%d\tseqID=%.3f\n",
             xname.c_str(), chainID1, xlen, Liden/xlen);
-        printf("%s\n", seqxA);
+        std::cout << seqxA << "\n";
         printf(">%s%s\tL=%d\tseqID=%.3f\n",
             yname.c_str(), chainID2, ylen, Liden/ylen);
-        printf("%s\n", seqyA);
+        std::cout << seqyA << "\n";
         printf("#score=%d\tLali=%d\tseqID_ali=%.3f\n", aln_score, L_ali, Liden/L_ali);
-        printf("$$$$\n");
+        std::cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {

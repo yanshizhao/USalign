@@ -794,23 +794,35 @@ size_t get_FASTA_lines(const std::string filename,
     return FASTA_lines.size();
 }
 
-int read_PDB(const std::vector<std::string> &PDB_lines, double **a, char *seq,
+// C++ string overload (real implementation)
+int read_PDB(const std::vector<std::string> &PDB_lines, double **a, std::string &seq,
     std::vector<std::string> &resi_vec, const int read_resi)
 {
     size_t i;
+    seq.clear();
+    seq.reserve(PDB_lines.size());
     for (i=0;i<PDB_lines.size();i++)
     {
-        a[i][0] = safe_stod(PDB_lines[i].substr(30, 8).c_str());
-        a[i][1] = safe_stod(PDB_lines[i].substr(38, 8).c_str());
-        a[i][2] = safe_stod(PDB_lines[i].substr(46, 8).c_str());
-        seq[i]  = AAmap(PDB_lines[i].substr(17, 3));
+        a[i][0] = safe_stod(PDB_lines[i].substr(30, 8));
+        a[i][1] = safe_stod(PDB_lines[i].substr(38, 8));
+        a[i][2] = safe_stod(PDB_lines[i].substr(46, 8));
+        seq += AAmap(PDB_lines[i].substr(17, 3));
 
         if (read_resi>=2) resi_vec.push_back(PDB_lines[i].substr(22,5)+
                                              PDB_lines[i][21]);
         if (read_resi==1) resi_vec.push_back(PDB_lines[i].substr(22,5));
     }
-    seq[i]='\0'; 
     return i;
+}
+
+// char* wrapper (delegates to string overload)
+int read_PDB(const std::vector<std::string> &PDB_lines, double **a, char *seq,
+    std::vector<std::string> &resi_vec, const int read_resi)
+{
+    std::string seq_str;
+    int result = read_PDB(PDB_lines, a, seq_str, resi_vec, read_resi);
+    strcpy(seq, seq_str.c_str());
+    return result;
 }
 
 double dist(double x[3], double y[3])
@@ -891,12 +903,8 @@ void read_user_alignment(std::vector<std::string>&sequence, const std::string &f
 
 inline bool isfile(const std::string& filename)
 {
-    if (FILE *fp = fopen(filename.c_str(), "r"))
-    {
-        fclose(fp);
-        return true;
-    }
-    else return false;
+    std::ifstream ifs(filename);
+    return ifs.good();
 }
 
 /* read list of entries from 'name' to 'chain_list'.

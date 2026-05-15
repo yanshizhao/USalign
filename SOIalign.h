@@ -5,7 +5,8 @@
 
 void print_invmap(int *invmap, const int ylen)
 {
-    int i,j;
+    int i;
+    int j;
     for (j=0;j<ylen;j++)
     {
         i=invmap[j];
@@ -16,7 +17,8 @@ void print_invmap(int *invmap, const int ylen)
 
 void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
 {
-    int i,j;
+    int i;
+    int j;
     int starti=-1;
     int endi=-1;
     char ss;
@@ -60,7 +62,9 @@ void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
     double **score;
     NewArray(&score, xlen+1, xlen+1);
     vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
-    int i,j,k;
+    int i;
+    int j;
+    int k;
     for (i=0;i<xlen;i++)
     {
         score[i+1][i+1]=0;
@@ -83,17 +87,18 @@ void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
         }
     }
 
-    /* clean up */
+    // clean up
     vector<pair<double,int> >().swap(close_idx_vec);
     DeleteArray(&score, xlen+1);
 }
 
-/* check if pairing i to j conform to sequantiality within the SSE */
+// check if pairing i to j conform to sequantiality within the SSE
 inline bool sec2sq(const int i, const int j,
     int **secx_bond, int **secy_bond, int *fwdmap, int *invmap)
 {
     if (i<0 || j<0) return true;
-    int ii,jj;
+    int ii;
+    int jj;
     if (secx_bond[i][0]>=0)
     {
         for (ii=secx_bond[i][0];ii<secx_bond[i][1];ii++)
@@ -116,7 +121,8 @@ inline bool sec2sq(const int i, const int j,
 void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
     int **secx_bond, int **secy_bond, const int mm_opt)
 {
-    int i,j;
+    int i;
+    int j;
     int *fwdmap=new int[xlen]; // j=fwdmap[i];
     for (i=0; i<xlen; i++) fwdmap[i]=-1;
     for (j=0; j<ylen; j++)
@@ -125,9 +131,10 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
         if (i>=0) fwdmap[i]=j;
     }
 
-    /* stage 1 - make initial assignment, starting from the highest score pair */
+    // stage 1 - make initial assignment, starting from the highest score pair
     double max_score;
-    int maxi,maxj;
+    int maxi;
+    int maxj;
     while(1)
     {
         max_score=0;
@@ -157,9 +164,10 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
         if (i>=0) total_score+=score[i+1][j+1];
     }
 
-    /* stage 2 - swap assignment until total score cannot be improved */
+    // stage 2 - swap assignment until total score cannot be improved
     int iter;
-    int oldi,oldj;
+    int oldi;
+    int oldj;
     double delta_score;
     for (iter=0; iter<getmin(xlen,ylen)*5; iter++)
     {
@@ -195,7 +203,7 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
         if (delta_score<=0) break; // cannot make further swap
     }
 
-    /* clean up */
+    // clean up
     delete[]fwdmap;
 }
 
@@ -226,7 +234,8 @@ int soi_se_main(
 
     int *m1=nullptr;
     int *m2=nullptr;
-    int i,j;
+    int i;
+    int j;
     double d;
     if (outfmt_opt<2)
     {
@@ -235,14 +244,14 @@ int soi_se_main(
     }
 
     /***********************/
-    /* allocate memory     */
+    // allocate memory    
     /***********************/
     NewArray(&score, xlen+1, ylen+1);
     NewArray(&path,  xlen+1, ylen+1);
     NewArray(&val,   xlen+1, ylen+1);
     //int *invmap          = new int[ylen+1];
 
-    /* set d0 */
+    // set d0
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
         score_d8, d0, d0_search, dcu0); // set score_d8
     parameter_set4final(xlen, D0_MIN, Lnorm,
@@ -263,7 +272,7 @@ int soi_se_main(
         }
     }
 
-    /* perform alignment */
+    // perform alignment
     for(j=0; j<ylen; j++) invmap[j]=-1;
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
@@ -324,7 +333,7 @@ int soi_se_main(
         return 0;
     }
 
-    /* extract aligned sequence */
+    // extract aligned sequence
     int ali_len=xlen+ylen;
     for (j=0;j<ylen;j++) ali_len-=(invmap[j]>=0);
     seqxA.assign(ali_len,'-');
@@ -354,7 +363,7 @@ int soi_se_main(
         k++;
     }
 
-    /* free memory */
+    // free memory
     delete [] fwdmap;
     delete [] m1;
     delete [] m2;
@@ -367,7 +376,8 @@ int soi_se_main(
 inline void SOI_super2score(double **xt, double **ya, const int xlen,
     const int ylen, double **score, double d0, double score_d8)
 {
-    int i,j;
+    int i;
+    int j;
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
     double d2;
@@ -396,8 +406,13 @@ double SOI_iter(double **r1, double **r2, double **xtm, double **ytm,
     double rmsd; 
     int *invmap=new int[ylen+1];
     
-    int iteration, i, j, k;
-    double tmscore, tmscore_max, tmscore_old=0;    
+    int iteration;
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double tmscore_max;
+    double tmscore_old=0;
     tmscore_max=-1;
 
     //double d01=d0+1.5;
@@ -456,7 +471,9 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double local_d0_search, double d0, double score_d8,
     int **secx_bond, int **secy_bond, const int mm_opt)
 {
-    int i,j,k;
+    int i;
+    int j;
+    int k;
     double **xfrag;
     double **xtran;
     double **yfrag;
@@ -468,7 +485,7 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double score_d82=score_d8*score_d8;
     double d2;
 
-    /* fill in score */
+    // fill in score
     for (i=0;i<xlen;i++)
     {
         for (k=0;k<closeK_opt;k++)
@@ -502,13 +519,13 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
         }
     }
 
-    /* initial assignment */
+    // initial assignment
     for (j=0;j<ylen;j++) invmap[j]=-1;
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
     for (j=0; j<ylen;j++) i=invmap[j];
     soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
-    /* clean up */
+    // clean up
     DeleteArray(&xfrag, closeK_opt);
     DeleteArray(&xtran, closeK_opt);
     DeleteArray(&yfrag, closeK_opt);
@@ -519,7 +536,9 @@ void SOI_assign2super(double **r1, double **r2, double **xtm, double **ytm,
     const int xlen, const int ylen, double t[3], double u[3][3], int invmap[], 
     double local_d0_search, double Lnorm, double d0, double score_d8)
 {
-    int i,j,k;
+    int i;
+    int j;
+    int k;
     double rmsd;
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
@@ -577,7 +596,7 @@ int SOIalign_main(double **xa, double **ya,
     double **r1, **r2;    // for Kabsch rotation
 
     /***********************/
-    /* allocate memory     */
+    // allocate memory    
     /***********************/
     int minlen = min(xlen, ylen);
     int maxlen = (xlen>ylen)?xlen:ylen;
@@ -593,18 +612,20 @@ int SOIalign_main(double **xa, double **ya,
     NewArray(&r2, minlen, 3);
 
     /***********************/
-    /*    parameter set    */
+    //    parameter set   
     /***********************/
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
         score_d8, d0, d0_search, dcu0);
     int simplify_step    = 40; //for simplified search engine
     int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
 
-    int i,j;
+    int i;
+    int j;
     int *fwdmap0         = new int[xlen+1];
     int *invmap0         = new int[ylen+1];
     
-    double TMmax=-1, TM=-1;
+    double TMmax=-1;
+    double TM=-1;
     for(i=0; i<xlen; i++) fwdmap0[i]=-1;
     for(j=0; j<ylen; j++) invmap0[j]=-1;
     double local_d0_search = d0_search;
@@ -612,7 +633,7 @@ int SOIalign_main(double **xa, double **ya,
     //if (mm_opt==6) iteration_max=1;
 
     /*************************************************************/
-    /* initial alignment with sequence order dependent alignment */
+    // initial alignment with sequence order dependent alignment
     /*************************************************************/
     vector<double> do_vec;
     CPalign_main(xa, ya, seqx, seqy, secx, secy,
@@ -671,7 +692,7 @@ int SOIalign_main(double **xa, double **ya,
     }
     
     /***************************************************************/
-    /* initial alignment with sequence order independent alignment */
+    // initial alignment with sequence order independent alignment
     /***************************************************************/
     if (closeK_opt>=3)
     {
@@ -754,7 +775,8 @@ int SOIalign_main(double **xa, double **ya,
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    int *m1, *m2;
+    int *m1;
+    int *m2;
     double d;
     m1=new int[xlen]; //alignd index in x
     m2=new int[ylen]; //alignd index in y
@@ -900,7 +922,7 @@ int SOIalign_main(double **xa, double **ya,
         TM_0=TM5;
     }
 
-    /* derive alignment from superposition */
+    // derive alignment from superposition
     int ali_len=xlen+ylen;
     for (j=0;j<ylen;j++) ali_len-=(invmap0[j]>=0);
     seqxA.assign(ali_len,'-');
@@ -940,7 +962,7 @@ int SOIalign_main(double **xa, double **ya,
         //<<100.*SO<<endl;
 
 
-    /* clean up */
+    // clean up
     DeleteArray(&score, xlen+1);
     DeleteArray(&scoret,ylen+1);
     DeleteArray(&path,maxlen+1);
