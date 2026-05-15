@@ -108,7 +108,9 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     int i, m;
     double score_max, score, rmsd;    
     const int kmax=Lali;    
-    int k_ali[kmax], ka, k;
+    std::vector<int> k_ali(kmax);
+    int ka;
+    int k;
     double t[3];
     double u[3][3];
     double d;
@@ -117,7 +119,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     //iterative parameters
     int n_it=20;            //maximum number of iterations
     int n_init_max=6; //maximum number of different fragment length 
-    int L_ini[n_init_max];  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
+    int L_ini[6];  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
     int L_ini_min=4;
     if(Lali<L_ini_min) L_ini_min=Lali;   
 
@@ -140,7 +142,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     
     score_max=-1;
     //find the maximum score starting from local structures superposition
-    int i_ali[kmax], n_cut;
+    std::vector<int> i_ali(kmax);
+    int n_cut;
     int L_frag; //fragment length
     int iL_max; //maximum starting position for the fragment
     
@@ -177,7 +180,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
             
             //get subsegment of this fragment
             d = local_d0_search - 1;
-            n_cut=score_fun8(xt, ytm, Lali, d, i_ali, &score, 
+            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score, 
                 score_sum_method, Lnorm, score_d8, d0);
             if(score>score_max)
             {
@@ -215,7 +218,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
                 //extract rotation matrix based on the fragment                
                 Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut=score_fun8(xt, ytm, Lali, d, i_ali, &score, 
+                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score, 
                     score_sum_method, Lnorm, score_d8, d0);
                 if(score>score_max)
                 {
@@ -263,7 +266,9 @@ double TMscore8_search_standard( double **r1, double **r2,
     int i, m;
     double score_max, score, rmsd;
     const int kmax = Lali;
-    int k_ali[kmax], ka, k;
+    std::vector<int> k_ali(kmax);
+    int ka;
+    int k;
     double t[3];
     double u[3][3];
     double d;
@@ -271,7 +276,7 @@ double TMscore8_search_standard( double **r1, double **r2,
     //iterative parameters
     int n_it = 20;            //maximum number of iterations
     int n_init_max = 6; //maximum number of different fragment length 
-    int L_ini[n_init_max];  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
+    int L_ini[6];  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
     int L_ini_min = 4;
     if (Lali<L_ini_min) L_ini_min = Lali;
 
@@ -294,7 +299,8 @@ double TMscore8_search_standard( double **r1, double **r2,
 
     score_max = -1;
     //find the maximum score starting from local structures superposition
-    int i_ali[kmax], n_cut;
+    std::vector<int> i_ali(kmax);
+    int n_cut;
     int L_frag; //fragment length
     int iL_max; //maximum starting position for the fragment
 
@@ -330,7 +336,7 @@ double TMscore8_search_standard( double **r1, double **r2,
 
             //get subsegment of this fragment
             d = local_d0_search - 1;
-            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, &score,
+            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                 score_sum_method, score_d8, d0);
 
             if (score>score_max)
@@ -369,7 +375,7 @@ double TMscore8_search_standard( double **r1, double **r2,
                 //extract rotation matrix based on the fragment                
                 Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, &score,
+                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, score_d8, d0);
                 if (score>score_max)
                 {
@@ -525,7 +531,7 @@ double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
     //evaluate score   
     double di;
     const int len=k;
-    double dis[len];    
+    std::vector<double> dis(len);    
     double d00=d0_search;
     double d002=d00*d00;
     double d02=d0*d0;
@@ -545,7 +551,7 @@ double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
    
    //second iteration 
     double d002t=d002;
-    vector<double> dis_vec(dis, dis+n_ali);
+    vector<double> dis_vec(dis.begin(), dis.begin()+n_ali);
     sort(dis_vec.begin(), dis_vec.end());
     if (d002t<dis_vec[2]) d002t=dis_vec[2];
     dis_vec.clear();
@@ -586,7 +592,7 @@ double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
         
         //third iteration
         d002t=d002+1;
-        vector<double> dis_vec(dis, dis+n_ali);
+        vector<double> dis_vec(dis.begin(), dis.begin()+n_ali);
         sort(dis_vec.begin(), dis_vec.end());
         if (d002t<dis_vec[2]) d002t=dis_vec[2];
         dis_vec.clear();
