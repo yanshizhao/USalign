@@ -380,6 +380,15 @@ void trace_back_sw(const char *seqx, const char *seqy,
     delete [] buf;
 }
 
+// C++ string overload (forward bridge)
+int NWalign_main(const std::string &seqx, const std::string &seqy, const int xlen,
+    const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
+    int *invmap, const int invmap_only=0, const int glocal=0)
+{
+    return NWalign_main(seqx.c_str(), seqy.c_str(), xlen, ylen,
+        seqxA, seqyA, mol_type, invmap, invmap_only, glocal);
+}
+
 /* entry function for NWalign
  * invmap_only - whether to return seqxA and seqyA or to return invmap
  *               0: only return seqxA and seqyA
@@ -526,7 +535,7 @@ void output_NWalign_results(
 /* extract pairwise sequence alignment from residue index vectors,
  * assuming that "sequence" contains two empty strings.
  * return length of alignment, including gap. */
-int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *seqy,
+int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, const char *seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const int byresi_opt)
 {
@@ -662,7 +671,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *
 
 /* extract pairwise sequence alignment from residue index vectors,
  * return length of alignment, including gap. */
-int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *seqy,
+int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, const char *seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const std::vector<int> xlen_vec, const std::vector<int> ylen_vec,
     const int chain_i, const int chain_j, const int byresi_opt)
