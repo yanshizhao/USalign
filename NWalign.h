@@ -1,4 +1,4 @@
-/* header for Needleman-Wunsch global sequence alignment */
+// header for Needleman-Wunsch global sequence alignment
 #ifndef NWalign_H
 #define NWalign_H 1
 
@@ -13,13 +13,14 @@ const int gapext_blosum62=-1;
 const int gapopen_blastn=-15; //-5;
 const int gapext_blastn =-4;  //-2;
 
-/* initialize matrix in gotoh algorithm */
+// initialize matrix in gotoh algorithm
 void init_gotoh_mat(int **S, int **JumpH, int **JumpV, int **P,
     int **H, int **V, const int xlen, const int ylen, const int gapopen,
     const int gapext, const int glocal=0, const int alt_init=1)
 {
     // fill first row/colum of JumpH,jumpV and path matrix P
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<xlen+1;i++)
         for (j=0;j<ylen+1;j++)
             H[i][j]=V[i][j]=P[i][j]=JumpH[i][j]=JumpV[i][j]=0;
@@ -57,7 +58,8 @@ void find_highest_align_score( int **S, int **P,
     // locate the cell with highest alignment score
     int max_aln_i=xlen;
     int max_aln_j=ylen;
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<xlen+1;i++)
     {
         for (j=0;j<ylen+1;j++)
@@ -108,12 +110,15 @@ int calculate_score_gotoh(const int xlen,const int ylen, int **S,
     NewArray(&V,xlen+1,ylen+1); // penalty score for vertical long gap
     
     // fill first row/colum of JumpH,jumpV and path matrix P
-    int i,j;
+    int i;
+    int j;
     init_gotoh_mat(S, JumpH, JumpV, P, H, V, xlen, ylen,
         gapopen, gapext, glocal, alt_init);
 
     // fill S and P
-    int diag_score,left_score,up_score;
+    int diag_score;
+    int left_score;
+    int up_score;
     for (i=1;i<xlen+1;i++)
     {
         for (j=1;j<ylen+1;j++)
@@ -187,13 +192,15 @@ int calculate_score_gotoh(const int xlen,const int ylen, int **S,
     return aln_score; // final alignment score
 }
 
-/* trace back dynamic programming path to diciper pairwise alignment */
+// trace back dynamic programming path to diciper pairwise alignment
 void trace_back_gotoh(const char *seqx, const char *seqy,
     int ** JumpH, int ** JumpV, int ** P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
-    int i,j;
-    int gaplen,p;
+    int i;
+    int j;
+    int gaplen;
+    int p;
     char *buf=nullptr;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
@@ -270,7 +277,8 @@ void trace_back_sw(const char *seqx, const char *seqy,
 {
     int i;
     int j;
-    int gaplen,p;
+    int gaplen;
+    int p;
     bool found_start_cell=false; // std::find the first non-zero cell in P
     char *buf=nullptr;
 
@@ -292,7 +300,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
         if (found_start_cell) break;
     }
 
-    /* copy C terminal sequence */
+    // copy C terminal sequence
     if (invmap_only!=1)
     {
         for (p=0;p<ylen-j;p++) buf[p]='-';
@@ -316,7 +324,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
         return;
     }
 
-    /* traceback aligned sequences */
+    // traceback aligned sequences
     while(P[i][j]!=0)
     {
         gaplen=0;
@@ -356,7 +364,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
             }
         }
     }
-    /* copy N terminal sequence */
+    // copy N terminal sequence
     if (invmap_only!=1)
     {
         for (p=0;p<j;p++) buf[p]='-';
@@ -393,7 +401,8 @@ int NWalign_main(const char *seqx, const char *seqy, const int xlen,
     int aln_score;
     int gapopen=gapopen_blosum62;
     int gapext =gapext_blosum62;
-    int i,j;
+    int i;
+    int j;
     if (mol_type>0) // RNA or DNA
     {
         gapopen=gapopen_blastn;
@@ -437,7 +446,8 @@ void get_seqID(int *invmap, const char *seqx, const char *seqy,
 {
     Liden=0;
     L_ali=0;
-    int i,j;
+    int i;
+    int j;
     for (j=0;j<ylen;j++)
     {
         i=invmap[j];
@@ -665,7 +675,8 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, char *seqx, char *
     int i2=0; // positions in resi_vec2
     int xlen=xlen_vec[chain_i];
     int ylen=ylen_vec[chain_j];
-    int i,j;
+    int i;
+    int j;
     for (i=0;i<chain_i;i++) i1+=xlen_vec[i];
     for (j=0;j<chain_j;j++) i2+=ylen_vec[j];
 

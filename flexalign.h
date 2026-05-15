@@ -7,7 +7,9 @@
 
 void t_u2tu(double t0[3],double u0[3][3], vector<double> &tu_tmp)
 {
-    int i,j,k;
+    int i;
+    int j;
+    int k;
     for (i=0;i<3;i++) tu_tmp[i]=t0[i];
     k=3;
     for (i=0;i<3;i++) for (j=0;j<3;j++)
@@ -19,7 +21,9 @@ void t_u2tu(double t0[3],double u0[3][3], vector<double> &tu_tmp)
 
 void tu2t_u(vector<double> tu_tmp, double t0[3],double u0[3][3])
 {
-    int i,j,k;
+    int i;
+    int j;
+    int k;
     for (i=0;i<3;i++) t0[i]=tu_tmp[i];
     k=3;
     for (i=0;i<3;i++) for (j=0;j<3;j++)
@@ -31,7 +35,9 @@ void tu2t_u(vector<double> tu_tmp, double t0[3],double u0[3][3])
 
 void aln2invmap(const string &seqxA, const string &seqyA, int *invmap)
 {
-    int i,j,r;
+    int i;
+    int j;
+    int r;
     int ylen=0;
     for (r=0;r<seqyA.size();r++) ylen+=seqyA[r]!='-';
     for(j=0; j<ylen; j++) invmap[j]=-1;
@@ -75,7 +81,9 @@ int flexalign_main(double **xa, double **ya,
         tu_vec.push_back(tu_tmp);
     }
     
-    int i,j,r;
+    int i;
+    int j;
+    int r;
     int* invmap=new int[ylen+1];
     for (j=0;j<ylen+1;j++) invmap[j]=-1;
     double **xt;
@@ -94,7 +102,7 @@ int flexalign_main(double **xa, double **ya,
         a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
     if (round2)
     {
-        /* aligned structure A vs unaligned structure B */
+        // aligned structure A vs unaligned structure B
         int xlen_h=n_ali8;
         int ylen_h=ylen - n_ali8;
         char *seqx_h = new char[xlen + 1];
@@ -103,11 +111,13 @@ int flexalign_main(double **xa, double **ya,
         char *secy_h = new char[ylen + 1];
         seqx_h[xlen]=seqy_h[ylen]=0;
         secx_h[xlen]=secy_h[ylen]=0;
-        double **xa_h, **ya_h;
+        double **xa_h;
+        double **ya_h;
         NewArray(&xa_h, xlen, 3);
         NewArray(&ya_h, ylen, 3);
 
-        int r1,r2;
+        int r1;
+        int r2;
         i=j=-1;
         r1=r2=0;
         for (r=0;r<seqxA.size();r++)
@@ -134,10 +144,15 @@ int flexalign_main(double **xa, double **ya,
             }
         }
         
-        double TM1_h, TM2_h;
+        double TM1_h;
+        double TM2_h;
         double TM3_h, TM4_h, TM5_h;     // for a_opt, u_opt, d_opt
-        double d0_0_h, TM_0_h;
-        double d0A_h, d0B_h, d0u_h, d0a_h;
+        double d0_0_h;
+        double TM_0_h;
+        double d0A_h;
+        double d0B_h;
+        double d0u_h;
+        double d0a_h;
         double d0_out_h=5.0;
         string seqM_h, seqxA_h, seqyA_h;// for output alignment
         double rmsd0_h = 0.0;
@@ -170,7 +185,7 @@ int flexalign_main(double **xa, double **ya,
             xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
             a_opt, u_opt, d_opt, mol_type, 0, invmap_h, 1);
         
-        /* unaligned structure A vs aligned structure B */
+        // unaligned structure A vs aligned structure B
         xlen_h=xlen - n_ali8;
         ylen_h=n_ali8;
 
@@ -248,7 +263,7 @@ int flexalign_main(double **xa, double **ya,
         }
         else t_u2tu(t0,u0,tu_vec[0]);
         
-        /* clean up */
+        // clean up
         delete [] invmap_h;
         DeleteArray(&xa_h, xlen);
         DeleteArray(&ya_h, ylen);
@@ -275,13 +290,15 @@ int flexalign_main(double **xa, double **ya,
         char *secy_h = new char[ylen_h + 1];
         seqx_h[xlen_h]=seqy_h[ylen_h]=0;
         secx_h[xlen_h]=secy_h[ylen_h]=0;
-        double **xa_h, **ya_h;
+        double **xa_h;
+        double **ya_h;
         NewArray(&xa_h, xlen_h, 3);
         NewArray(&ya_h, ylen_h, 3);
         vector<int> r1toi(xlen_h,0);
         vector<int> r2toj(ylen_h,0);
 
-        int r1,r2;
+        int r1;
+        int r2;
         i=j=-1;
         r1=r2=0;
         for (r=0;r<seqxA.size();r++)
@@ -310,10 +327,15 @@ int flexalign_main(double **xa, double **ya,
             }
         }
         
-        double TM1_h, TM2_h;
+        double TM1_h;
+        double TM2_h;
         double TM3_h, TM4_h, TM5_h;     // for a_opt, u_opt, d_opt
-        double d0_0_h, TM_0_h;
-        double d0A_h, d0B_h, d0u_h, d0a_h;
+        double d0_0_h;
+        double TM_0_h;
+        double d0A_h;
+        double d0B_h;
+        double d0u_h;
+        double d0a_h;
         double d0_out_h=5.0;
         string seqM_h, seqxA_h, seqyA_h;// for output alignment
         double rmsd0_h = 0.0;
@@ -375,7 +397,7 @@ int flexalign_main(double **xa, double **ya,
             //cout<<endl;
         }
         
-        /* clean up */
+        // clean up
         delete [] invmap_h;
         DeleteArray(&xa_h, xlen_h);
         DeleteArray(&ya_h, ylen_h);
@@ -398,7 +420,7 @@ int flexalign_main(double **xa, double **ya,
         return tu_vec.size();
     }
     
-    /* re-derive alignment based on tu_vec */
+    // re-derive alignment based on tu_vec
     vector<char> seqM_char(ylen,' ');
     vector<double> di_vec(ylen,-1);
     double d;
@@ -426,7 +448,7 @@ int flexalign_main(double **xa, double **ya,
         seqM[r]=seqM_char[j];
     }
 
-    /* smooth out AFP assignment: remove singleton insert */
+    // smooth out AFP assignment: remove singleton insert
     for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
     {
         j=-1;
@@ -443,7 +465,7 @@ int flexalign_main(double **xa, double **ya,
             else     seqM[r]=seqM_char[j]=seqM[r+1];
         }
     }
-    /* smooth out AFP assignment: remove singleton at the end of fragment */
+    // smooth out AFP assignment: remove singleton at the end of fragment
     char left_hinge=' ';
     char right_hinge=' ';
     for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
@@ -481,7 +503,7 @@ int flexalign_main(double **xa, double **ya,
             else if (left_hinge!=' ') seqM[r]=seqM_char[j]=left_hinge;
         }
     }
-    /* smooth out AFP assignment: remove dimer insert */
+    // smooth out AFP assignment: remove dimer insert
     for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
     {
         j=-1;
@@ -500,8 +522,9 @@ int flexalign_main(double **xa, double **ya,
             else     seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r+2];
         }
     }
-    /* smooth out AFP assignment: remove disconnected singleton */
-    int i1,i2;
+    // smooth out AFP assignment: remove disconnected singleton
+    int i1;
+    int i2;
     for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
     {
         j=-1;
@@ -541,7 +564,7 @@ int flexalign_main(double **xa, double **ya,
         }
     }
     
-    /* recalculate all scores */
+    // recalculate all scores
     for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
     {
         tu2t_u(tu_vec[hinge],t0,u0);
@@ -590,7 +613,7 @@ int flexalign_main(double **xa, double **ya,
         tu_vec.pop_back(); // remove unnecessary afp
     }
 
-    /* clean up */
+    // clean up
     seqM_char.clear();
     di_vec.clear();
     DeleteArray(&xt, xlen);
@@ -598,7 +621,7 @@ int flexalign_main(double **xa, double **ya,
     return tu_vec.size();
 }
 
-/* extract rotation matrix based on TMscore8 */
+// extract rotation matrix based on TMscore8
 void output_flexalign_rotation_matrix(const char* fname_matrix,
     const vector<vector<double> >&tu_vec, double t[3], double u[3][3])
 {
@@ -663,7 +686,9 @@ void output_flexalign_rasmol(const string xname, const string yname,
     string asym_id; // chain ID
     
     map<string,int> resi2hinge_dict;
-    int r,i,j;
+    int r;
+    int i;
+    int j;
     j=-1;
     char hinge_char=0;
     int ali_len=strlen(seqM);
@@ -706,7 +731,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
     buf_all_atm<<rasmol_cartoon_header;
     buf_all_atm_lig<<rasmol_cartoon_header;
 
-    /* selecting chains for -mol */
+    // selecting chains for -mol
     string chain1_sele;
     string chain2_sele;
     if (!mm_opt)
@@ -726,7 +751,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
     }
 
 
-    /* for PDBx/mmCIF only */
+    // for PDBx/mmCIF only
     map<string,int> _atom_site;
     int atom_site_pos;
     vector<string> line_vec;
@@ -736,16 +761,16 @@ void output_flexalign_rasmol(const string xname, const string yname,
     string model_index; // model index
     bool is_mmcif=false;
 
-    /* used for CONECT record of chain1 */
+    // used for CONECT record of chain1
     int ca_idx1=0; // all CA atoms
     int lig_idx1=0; // all atoms
     vector <int> idx_vec;
 
-    /* used for CONECT record of chain2 */
+    // used for CONECT record of chain2
     int ca_idx2=0; // all CA atoms
     int lig_idx2=0; // all atoms
 
-    /* extract aligned region */
+    // extract aligned region
     vector<string> resi_aln1;
     vector<string> resi_aln2;
     int i1=-1;
@@ -770,7 +795,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
     buf_all<<"select all\nexit\n"<<buf_tm.str();
 
     ifstream fin;
-    /* read first file */
+    // read first file
     after_ter=false;
     asym_id="";
     fin.open(xname.c_str());
@@ -1054,7 +1079,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
         <<setw(5)<<idx_vec[i-1]%100000<<setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
-    /* read second file */
+    // read second file
     after_ter=false;
     asym_id="";
     fin.open(yname.c_str());
@@ -1264,7 +1289,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
         <<setw(5)<<idx_vec[i-1]%100000<<setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
-    /* write pymol script */
+    // write pymol script
     ofstream fp;
     /*
     stringstream buf_pymol;
@@ -1300,7 +1325,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
     pml_list.clear();
     */
     
-    /* write rasmol script */
+    // write rasmol script
     if (!mm_opt)
     {
         fp.open((fname_super).c_str());
@@ -1326,7 +1351,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
     //fp<<buf_pdb.str();
     //fp.close();
 
-    /* clear stream */
+    // clear stream
     buf.str(string());
     buf_all.str(string());
     buf_atm.str(string());
@@ -1376,7 +1401,9 @@ void output_flexalign_pymol(const string xname, const string yname,
         fin.open(xname.c_str());
 
     map<string,int> resi2hinge_dict;
-    int r,i,j;
+    int r;
+    int i;
+    int j;
     j=-1;
     char hinge_char=0;
     int xlen=resi_vec1.size();
@@ -1408,7 +1435,7 @@ void output_flexalign_pymol(const string xname, const string yname,
     double x[3];  // before transform
     double x1[3]; // after transform
 
-    /* for PDBx/mmCIF only */
+    // for PDBx/mmCIF only
     map<string,int> _atom_site;
     size_t atom_site_pos;
     vector<string> line_vec;
@@ -1585,7 +1612,7 @@ void output_flexalign_pymol(const string xname, const string yname,
         }
     }
 
-    /* extract aligned region */
+    // extract aligned region
     int i1=-1;
     int i2=-1;
     string resi1_sele;
@@ -1633,7 +1660,7 @@ void output_flexalign_pymol(const string xname, const string yname,
         if (resi2_sele.size()) resi2_sele=" and ( "+resi2_sele+")";
     }
 
-    /* write pymol script */
+    // write pymol script
     vector<string> pml_list;
     pml_list.push_back(fname_super+"");
     pml_list.push_back(fname_super+"_atm");
@@ -1708,7 +1735,7 @@ void output_flexalign_pymol(const string xname, const string yname,
         buf_pymol.str(string());
     }
 
-    /* clean up */
+    // clean up
     pml_list.clear();
     
     resi1_sele.clear();

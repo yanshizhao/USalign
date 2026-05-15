@@ -5,12 +5,15 @@ int score_fun8( double **xa, double **ya, int n_ali, double d, int i_ali[],
     const double score_d8, const double d0,
     double GDT_list_tmp[5], double &maxsub_tmp)
 {
-    double score_sum=0, di;
+    double score_sum=0;
+    double di;
     double d_tmp=d*d;
     double d02=d0*d0;
     double score_d8_cut = score_d8*score_d8;
     
-    int i, n_cut, inc=0;
+    int i;
+    int n_cut;
+    int inc=0;
 
     while(1)
     {
@@ -33,7 +36,7 @@ int score_fun8( double **xa, double **ya, int n_ali, double d, int i_ali[],
             }
             else score_sum += 1/(1+di/d02);
 
-            /* for maxsub score */
+            // for maxsub score
             //maxsub_tmp+=1/(1+di/12.25);
             if (di<64) // 8*8=64
             {
@@ -76,12 +79,15 @@ int score_fun8_standard(double **xa, double **ya, int n_ali, double d,
     int i_ali[], double *score1, int score_sum_method,
     double score_d8, double d0, double GDT_list_tmp[5], double &maxsub_tmp)
 {
-    double score_sum = 0, di;
+    double score_sum = 0;
+    double di;
     double d_tmp = d*d;
     double d02 = d0*d0;
     double score_d8_cut = score_d8*score_d8;
 
-    int i, n_cut, inc = 0;
+    int i;
+    int n_cut;
+    int inc = 0;
     while (1)
     {
         for (i=0;i<5;i++) GDT_list_tmp[i]=0;
@@ -105,7 +111,7 @@ int score_fun8_standard(double **xa, double **ya, int n_ali, double d,
                 score_sum += 1 / (1 + di / d02);
             }
 
-            /* for maxsub score */
+            // for maxsub score
             //maxsub_tmp+=1/(1+di/12.25);
             if (di<64) // 8*8=64
             {
@@ -151,10 +157,15 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
 {
     double GDT_list_tmp[5]={0,0,0,0,0};
     double maxsub_tmp=0;
-    int i, m;
-    double score_max, score, rmsd;    
+    int i;
+    int m;
+    double score_max;
+    double score;
+    double rmsd;
     const int kmax=Lali;    
-    int k_ali[kmax], ka, k;
+    int k_ali[kmax];
+    int ka;
+    int k;
     double t[3];
     double u[3][3];
     double d;
@@ -167,7 +178,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     int L_ini_min=4;
     if(Lali<L_ini_min) L_ini_min=Lali;   
 
-    int n_init=0, i_init;      
+    int n_init=0;
+    int i_init;
     for(i=0; i<n_init_max-1; i++)
     {
         n_init++;
@@ -186,7 +198,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     
     score_max=-1;
     //find the maximum score starting from local structures superposition
-    int i_ali[kmax], n_cut;
+    int i_ali[kmax];
+    int n_cut;
     int L_frag; //fragment length
     int iL_max; //maximum starting postion for the fragment
     
@@ -318,10 +331,15 @@ double TMscore8_search_standard( double **r1, double **r2,
 {
     double GDT_list_tmp[5]={0,0,0,0,0};
     double maxsub_tmp=0;
-    int i, m;
-    double score_max, score, rmsd;
+    int i;
+    int m;
+    double score_max;
+    double score;
+    double rmsd;
     const int kmax = Lali;
-    int k_ali[kmax], ka, k;
+    int k_ali[kmax];
+    int ka;
+    int k;
     double t[3];
     double u[3][3];
     double d;
@@ -333,7 +351,8 @@ double TMscore8_search_standard( double **r1, double **r2,
     int L_ini_min = 4;
     if (Lali<L_ini_min) L_ini_min = Lali;
 
-    int n_init = 0, i_init;
+    int n_init = 0;
+    int i_init;
     for (i = 0; i<n_init_max - 1; i++)
     {
         n_init++;
@@ -352,7 +371,8 @@ double TMscore8_search_standard( double **r1, double **r2,
 
     score_max = -1;
     //find the maximum score starting from local structures superposition
-    int i_ali[kmax], n_cut;
+    int i_ali[kmax];
+    int n_cut;
     int L_frag; //fragment length
     int iL_max; //maximum starting position for the fragment
 
@@ -482,7 +502,9 @@ double detailed_search_standard( double **r1, double **r2,
     double GDT_list[5], double &maxsub)
 {
     //x is model, y is template, try to superpose onto y
-    int i, j, k;     
+    int i;
+    int j;
+    int k;
     double tmscore;
     double rmsd;
 
@@ -544,7 +566,7 @@ int TMscore_main(double **xa, double **ya,
     double **r1, **r2;    // for Kabsch rotation
 
     /***********************/
-    /* allocate memory     */
+    // allocate memory    
     /***********************/
     int minlen = min(xlen, ylen);
     NewArray(&score, xlen+1, ylen+1);
@@ -557,7 +579,7 @@ int TMscore_main(double **xa, double **ya,
     NewArray(&r2, minlen, 3);
 
     /***********************/
-    /*    parameter set    */
+    //    parameter set   
     /***********************/
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
         score_d8, d0, d0_search, dcu0);
@@ -567,7 +589,8 @@ int TMscore_main(double **xa, double **ya,
     int i;
     int *invmap0         = new int[ylen+1];
     int *invmap          = new int[ylen+1];
-    double TM, TMmax=-1;
+    double TM;
+    double TMmax=-1;
     for(i=0; i<ylen; i++) invmap0[i]=-1;
 
     double ddcc=0.4;
@@ -634,7 +657,7 @@ int TMscore_main(double **xa, double **ya,
         return 1;
     }
 
-    /* last TM-score pre-termination */
+    // last TM-score pre-termination
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
@@ -664,7 +687,8 @@ int TMscore_main(double **xa, double **ya,
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    int *m1, *m2;
+    int *m1;
+    int *m2;
     double d;
     m1=new int[xlen]; //alignd index in x
     m2=new int[ylen]; //alignd index in y
@@ -768,7 +792,7 @@ int TMscore_main(double **xa, double **ya,
         TM_0=TM5;
     }
 
-    /* derive alignment from superposition */
+    // derive alignment from superposition
     int ali_len=xlen+ylen; //maximum length of alignment
     seqxA.assign(ali_len,'-');
     seqM.assign( ali_len,' ');
@@ -777,7 +801,9 @@ int TMscore_main(double **xa, double **ya,
     //do_rotation(xa, xt, xlen, t, u);
     do_rotation(xa, xt, xlen, t0, u0);
 
-    int kk=0, i_old=0, j_old=0;
+    int kk=0;
+    int i_old=0;
+    int j_old=0;
     d=0;
     for(int k=0; k<n_ali8; k++)
     {
@@ -832,7 +858,7 @@ int TMscore_main(double **xa, double **ya,
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
 
-    /* free memory */
+    // free memory
     clean_up_after_approx_TM(invmap0, invmap, score, path, val,
         xtm, ytm, xt, r1, r2, xlen, minlen);
     delete [] m1;
