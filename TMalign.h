@@ -848,7 +848,7 @@ bool overlap(const int a1,const int b1,const int c1,const int d1,
 }
 
 // find base pairing stacks in RNA
-void sec_str(int len,char *seq, const vector<vector<bool> >&bp, 
+void sec_str(int len,const char *seq, const vector<vector<bool> >&bp,
     int a, int b,int &c, int &d)
 {
     int i;
@@ -866,7 +866,7 @@ void sec_str(int len,char *seq, const vector<vector<bool> >&bp,
 
 /* secondary structure assignment for RNA:
  * 1->unpair, 2->paired with upstream, 3->paired with downstream */
-void make_sec(char *seq, double **x, int len, char *sec,const string atom_opt)
+void make_sec(const char *seq, double **x, int len, char *sec,const string atom_opt)
 {
     int ii;
     int jj;
