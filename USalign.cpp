@@ -2535,10 +2535,10 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *secx, *secy;       // for the secondary structure 
+    char   *secx, *secy;       // for the secondary structure
     int    **secx_bond;        // boundary of secondary structure
     int    **secy_bond;        // boundary of secondary structure
-    char   *seqx, *seqy;       // for the protein sequence
+    string seqx, seqy;         // for the protein sequence
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -2581,12 +2581,11 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             }
             NewArray(&xa, xlen, 3);
             if (closeK_opt>=3) NewArray(&xk, xlen*closeK_opt, 3);
-            seqx = new char[xlen + 1];
             secx = new char[xlen + 1];
-            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
+            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, read_resi);
             if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx,xa, xlen, secx,atom_opt);
+            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, secx,atom_opt);
             else make_sec(xa, xlen, secx); // secondary structure assignment
             if (closeK_opt>=3) getCloseK(xa, xlen, closeK_opt, xk);
             if (mm_opt==6) 
@@ -2630,12 +2629,11 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     }
                     NewArray(&ya, ylen, 3);
                     if (closeK_opt>=3) NewArray(&yk, ylen*closeK_opt, 3);
-                    seqy = new char[ylen + 1];
                     secy = new char[ylen + 1];
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, read_resi);
                     if (mol_vec2[chain_j]>0)
-                         make_sec(seqy, ya, ylen, secy, atom_opt);
+                         make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
                     if (closeK_opt>=3) getCloseK(ya, ylen, closeK_opt, yk);
                     if (mm_opt==6) 
@@ -2676,13 +2674,13 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         u0[1][0]=         u0[1][2]=
                         u0[2][0]=         u0[2][1]=
                         t0[0]   =t0[1]   =t0[2]   =0;
-                        soi_se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                        soi_se_main(xa, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
                             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                            seqM, seqxA, seqyA, 
+                            seqM, seqxA, seqyA,
                             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                             xlen, ylen, Lnorm_ass, d0_scale,
                             i_opt, a_opt, u_opt, d_opt,
-                            mol_vec1[chain_i]+mol_vec2[chain_j], 
+                            mol_vec1[chain_i]+mol_vec2[chain_j],
                             outfmt_opt, invmap, dist_list,
                             secx_bond, secy_bond, mm_opt);
                         if (outfmt_opt>=2) 
@@ -2700,7 +2698,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         }
                     }
                     else SOIalign_main(xa, ya, xk, yk, closeK_opt,
-                        seqx, seqy, secx, secy,
+                        seqx.c_str(), seqy.c_str(), secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, invmap,
