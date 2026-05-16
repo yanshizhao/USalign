@@ -572,7 +572,7 @@ int MMalign(const string &xname, const string &yname,
     int    xlen, ylen;             // chain length
     char   *seqx, *seqy;           // for the protein sequence
     double **xa, **ya;             // structure of single chain
-    char   *secx, *secy;           // for the secondary structure 
+    char   *secx, *secy;           // for the secondary structure
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
     vector<string> resi_vec1;  // residue index for chain1
@@ -661,15 +661,15 @@ int MMalign(const string &xname, const string &yname,
     {
         xlen = xlen_vec[0];
         ylen = ylen_vec[0];
-        seqx = new char[xlen + 1];
-        seqy = new char[ylen + 1];
+        string seqx;
+        string seqy;
         secx = new char[xlen+1];
         secy = new char[ylen+1];
         NewArray(&xa, xlen, 3);
         NewArray(&ya, ylen, 3);
         copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
-        
+
         // declare variable specific to this pair of TMalign
         double t0[3];
         double u0[3][3];
@@ -691,8 +691,8 @@ int MMalign(const string &xname, const string &yname,
         int n_ali=0;
         int n_ali8=0;
         vector<double> do_vec;
-        
-        if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
+
+        if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
         // entry function for structure alignment
         if (se_opt)
@@ -725,7 +725,7 @@ int MMalign(const string &xname, const string &yname,
             }
             delete [] invmap;
         }
-        else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+        else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
