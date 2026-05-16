@@ -570,7 +570,7 @@ int MMalign(const string &xname, const string &yname,
     vector<int> ylen_vec;          // length of complex2
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
-    char   *seqx, *seqy;           // for the protein sequence
+    string seqx, seqy;             // for the protein sequence
     double **xa, **ya;             // structure of single chain
     char   *secx, *secy;           // for the secondary structure
     int    xlen_aa,ylen_aa;        // total length of protein
@@ -661,8 +661,6 @@ int MMalign(const string &xname, const string &yname,
     {
         xlen = xlen_vec[0];
         ylen = ylen_vec[0];
-        string seqx;
-        string seqy;
         secx = new char[xlen+1];
         secy = new char[ylen+1];
         NewArray(&xa, xlen, 3);
@@ -803,7 +801,6 @@ int MMalign(const string &xname, const string &yname,
             for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
             continue;
         }
-        seqx = new char[xlen + 1];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
@@ -835,7 +832,6 @@ int MMalign(const string &xname, const string &yname,
                 TMave_mat[i][j]=TMave_mat[j][i]=-1;
                 continue;
             }
-            seqy = new char[ylen + 1];
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
@@ -868,7 +864,7 @@ int MMalign(const string &xname, const string &yname,
             
             if (byresi_opt)
             {
-                int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
+                int total_aln=extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),
                     resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
                 seqxA_mat[i][j]=sequence[0];
                 seqyA_mat[i][j]=sequence[1];
@@ -920,7 +916,7 @@ int MMalign(const string &xname, const string &yname,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -1051,14 +1047,18 @@ int MMalign(const string &xname, const string &yname,
                               // score was from monomeric chain superpositions
     int max_iter=5-(int)((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
-    //if (byresi_opt==0) 
+    //if (byresi_opt==0)
+    // MMalign_iter/MMalign_final internally overwrite all work buffers with
+    // new[]/NewArray — pass nullptr placeholders (delete[] nullptr is safe)
+    char *sx=nullptr, *sy=nullptr, *scx=nullptr, *scy=nullptr;
+    double **xa_buf=nullptr, **ya_buf=nullptr;
     if (!se_opt)
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num,
+        ylen_vec, xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap, byresi_opt);
-    
+
     if (byresi_opt && aln_chain_num>=4 && is_oligomer && chainmap.size()==0 && !se_opt) // oligomer alignment
     {
         MMalign_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
@@ -1066,7 +1066,7 @@ int MMalign(const string &xname, const string &yname,
             fname_super, fname_lign, fname_matrix,
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx, seqy, secx, secy, len_aa, len_na,
+            xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
             seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
@@ -1117,7 +1117,7 @@ int MMalign(const string &xname, const string &yname,
         max_total_score=maxTMmono;
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
@@ -1134,7 +1134,7 @@ int MMalign(const string &xname, const string &yname,
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -1153,7 +1153,7 @@ int MMalign(const string &xname, const string &yname,
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, len_aa, len_na,
+        xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
@@ -1163,7 +1163,7 @@ int MMalign(const string &xname, const string &yname,
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, len_aa, len_na,
+        xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
