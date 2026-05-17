@@ -1962,7 +1962,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             i=TM_pair_vec[tm_idx].second;
             xlen = len_vec[i];
-            seqx = new char[xlen + 1];
+            string seqx;
             secx = new char[xlen+1];
             NewArray(&xa, xlen, 3);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
@@ -1978,7 +1978,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             j=maxj;
             assign_list[i]=j;
             ylen = len_vec[j];
-            seqy = new char[ylen + 1];
+            string seqy;
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j], ylen,ya,seqy,secy);
@@ -2040,14 +2040,14 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
                 2,  a_opt, u_opt, d_opt, fast_opt, mol_type);
-        
+
             if (outfmt_opt<0) output_results(
                 xname_vec[i].c_str(), xname_vec[j].c_str(), "", "",
                 xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
