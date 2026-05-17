@@ -1758,20 +1758,20 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     {
         xlen=len_vec[i];
         if (xlen<3) continue;
-        seqx = new char[xlen + 1];
+        string seqx;
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
-        seqxA_mat[i][i]=seqyA_mat[i][i]=(string)(seqx);
+        seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
         for (j=i+1;j<chain_num;j++)
         {
             ylen=len_vec[j];
             if (ylen<3) continue;
-            seqy = new char[ylen + 1];
+            string seqy;
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
-            
+
             // declare variable specific to this pair of TMalign
             double t0[3];
             double u0[3][3];
@@ -1824,7 +1824,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
