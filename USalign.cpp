@@ -2815,8 +2815,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *secx, *secy;       // for the secondary structure 
-    char   *seqx, *seqy;       // for the protein sequence
+    char   *secx, *secy;       // for the secondary structure
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -2857,12 +2856,12 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                 continue;
             }
             NewArray(&xa, xlen, 3);
-            seqx = new char[xlen + 1];
+            string seqx;
             secx = new char[xlen + 1];
-            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
+            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, read_resi);
             if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx,xa, xlen, secx,atom_opt);
+            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, secx,atom_opt);
             else make_sec(xa, xlen, secx); // secondary structure assignment
 
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
@@ -2899,15 +2898,15 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         continue;
                     }
                     NewArray(&ya, ylen, 3);
-                    seqy = new char[ylen + 1];
+                    string seqy;
                     secy = new char[ylen + 1];
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, read_resi);
                     if (mol_vec2[chain_j]>0)
-                         make_sec(seqy, ya, ylen, secy, atom_opt);
+                         make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
                     double t0[3];
@@ -2935,7 +2934,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
 
                     // entry function for structure alignment
                     int hingeNum=flexalign_main(
-                        xa, ya, seqx, seqy, secx, secy,
+                        xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                         t0, u0, tu_vec, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
@@ -2970,7 +2969,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         tu2t_u(tu_vec[0],t0_h,u0_h);
 
                         int hingeNum_h=flexalign_main(
-                            xa, ya, seqx, seqy, secx, secy,
+                            xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
                             t0_h, u0_h, tu_vec_h,
                             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h,
                             d0_0_h, TM_0_h, d0A, d0B, d0u, d0a, d0_out_h,
