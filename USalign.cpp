@@ -1719,9 +1719,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<int> len_vec;           // length of complex
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
-    char   *seqx, *seqy;           // for the protein sequence
     double **xa, **ya;             // structure of single chain
-    char   *secx, *secy;           // for the secondary structure 
+    char   *secx, *secy;           // for the secondary structure
     int    len_aa,len_na;          // total length of protein and RNA/DNA
     vector<string> resi_vec;       // residue index for chain
 
@@ -2088,7 +2087,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             do_vec.clear();
         }
         ylen = len_vec[repr_idx];
-        seqy = new char[ylen + 1];
+        string seqy;
         secy = new char[ylen+1];
         NewArray(&ya, ylen, 3);
         copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
@@ -2111,7 +2110,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             assign_list[i]=tm_idx+1;
 
             xlen = len_vec[i];
-            seqx = new char[xlen + 1];
+            string seqx;
             secx = new char[xlen+1];
             NewArray(&xa, xlen, 3);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
@@ -2137,7 +2136,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int *invmap = new int[ylen+1];
             vector<double> do_vec;
 
-            se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+            se_main(xa, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
@@ -2147,7 +2146,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int ry=0;
             ylen_ext=seqxA.size();
             NewArray(&ya_ext, ylen_ext, 3);             // structure of single chain
-            seqy_ext= new char[ylen_ext+1];            // for the protein sequence 
+            seqy_ext= new char[ylen_ext+1];            // for the protein sequence
             secy_ext= new char[ylen_ext+1];            // for the secondary structure 
             string tmp_gap="";
             for (r=0;r<msa[0].size();r++) tmp_gap+='-';
@@ -2179,20 +2178,19 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             }
 
             // copy ya_ext to ya
-            
+
             delete[]secy;
             DeleteArray(&ya,ylen);
 
             ylen=ylen_ext;
             NewArray(&ya,ylen,3);
-            seqy = new char[ylen + 1];
+            seqy.assign(seqy_ext, ylen);
             secy = new char[ylen+1];
             for (r=0;r<ylen;r++)
             {
                 ya[r][0]=ya_ext[r][0];
                 ya[r][1]=ya_ext[r][1];
                 ya[r][2]=ya_ext[r][2];
-                seqy[r]=seqy_ext[r];
                 secy[r]=secy_ext[r];
             }
             for (r=0;r<ylen;r++)
@@ -2268,7 +2266,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             xlen=len_vec[i];
             if (xlen<3) continue;
-            seqx = new char[xlen + 1];
+            string seqx;
             secx = new char[xlen+1];
             NewArray(&xa, xlen, 3);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
@@ -2277,7 +2275,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 ylen=len_vec[j];
                 if (ylen<3) continue;
                 compare_num++;
-                seqy = new char[ylen + 1];
+                string seqy;
                 secy = new char[ylen+1];
                 NewArray(&ya, ylen, 3);
                 copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
@@ -2305,7 +2303,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 int *invmap = new int[ylen+1];
                 vector<double> do_vec;
 
-                se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                se_main(xa, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
