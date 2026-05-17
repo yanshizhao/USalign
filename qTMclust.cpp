@@ -396,7 +396,7 @@ int main(int argc, char *argv[])
             seq_tmp.assign(xlen+1,'A');
             sec_tmp.assign(xlen+1,0);
 
-            read_PDB(PDB_lines[j], xa, &seq_tmp[0], resi_vec, byresi_opt);
+            read_PDB(PDB_lines[j], xa, seq_tmp, resi_vec, byresi_opt);
 
             if (mol_vec[j]<=0) make_sec(xa, xlen, &sec_tmp[0]);
             else make_sec(&seq_tmp[0],xa,xlen,&sec_tmp[0],atom_opt);
