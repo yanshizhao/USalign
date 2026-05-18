@@ -815,16 +815,6 @@ int read_PDB(const std::vector<std::string> &PDB_lines, double **a, std::string 
     return i;
 }
 
-// char* wrapper (delegates to string overload)
-int read_PDB(const std::vector<std::string> &PDB_lines, double **a, char *seq,
-    std::vector<std::string> &resi_vec, const int read_resi)
-{
-    std::string seq_str;
-    int result = read_PDB(PDB_lines, a, seq_str, resi_vec, read_resi);
-    strcpy(seq, seq_str.c_str());
-    return result;
-}
-
 double dist(double x[3], double y[3])
 {
     double d1=x[0]-y[0];
