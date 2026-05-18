@@ -1198,6 +1198,7 @@ void parse_chain_list(const vector<string>&chain_list,
     }
 }
 
+// C++ string overload (real implementation)
 int copy_chain_pair_data(
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -1205,7 +1206,7 @@ int copy_chain_pair_data(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
+    double **xa, double **ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
     int chain1_num, int chain2_num,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence)
@@ -1220,13 +1221,15 @@ int copy_chain_pair_data(
     int mol_type=0;
     int xlen=0;
     int ylen=0;
+    seqx.clear();
+    seqy.clear();
     for (i=0;i<chain1_num;i++)
     {
         j=assign1_list[i];
         if (j<0) continue;
         for (r=0;r<xlen_vec[i];r++)
         {
-            seqx[xlen]=seqx_vec[i][r];
+            seqx += seqx_vec[i][r];
             secx[xlen]=secx_vec[i][r];
             xa[xlen][0]= xa_vec[i][r][0];
             xa[xlen][1]= xa_vec[i][r][1];
@@ -1236,7 +1239,7 @@ int copy_chain_pair_data(
         sequence[0]+=seqxA_mat[i][j];
         for (r=0;r<ylen_vec[j];r++)
         {
-            seqy[ylen]=seqy_vec[j][r];
+            seqy += seqy_vec[j][r];
             secy[ylen]=secy_vec[j][r];
             ya[ylen][0]= ya_vec[j][r][0];
             ya[ylen][1]= ya_vec[j][r][1];
@@ -1246,11 +1249,36 @@ int copy_chain_pair_data(
         sequence[1]+=seqyA_mat[i][j];
         mol_type+=mol_vec1[i]+mol_vec2[j];
     }
-    seqx[xlen]=0;
     secx[xlen]=0;
-    seqy[ylen]=0;
     secy[ylen]=0;
     return mol_type;
+}
+
+// char* wrapper (delegates to string overload)
+int copy_chain_pair_data(
+    const vector<vector<vector<double> > >&xa_vec,
+    const vector<vector<vector<double> > >&ya_vec,
+    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
+    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
+    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
+    int chain1_num, int chain2_num,
+    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
+    int *assign1_list, int *assign2_list, vector<string>&sequence)
+{
+    std::string seqx_str, seqy_str;
+    int result = copy_chain_pair_data(xa_vec, ya_vec,
+        seqx_vec, seqy_vec, secx_vec, secy_vec,
+        mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+        xa, ya, seqx_str, seqy_str, secx, secy,
+        chain1_num, chain2_num,
+        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
+    std::copy(seqx_str.begin(), seqx_str.end(), seqx);
+    seqx[seqx_str.size()] = 0;
+    std::copy(seqy_str.begin(), seqy_str.end(), seqy);
+    seqy[seqy_str.size()] = 0;
+    return result;
 }
 
 double MMalign_search(
