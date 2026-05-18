@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
     int    l;                         // residue index
     int    chain_i;                   // chain index
     int    xlen;                      // chain length
-    int    xchainnum;                 // number of chains in a PDB file    char   *secx;                     // for the secondary structure 
+    int    xchainnum;                 // number of chains in a PDB file    std::string secx;                     // for the secondary structure
     double **xa;                      // for input vectors xa[0...xlen-1][0..2] and
     vector<string> resi_vec;          // residue index for chain
 
@@ -208,18 +208,17 @@ int main(int argc, char *argv[])
             }
             NewArray(&xa, xlen, 3);
             string seqx;
-            secx = new char[xlen + 1];
+            secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines[chain_i], xa, seqx, resi_vec, 0);
-            if (mol_vec[chain_i]>0) make_sec(seqx,xa, xlen, secx,atom_opt);
-            else make_sec(xa, xlen, secx); // protein
+            if (mol_vec[chain_i]>0) make_sec(seqx,xa, xlen, &secx[0],atom_opt);
+            else make_sec(xa, xlen, &secx[0]); // protein
             
             cout<<'>'<<xname.substr(dir_opt.size(),
                 xname.size()-dir_opt.size()-suffix_opt.size())
-                <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<secx<<endl;
+                <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<secx.c_str()<<endl;
 
             PDB_lines[chain_i].clear();
             DeleteArray(&xa, xlen);
-            delete [] secx;
         } // chain_i
         xname.clear();
         PDB_lines.clear();
