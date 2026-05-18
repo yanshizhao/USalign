@@ -1288,7 +1288,7 @@ double MMalign_search(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
+    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char *secx, char *secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
@@ -1307,10 +1307,10 @@ double MMalign_search(
     }
     if (xlen<=3 || ylen<=3) return total_score;
 
-    seqx = new char[xlen+1];
+    std::string seqx;
+    std::string seqy;
     secx = new char[xlen+1];
     NewArray(&xa, xlen, 3);
-    seqy = new char[ylen+1];
     secy = new char[ylen+1];
     NewArray(&ya, ylen, 3);
 
@@ -1344,7 +1344,7 @@ double MMalign_search(
     vector<double> do_vec;
 
     // entry function for structure alignment
-    TMalign_main(xa, ya, seqx, seqy, secx, secy,
+    TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1352,8 +1352,6 @@ double MMalign_search(
         i_opt, false, true, false, fast_opt, mol_type, -1);
 
     // clean up
-    delete [] seqx;
-    delete [] seqy;
     delete [] secx;
     delete [] secy;
     DeleteArray(&xa,xlen);
@@ -1369,7 +1367,6 @@ double MMalign_search(
             for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
             continue;
         }
-        seqx = new char[xlen+1];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
@@ -1393,7 +1390,6 @@ double MMalign_search(
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            seqy = new char[ylen+1];
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
@@ -1418,7 +1414,7 @@ double MMalign_search(
             }
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+            se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence_tmp, Lnorm_ass, d0_scale,
@@ -1437,13 +1433,11 @@ double MMalign_search(
             seqyA.clear();
             vector<string>().swap(sequence_tmp);
 
-            delete[]seqy;
             delete[]secy;
             DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        delete[]seqx;
         delete[]secx;
         DeleteArray(&xa,xlen);
         DeleteArray(&xt,xlen);
