@@ -691,16 +691,6 @@ void copy_chain_data(const vector<vector<double> >&a_vec_i,
     sec[len]=0;
 }
 
-// char* wrapper
-void copy_chain_data(const vector<vector<double> >&a_vec_i,
-    const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
-    const int len,double **a,char *seq,char *sec)
-{
-    std::string seq_str;
-    copy_chain_data(a_vec_i, seq_vec_i, sec_vec_i, len, a, seq_str, sec);
-    strcpy(seq, seq_str.c_str());
-}
-
 // clear chains with L<3
 void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_opt)
 {
@@ -1252,33 +1242,6 @@ int copy_chain_pair_data(
     secx[xlen]=0;
     secy[ylen]=0;
     return mol_type;
-}
-
-// char* wrapper (delegates to string overload)
-int copy_chain_pair_data(
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
-    int chain1_num, int chain2_num,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence)
-{
-    std::string seqx_str, seqy_str;
-    int result = copy_chain_pair_data(xa_vec, ya_vec,
-        seqx_vec, seqy_vec, secx_vec, secy_vec,
-        mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx_str, seqy_str, secx, secy,
-        chain1_num, chain2_num,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
-    std::copy(seqx_str.begin(), seqx_str.end(), seqx);
-    seqx[seqx_str.size()] = 0;
-    std::copy(seqy_str.begin(), seqy_str.end(), seqy);
-    seqy[seqy_str.size()] = 0;
-    return result;
 }
 
 double MMalign_search(

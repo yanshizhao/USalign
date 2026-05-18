@@ -1376,7 +1376,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         mol_vec2,Lchain_aa_max1,Lchain_na_max1);
     int    ylen_trim;             // chain length
     double **ya_trim;             // structure of single chain
-    char   *seqy_trim;           // for the protein sequence
+    std::string seqy_trim;           // for the protein sequence
     char   *secy_trim;           // for the secondary structure
     double **xt;
 
@@ -1443,12 +1443,11 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             if (trim_chain_count && ylen_trim_vec[j]<ylen)
             {
                 ylen_trim = ylen_trim_vec[j];
-                seqy_trim = new char[ylen_trim+1];
                 secy_trim = new char[ylen_trim+1];
                 NewArray(&ya_trim, ylen_trim, 3);
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
                     ylen_trim,ya_trim,seqy_trim,secy_trim);
-                TMalign_main(xa, ya_trim, seqx.c_str(), seqy_trim, secx, secy_trim,
+                TMalign_main(xa, ya_trim, seqx.c_str(), seqy_trim.c_str(), secx, secy_trim,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
@@ -1458,7 +1457,6 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     mol_vec1[i]+mol_vec2[j],TMcut);
                 seqxA.clear();
                 seqyA.clear();
-                delete[]seqy_trim;
                 delete[]secy_trim;
                 DeleteArray(&ya_trim,ylen_trim);
 
