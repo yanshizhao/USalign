@@ -6,6 +6,12 @@
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
 // C++ string overload (forward bridge)
+// NOTE: This overload must NOT be called from cross-scope call sites where seqx
+// and seqy are declared in different stack frames (e.g., seqy in outer for(iter),
+// seqx in inner for(tm_idx)).  The const std::string& vs const char* parameter
+// difference changes se_main's stack frame layout, causing a crash in deeply
+// nested contexts like mTMalign hinge recovery.  Callers in such contexts must
+// pass seqx.c_str() / seqy.c_str() explicitly to reach the const char* version.
 int se_main(
     double **xa, double **ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
