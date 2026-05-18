@@ -1098,7 +1098,7 @@ void parse_chain_list(const vector<string>&chain_list,
     int chainnum;
     double **xa;
     int len;
-    char *seq;
+    std::string seq;
     char *sec;
 
     vector<vector<string> >PDB_lines;
@@ -1136,12 +1136,11 @@ void parse_chain_list(const vector<string>&chain_list,
                 continue;
             }
             NewArray(&xa, len, 3);
-            seq = new char[len + 1];
             sec = new char[len + 1];
             len = read_PDB(PDB_lines[chain_i], xa, seq, resi_vec, read_resi);
             if (mirror_opt) for (r=0;r<len;r++) xa[r][2]=-xa[r][2];
             if (mol_vec[chain_i]>0 || mol_opt=="RNA")
-                make_sec(seq, xa, len, sec,atom_opt);
+                make_sec(seq.c_str(), xa, len, sec,atom_opt);
             else make_sec(xa, len, sec); // secondary structure assignment
             
             // store in vector
@@ -1167,7 +1166,6 @@ void parse_chain_list(const vector<string>&chain_list,
             tmp_sec_array.clear();
             PDB_lines[chain_i].clear();
             DeleteArray(&xa, len);
-            delete [] seq;
             delete [] sec;
         } // chain_i
         name.clear();
