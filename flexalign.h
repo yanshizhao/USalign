@@ -105,11 +105,10 @@ int flexalign_main(double **xa, double **ya,
         // aligned structure A vs unaligned structure B
         int xlen_h=n_ali8;
         int ylen_h=ylen - n_ali8;
-        char *seqx_h = new char[xlen + 1];
-        char *seqy_h = new char[ylen + 1];
+        std::string seqx_h;
+        std::string seqy_h;
         char *secx_h = new char[xlen + 1];
         char *secy_h = new char[ylen + 1];
-        seqx_h[xlen]=seqy_h[ylen]=0;
         secx_h[xlen]=secy_h[ylen]=0;
         double **xa_h;
         double **ya_h;
@@ -126,7 +125,7 @@ int flexalign_main(double **xa, double **ya,
             j+=(seqyA[r]!='-');
             if (seqxA[r]!='-' && seqyA[r]!='-')
             {
-                seqx_h[r1]=seqx[i];
+                seqx_h += seqx[i];
                 secx_h[r1]=secx[i];
                 xa_h[r1][0]=xa[i][0];
                 xa_h[r1][1]=xa[i][1];
@@ -135,7 +134,7 @@ int flexalign_main(double **xa, double **ya,
             }
             if (seqxA[r]=='-')
             {
-                seqy_h[r2]=seqx[j];
+                seqy_h += seqx[j];
                 secy_h[r2]=secx[j];
                 ya_h[r2][0]=ya[j][0];
                 ya_h[r2][1]=ya[j][1];
@@ -162,7 +161,7 @@ int flexalign_main(double **xa, double **ya,
         int n_ali_h=0;
         int n_ali8_h=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), secx_h, secy_h, t0, u0,
             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
@@ -189,6 +188,8 @@ int flexalign_main(double **xa, double **ya,
         xlen_h=xlen - n_ali8;
         ylen_h=n_ali8;
 
+        seqx_h.clear();
+        seqy_h.clear();
         i=j=-1;
         r1=r2=0;
         for (r=0;r<seqxA.size();r++)
@@ -197,7 +198,7 @@ int flexalign_main(double **xa, double **ya,
             j+=(seqyA[r]!='-');
             if (seqyA[r]=='-')
             {
-                seqx_h[r1]=seqx[i];
+                seqx_h += seqx[i];
                 secx_h[r1]=secx[i];
                 xa_h[r1][0]=xa[i][0];
                 xa_h[r1][1]=xa[i][1];
@@ -206,7 +207,7 @@ int flexalign_main(double **xa, double **ya,
             }
             if (seqxA[r]!='-' && seqyA[r]!='-')
             {
-                seqy_h[r2]=seqx[j];
+                seqy_h += seqx[j];
                 secy_h[r2]=secx[j];
                 ya_h[r2][0]=ya[j][0];
                 ya_h[r2][1]=ya[j][1];
@@ -223,7 +224,7 @@ int flexalign_main(double **xa, double **ya,
         seqyA="";
         n_ali=n_ali8=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), secx_h, secy_h, t0, u0,
             TM1, TM2, TM3, TM4, TM5, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali, n_ali8,
@@ -270,9 +271,7 @@ int flexalign_main(double **xa, double **ya,
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
-        delete [] seqx_h;
         delete [] secx_h;
-        delete [] seqy_h;
         delete [] secy_h;
     }
     for (r=0;r<seqM.size();r++) if (seqM[r]=='1') seqM[r]='0';
@@ -284,11 +283,10 @@ int flexalign_main(double **xa, double **ya,
         if (minlen-n_ali8<5) break;
         int xlen_h=xlen - n_ali8;
         int ylen_h=ylen - n_ali8;
-        char *seqx_h = new char[xlen_h + 1];
-        char *seqy_h = new char[ylen_h + 1];
+        std::string seqx_h;
+        std::string seqy_h;
         char *secx_h = new char[xlen_h + 1];
         char *secy_h = new char[ylen_h + 1];
-        seqx_h[xlen_h]=seqy_h[ylen_h]=0;
         secx_h[xlen_h]=secy_h[ylen_h]=0;
         double **xa_h;
         double **ya_h;
@@ -307,7 +305,7 @@ int flexalign_main(double **xa, double **ya,
             j+=(seqyA[r]!='-');
             if (seqyA[r]=='-')
             {
-                seqx_h[r1]=seqx[i];
+                seqx_h += seqx[i];
                 secx_h[r1]=secx[i];
                 xa_h[r1][0]=xa[i][0];
                 xa_h[r1][1]=xa[i][1];
@@ -317,7 +315,7 @@ int flexalign_main(double **xa, double **ya,
             }
             if (seqxA[r]=='-')
             {
-                seqy_h[r2]=seqx[j];
+                seqy_h += seqx[j];
                 secy_h[r2]=secx[j];
                 ya_h[r2][0]=ya[j][0];
                 ya_h[r2][1]=ya[j][1];
@@ -345,7 +343,7 @@ int flexalign_main(double **xa, double **ya,
         int n_ali_h=0;
         int n_ali8_h=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), secx_h, secy_h, t0, u0,
             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
@@ -406,9 +404,7 @@ int flexalign_main(double **xa, double **ya,
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
-        delete [] seqx_h;
         delete [] secx_h;
-        delete [] seqy_h;
         delete [] secy_h;
         if (new_ali<5) break;
     }
