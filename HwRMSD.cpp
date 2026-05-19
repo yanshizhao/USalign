@@ -407,7 +407,9 @@ int main(int argc, char *argv[])
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file    char    *secx, *secy;       // for the secondary structure 
+    int    xchainnum,ychainnum;// number of chains in a PDB file
+    string secx;                // for the secondary structure
+    string secy;
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
@@ -446,10 +448,10 @@ int main(int argc, char *argv[])
                 resi_vec1, byresi_opt);
             if (seq_opt==2 || (seq_opt==3 && iter_opt>=2))  // SS assignment
             {
-                secx = new char[xlen+1];
-                if (mol_vec1[chain_i]>0) 
-                     make_sec(seqx, xa, xlen, secx,atom_opt);
-                else make_sec(xa, xlen, secx);
+                secx.resize(xlen+1);
+                if (mol_vec1[chain_i]>0)
+                     make_sec(seqx.c_str(), xa, xlen, &secx[0], atom_opt);
+                else make_sec(xa, xlen, &secx[0]);
             }
 
             for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
@@ -485,10 +487,10 @@ int main(int argc, char *argv[])
                         resi_vec2, byresi_opt);
                     if (seq_opt==2 || (seq_opt==3 && iter_opt>=2))  // SS assignment
                     {
-                        secy = new char[ylen+1];
+                        secy.resize(ylen+1);
                         if (mol_vec2[chain_j]>0)
-                             make_sec(seqy, ya, ylen, secy, atom_opt);
-                        else make_sec(ya, ylen, secy);
+                             make_sec(seqy.c_str(), ya, ylen, &secy[0], atom_opt);
+                        else make_sec(ya, ylen, &secy[0]);
                     }
 
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
@@ -516,7 +518,7 @@ int main(int argc, char *argv[])
                     int *invmap = new int[ylen+1];
 
                     // entry function for structure alignment
-                    HwRMSD_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
+                    HwRMSD_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(), t0, u0,
                         TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
                         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                         rmsd0, L_ali, Liden, TM_ali,
@@ -526,7 +528,7 @@ int main(int argc, char *argv[])
                         invmap, glocal, iter_opt, seq_opt, early_opt);
 
                     if (outfmt_opt>=2) 
-                        get_seqID(invmap, seqx.c_str(), seqy, ylen, Liden, n_ali8);
+                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali8);
 
                     // print result
                     output_results(
@@ -552,7 +554,6 @@ int main(int argc, char *argv[])
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
                     delete [] invmap;
-                    if (iter_opt>=2) delete [] secy;
                     resi_vec2.clear();
                 } // chain_j
                 if (chain2_list.size()>1)
@@ -567,7 +568,6 @@ int main(int argc, char *argv[])
             } // j
             PDB_lines1[chain_i].clear();
             DeleteArray(&xa, xlen);
-            if (iter_opt>=2) delete [] secx;
             resi_vec1.clear();
         } // chain_i
         xname.clear();
