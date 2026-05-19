@@ -399,14 +399,16 @@ int main(int argc, char *argv[])
     {
         xlen = xlen_vec[0];
         ylen = ylen_vec[0];
+        string secx;
+        string secy;
         string seqx;
         string seqy;
-        secx = new char[xlen+1];
-        secy = new char[ylen+1];
+        secx.resize(xlen+1);
+        secy.resize(ylen+1);
         NewArray(&xa, xlen, 3);
         NewArray(&ya, ylen, 3);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
+        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
+        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
         
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -431,7 +433,7 @@ int main(int argc, char *argv[])
         vector<double> do_vec;
 
         // entry function for structure alignment
-        TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
+        TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
@@ -456,10 +458,7 @@ int main(int argc, char *argv[])
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
-        
-        
-        delete[]secx;
-        delete[]secy;
+
         DeleteArray(&xa,xlen);
         DeleteArray(&ya,ylen);
         chain1_list.clear();
@@ -507,6 +506,8 @@ int main(int argc, char *argv[])
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
+    string seqx;
+    string seqy;
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -515,7 +516,6 @@ int main(int argc, char *argv[])
             for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
             continue;
         }
-        string seqx;
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
@@ -542,7 +542,6 @@ int main(int argc, char *argv[])
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            string seqy;
             secy = new char[ylen+1];
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
@@ -696,7 +695,7 @@ int main(int argc, char *argv[])
     if (max_iter<2) max_iter=2;
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, xa, ya, seqx.c_str(), seqy.c_str(), secx, secy, len_aa, len_na, chain1_num,
+        ylen_vec, xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap);
 
@@ -707,7 +706,7 @@ int main(int argc, char *argv[])
             fname_super, fname_lign, fname_matrix,
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx.c_str(), seqy.c_str(), secx, secy, len_aa, len_na,
+            xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
             seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
@@ -758,7 +757,7 @@ int main(int argc, char *argv[])
         max_total_score=maxTMmono;
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx.c_str(), seqy.c_str(), secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
@@ -775,7 +774,7 @@ int main(int argc, char *argv[])
     //if (init_pair_num!=2 && is_oligomer==false) MMalign_cross(
         //max_total_score_cross, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
         //secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        //xa, ya, seqx.c_str(), seqy.c_str(), secx, secy, len_aa, len_na, chain1_num, chain2_num,
+        //xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num, chain2_num,
         //TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init, sequence_init,
         //d0_scale, true);
     //else 
@@ -783,7 +782,7 @@ int main(int argc, char *argv[])
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx.c_str(), seqy.c_str(), secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -802,7 +801,7 @@ int main(int argc, char *argv[])
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx.c_str(), seqy.c_str(), secx, secy, len_aa, len_na,
+        xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
