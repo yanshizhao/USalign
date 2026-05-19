@@ -1432,7 +1432,7 @@ void MMalign_final(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char *secx, char *secy,
+    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
     double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
@@ -1453,14 +1453,16 @@ void MMalign_final(
 
     std::string seqx;
     std::string seqy;
-    secx = new char[xlen+1];
+    std::string secx;
+    std::string secy;
+    secx.resize(xlen+1);
     NewArray(&xa, xlen, 3);
-    secy = new char[ylen+1];
+    secy.resize(ylen+1);
     NewArray(&ya, ylen, 3);
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
+        xa, ya, seqx, seqy, &secx[0], &secy[0], chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
@@ -1487,7 +1489,7 @@ void MMalign_final(
     double Lnorm_ass=len_aa+len_na;
 
     // entry function for structure alignment
-    TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
+    TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
         t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1556,8 +1558,6 @@ void MMalign_final(
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
-    delete [] secx;
-    delete [] secy;
     DeleteArray(&xa,xlen);
     DeleteArray(&ya,ylen);
     sequence[0].clear();
@@ -1574,10 +1574,10 @@ void MMalign_final(
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
-        secx = new char[xlen+1];
+        secx.resize(xlen+1);
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,secx);
+            xlen,xa,seqx,&secx[0]);
 
         double **xt;
         NewArray(&xt, xlen, 3);
@@ -1591,10 +1591,10 @@ void MMalign_final(
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            secy = new char[ylen+1];
+            secy.resize(ylen+1);
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,secy);
+                ylen,ya,seqy,&secy[0]);
 
             // declare variable specific to this pair of TMalign
             d0_out=5.0;
@@ -1634,12 +1634,10 @@ void MMalign_final(
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-            delete[]secy;
             DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        delete[]secx;
         DeleteArray(&xa,xlen);
         DeleteArray(&xt,xlen);
     }
