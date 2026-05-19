@@ -1264,8 +1264,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         secy = new char[ylen+1];
         NewArray(&xa, xlen, 3);
         NewArray(&ya, ylen, 3);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
+        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
+        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
 
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -1552,12 +1552,12 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         xlen =xlen_vec[i];
         secx = new char[xlen+1];
         NewArray(&xa, xlen, 3);
-        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,secx);
+        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,&secx[0]);
 
         ylen =ylen_vec[j];
         secy = new char[ylen+1];
         NewArray(&ya, ylen, 3);
-        copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,secy);
+        copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,&secy[0]);
 
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -1706,7 +1706,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     double **xa, **ya;             // structure of single chain
-    char   *secx, *secy;           // for the secondary structure
+    string secx;                   // for the secondary structure
+    string secy;
     int    len_aa,len_na;          // total length of protein and RNA/DNA
     vector<string> resi_vec;       // residue index for chain
 
@@ -1744,18 +1745,18 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         xlen=len_vec[i];
         if (xlen<3) continue;
         string seqx;
-        secx = new char[xlen+1];
+        secx.resize(xlen+1);
         NewArray(&xa, xlen, 3);
-        copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
+        copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,&secx[0]);
         seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
         for (j=i+1;j<chain_num;j++)
         {
             ylen=len_vec[j];
             if (ylen<3) continue;
             string seqy;
-            secy = new char[ylen+1];
+            secy.resize(ylen+1);
             NewArray(&ya, ylen, 3);
-            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
+            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,&secy[0]);
 
             // declare variable specific to this pair of TMalign
             double t0[3];
@@ -1809,7 +1810,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
+            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -1839,13 +1840,11 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             seqyA.clear();
 
             
-            delete[]secy;
             DeleteArray(&ya,ylen);
             do_vec.clear();
         }
 
         
-        delete[]secx;
         DeleteArray(&xa,xlen);
     }
 
@@ -1927,7 +1926,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         //seqy = new char[ylen + 1];
         //secy = new char[ylen+1];
         //NewArray(&ya, ylen, 3);
-        //copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
+        //copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,&secy[0]);
         for (r=0;r<sequence.size();r++) sequence[r].clear(); sequence.clear();
         sequence.push_back("");
         sequence.push_back("");
@@ -1948,9 +1947,9 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             i=TM_pair_vec[tm_idx].second;
             xlen = len_vec[i];
             string seqx;
-            secx = new char[xlen+1];
+            secx.resize(xlen+1);
             NewArray(&xa, xlen, 3);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,&secx[0]);
 
             double maxTM=TMave_mat[i][repr_idx];
             int maxj=repr_idx;
@@ -1964,9 +1963,9 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             assign_list[i]=j;
             ylen = len_vec[j];
             string seqy;
-            secy = new char[ylen+1];
+            secy.resize(ylen+1);
             NewArray(&ya, ylen, 3);
-            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j], ylen,ya,seqy,secy);
+            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j], ylen,ya,seqy,&secy[0]);
 
             sequence[0]=seqxA_mat[i][j];
             sequence[1]=seqyA_mat[i][j];
@@ -2025,7 +2024,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
+            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -2064,19 +2063,17 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             sequence[1].clear();
 
             
-            delete[]secx;
             DeleteArray(&xa,xlen);
         
             
-            delete[]secy;
             DeleteArray(&ya,ylen);
             do_vec.clear();
         }
         ylen = len_vec[repr_idx];
         string seqy;
-        secy = new char[ylen+1];
+        secy.resize(ylen+1);
         NewArray(&ya, ylen, 3);
-        copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
+        copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,&secy[0]);
 
         // recover alignment
         int    ylen_ext=ylen;        // chain length
@@ -2097,9 +2094,9 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             xlen = len_vec[i];
             string seqx;
-            secx = new char[xlen+1];
+            secx.resize(xlen+1);
             NewArray(&xa, xlen, 3);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,&secx[0]);
         
             // declare variable specific to this pair of TMalign
             double TM1;
@@ -2165,13 +2162,12 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             // copy ya_ext to ya
 
-            delete[]secy;
             DeleteArray(&ya,ylen);
 
             ylen=ylen_ext;
             NewArray(&ya,ylen,3);
             seqy.assign(seqy_ext, ylen);
-            secy = new char[ylen+1];
+            secy.resize(ylen+1);
             for (r=0;r<ylen;r++)
             {
                 ya[r][0]=ya_ext[r][0];
@@ -2195,7 +2191,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             seqyA.clear();
 
             
-            delete[]secx;
             DeleteArray(&xa,xlen);
 
             delete[]seqy_ext;
@@ -2253,18 +2248,18 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             xlen=len_vec[i];
             if (xlen<3) continue;
             string seqx;
-            secx = new char[xlen+1];
+            secx.resize(xlen+1);
             NewArray(&xa, xlen, 3);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,&secx[0]);
             for (j=i+1;j<chain_num;j++)
             {
                 ylen=len_vec[j];
                 if (ylen<3) continue;
                 compare_num++;
                 string seqy;
-                secy = new char[ylen+1];
+                secy.resize(ylen+1);
                 NewArray(&ya, ylen, 3);
-                copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
+                copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,&secy[0]);
                 sequence[0]=seqxA_mat[i][j];
                 sequence[1]=seqyA_mat[i][j];
             
@@ -2342,12 +2337,10 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 seqyA.clear();
 
                 
-                delete[]secy;
                 DeleteArray(&ya,ylen);
                 do_vec.clear();
             }
             
-            delete[]secx;
             DeleteArray(&xa,xlen);
         }
         if (TM4_total<=TM4_total_max) break;
