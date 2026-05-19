@@ -1655,7 +1655,7 @@ void MMalign_se_final(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char *secx, char *secy,
+    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
     double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
@@ -1676,14 +1676,16 @@ void MMalign_se_final(
 
     std::string seqx;
     std::string seqy;
-    secx = new char[xlen+1];
+    std::string secx;
+    std::string secy;
+    secx.resize(xlen+1);
     NewArray(&xa, xlen, 3);
-    secy = new char[ylen+1];
+    secy.resize(ylen+1);
     NewArray(&ya, ylen, 3);
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
+        xa, ya, seqx, seqy, &secx[0], &secy[0], chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
@@ -1786,8 +1788,6 @@ void MMalign_se_final(
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
-    delete [] secx;
-    delete [] secy;
     DeleteArray(&xa,xlen);
     DeleteArray(&ya,ylen);
     sequence[0].clear();
@@ -1804,10 +1804,10 @@ void MMalign_se_final(
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
-        secx = new char[xlen+1];
+        secx.resize(xlen+1);
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,secx);
+            xlen,xa,seqx,&secx[0]);
 
         double **xt;
         NewArray(&xt, xlen, 3);
@@ -1821,11 +1821,11 @@ void MMalign_se_final(
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            secy = new char[ylen+1];
+            secy.resize(ylen+1);
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,secy);
-        
+                ylen,ya,seqy,&secy[0]);
+
             // declare variable specific to this pair of TMalign
             d0_out=5.0;
             rmsd0 = 0.0;
@@ -1838,42 +1838,40 @@ void MMalign_se_final(
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
             sequence[0]=seqxA_mat[i][j];
             sequence[1]=seqyA_mat[i][j];
-        
+
             // entry function for structure alignment
             se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
                 1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap);
-        
+
             //TM2=TM4*Lnorm_ass/xlen;
             //TM1=TM4*Lnorm_ass/ylen;
             //d0A=d0u;
             //d0B=d0u;
             TMave_mat[i][j]=TM4*Lnorm_ass;
-        
+
             // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
                 xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
                 seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
                 seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
-                TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u, 
+                TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
                 "", outfmt_opt, ter_opt, false, split_opt, 0,
                 "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
-        
+
             // clean up
             seqxA.clear();
             seqM.clear();
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-            delete[]secy;
             DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        delete[]secx;
         DeleteArray(&xa,xlen);
         DeleteArray(&xt,xlen);
     }
