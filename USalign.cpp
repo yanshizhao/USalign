@@ -2519,7 +2519,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    char   *secx, *secy;       // for the secondary structure
+    string secx;                // for the secondary structure
+    string secy;
     int    **secx_bond;        // boundary of secondary structure
     int    **secy_bond;        // boundary of secondary structure
     string seqx, seqy;         // for the protein sequence
@@ -2565,17 +2566,17 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             }
             NewArray(&xa, xlen, 3);
             if (closeK_opt>=3) NewArray(&xk, xlen*closeK_opt, 3);
-            secx = new char[xlen + 1];
+            secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, read_resi);
             if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(), xa, xlen, secx, atom_opt);
-            else make_sec(xa, xlen, secx); // secondary structure assignment
+            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(), xa, xlen, &secx[0], atom_opt);
+            else make_sec(xa, xlen, &secx[0]); // secondary structure assignment
             if (closeK_opt>=3) getCloseK(xa, xlen, closeK_opt, xk);
             if (mm_opt==6) 
             {
                 NewArray(&secx_bond, xlen, 2);
-                assign_sec_bond(secx_bond, secx, xlen);
+                assign_sec_bond(secx_bond, secx.c_str(), xlen);
             }
 
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
@@ -2613,17 +2614,17 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     }
                     NewArray(&ya, ylen, 3);
                     if (closeK_opt>=3) NewArray(&yk, ylen*closeK_opt, 3);
-                    secy = new char[ylen + 1];
+                    secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, read_resi);
                     if (mol_vec2[chain_j]>0)
-                         make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
-                    else make_sec(ya, ylen, secy);
+                         make_sec(seqy.c_str(), ya, ylen, &secy[0], atom_opt);
+                    else make_sec(ya, ylen, &secy[0]);
                     if (closeK_opt>=3) getCloseK(ya, ylen, closeK_opt, yk);
                     if (mm_opt==6) 
                     {
                         NewArray(&secy_bond, ylen, 2);
-                        assign_sec_bond(secy_bond, secy, ylen);
+                        assign_sec_bond(secy_bond, secy.c_str(), ylen);
                     }
 
                     // declare variable specific to this pair of TMalign
@@ -2682,7 +2683,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         }
                     }
                     else SOIalign_main(xa, ya, xk, yk, closeK_opt,
-                        seqx.c_str(), seqy.c_str(), secx, secy,
+                        seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, invmap,
@@ -2733,7 +2734,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqyA.clear();
                     DeleteArray(&ya, ylen);
                     if (closeK_opt>=3) DeleteArray(&yk, ylen*closeK_opt);
-                    delete [] secy;
                     resi_vec2.clear();
                     if (mm_opt==6) DeleteArray(&secy_bond, ylen);
                 } // chain_j
@@ -2750,7 +2750,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             PDB_lines1[chain_i].clear();
             DeleteArray(&xa, xlen);
             if (closeK_opt>=3) DeleteArray(&xk, xlen*closeK_opt);
-            delete [] secx;
             resi_vec1.clear();
             if (mm_opt==6) DeleteArray(&secx_bond, xlen);
         } // chain_i
