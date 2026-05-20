@@ -199,11 +199,10 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
     int i;
     int j;
     int gaplen;
-    int p;
-    char *buf=nullptr;
+    std::string buf;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf=new char [std::max(xlen,ylen)+1];
+    if (invmap_only!=1) buf.resize(std::max(xlen,ylen)+1);
 
     i=xlen;
     j=ylen;
@@ -215,11 +214,10 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
             gaplen=JumpH[i][j];
             j-=gaplen;
             if (invmap_only==1) continue;
-            strncpy(buf,seqy+j,gaplen);
-            buf[gaplen]=0;
+            buf.assign(seqy+j,gaplen);
             seqyA=buf+seqyA;
 
-            for (p=0;p<gaplen;p++) buf[p]='-';
+            buf.assign(gaplen,'-');
             seqxA=buf+seqxA;
         }
         else if (P[i][j] % 4 >= 2)
@@ -227,30 +225,27 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
             gaplen=JumpV[i][j];
             i-=gaplen;
             if (invmap_only==1) continue;
-            strncpy(buf,seqx+i,gaplen);
-            buf[gaplen]=0;
+            buf.assign(seqx+i,gaplen);
             seqxA=buf+seqxA;
 
-            for (p=0;p<gaplen;p++) buf[p]='-';
+            buf.assign(gaplen,'-');
             seqyA=buf+seqyA;
         }
         else
         {
             if (i==0 && j!=0) // only in glocal alignment
             {
-                strncpy(buf,seqy,j);
-                buf[j]=0;
+                buf.assign(seqy,j);
                 seqyA=buf+seqyA;
-                for (p=0;p<j;p++) buf[p]='-';
+                buf.assign(j,'-');
                 seqxA=buf+seqxA;
                 break;
             }
             if (i!=0 && j==0) // only in glocal alignment
             {
-                strncpy(buf,seqx,i);
-                buf[i]=0;
+                buf.assign(seqx,i);
                 seqxA=buf+seqxA;
-                for (p=0;p<i;p++) buf[p]='-';
+                buf.assign(i,'-');
                 seqyA=buf+seqyA;
                 break;
             }
@@ -264,7 +259,6 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
             }
         }
     }
-    delete [] buf;
 }
 
 
@@ -277,12 +271,11 @@ void trace_back_sw(const char *seqx, const char *seqy,
     int i;
     int j;
     int gaplen;
-    int p;
     bool found_start_cell=false; // std::find the first non-zero cell in P
-    char *buf=nullptr;
+    std::string buf;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf=new char [std::max(xlen,ylen)+1];
+    if (invmap_only!=1) buf.resize(std::max(xlen,ylen)+1);
 
     i=xlen;
     j=ylen;
@@ -302,26 +295,18 @@ void trace_back_sw(const char *seqx, const char *seqy,
     // copy C terminal sequence
     if (invmap_only!=1)
     {
-        for (p=0;p<ylen-j;p++) buf[p]='-';
-        buf[ylen-j]=0;
+        buf.assign(ylen-j,'-');
         seqxA=buf;
-        strncpy(buf,seqx+i,xlen-i);
-        buf[xlen-i]=0;
+        buf.assign(seqx+i,xlen-i);
         seqxA+=buf;
 
-        strncpy(buf,seqy+j,ylen-j);
-        buf[ylen-j]=0;
+        buf.assign(seqy+j,ylen-j);
         seqyA+=buf;
-        for (p=0;p<xlen-i;p++) buf[p]='-';
-        buf[xlen-i]=0;
+        buf.assign(xlen-i,'-');
         seqyA+=buf;
     }
 
-    if (i<0||j<0)
-    {
-        delete [] buf;
-        return;
-    }
+    if (i<0||j<0) return;
 
     // traceback aligned sequences
     while(P[i][j]!=0)
@@ -332,11 +317,10 @@ void trace_back_sw(const char *seqx, const char *seqy,
             gaplen=JumpH[i][j];
             j-=gaplen;
             if (invmap_only==1) continue;
-            strncpy(buf,seqy+j,gaplen);
-            buf[gaplen]=0;
+            buf.assign(seqy+j,gaplen);
             seqyA=buf+seqyA;
 
-            for (p=0;p<gaplen;p++) buf[p]='-';
+            buf.assign(gaplen,'-');
             seqxA=buf+seqxA;
         }
         else if (P[i][j] % 4 >= 2)
@@ -344,11 +328,10 @@ void trace_back_sw(const char *seqx, const char *seqy,
             gaplen=JumpV[i][j];
             i-=gaplen;
             if (invmap_only==1) continue;
-            strncpy(buf,seqx+i,gaplen);
-            buf[gaplen]=0;
+            buf.assign(seqx+i,gaplen);
             seqxA=buf+seqxA;
 
-            for (p=0;p<gaplen;p++) buf[p]='-';
+            buf.assign(gaplen,'-');
             seqyA=buf+seqyA;
         }
         else
@@ -366,17 +349,14 @@ void trace_back_sw(const char *seqx, const char *seqy,
     // copy N terminal sequence
     if (invmap_only!=1)
     {
-        for (p=0;p<j;p++) buf[p]='-';
-        strncpy(buf+j,seqx,i);
-        buf[i+j]=0;
+        buf.assign(j,'-');
+        buf.append(seqx,i);
         seqxA=buf+seqxA;
 
-        strncpy(buf,seqy,j);
-        for (p=j;p<j+i;p++) buf[p]='-';
-        buf[i+j]=0;
+        buf.assign(seqy,j);
+        buf.append(i,'-');
         seqyA=buf+seqyA;
     }
-    delete [] buf;
 }
 
 // C++ string overload (forward bridge)

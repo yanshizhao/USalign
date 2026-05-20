@@ -123,21 +123,19 @@ void read_init_cluster(const string&filename,
     string line;
     vector<string> line_vec;
     map<string, bool> tmp_map;
-    size_t i;
-    size_t j;
     fin.open(filename.c_str());
     while (fin.good())
     {
         getline(fin,line);
         split(line,line_vec,'\t');
-        for (i=0;i<line_vec.size();i++)
+        for (size_t i=0;i<line_vec.size();i++)
         {
-            for (j=0;j<line_vec.size();j++)
+            for (size_t j=0;j<line_vec.size();j++)
                 if (i!=j) tmp_map[line_vec[j]]=1;
             init_cluster[line_vec[i]]=tmp_map;
             map<string, bool> ().swap(tmp_map);
         }
-        for (i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
+        for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
     }
     fin.close();
     vector<string>().swap(line_vec);
@@ -326,10 +324,6 @@ int main(int argc, char *argv[])
     vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
     vector<string> chainID_list;      // list of chainID
     size_t xchainnum=0;         // number of chains in a PDB file
-    size_t i,j;                 // number of residues/chains in a PDB is
-                                // usually quite limited. Yet, the number of
-                                // files can be very large. size_t is safer
-                                // than int for very long list of files
     int    xlen,ylen;           // chain length
     double **xa,**ya;           // xyz coordinate
     vector<string> resi_vec;    // residue index for chain, dummy variable
@@ -344,7 +338,6 @@ int main(int argc, char *argv[])
     vector<char>  sec_tmp;
     vector<float> flt_tmp(3,0);
     vector<vector<float> >xyz_tmp;
-    int r; // residue index
     size_t newchainnum;
     double ub_HwRMSD=0.90*TMcut+0.10;
     double lb_HwRMSD=0.5*TMcut;
@@ -369,7 +362,7 @@ int main(int argc, char *argv[])
     const int max_repr_num=50;
 #endif
 
-    for (i=0;i<chain_list.size();i++)
+    for (size_t i=0;i<chain_list.size();i++)
     {
         xname=chain_list[i];
         newchainnum=get_PDB_lines(xname, PDB_lines, chainID_list,
@@ -383,7 +376,7 @@ int main(int argc, char *argv[])
         }
         chain_name=xname.substr(dir_opt.size(),
             xname.size()-dir_opt.size()-suffix_opt.size());
-        for (j=0;j<newchainnum;j++)
+        for (size_t j=0;j<newchainnum;j++)
         {
             chainID_list[j+xchainnum]=chain_name+chainID_list[j+xchainnum];
             xlen=PDB_lines[j].size();
@@ -396,13 +389,15 @@ int main(int argc, char *argv[])
             seq_tmp.assign(xlen+1,'A');
             sec_tmp.assign(xlen+1,0);
 
-            read_PDB(PDB_lines[j], xa, seq_tmp, resi_vec, byresi_opt);
+            std::string seq_str;
+            read_PDB(PDB_lines[j], xa, seq_str, resi_vec, byresi_opt);
+            seq_tmp.assign(seq_str.begin(), seq_str.end());
 
             if (mol_vec[j]<=0) make_sec(xa, xlen, &sec_tmp[0]);
             else make_sec(&seq_tmp[0],xa,xlen,&sec_tmp[0],atom_opt);
 
             xyz_tmp.assign(xlen,flt_tmp);
-            for (r=0;r<xlen;r++)
+            for (int r=0;r<xlen;r++)
             {
                 xyz_tmp[r][0]=xa[r][0];
                 xyz_tmp[r][1]=xa[r][1];
@@ -459,7 +454,7 @@ int main(int argc, char *argv[])
     vector<size_t> index_vec;  // index of cluster representatives for the chain
     bool found_clust;          // whether current chain hit previous cluster
 
-    for (i=1;i<Nstruct;i++)
+    for (size_t i=1;i<Nstruct;i++)
     {
         chain_i=chainLen_list[i].second;
         xlen=xyz_vec[chain_i].size();
@@ -471,7 +466,7 @@ int main(int argc, char *argv[])
         }
 
         NewArray(&xa, xlen, 3);
-        for (r=0;r<xlen;r++)
+        for (int r=0;r<xlen;r++)
         {
             xa[r][0]=xyz_vec[chain_i][r][0];
             xa[r][1]=xyz_vec[chain_i][r][1];
@@ -482,7 +477,7 @@ int main(int argc, char *argv[])
         // cluster because proteins with similar length are more likely
         // to be similar. we cannot use j as index because size_t j cannot
         // be negative at the end of this loop
-        for (j=clust_repr_vec.size();j>0;j--)
+        for (size_t j=clust_repr_vec.size();j>0;j--)
         {
             chain_j=clust_repr_vec[j-1];
             ylen=xyz_vec[chain_j].size();
@@ -506,7 +501,7 @@ int main(int argc, char *argv[])
         vector<pair<double,size_t> > HwRMSDscore_list;
         double TM;
         size_t init_count=0;
-        for (j=0;j<sizePROT;j++)
+        for (size_t j=0;j<sizePROT;j++)
         {
             chain_j=index_vec[j];
             string value=chainID_list[chain_j];
@@ -527,7 +522,7 @@ int main(int argc, char *argv[])
             //cout<<chainID_list[chain_i]<<" => "<<chainID_list[chain_j]<<endl;
             
             NewArray(&ya, ylen, 3);
-            for (r=0;r<ylen;r++)
+            for (int r=0;r<ylen;r++)
             {
                 ya[r][0]=xyz_vec[chain_j][r][0];
                 ya[r][1]=xyz_vec[chain_j][r][1];
@@ -612,7 +607,7 @@ int main(int argc, char *argv[])
         //if (init_count>=2) cur_repr_num_cutoff=init_count;
 
         index_vec.clear();
-        for (j=0;j<HwRMSDscore_list.size();j++)
+        for (size_t j=0;j<HwRMSDscore_list.size();j++)
         {
             TM=HwRMSDscore_list[j].first;
             chain_j=HwRMSDscore_list[j].second;
@@ -630,7 +625,7 @@ int main(int argc, char *argv[])
 #endif
 
         found_clust=false;
-        for (j=0;j<index_vec.size();j++)
+        for (size_t j=0;j<index_vec.size();j++)
         {
             chain_j=index_vec[j];
             ylen=xyz_vec[chain_j].size();
@@ -644,7 +639,7 @@ int main(int argc, char *argv[])
                 TMcut, s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
 
             NewArray(&ya, ylen, 3);
-            for (r=0;r<ylen;r++)
+            for (int r=0;r<ylen;r++)
             {
                 ya[r][0]=xyz_vec[chain_j][r][0];
                 ya[r][1]=xyz_vec[chain_j][r][1];
@@ -780,7 +775,7 @@ int main(int argc, char *argv[])
 
     // print out cluster
     stringstream txt;
-    for (j=0;j<clust_repr_vec.size();j++)
+    for (size_t j=0;j<clust_repr_vec.size();j++)
     {
         chain_j=clust_repr_vec[j]; // cluster representative
         txt<<chainID_list[chain_j];

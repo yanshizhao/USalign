@@ -3348,7 +3348,7 @@ void writeTrimComplex(vector<vector<vector<double> > >&a_trim_vec,
     return;
 }
 
-void output_dock_rotation_matrix(const char* fname_matrix,
+void output_dock_rotation_matrix(const std::string& fname_matrix,
     const vector<string>&xname_vec, const vector<string>&yname_vec,
     double ** ut_mat, int *assign1_list)
 {
@@ -3375,7 +3375,7 @@ void output_dock_rotation_matrix(const char* fname_matrix,
           "   Y[i] = t[1] + u[1][0]*x[i] + u[1][1]*y[i] + u[1][2]*z[i];\n"
           "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
           "}"<<endl;
-    if (strcmp(fname_matrix,(char *)("-"))==0)
+    if (fname_matrix == "-")
        cout<<ss.str();
     else
     {

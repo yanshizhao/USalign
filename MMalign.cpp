@@ -364,7 +364,6 @@ int main(int argc, char *argv[])
     vector<string> chainID_list2;  // list of chainID2
     vector<int> xlen_vec;          // length of complex1
     vector<int> ylen_vec;          // length of complex2
-    int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     double **xa, **ya;             // structure of single chain
     int    xlen_aa,ylen_aa;        // total length of protein
@@ -490,8 +489,6 @@ int main(int argc, char *argv[])
     vector<string> tmp_str_vec(chain2_num,"");
     double **TMave_mat;
     double **ut_mat; // rotation matrices for all-against-all alignment
-    int ui;
-    int uj;
     int ut_idx;
     NewArray(&TMave_mat,chain1_num,chain2_num);
     NewArray(&ut_mat,chain1_num*chain2_num,4*3);
@@ -509,12 +506,12 @@ int main(int argc, char *argv[])
     string seqy;
     string secx;
     string secy;
-    for (i=0;i<chain1_num;i++)
+    for (int i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
         if (xlen<3)
         {
-            for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
+            for (int j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
             continue;
         }
         secx.resize(xlen+1);
@@ -522,11 +519,11 @@ int main(int argc, char *argv[])
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        for (j=0;j<chain2_num;j++)
+        for (int j=0;j<chain2_num;j++)
         {
             ut_idx=i*chain2_num+j;
-            for (ui=0;ui<4;ui++)
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
+            for (int ui=0;ui<4;ui++)
+                for (int uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
             ut_mat[ut_idx][0]=1;
             ut_mat[ut_idx][4]=1;
             ut_mat[ut_idx][8]=1;
@@ -583,9 +580,9 @@ int main(int argc, char *argv[])
                 mol_vec1[i]+mol_vec2[j],TMcut);
 
             // store result
-            for (ui=0;ui<3;ui++)
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
-            for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
+            for (int ui=0;ui<3;ui++)
+                for (int uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
+            for (int uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
             TMave_mat[i][j]=TM4*Lnorm_tmp;
@@ -741,12 +738,12 @@ int main(int argc, char *argv[])
         copy_chain_assign_data(chain1_num, chain2_num, sequence,
             seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
             seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
-        for (i=0;i<chain1_num;i++)
+        for (int i=0;i<chain1_num;i++)
         {
             if (i!=maxTMmono_i) assign1_list[i]=-1;
             else assign1_list[i]=maxTMmono_j;
         }
-        for (j=0;j<chain2_num;j++)
+        for (int j=0;j<chain2_num;j++)
         {
             if (j!=maxTMmono_j) assign2_list[j]=-1;
             else assign2_list[j]=maxTMmono_i;

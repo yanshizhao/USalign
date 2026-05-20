@@ -1649,7 +1649,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         template_name.clear();
     }
 
-    if (m_opt) output_dock_rotation_matrix(fname_matrix.c_str(),
+    if (m_opt) output_dock_rotation_matrix(fname_matrix,
         xname_vec,yname_vec, ut_mat, assign1_list);
 
     if (o_opt) output_dock(chain1_list, ter_opt, split_opt, infmt1_opt,
@@ -2445,7 +2445,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         if (m_opt)
         {
             assign_list[repr_idx]=-1;
-            output_dock_rotation_matrix(fname_matrix.c_str(),
+            output_dock_rotation_matrix(fname_matrix,
                 xname_vec,yname_vec, ut_mat, assign_list);
         }
 

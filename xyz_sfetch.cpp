@@ -119,17 +119,18 @@ int main(int argc, char *argv[])
         cerr<<argv[0]<<" "<<filename<<endl;
         exit(EXIT_SUCCESS);
     }
-    char *buf=new char [300000];
+    std::string buf;
+    buf.resize(300000);
     string chain;
     while (fp.good())
     {
         fp>>chain>>start_pos>>end_pos;
         if (!fp.good()) break;
-        if (find(chain_list.begin(), chain_list.end(), 
+        if (find(chain_list.begin(), chain_list.end(),
             chain)==chain_list.end()) continue;
         fin.seekg(start_pos);
-        fin.read(buf,end_pos-start_pos);
-        buf[end_pos-start_pos]=0; // ensures old text beyond this is ignored
+        fin.read(&buf[0],end_pos-start_pos);
+        buf.resize(end_pos-start_pos); // ensures old text beyond this is ignored
         cout<<buf;
     }
     fp.close();
@@ -138,7 +139,6 @@ int main(int argc, char *argv[])
     // clean up
     /* No need to flush, because any input from cin, output to cerr, or
      * or program termination forces cout.flush() */
-    delete[]buf;
     filename.clear();
     list_opt.clear();
     vector<string>().swap(chain_list);

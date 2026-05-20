@@ -2867,7 +2867,7 @@ void output_rasmol(const string xname, const string yname,
 }
 
 // extract rotation matrix based on TMscore8
-void output_rotation_matrix(const char* fname_matrix,
+void output_rotation_matrix(const std::string& fname_matrix,
     const double t[3], const double u[3][3])
 {
     stringstream ss;
@@ -2887,7 +2887,7 @@ void output_rotation_matrix(const char* fname_matrix,
             "   Y[i] = t[1] + u[1][0]*x[i] + u[1][1]*y[i] + u[1][2]*z[i];\n"
             "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
             "}\n";
-    if (strcmp(fname_matrix,(char *)("-"))==0)
+    if (fname_matrix == "-")
        cout<<ss.str();
     else
     {

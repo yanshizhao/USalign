@@ -267,14 +267,11 @@ int main(int argc, char *argv[])
     vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     vector<string> chainID_list1;      // list of chainID1
     vector<string> chainID_list2;      // list of chainID2
-    int  i,j;                // file index
-    int  chain_i,chain_j;    // chain index
     int  xlen, ylen;         // chain length
     int  xchainnum,ychainnum;// number of chains in a PDB file
-    int  l;                  // residue index
 
     // loop over file names
-    for (i=0;i<chain1_list.size();i++)
+    for (int i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
         xname=chain1_list[i];
@@ -289,7 +286,7 @@ int main(int argc, char *argv[])
                 <<". Chain number 0."<<endl;
             continue;
         }
-        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        for (int chain_i=0;chain_i<xchainnum;chain_i++)
         {
             if (infmt1_opt>=4) xlen=PDB_lines1[chain_i][0].size();
             else xlen=PDB_lines1[chain_i].size();
@@ -305,11 +302,11 @@ int main(int argc, char *argv[])
             if (infmt1_opt>=4) seqx = PDB_lines1[chain_i][0];
             else {
                 seqx.reserve(xlen);
-                for (l=0;l<xlen;l++)
+                for (int l=0;l<xlen;l++)
                     seqx += AAmap(PDB_lines1[chain_i][l].substr(17,3));
             }
             
-            for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
+            for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 // parse chain 2
                 if (PDB_lines2.size()==0)
@@ -329,7 +326,7 @@ int main(int argc, char *argv[])
                         continue;
                     }
                 }
-                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                for (int chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     if (infmt2_opt>=4) ylen=PDB_lines2[chain_j][0].size();
                     else ylen=PDB_lines2[chain_j].size();
@@ -346,7 +343,7 @@ int main(int argc, char *argv[])
                         seqy = PDB_lines2[chain_j][0];
                     else {
                         seqy.reserve(ylen);
-                        for (l=0;l<ylen;l++)
+                        for (int l=0;l<ylen;l++)
                             seqy += AAmap(PDB_lines2[chain_j][l].substr(17,3));
                     }
 
@@ -380,7 +377,7 @@ int main(int argc, char *argv[])
                 if (chain2_list.size()>1)
                 {
                     yname.clear();
-                    for (chain_j=0;chain_j<ychainnum;chain_j++)
+                    for (int chain_j=0;chain_j<ychainnum;chain_j++)
                         PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
                     chainID_list2.clear();
@@ -397,7 +394,7 @@ int main(int argc, char *argv[])
     if (chain2_list.size()==1)
     {
         yname.clear();
-        for (chain_j=0;chain_j<ychainnum;chain_j++)
+        for (int chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
         chainID_list2.clear();

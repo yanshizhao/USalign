@@ -473,9 +473,8 @@ int main(int argc, char *argv[])
                         cout<<"#Aligned atom 1\tAligned atom 2 \tDistance#"<<endl;
                         size_t r1=0;
                         size_t r2=0;
-                        size_t r;
                         int    postcp=0;
-                        for (r=0;r<seqxA.size();r++)
+                        for (size_t r=0;r<seqxA.size();r++)
                         {
                             r1+=seqxA[r]!='-';
                             r2+=seqyA[r]!='-';

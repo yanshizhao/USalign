@@ -392,9 +392,6 @@ int main(int argc, char *argv[])
     vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     vector<string> chainID_list1;      // list of chainID1
     vector<string> chainID_list2;      // list of chainID2
-    int    i,j;                // file index
-    int    chain_i,chain_j;    // chain index
-    int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
     double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
@@ -405,7 +402,7 @@ int main(int argc, char *argv[])
     vector<string> resi_vec2;  // residue index for chain2
 
     // loop over file names
-    for (i=0;i<chain1_list.size();i++)
+    for (int i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
         xname=chain1_list[i];
@@ -418,7 +415,7 @@ int main(int argc, char *argv[])
                 <<". Chain number 0."<<endl;
             continue;
         }
-        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        for (int chain_i=0;chain_i<xchainnum;chain_i++)
         {
             xlen=PDB_lines1[chain_i].size();
             if (mol_opt=="RNA") mol_vec1[chain_i]=1;
@@ -438,9 +435,9 @@ int main(int argc, char *argv[])
             string seqx;
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
                 resi_vec1, byresi_opt);
-            if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
+            if (mirror_opt) for (int r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
 
-            for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
+            for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 // parse chain 2
                 if (PDB_lines2.size()==0)
@@ -456,7 +453,7 @@ int main(int argc, char *argv[])
                         continue;
                     }
                 }
-                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                for (int chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     ylen=PDB_lines2[chain_j].size();
                     if (mol_opt=="RNA") mol_vec2[chain_j]=1;
@@ -548,7 +545,7 @@ int main(int argc, char *argv[])
                 if (chain2_list.size()>1)
                 {
                     yname.clear();
-                    for (chain_j=0;chain_j<ychainnum;chain_j++)
+                    for (int chain_j=0;chain_j<ychainnum;chain_j++)
                         PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
                     chainID_list2.clear();
@@ -567,7 +564,7 @@ int main(int argc, char *argv[])
     if (chain2_list.size()==1)
     {
         yname.clear();
-        for (chain_j=0;chain_j<ychainnum;chain_j++)
+        for (int chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
         resi_vec2.clear();
