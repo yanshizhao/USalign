@@ -396,9 +396,10 @@ int main(int argc, char *argv[])
     int    chain_i,chain_j;    // chain index
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file    double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
+    int    xchainnum,ychainnum;// number of chains in a PDB file
+    double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
-                               // ya is regarded as native structure 
+                               // ya is regarded as native structure
                                // --> superpose xa onto ya
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
@@ -507,7 +508,7 @@ int main(int argc, char *argv[])
 
                     // entry function for structure alignment
                     TMscore_main(
-                        xa, ya, seqx, seqy,
+                        xa, ya, seqx.c_str(), seqy.c_str(),
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA,

@@ -162,8 +162,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     double score_max;
     double score;
     double rmsd;
-    const int kmax=Lali;    
-    int k_ali[kmax];
+    const int kmax=Lali;
+    std::vector<int> k_ali(kmax);
     int ka;
     int k;
     double t[3];
@@ -173,8 +173,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
 
     //iterative parameters
     int n_it=20;            //maximum number of iterations
-    int n_init_max=6; //maximum number of different fragment length 
-    int L_ini[n_init_max];  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
+    int n_init_max=6; //maximum number of different fragment length
+    std::vector<int> L_ini(n_init_max);  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
     int L_ini_min=4;
     if(Lali<L_ini_min) L_ini_min=Lali;   
 
@@ -198,7 +198,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     
     score_max=-1;
     //find the maximum score starting from local structures superposition
-    int i_ali[kmax];
+    std::vector<int> i_ali(kmax);
     int n_cut;
     int L_frag; //fragment length
     int iL_max; //maximum starting postion for the fragment
@@ -236,7 +236,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
             
             //get subsegment of this fragment
             d = local_d0_search - 1;
-            n_cut=score_fun8(xt, ytm, Lali, d, i_ali, &score, 
+            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
                 score_sum_method, Lnorm, score_d8, d0, 
                 GDT_list_tmp, maxsub_tmp);
             if(score>score_max)
@@ -279,7 +279,7 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
                 //extract rotation matrix based on the fragment                
                 Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut=score_fun8(xt, ytm, Lali, d, i_ali, &score, 
+                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, Lnorm, score_d8, d0);
                 if(score>score_max)
                 {
@@ -337,7 +337,7 @@ double TMscore8_search_standard( double **r1, double **r2,
     double score;
     double rmsd;
     const int kmax = Lali;
-    int k_ali[kmax];
+    std::vector<int> k_ali(kmax);
     int ka;
     int k;
     double t[3];
@@ -346,8 +346,8 @@ double TMscore8_search_standard( double **r1, double **r2,
 
     //iterative parameters
     int n_it = 20;            //maximum number of iterations
-    int n_init_max = 6; //maximum number of different fragment length 
-    int L_ini[n_init_max];  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
+    int n_init_max = 6; //maximum number of different fragment length
+    std::vector<int> L_ini(n_init_max);  //fragment lengths, Lali, Lali/2, Lali/4 ... 4   
     int L_ini_min = 4;
     if (Lali<L_ini_min) L_ini_min = Lali;
 
@@ -371,7 +371,7 @@ double TMscore8_search_standard( double **r1, double **r2,
 
     score_max = -1;
     //find the maximum score starting from local structures superposition
-    int i_ali[kmax];
+    std::vector<int> i_ali(kmax);
     int n_cut;
     int L_frag; //fragment length
     int iL_max; //maximum starting position for the fragment
@@ -408,7 +408,7 @@ double TMscore8_search_standard( double **r1, double **r2,
 
             //get subsegment of this fragment
             d = local_d0_search - 1;
-            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, &score,
+            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                 score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);
 
             if (score>score_max)
@@ -451,7 +451,7 @@ double TMscore8_search_standard( double **r1, double **r2,
                 //extract rotation matrix based on the fragment                
                 Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, &score,
+                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);
                 if (score>score_max)
                 {
