@@ -1,3 +1,4 @@
+#pragma once
 #include "TMalign.h"
 
 int score_fun8( double **xa, double **ya, int n_ali, double d, int i_ali[],

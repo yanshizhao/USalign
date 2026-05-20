@@ -367,7 +367,6 @@ int main(int argc, char *argv[])
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     double **xa, **ya;             // structure of single chain
-    char   *secx, *secy;           // for the secondary structure 
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
     vector<string> resi_vec1;  // residue index for chain1
@@ -480,7 +479,7 @@ int main(int argc, char *argv[])
         ylen_vec.clear();       // length of complex2
 
         t2 = clock();
-        float diff = ((float)t2 - (float)t1)/CLOCKS_PER_SEC;
+        float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
         printf("#Total CPU time is %5.2f seconds\n", diff);
         return 0;
     }
@@ -508,6 +507,8 @@ int main(int argc, char *argv[])
     if (len_aa+len_na>500) fast_opt=true;
     string seqx;
     string seqy;
+    string secx;
+    string secy;
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -516,10 +517,10 @@ int main(int argc, char *argv[])
             for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
             continue;
         }
-        secx = new char[xlen+1];
+        secx.resize(xlen+1);
         NewArray(&xa, xlen, 3);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,secx);
+            xlen,xa,seqx,&secx[0]);
 
         for (j=0;j<chain2_num;j++)
         {
@@ -542,10 +543,10 @@ int main(int argc, char *argv[])
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            secy = new char[ylen+1];
+            secy.resize(ylen+1);
             NewArray(&ya, ylen, 3);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,secy);
+                ylen,ya,seqy,&secy[0]);
 
             // declare variable specific to this pair of TMalign
             double t0[3];
@@ -572,7 +573,7 @@ int main(int argc, char *argv[])
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
 
             // entry function for structure alignment
-            TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx, secy,
+            TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -601,13 +602,11 @@ int main(int argc, char *argv[])
             seqyA.clear();
 
             
-            delete[]secy;
             DeleteArray(&ya,ylen);
             do_vec.clear();
         }
 
         
-        delete[]secx;
         DeleteArray(&xa,xlen);
     }
 
@@ -691,11 +690,11 @@ int main(int argc, char *argv[])
     // perform iterative alignment
     double max_total_score=0; // ignore old total_score because previous
                               // score was from monomeric chain superpositions
-    int max_iter=5-(int)((len_aa+len_na)/200);
+    int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num,
+        ylen_vec, xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap);
 
@@ -706,7 +705,7 @@ int main(int argc, char *argv[])
             fname_super, fname_lign, fname_matrix,
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na,
+            xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
             seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
@@ -757,7 +756,7 @@ int main(int argc, char *argv[])
         max_total_score=maxTMmono;
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
@@ -774,7 +773,7 @@ int main(int argc, char *argv[])
     //if (init_pair_num!=2 && is_oligomer==false) MMalign_cross(
         //max_total_score_cross, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
         //secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        //xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+        //xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
         //TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init, sequence_init,
         //d0_scale, true);
     //else 
@@ -782,7 +781,7 @@ int main(int argc, char *argv[])
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -801,7 +800,7 @@ int main(int argc, char *argv[])
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, nullptr, nullptr, secx, secy, len_aa, len_na,
+        xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
@@ -846,7 +845,7 @@ int main(int argc, char *argv[])
     vector<string>().swap(model2parse2);
 
     t2 = clock();
-    float diff = ((float)t2 - (float)t1)/CLOCKS_PER_SEC;
+    float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
     printf("#Total CPU time is %5.2f seconds\n", diff);
     return 0;
 }

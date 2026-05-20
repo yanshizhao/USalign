@@ -1,3 +1,4 @@
+#pragma once
 #ifndef TMalign_HwRMSD_h
 #define TMalign_HwRMSD_h 1
 #include "NWalign.h"

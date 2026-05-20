@@ -1,3 +1,4 @@
+#pragma once
 /* Functions for the core TMalign algorithm, including the entry function
  * TMalign_main */
 #ifndef TMalign_h
@@ -3845,8 +3846,8 @@ int CPalign_main(double **xa, double **ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1)
 {
-    char   *seqx_cp; // for the protein sequence 
-    char   *secx_cp; // for the secondary structure 
+    std::string seqx_cp; // for the protein sequence
+    std::string secx_cp; // for the secondary structure
     double **xa_cp;   // coordinates
     string seqxA_cp,seqyA_cp;  // alignment
     int i;
@@ -3857,8 +3858,8 @@ int CPalign_main(double **xa, double **ya,
 
     // duplicate structure
     NewArray(&xa_cp, xlen*2, 3);
-    seqx_cp = new char[xlen*2 + 1];
-    secx_cp = new char[xlen*2 + 1];
+    seqx_cp.resize(xlen*2 + 1);
+    secx_cp.resize(xlen*2 + 1);
     for (r=0;r<xlen;r++)
     {
         xa_cp[r+xlen][0]=xa_cp[r][0]=xa[r][0];
@@ -3867,15 +3868,13 @@ int CPalign_main(double **xa, double **ya,
         seqx_cp[r+xlen]=seqx_cp[r]=seqx[r];
         secx_cp[r+xlen]=secx_cp[r]=secx[r];
     }
-    seqx_cp[2*xlen]=0;
-    secx_cp[2*xlen]=0;
     
     // fTM-align alignment
     double TM1_cp;
     double TM2_cp;
     double TM4_cp;
     const double Lnorm_tmp=getmin(xlen,ylen);
-    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+    TMalign_main(xa_cp, ya, seqx_cp.c_str(), seqy, &secx_cp[0], secy,
         t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -3956,7 +3955,7 @@ int CPalign_main(double **xa, double **ya,
      * inflate the number of aligned residues and TM-score. e.g. 1yadA 2duaA */
     if (cp_point!=0)
     {
-        TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+        TMalign_main(xa_cp, ya, seqx_cp.c_str(), seqy, &secx_cp[0], secy,
             t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
             do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, cp_aln_best,
@@ -3978,7 +3977,7 @@ int CPalign_main(double **xa, double **ya,
     }
 
     // full TM-align
-    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+    TMalign_main(xa_cp, ya, seqx_cp.c_str(), seqy, &secx_cp[0], secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -4011,8 +4010,6 @@ int CPalign_main(double **xa, double **ya,
     }
 
     // clean up
-    delete[]seqx_cp;
-    delete[]secx_cp;
     DeleteArray(&xa_cp,xlen*2);
     seqxA_cp.clear();
     seqyA_cp.clear();

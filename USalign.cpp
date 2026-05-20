@@ -772,7 +772,7 @@ int MMalign(const string &xname, const string &yname,
     // declare TM-score tables
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
-    int chain_num =MAX(chain1_num,chain2_num);
+    int chain_num =std::max(chain1_num,chain2_num);
     vector<string> tmp_str_vec(chain2_num,"");
     double **TMave_mat;
     double **ut_mat; // rotation matrices for all-against-all alignment
@@ -1039,7 +1039,7 @@ int MMalign(const string &xname, const string &yname,
     // perform iterative alignment
     double max_total_score=0; // ignore old total_score because previous
                               // score was from monomeric chain superpositions
-    int max_iter=5-(int)((len_aa+len_na)/200);
+    int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
     //if (byresi_opt==0)
     // MMalign_iter/MMalign_final internally overwrite all work buffers with
@@ -1372,7 +1372,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     int    ylen_trim;             // chain length
     double **ya_trim;             // structure of single chain
     std::string seqy_trim;           // for the protein sequence
-    char   *secy_trim;           // for the secondary structure
+    std::string secy_trim;           // for the secondary structure
     double **xt;
 
     // get all-against-all alignment
@@ -1438,11 +1438,11 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             if (trim_chain_count && ylen_trim_vec[j]<ylen)
             {
                 ylen_trim = ylen_trim_vec[j];
-                secy_trim = new char[ylen_trim+1];
+                secy_trim.resize(ylen_trim+1);
                 NewArray(&ya_trim, ylen_trim, 3);
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
-                    ylen_trim,ya_trim,seqy_trim,secy_trim);
-                TMalign_main(xa, ya_trim, seqx.c_str(), seqy_trim.c_str(), secx.c_str(), secy_trim,
+                    ylen_trim,ya_trim,seqy_trim,&secy_trim[0]);
+                TMalign_main(xa, ya_trim, seqx.c_str(), seqy_trim.c_str(), secx.c_str(), &secy_trim[0],
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
@@ -1452,7 +1452,6 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     mol_vec1[i]+mol_vec2[j],TMcut);
                 seqxA.clear();
                 seqyA.clear();
-                delete[]secy_trim;
                 DeleteArray(&ya_trim,ylen_trim);
 
                 NewArray(&xt,xlen,3);
@@ -1883,7 +1882,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     int ylen_total;
     double TM4_total_max=0;
 
-    int max_iter=5-(int)(total_len/200);
+    int max_iter=5-static_cast<int>(total_len/200);
     if (max_iter<2) max_iter=2;
     int iter=0;
     vector<double> TM_vec(chain_num,0);
@@ -2079,8 +2078,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         // recover alignment
         int    ylen_ext=ylen;        // chain length
         double **ya_ext;             // structure of single chain
-        char   *seqy_ext;            // for the protein sequence
-    char   *secy_ext;            // for the secondary structure 
+        std::string seqy_ext;            // for the protein sequence
+        std::string secy_ext;            // for the secondary structure
         for (r=0;r<msa.size();r++) msa[r].clear(); msa.clear();
         msa.assign(ylen,""); // row is position along msa; column is sequence
         vector<string> msa_ext;      // row is position along msa; column is sequence
@@ -2130,8 +2129,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int ry=0;
             ylen_ext=seqxA.size();
             NewArray(&ya_ext, ylen_ext, 3);             // structure of single chain
-            seqy_ext= new char[ylen_ext+1];            // for the protein sequence
-            secy_ext= new char[ylen_ext+1];            // for the secondary structure 
+            seqy_ext.resize(ylen_ext+1);            // for the protein sequence
+            secy_ext.resize(ylen_ext+1);            // for the secondary structure
             string tmp_gap="";
             for (r=0;r<msa[0].size();r++) tmp_gap+='-';
             for (r=msa_ext.size();r<ylen_ext;r++) msa_ext.push_back("");
@@ -2167,7 +2166,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             ylen=ylen_ext;
             NewArray(&ya,ylen,3);
-            seqy.assign(seqy_ext, ylen);
+            seqy.assign(seqy_ext, 0, ylen);
             secy.resize(ylen+1);
             for (r=0;r<ylen;r++)
             {
@@ -2194,8 +2193,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             
             DeleteArray(&xa,xlen);
 
-            delete[]seqy_ext;
-            delete[]secy_ext;
             DeleteArray(&ya_ext,ylen_ext);
             do_vec.clear();
         }
@@ -3660,7 +3657,7 @@ int main(int argc, char *argv[])
     vector<pair<string,string> >().swap(chain_pair_list);
 
     t2 = clock();
-    float diff = ((float)t2 - (float)t1)/CLOCKS_PER_SEC;
+    float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
     if (outfmt_opt<2) printf("#Total CPU time is %5.2f seconds\n", diff);
     return 0;
 }

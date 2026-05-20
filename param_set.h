@@ -3,6 +3,7 @@
 // and protein alignment, using d0 set by parameter_set4search yields
 // slightly better results during initial alignment-superposition iteration.
 
+#pragma once
 #include <cmath>
 #include "basic_fun.h"
 

@@ -1,11 +1,10 @@
+#pragma once
 // header for Needleman-Wunsch global sequence alignment
 #ifndef NWalign_H
 #define NWalign_H 1
 
 #include "basic_fun.h"
 #include "BLOSUM.h"
-
-#define MAX(A,B) ((A)>(B)?(A):(B))
 
 const int gapopen_blosum62=-11;
 const int gapext_blosum62=-1;
@@ -126,23 +125,23 @@ int calculate_score_gotoh(const int xlen,const int ylen, int **S,
             // penalty of consective deletion
             if (glocal<1 || i<xlen || glocal>=3)
             {
-                H[i][j]=MAX(S[i][j-1]+gapopen,H[i][j-1]+gapext);
+                H[i][j]=std::max(S[i][j-1]+gapopen,H[i][j-1]+gapext);
                 JumpH[i][j]=(H[i][j]==H[i][j-1]+gapext)?(JumpH[i][j-1]+1):1;
             }
             else
             {
-                H[i][j]=MAX(S[i][j-1],H[i][j-1]);
+                H[i][j]=std::max(S[i][j-1],H[i][j-1]);
                 JumpH[i][j]=(H[i][j]==H[i][j-1])?(JumpH[i][j-1]+1):1;
             }
             // penalty of consective insertion
             if (glocal<2 || j<ylen || glocal>=3)
             {
-                V[i][j]=MAX(S[i-1][j]+gapopen,V[i-1][j]+gapext);
+                V[i][j]=std::max(S[i-1][j]+gapopen,V[i-1][j]+gapext);
                 JumpV[i][j]=(V[i][j]==V[i-1][j]+gapext)?(JumpV[i-1][j]+1):1;
             }
             else
             {
-                V[i][j]=MAX(S[i-1][j],V[i-1][j]);
+                V[i][j]=std::max(S[i-1][j],V[i-1][j]);
                 JumpV[i][j]=(V[i][j]==V[i-1][j])?(JumpV[i-1][j]+1):1;
             }
 
@@ -204,7 +203,7 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
     char *buf=nullptr;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf=new char [MAX(xlen,ylen)+1];
+    if (invmap_only!=1) buf=new char [std::max(xlen,ylen)+1];
 
     i=xlen;
     j=ylen;
@@ -283,7 +282,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
     char *buf=nullptr;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf=new char [MAX(xlen,ylen)+1];
+    if (invmap_only!=1) buf=new char [std::max(xlen,ylen)+1];
 
     i=xlen;
     j=ylen;

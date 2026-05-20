@@ -1,3 +1,4 @@
+#pragma once
 #include "TMalign.h"
 
 /* entry function for se

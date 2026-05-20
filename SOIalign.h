@@ -1,3 +1,4 @@
+#pragma once
 #ifndef SOIalign_h
 #define SOIalign_h 1
 

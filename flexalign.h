@@ -1,3 +1,4 @@
+#pragma once
 /* Functions for the core TMalign algorithm, including the entry function
  * flexalign_main */
 #ifndef flexalign_h
@@ -107,9 +108,10 @@ int flexalign_main(double **xa, double **ya,
         int ylen_h=ylen - n_ali8;
         std::string seqx_h;
         std::string seqy_h;
-        char *secx_h = new char[xlen + 1];
-        char *secy_h = new char[ylen + 1];
-        secx_h[xlen]=secy_h[ylen]=0;
+        std::string secx_h;
+        std::string secy_h;
+        secx_h.resize(xlen + 1);
+        secy_h.resize(ylen + 1);
         double **xa_h;
         double **ya_h;
         NewArray(&xa_h, xlen, 3);
@@ -161,7 +163,7 @@ int flexalign_main(double **xa, double **ya,
         int n_ali_h=0;
         int n_ali8_h=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), secx_h, secy_h, t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), &secx_h[0], &secy_h[0], t0, u0,
             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
@@ -224,7 +226,7 @@ int flexalign_main(double **xa, double **ya,
         seqyA="";
         n_ali=n_ali8=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), secx_h, secy_h, t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), &secx_h[0], &secy_h[0], t0, u0,
             TM1, TM2, TM3, TM4, TM5, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali, n_ali8,
@@ -271,8 +273,6 @@ int flexalign_main(double **xa, double **ya,
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
-        delete [] secx_h;
-        delete [] secy_h;
     }
     for (r=0;r<seqM.size();r++) if (seqM[r]=='1') seqM[r]='0';
 
@@ -285,9 +285,10 @@ int flexalign_main(double **xa, double **ya,
         int ylen_h=ylen - n_ali8;
         std::string seqx_h;
         std::string seqy_h;
-        char *secx_h = new char[xlen_h + 1];
-        char *secy_h = new char[ylen_h + 1];
-        secx_h[xlen_h]=secy_h[ylen_h]=0;
+        std::string secx_h;
+        std::string secy_h;
+        secx_h.resize(xlen_h + 1);
+        secy_h.resize(ylen_h + 1);
         double **xa_h;
         double **ya_h;
         NewArray(&xa_h, xlen_h, 3);
@@ -343,7 +344,7 @@ int flexalign_main(double **xa, double **ya,
         int n_ali_h=0;
         int n_ali8_h=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), secx_h, secy_h, t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), &secx_h[0], &secy_h[0], t0, u0,
             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
@@ -404,8 +405,6 @@ int flexalign_main(double **xa, double **ya,
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
-        delete [] secx_h;
-        delete [] secy_h;
         if (new_ali<5) break;
     }
 

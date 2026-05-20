@@ -810,7 +810,7 @@ int main(int argc, char *argv[])
     map<string, map<string,bool> >().swap(init_cluster);
 
     t2 = clock();
-    float diff = ((float)t2 - (float)t1)/CLOCKS_PER_SEC;
+    float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
     printf("#Total CPU time is %5.2f seconds\n", diff);
     return 0;
 }
