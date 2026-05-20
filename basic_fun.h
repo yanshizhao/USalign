@@ -910,15 +910,13 @@ void file2chainlist(std::vector<std::string>&chain_list, const std::string &name
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     std::string line;
     std::string filename;
-    int a;
-    int b;
     std::string sep;
     while (fp.good())
     {
         std::getline(fp, line);
         if (! line.size()) continue;
         line=Trim(line);
-        for (a=0;a<=2;a++)
+        for (int a=0;a<=2;a++)
         {
             if      (a==0) sep="";
             else if (a==1) sep="/";
@@ -961,9 +959,6 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     std::string line;
     std::string filename;
-    int a;
-    int b;
-    size_t i;
     std::string sep;
     std::string filename1;
     std::string filename2;
@@ -978,28 +973,28 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
         {
             filename1=line_vec[0];
             filename2=line_vec[1];
-            for (i=0;i<2;i++) line_vec[i].clear(); line_vec.clear();
+            for (size_t i=0;i<2;i++) line_vec[i].clear(); line_vec.clear();
         }
         else
         {
-            for (i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
+            for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
             split(line, line_vec, ' ');
             if (line_vec.size()==2)
             {
                 filename1=line_vec[0];
                 filename2=line_vec[1];
-                for (i=0;i<2;i++) line_vec[i].clear(); line_vec.clear();
+                for (size_t i=0;i<2;i++) line_vec[i].clear(); line_vec.clear();
             }
             else
             {
                 std::cerr<<"WARNING! not a chain std::pair: "<<line<<std::endl;
-                for (i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
+                for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
                 continue;
             }
         }
 
         filename.clear();
-        for (a=0;a<=2;a++)
+        for (int a=0;a<=2;a++)
         {
             if      (a==0) sep="";
             else if (a==1) sep="/";
@@ -1034,12 +1029,12 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
             filename.clear();
         }
 
-        for (a=0;a<=2;a++)
+        for (int a=0;a<=2;a++)
         {
             if      (a==0) sep="";
             else if (a==1) sep="/";
             else if (a==2) sep="\\";
-                
+
             filename=dirpair_opt+sep+filename2+suffix_opt;
             if (isfile(filename)) break;
             if (suffix_opt.size())
