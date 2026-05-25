@@ -590,7 +590,7 @@ int main(int argc, char *argv[])
                         i_opt, a_opt, u_opt, d_opt, fast_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
                     else TMalign_main(
-                        xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                        xa, ya, seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,

@@ -431,7 +431,7 @@ int main(int argc, char *argv[])
         vector<double> do_vec;
 
         // entry function for structure alignment
-        TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+        TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
@@ -570,7 +570,7 @@ int main(int argc, char *argv[])
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
 
             // entry function for structure alignment
-            TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+            TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,

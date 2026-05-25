@@ -395,7 +395,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
 
                     // entry function for structure alignment
                     if (cp_opt) CPalign_main(
-                        xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                        xa, ya, seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
@@ -435,7 +435,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                         delete [] invmap;
                     }
                     else TMalign_main(
-                        xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                        xa, ya, seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
@@ -723,7 +723,7 @@ int MMalign(const string &xname, const string &yname,
             }
             delete [] invmap;
         }
-        else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+        else TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
@@ -913,7 +913,7 @@ int MMalign(const string &xname, const string &yname,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -1291,7 +1291,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         vector<double> do_vec;
 
         // entry function for structure alignment
-        TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+        TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
@@ -1442,7 +1442,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 NewArray(&ya_trim, ylen_trim, 3);
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
                     ylen_trim,ya_trim,seqy_trim,&secy_trim[0]);
-                TMalign_main(xa, ya_trim, seqx.c_str(), seqy_trim.c_str(), secx.c_str(), &secy_trim[0],
+                TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
@@ -1480,7 +1480,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             }
             else
             {
-                TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                TMalign_main(xa, ya, seqx, seqy, secx, secy,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
@@ -1588,7 +1588,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         sequence.push_back(seqyA_mat[i][j]);
             
         // entry function for structure alignment
-        TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+        TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
@@ -1810,7 +1810,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -2024,7 +2024,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 }
                 delete [] invmap;
             }
-            else TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
@@ -2674,7 +2674,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         }
                     }
                     else SOIalign_main(xa, ya, xk, yk, closeK_opt,
-                        seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                        seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, invmap,
@@ -2909,7 +2909,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
 
                     // entry function for structure alignment
                     int hingeNum=flexalign_main(
-                        xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                        xa, ya, seqx, seqy, secx, secy,
                         t0, u0, tu_vec, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
@@ -2944,7 +2944,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         tu2t_u(tu_vec[0],t0_h,u0_h);
 
                         int hingeNum_h=flexalign_main(
-                            xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                            xa, ya, seqx, seqy, secx, secy,
                             t0_h, u0_h, tu_vec_h,
                             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h,
                             d0_0_h, TM_0_h, d0A, d0B, d0u, d0a, d0_out_h,
