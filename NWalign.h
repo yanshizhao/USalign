@@ -359,21 +359,12 @@ void trace_back_sw(const char *seqx, const char *seqy,
     }
 }
 
-// C++ string overload (forward bridge)
-int NWalign_main(const std::string &seqx, const std::string &seqy, const int xlen,
-    const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
-    int *invmap, const int invmap_only=0, const int glocal=0)
-{
-    return NWalign_main(seqx.c_str(), seqy.c_str(), xlen, ylen,
-        seqxA, seqyA, mol_type, invmap, invmap_only, glocal);
-}
-
 /* entry function for NWalign
  * invmap_only - whether to return seqxA and seqyA or to return invmap
  *               0: only return seqxA and seqyA
  *               1: only return invmap
  *               2: return seqxA, seqyA and invmap */
-int NWalign_main(const char *seqx, const char *seqy, const int xlen,
+int NWalign_main(const std::string &seqx, const std::string &seqy, const int xlen,
     const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
     int *invmap, const int invmap_only=0, const int glocal=0)
 {
@@ -417,9 +408,9 @@ int NWalign_main(const char *seqx, const char *seqy, const int xlen,
     seqxA.clear();
     seqyA.clear();
 
-    if (glocal<3) trace_back_gotoh(seqx, seqy, JumpH, JumpV, P,
+    if (glocal<3) trace_back_gotoh(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P,
             seqxA, seqyA, xlen, ylen, invmap, invmap_only);
-    else trace_back_sw(seqx, seqy, JumpH, JumpV, P, seqxA, seqyA,
+    else trace_back_sw(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
 
     DeleteArray(&JumpH, xlen+1);
