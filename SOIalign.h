@@ -213,7 +213,7 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * */
 int soi_se_main(
-    double **xa, double **ya, const char *seqx, const char *seqy,
+    double **xa, double **ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,

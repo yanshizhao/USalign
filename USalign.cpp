@@ -2650,7 +2650,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         u0[1][0]=         u0[1][2]=
                         u0[2][0]=         u0[2][1]=
                         t0[0]   =t0[1]   =t0[2]   =0;
-                        soi_se_main(xa, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+                        soi_se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                             seqM, seqxA, seqyA,
                             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
