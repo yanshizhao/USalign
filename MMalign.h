@@ -1378,7 +1378,7 @@ double MMalign_search(
             }
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence_tmp, Lnorm_ass, d0_scale,
@@ -1611,7 +1611,7 @@ void MMalign_final(
             sequence[1]=seqyA_mat[i][j];
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
@@ -1719,7 +1719,7 @@ void MMalign_se_final(
     int *invmap = new int[ylen+1];
 
     // entry function for structure alignment
-    se_main(xa, ya, seqx.c_str(), seqy.c_str(),
+    se_main(xa, ya, seqx, seqy,
         TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1841,7 +1841,7 @@ void MMalign_se_final(
             sequence[1]=seqyA_mat[i][j];
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
@@ -3127,7 +3127,7 @@ void MMalign_dimer(double & total_score,
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,

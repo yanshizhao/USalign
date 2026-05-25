@@ -1457,7 +1457,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 NewArray(&xt,xlen,3);
                 do_rotation(xa, xt, xlen, t0, u0);
                 int *invmap = new int[ylen+1];
-                se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+                se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
@@ -2119,7 +2119,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int *invmap = new int[ylen+1];
             vector<double> do_vec;
 
-            se_main(xa, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+            se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
@@ -2282,7 +2282,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 int *invmap = new int[ylen+1];
                 vector<double> do_vec;
 
-                se_main(xa, ya, seqx.c_str(), seqy.c_str(), TM1, TM2, TM3, TM4, TM5,
+                se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,

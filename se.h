@@ -6,38 +6,8 @@
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
-// C++ string overload (forward bridge)
-// NOTE: This overload must NOT be called from cross-scope call sites where seqx
-// and seqy are declared in different stack frames (e.g., seqy in outer for(iter),
-// seqx in inner for(tm_idx)).  The const std::string& vs const char* parameter
-// difference changes se_main's stack frame layout, causing a crash in deeply
-// nested contexts like mTMalign hinge recovery.  Callers in such contexts must
-// pass seqx.c_str() / seqy.c_str() explicitly to reach the const char* version.
 int se_main(
     double **xa, double **ya, const std::string &seqx, const std::string &seqy,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen, const vector<string> &sequence,
-    const double Lnorm_ass, const double d0_scale, const bool i_opt,
-    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, int *invmap, const int hinge=0)
-{
-    return se_main(xa, ya, seqx.c_str(), seqy.c_str(),
-        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-        d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence,
-        Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt, mol_type,
-        outfmt_opt, invmap, hinge);
-}
-
-int se_main(
-    double **xa, double **ya, const char *seqx, const char *seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
