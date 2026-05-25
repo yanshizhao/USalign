@@ -1310,7 +1310,7 @@ double MMalign_search(
     vector<double> do_vec;
 
     // entry function for structure alignment
-    TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+    TMalign_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1490,7 +1490,7 @@ void MMalign_final(
     double Lnorm_ass=len_aa+len_na;
 
     // entry function for structure alignment
-    TMalign_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+    TMalign_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,

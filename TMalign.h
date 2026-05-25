@@ -3213,7 +3213,7 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
  * 1   - terminated due to exception
  * 2-7 - pre-terminated due to low TM-score */
 int TMalign_main(double **xa, double **ya,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
@@ -3356,7 +3356,7 @@ int TMalign_main(double **xa, double **ya,
         /************************************************************/
         //    get initial alignment based on secondary structure   
         /************************************************************/
-        get_initial_ss(path, val, secx, secy, xlen, ylen, invmap);
+        get_initial_ss(path, val, secx.c_str(), secy.c_str(), xlen, ylen, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
@@ -3443,7 +3443,7 @@ int TMalign_main(double **xa, double **ya,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus(r1, r2, score, path, val, secx, secy, xa, ya,
+        get_initial_ssplus(r1, r2, score, path, val, secx.c_str(), secy.c_str(), xa, ya,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
@@ -3832,7 +3832,7 @@ int TMalign_main(double **xa, double **ya,
 /* entry function for TM-align with circular permutation
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 int CPalign_main(double **xa, double **ya,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
@@ -3874,7 +3874,7 @@ int CPalign_main(double **xa, double **ya,
     double TM2_cp;
     double TM4_cp;
     const double Lnorm_tmp=getmin(xlen,ylen);
-    TMalign_main(xa_cp, ya, seqx_cp.c_str(), seqy, &secx_cp[0], secy,
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
         t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -3955,7 +3955,7 @@ int CPalign_main(double **xa, double **ya,
      * inflate the number of aligned residues and TM-score. e.g. 1yadA 2duaA */
     if (cp_point!=0)
     {
-        TMalign_main(xa_cp, ya, seqx_cp.c_str(), seqy, &secx_cp[0], secy,
+        TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
             t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
             do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, cp_aln_best,
@@ -3977,7 +3977,7 @@ int CPalign_main(double **xa, double **ya,
     }
 
     // full TM-align
-    TMalign_main(xa_cp, ya, seqx_cp.c_str(), seqy, &secx_cp[0], secy,
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,

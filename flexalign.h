@@ -53,7 +53,7 @@ void aln2invmap(const string &seqxA, const string &seqyA, int *invmap)
 }
 
 int flexalign_main(double **xa, double **ya,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3], vector<vector<double> >&tu_vec,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
@@ -163,7 +163,7 @@ int flexalign_main(double **xa, double **ya,
         int n_ali_h=0;
         int n_ali8_h=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), &secx_h[0], &secy_h[0], t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
@@ -226,7 +226,7 @@ int flexalign_main(double **xa, double **ya,
         seqyA="";
         n_ali=n_ali8=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), &secx_h[0], &secy_h[0], t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
             TM1, TM2, TM3, TM4, TM5, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali, n_ali8,
@@ -344,7 +344,7 @@ int flexalign_main(double **xa, double **ya,
         int n_ali_h=0;
         int n_ali8_h=0;
 
-        TMalign_main(xa_h, ya_h, seqx_h.c_str(), seqy_h.c_str(), &secx_h[0], &secy_h[0], t0, u0,
+        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
             TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
             d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,

@@ -568,7 +568,7 @@ void SOI_assign2super(double **r1, double **r2, double **xtm, double **ytm,
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 int SOIalign_main(double **xa, double **ya,
     double **xk, double **yk, const int closeK_opt,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
