@@ -889,9 +889,9 @@ void output_TMscore_results(
     if (outfmt_opt<=0)
     {
         fcout("\nStructure1: %s%s    Length=%5d\n",
-            xname.c_str(), chainID1.c_str(), xlen);
+            xname, chainID1, xlen);
         fcout("Structure2: %s%s    Length=%5d (by which all scores are normalized)\n",
-            yname.c_str(), chainID2.c_str(), ylen);
+            yname, chainID2, ylen);
 
         fcout("Number of residues in common=%5d\n", n_ali8);
         fcout("RMSD of  the common residues=%9.3f\n\n", rmsd);
@@ -948,10 +948,10 @@ void output_TMscore_results(
     else if (outfmt_opt==1)
     {
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            xname.c_str(), chainID1.c_str(), xlen, d0B, Liden/xlen, TM2);
+            xname, chainID1, xlen, d0B, Liden/xlen, TM2);
         cout << seqxA << "\n";
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            yname.c_str(), chainID2.c_str(), ylen, d0A, Liden/ylen, TM1);
+            yname, chainID2, ylen, d0A, Liden/ylen, TM1);
         cout << seqyA << "\n";
 
         fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
@@ -971,7 +971,7 @@ void output_TMscore_results(
     else if (outfmt_opt==2)
     {
         fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
-            xname.c_str(), chainID1.c_str(), yname.c_str(), chainID2.c_str(),
+            xname, chainID1, yname, chainID2,
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
             xlen, ylen, n_ali8);
     }

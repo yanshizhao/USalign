@@ -464,8 +464,8 @@ void output_NWalign_results(
 {
     if (outfmt_opt<=0)
     {
-        fcout("\nName of Chain_1: %s%s\n", xname.c_str(), chainID1);
-        fcout("Name of Chain_2: %s%s\n", yname.c_str(), chainID2);
+        fcout("\nName of Chain_1: %s%s\n", xname, chainID1);
+        fcout("Name of Chain_2: %s%s\n", yname, chainID2);
         fcout("Length of Chain_1: %d residues\n", xlen);
         fcout("Length of Chain_2: %d residues\n\n", ylen);
 
@@ -484,10 +484,10 @@ void output_NWalign_results(
     else if (outfmt_opt==1)
     {
         fcout(">%s%s\tL=%d\tseqID=%.3f\n",
-            xname.c_str(), chainID1, xlen, Liden/xlen);
+            xname, chainID1, xlen, Liden/xlen);
         std::cout << seqxA << "\n";
         fcout(">%s%s\tL=%d\tseqID=%.3f\n",
-            yname.c_str(), chainID2, ylen, Liden/ylen);
+            yname, chainID2, ylen, Liden/ylen);
         std::cout << seqyA << "\n";
         fcout("#score=%d\tLali=%d\tseqID_ali=%.3f\n", aln_score, L_ali, Liden/L_ali);
         std::cout << "$$$$\n";
@@ -495,7 +495,7 @@ void output_NWalign_results(
     else if (outfmt_opt==2)
     {
         fcout("%s%s\t%s%s\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
-            xname.c_str(), chainID1, yname.c_str(), chainID2, 
+            xname, chainID1, yname, chainID2,
             Liden/xlen, Liden/ylen, Liden/L_ali,
             xlen, ylen, L_ali);
     }

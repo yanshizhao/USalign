@@ -1312,8 +1312,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             (outfmt_opt==2?outfmt_opt:3), ter_opt, true, split_opt, o_opt, fname_super,
             0, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
         if (outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
-            xname.substr(dir1_opt.size()).c_str(), chainID_list1[0].c_str(),
-            yname.substr(dir2_opt.size()).c_str(), chainID_list2[0].c_str(),
+            xname.substr(dir1_opt.size()), chainID_list1[0],
+            yname.substr(dir2_opt.size()), chainID_list2[0],
             sqrt((TM1*TM1+TM2*TM2)/2));
 
         // clean up
@@ -1644,7 +1644,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             query_name   +=chainID_list1[i];
             template_name+=chainID_list2[j];
         }
-        fcout("%s\t%s\t%.4f\n",query_name.c_str(),template_name.c_str(),TM);
+        fcout("%s\t%s\t%.4f\n", query_name, template_name, TM);
         query_name.clear();
         template_name.clear();
     }
