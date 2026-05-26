@@ -1770,25 +1770,25 @@ void output_flexalign_results(const string xname, const string yname,
 {
     if (outfmt_opt<=0)
     {
-        printf("\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
+        fcout("\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
             xname.c_str(), chainID1.c_str());
-        printf("Name of Structure_2: %s%s\n", yname.c_str(), chainID2.c_str());
-        printf("Length of Structure_1: %d residues\n", xlen);
-        printf("Length of Structure_2: %d residues\n\n", ylen);
+        fcout("Name of Structure_2: %s%s\n", yname.c_str(), chainID2.c_str());
+        fcout("Length of Structure_1: %d residues\n", xlen);
+        fcout("Length of Structure_2: %d residues\n\n", ylen);
 
         if (i_opt)
-            printf("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", TM_ali, L_ali, rmsd_ali);
+            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", TM_ali, L_ali, rmsd_ali);
 
-        printf("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
-        printf("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", TM2, xlen, d0B);
-        printf("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", TM1, ylen, d0A);
+        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
+        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", TM2, xlen, d0B);
+        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", TM1, ylen, d0A);
 
         if (a_opt==1)
-            printf("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
         if (u_opt)
-            printf("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
+            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
         if (d_opt)
-            printf("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
+            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
         cout << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
@@ -1799,33 +1799,33 @@ void output_flexalign_results(const string xname, const string yname,
     }
     else if (outfmt_opt==1)
     {
-        printf(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname.c_str(), chainID1.c_str(), xlen, d0B, Liden/xlen, TM2);
         cout << seqxA << "\n";
-        printf(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             yname.c_str(), chainID2.c_str(), ylen, d0A, Liden/ylen, TM1);
         cout << seqyA << "\n";
 
-        printf("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
+        fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
 
         if (i_opt)
-            printf("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", TM_ali, L_ali, rmsd_ali);
+            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", TM_ali, L_ali, rmsd_ali);
 
         if(a_opt)
-            printf("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
 
         if(u_opt)
-            printf("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
+            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
 
         if(d_opt)
-            printf("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
+            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
 
         cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {
-        printf("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
+        fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname.c_str(), chainID1.c_str(), yname.c_str(), chainID2.c_str(),
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
             xlen, ylen, n_ali8);
