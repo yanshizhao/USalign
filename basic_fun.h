@@ -13,11 +13,19 @@
 #include <iomanip>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <iterator>
 #include <algorithm>
 #include <string>
 #include <iomanip>
 #include <map>
+
+using Coords   = std::vector<std::array<double, 3>>;
+using DPMatrix = std::vector<std::vector<double>>;
+using PathMat  = std::vector<std::vector<char>>;
+using IntMat   = std::vector<std::vector<int>>;
+using Rotation = std::vector<std::array<double, 12>>;
+using Bond2    = std::vector<std::array<int, 2>>;
 
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
@@ -820,7 +828,15 @@ double dist(double x[3], double y[3])
     double d1=x[0]-y[0];
     double d2=x[1]-y[1];
     double d3=x[2]-y[2];
- 
+
+    return (d1*d1 + d2*d2 + d3*d3);
+}
+
+inline double dist(const std::array<double,3>& x, const std::array<double,3>& y)
+{
+    double d1=x[0]-y[0];
+    double d2=x[1]-y[1];
+    double d3=x[2]-y[2];
     return (d1*d1 + d2*d2 + d3*d3);
 }
 
@@ -841,7 +857,15 @@ void do_rotation(double **x, double **x1, int len, double t[3], double u[3][3])
     for(int i=0; i<len; i++)
     {
         transform(t, u, &x[i][0], &x1[i][0]);
-    }    
+    }
+}
+
+void do_rotation(Coords& x, Coords& x1, int len, double t[3], double u[3][3])
+{
+    for(int i=0; i<len; i++)
+    {
+        transform(t, u, x[i].data(), x1[i].data());
+    }
 }
 
 /* read user specified pairwise alignment from 'fname_lign' to 'sequence'.
