@@ -464,37 +464,37 @@ void output_NWalign_results(
 {
     if (outfmt_opt<=0)
     {
-        printf("\nName of Chain_1: %s%s\n", xname.c_str(), chainID1);
-        printf("Name of Chain_2: %s%s\n", yname.c_str(), chainID2);
-        printf("Length of Chain_1: %d residues\n", xlen);
-        printf("Length of Chain_2: %d residues\n\n", ylen);
+        fcout("\nName of Chain_1: %s%s\n", xname.c_str(), chainID1);
+        fcout("Name of Chain_2: %s%s\n", yname.c_str(), chainID2);
+        fcout("Length of Chain_1: %d residues\n", xlen);
+        fcout("Length of Chain_2: %d residues\n\n", ylen);
 
-        printf("Aligned length= %d, Alignment score= %d, Seq_ID=n_identical/n_aligned= %4.3f\n",
+        fcout("Aligned length= %d, Alignment score= %d, Seq_ID=n_identical/n_aligned= %4.3f\n",
             L_ali, aln_score, Liden/L_ali);
-        printf("Seq_ID= %6.5f (if normalized by length of Chain_1\n", Liden/xlen);
-        printf("Seq_ID= %6.5f (if normalized by length of Chain_2\n", Liden/ylen);
+        fcout("Seq_ID= %6.5f (if normalized by length of Chain_1\n", Liden/xlen);
+        fcout("Seq_ID= %6.5f (if normalized by length of Chain_2\n", Liden/ylen);
         std::cout << "(You should use Seq_ID normalized by length of the reference structure)\n";
-    
+
         //output alignment
-        printf("\n(\":\" denotes pairs with identical residue type)\n");
+        fcout("\n(\":\" denotes pairs with identical residue type)\n");
         std::cout << seqxA << "\n";
         std::cout << seqM << "\n";
         std::cout << seqyA << "\n";
     }
     else if (outfmt_opt==1)
     {
-        printf(">%s%s\tL=%d\tseqID=%.3f\n",
+        fcout(">%s%s\tL=%d\tseqID=%.3f\n",
             xname.c_str(), chainID1, xlen, Liden/xlen);
         std::cout << seqxA << "\n";
-        printf(">%s%s\tL=%d\tseqID=%.3f\n",
+        fcout(">%s%s\tL=%d\tseqID=%.3f\n",
             yname.c_str(), chainID2, ylen, Liden/ylen);
         std::cout << seqyA << "\n";
-        printf("#score=%d\tLali=%d\tseqID_ali=%.3f\n", aln_score, L_ali, Liden/L_ali);
+        fcout("#score=%d\tLali=%d\tseqID_ali=%.3f\n", aln_score, L_ali, Liden/L_ali);
         std::cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {
-        printf("%s%s\t%s%s\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
+        fcout("%s%s\t%s%s\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname.c_str(), chainID1, yname.c_str(), chainID2, 
             Liden/xlen, Liden/ylen, Liden/L_ali,
             xlen, ylen, L_ali);
