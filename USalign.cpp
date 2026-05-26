@@ -1311,8 +1311,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             Lnorm_ass, d0_scale, d0a, d0u, (m_opt?fname_matrix:"").c_str(),
             (outfmt_opt==2?outfmt_opt:3), ter_opt, true, split_opt, o_opt, fname_super,
             0, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
-        if (outfmt_opt==2) printf("%s%s\t%s%s\t%.4f\n",
-            xname.substr(dir1_opt.size()).c_str(), chainID_list1[0].c_str(), 
+        if (outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
+            xname.substr(dir1_opt.size()).c_str(), chainID_list1[0].c_str(),
             yname.substr(dir2_opt.size()).c_str(), chainID_list2[0].c_str(),
             sqrt((TM1*TM1+TM2*TM2)/2));
 
@@ -1644,7 +1644,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             query_name   +=chainID_list1[i];
             template_name+=chainID_list2[j];
         }
-        printf("%s\t%s\t%.4f\n",query_name.c_str(),template_name.c_str(),TM);
+        fcout("%s\t%s\t%.4f\n",query_name.c_str(),template_name.c_str(),TM);
         query_name.clear();
         template_name.clear();
     }
@@ -3658,6 +3658,6 @@ int main(int argc, char *argv[])
 
     t2 = clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
-    if (outfmt_opt<2) printf("#Total CPU time is %5.2f seconds\n", diff);
+    if (outfmt_opt<2) fcout("#Total CPU time is %5.2f seconds\n", diff);
     return 0;
 }

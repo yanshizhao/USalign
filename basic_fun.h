@@ -1071,3 +1071,42 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
     }
     fp.close();
 }
+
+// ============================================================
+// fcout — C++ wrapper around printf for std::cout output
+// Replaces: printf("format", ...) → fcout("format", ...)
+// The format string is passed through snprintf unchanged,
+// guaranteeing byte-identical output with the original printf.
+// ============================================================
+
+// ---- argument conversion helpers ----
+
+// std::string → const char*
+inline const char* to_cstr(const std::string& s) { return s.c_str(); }
+
+// const char* — identity pass-through
+inline const char* to_cstr(const char* s)         { return s; }
+
+// char — identity pass-through (%c)
+inline char to_cstr(char c)                      { return c; }
+
+// All other types (int, double, etc.) — identity pass-through
+template<typename T>
+inline T to_cstr(const T& val) { return val; }
+
+// ---- fcout ----
+
+// Primary template: snprintf → std::cout
+template<typename... Args>
+void fcout(const char* fmt, const Args&... args) {
+    int size = std::snprintf(nullptr, 0, fmt, to_cstr(args)...);
+    if (size <= 0) return;
+    std::string buf(size, '\0');
+    std::snprintf(&buf[0], size + 1, fmt, to_cstr(args)...);
+    std::cout << buf;
+}
+
+// No-argument overload (const char* → direct cout, no snprintf overhead)
+inline void fcout(const char* fmt) {
+    std::cout << fmt;
+}
