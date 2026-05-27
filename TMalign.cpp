@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
     std::string secx, secy;       // for the secondary structure
-    double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
+    Coords xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
@@ -504,7 +504,6 @@ int main(int argc, char *argv[])
                 cerr<<"Sequence is too short <3!: "<<xname<<endl;
                 continue;
             }
-            NewArray(&xa, xlen, 3);
             string seqx;
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
@@ -546,7 +545,6 @@ int main(int argc, char *argv[])
                         cerr<<"Sequence is too short <3!: "<<yname<<endl;
                         continue;
                     }
-                    NewArray(&ya, ylen, 3);
                     string seqy;
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
@@ -622,7 +620,7 @@ int main(int argc, char *argv[])
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    DeleteArray(&ya, ylen);
+                    // ya auto-cleared by read_PDB (Coords)
                     resi_vec2.clear();
                     do_vec.clear();
                 } // chain_j
@@ -637,7 +635,7 @@ int main(int argc, char *argv[])
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            DeleteArray(&xa, xlen);
+            // xa auto-cleared by read_PDB (Coords)
             resi_vec1.clear();
         } // chain_i
         xname.clear();

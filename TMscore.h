@@ -1496,7 +1496,38 @@ void output_TMscore_results(
     if (strlen(fname_matrix)) 
         output_rotation_matrix(fname_matrix, t, u);
     if (strlen(fname_super))
-        output_pymol(xname, yname, fname_super, t, u, ter_opt, 
+        output_pymol(xname, yname, fname_super, t, u, ter_opt,
             0, split_opt, mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2);
+}
+
+// Coords& bridge overload — builds temp double** views and delegates to double** impl
+int TMscore_main(Coords& xa, Coords& ya,
+    const char *seqx, const char *seqy, double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double GDT_list[5], double &maxsub,
+    const double TMcut=-1)
+{
+    vector<double*> xa_view(xlen);
+    vector<double*> ya_view(ylen);
+    for (int i=0; i<xlen; i++) xa_view[i]=xa[i].data();
+    for (int i=0; i<ylen; i++) ya_view[i]=ya[i].data();
+    return TMscore_main(xa_view.data(), ya_view.data(),
+        seqx, seqy, t0, u0,
+        TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, GDT_list, maxsub, TMcut);
 }
