@@ -393,6 +393,25 @@ inline void SOI_super2score(double **xt, double **ya, const int xlen,
     }
 }
 
+inline void SOI_super2score(const Coords& xt, double **ya, const int xlen,
+    const int ylen, double **score, double d0, double score_d8)
+{
+    int i;
+    int j;
+    double d02=d0*d0;
+    double score_d82=score_d8*score_d8;
+    double d2;
+    for (i=0; i<xlen; i++)
+    {
+        for(j=0; j<ylen; j++)
+        {
+            d2=dist(xt[i], ya[j]);
+            if (d2>score_d82) score[i+1][j+1]=0;
+            else score[i+1][j+1]=1./(1+ d2/d02);
+        }
+    }
+}
+
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
@@ -466,6 +485,74 @@ double SOI_iter(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore_max;
 }
 
+double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, double **score, bool **path, double **val, double **xa, double **ya,
+    int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
+    int iteration_max, double local_d0_search,
+    double Lnorm, double d0, double score_d8,
+    int **secx_bond, int **secy_bond, const int mm_opt, const bool init_invmap=false)
+{
+    double rmsd;
+    int *invmap=new int[ylen+1];
+
+    int iteration;
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double tmscore_max;
+    double tmscore_old=0;
+    tmscore_max=-1;
+
+    double d02=d0*d0;
+    double score_d82=score_d8*score_d8;
+    double d2;
+    for (iteration=0; iteration<iteration_max; iteration++)
+    {
+        if (iteration==0 && init_invmap)
+            for (j=0;j<ylen;j++) invmap[j]=invmap0[j];
+        else
+        {
+            for (j=0; j<ylen; j++) invmap[j]=-1;
+            if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
+        }
+        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+
+        k=0;
+        for (j=0; j<ylen; j++)
+        {
+            i=invmap[j];
+            if (i<0) continue;
+
+            xtm[k][0]=xa[i][0];
+            xtm[k][1]=xa[i][1];
+            xtm[k][2]=xa[i][2];
+
+            ytm[k][0]=ya[j][0];
+            ytm[k][1]=ya[j][1];
+            ytm[k][2]=ya[j][2];
+            k++;
+        }
+
+        tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+            40, 8, &rmsd, local_d0_search, Lnorm, score_d8, d0);
+
+        if (tmscore>tmscore_max)
+        {
+            tmscore_max=tmscore;
+            for (j=0; j<ylen; j++) invmap0[j]=invmap[j];
+        }
+
+        if (iteration>0 && fabs(tmscore_old-tmscore)<0.000001) break;
+        tmscore_old=tmscore;
+        do_rotation(xa, xt, xlen, t, u);
+        SOI_super2score(xt, ya, xlen, ylen, score, d0, score_d8);
+    }// for iteration
+
+    delete []invmap;
+    return tmscore_max;
+}
+
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double **score, bool **path, double **val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[], 
@@ -475,12 +562,10 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     int i;
     int j;
     int k;
-    double **xfrag;
-    double **xtran;
-    double **yfrag;
-    NewArray(&xfrag, closeK_opt, 3);
-    NewArray(&xtran, closeK_opt, 3);
-    NewArray(&yfrag, closeK_opt, 3);
+    Coords xfrag, xtran, yfrag;
+    xfrag.resize(closeK_opt);
+    xtran.resize(closeK_opt);
+    yfrag.resize(closeK_opt);
     double rmsd;
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
@@ -526,10 +611,7 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     for (j=0; j<ylen;j++) i=invmap[j];
     soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
-    // clean up
-    DeleteArray(&xfrag, closeK_opt);
-    DeleteArray(&xtran, closeK_opt);
-    DeleteArray(&yfrag, closeK_opt);
+    // clean up — xfrag/xtran/yfrag auto-destruct (Coords)
 }
 
 void SOI_assign2super(double **r1, double **r2, double **xtm, double **ytm,
@@ -544,6 +626,35 @@ void SOI_assign2super(double **r1, double **r2, double **xtm, double **ytm,
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
     double d2;
+
+    k=0;
+    for (j=0; j<ylen; j++)
+    {
+        i=invmap[j];
+        if (i<0) continue;
+        xtm[k][0]=xa[i][0];
+        xtm[k][1]=xa[i][1];
+        xtm[k][2]=xa[i][2];
+
+        ytm[k][0]=ya[j][0];
+        ytm[k][1]=ya[j][1];
+        ytm[k][2]=ya[j][2];
+        k++;
+    }
+    TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+        40, 8, &rmsd, local_d0_search, Lnorm, score_d8, d0);
+    do_rotation(xa, xt, xlen, t, u);
+}
+
+void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, double **xa, double **ya,
+    const int xlen, const int ylen, double t[3], double u[3][3], int invmap[],
+    double local_d0_search, double Lnorm, double d0, double score_d8)
+{
+    int i;
+    int j;
+    int k;
+    double rmsd;
 
     k=0;
     for (j=0; j<ylen; j++)
@@ -589,15 +700,15 @@ int SOIalign_main(double **xa, double **ya,
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
     double **score;       // Input score table for enhanced greedy search
     double **scoret;      // Transposed score table for enhanced greedy search
-    bool   **path;        // for dynamic programming  
-    double **val;         // for dynamic programming  
-    double **xtm, **ytm;  // for TMscore search engine
-    double **xt;          //for saving the superposed version of r_1 or xtm
-    double **yt;          //for saving the superposed version of r_2 or ytm
-    double **r1, **r2;    // for Kabsch rotation
+    bool   **path;        // for dynamic programming
+    double **val;         // for dynamic programming
+    Coords xtm, ytm;     // for TMscore search engine
+    Coords xt;            //for saving the superposed version of r_1 or xtm
+    Coords yt;            //for saving the superposed version of r_2 or ytm
+    Coords r1, r2;        // for Kabsch rotation
 
     /***********************/
-    // allocate memory    
+    // allocate memory
     /***********************/
     int minlen = min(xlen, ylen);
     int maxlen = (xlen>ylen)?xlen:ylen;
@@ -605,12 +716,12 @@ int SOIalign_main(double **xa, double **ya,
     NewArray(&scoret, ylen+1, xlen+1);
     NewArray(&path, maxlen+1, maxlen+1);
     NewArray(&val,  maxlen+1, maxlen+1);
-    NewArray(&xtm, minlen, 3);
-    NewArray(&ytm, minlen, 3);
-    NewArray(&xt, xlen, 3);
-    NewArray(&yt, ylen, 3);
-    NewArray(&r1, minlen, 3);
-    NewArray(&r2, minlen, 3);
+    xtm.resize(minlen);
+    ytm.resize(minlen);
+    xt.resize(xlen);
+    yt.resize(ylen);
+    r1.resize(minlen);
+    r2.resize(minlen);
 
     /***********************/
     //    parameter set   
@@ -968,12 +1079,7 @@ int SOIalign_main(double **xa, double **ya,
     DeleteArray(&scoret,ylen+1);
     DeleteArray(&path,maxlen+1);
     DeleteArray(&val, maxlen+1);
-    DeleteArray(&xtm, minlen);
-    DeleteArray(&ytm, minlen);
-    DeleteArray(&xt,xlen);
-    DeleteArray(&yt,ylen);
-    DeleteArray(&r1, minlen);
-    DeleteArray(&r2, minlen);
+    // xtm/ytm/xt/yt/r1/r2 auto-destruct (Coords)
     delete[]invmap0;
     delete[]fwdmap0;
     delete[]m1;

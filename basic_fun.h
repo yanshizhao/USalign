@@ -839,6 +839,13 @@ inline double dist(const std::array<double,3>& x, const std::array<double,3>& y)
     double d3=x[2]-y[2];
     return (d1*d1 + d2*d2 + d3*d3);
 }
+inline double dist(const std::array<double,3>& x, double *y)
+{
+    double d1=x[0]-y[0];
+    double d2=x[1]-y[1];
+    double d3=x[2]-y[2];
+    return (d1*d1 + d2*d2 + d3*d3);
+}
 
 double dot(double *a, double *b)
 {
