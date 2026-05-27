@@ -87,8 +87,8 @@ int flexalign_main(double **xa, double **ya,
     int r;
     int* invmap=new int[ylen+1];
     for (j=0;j<ylen+1;j++) invmap[j]=-1;
-    double **xt;
-    NewArray(&xt, xlen, 3);
+    Coords xt;
+    xt.resize(xlen);
     do_rotation(xa, xt, xlen, t0, u0);
 
     TM1= TM2= TM3= TM4= TM5=rmsd0=0;
@@ -410,7 +410,7 @@ int flexalign_main(double **xa, double **ya,
 
     if (tu_vec.size()<=1)
     {
-        DeleteArray(&xt, xlen);
+        // xt auto-destruct (Coords)
         delete[] invmap;
         return tu_vec.size();
     }
@@ -611,7 +611,7 @@ int flexalign_main(double **xa, double **ya,
     // clean up
     seqM_char.clear();
     di_vec.clear();
-    DeleteArray(&xt, xlen);
+    // xt auto-destruct (Coords)
     delete[] invmap;
     return tu_vec.size();
 }

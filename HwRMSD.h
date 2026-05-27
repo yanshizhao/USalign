@@ -43,6 +43,45 @@ double Kabsch_Superpose(double **r1, double **r2, double **xt,
     return RMSD;
 }
 
+double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
+    double **xa, double **ya, int xlen, int ylen, int invmap[],
+    int& L_ali, double t[3], double u[3][3], const int mol_type)
+{
+    L_ali = 0;
+    int i;
+    int j;
+    for (j = 0; j<ylen; j++)
+    {
+        i = invmap[j];
+        if (i >= 0)
+        {
+            r1[L_ali][0]  = xa[i][0];
+            r1[L_ali][1]  = xa[i][1];
+            r1[L_ali][2]  = xa[i][2];
+
+            r2[L_ali][0]  = ya[j][0];
+            r2[L_ali][1]  = ya[j][1];
+            r2[L_ali][2]  = ya[j][2];
+
+            L_ali++;
+        }
+        else if (i != -1) PrintErrorAndQuit("Wrong map!\n");
+    }
+
+    double RMSD = 0;
+    Kabsch(r1, r2, L_ali, 1, &RMSD, t, u);
+    RMSD = sqrt( RMSD/(1.0*L_ali) );
+
+    for (i=0; i<xlen; i++)
+    {
+        xt[i][0] = xa[i][0];
+        xt[i][1] = xa[i][1];
+        xt[i][2] = xa[i][2];
+    }
+    do_rotation(xa, xt, xlen, t,u);
+    return RMSD;
+}
+
 void parse_alignment_into_invmap(const string seqxA_tmp,
     const string seqyA_tmp, const int xlen, const int ylen, int *invmap_tmp)
 {
@@ -83,12 +122,12 @@ int HwRMSD_main(double **xa, double **ya, const char *seqx, const char *seqy,
     // allocate memory    
     /***********************/
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    double **xt;          //for saving the superposed version of r_1 or xtm
-    double **r1, **r2;    // for Kabsch rotation
+    Coords xt;            //for saving the superposed version of r_1 or xtm
+    Coords r1, r2;        // for Kabsch rotation
     int minlen = min(xlen, ylen);
-    NewArray(&xt, xlen, 3);
-    NewArray(&r1, minlen, 3);
-    NewArray(&r2, minlen, 3);
+    xt.resize(xlen);
+    r1.resize(minlen);
+    r2.resize(minlen);
     int *invmap_tmp = new int[ylen+1];
 
     int i;
@@ -254,9 +293,7 @@ int HwRMSD_main(double **xa, double **ya, const char *seqx, const char *seqy,
     seqM_tmp.clear();
     seqyA_tmp.clear();
     delete [] invmap_tmp;
-    DeleteArray(&xt, xlen);
-    DeleteArray(&r1, minlen);
-    DeleteArray(&r2, minlen);
+    // xt/r1/r2 auto-destruct (Coords)
     do_vec.clear();
     return 0;
 }

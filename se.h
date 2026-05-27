@@ -7,7 +7,7 @@
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
 int se_main(
-    double **xa, double **ya, const std::string &seqx, const std::string &seqy,
+    Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -244,4 +244,56 @@ int se_main(
     DeleteArray(&path, xlen+1);
     DeleteArray(&val, xlen+1);
     return 0; // zero for no exception
+}
+
+// double** wrapper — constructs temp Coords from double** and delegates to Coords& impl
+int se_main(
+    double **xa, double **ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen, const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, int *invmap, const int hinge=0)
+{
+    Coords xa_coords; xa_coords.reserve(xlen);
+    Coords ya_coords; ya_coords.reserve(ylen);
+    for (int i=0; i<xlen; i++) xa_coords.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    for (int i=0; i<ylen; i++) ya_coords.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return se_main(xa_coords, ya_coords, seqx, seqy,
+        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap, hinge);
+}
+
+// mixed overload: Coords& xa + double** ya — converts ya to Coords, delegates to Coords& impl
+int se_main(
+    Coords& xa, double **ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen, const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, int *invmap, const int hinge=0)
+{
+    Coords ya_coords; ya_coords.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_coords.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return se_main(xa, ya_coords, seqx, seqy,
+        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap, hinge);
 }

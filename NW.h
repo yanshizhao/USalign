@@ -268,6 +268,80 @@ void NWDP_SE(bool **path, double **val, double **x, double **y,
     }
 }
 
+void NWDP_SE(bool **path, double **val, Coords& x, Coords& y,
+    int len1, int len2, double d02, double gap_open, int j2i[])
+{
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
+
+    for(i=0; i<=len1; i++)
+    {
+        val[i][0]=0;
+        path[i][0]=false;
+    }
+
+    for(j=0; j<=len2; j++)
+    {
+        val[0][j]=0;
+        path[0][j]=false;
+        j2i[j]=-1;
+    }
+    double dij;
+
+    for(i=1; i<=len1; i++)
+    {
+        for(j=1; j<=len2; j++)
+        {
+            dij=dist(&x[i-1][0], &y[j-1][0]);
+            d=val[i-1][j-1] +  1.0/(1+dij/d02);
+
+            h=val[i-1][j];
+            if(path[i-1][j]) h += gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v += gap_open;
+
+            if(d>=h && d>=v)
+            {
+                path[i][j]=true;
+                val[i][j]=d;
+            }
+            else
+            {
+                path[i][j]=false;
+                if(v>=h) val[i][j]=v;
+                else val[i][j]=h;
+            }
+        }
+    }
+
+    i=len1;
+    j=len2;
+    while(i>0 && j>0)
+    {
+        if(path[i][j])
+        {
+            j2i[j-1]=i-1;
+            i--;
+            j--;
+        }
+        else
+        {
+            h=val[i-1][j];
+            if(path[i-1][j]) h +=gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v +=gap_open;
+
+            if(v>=h) j--;
+            else i--;
+        }
+    }
+}
+
 void NWDP_SE(bool **path, double **val, double **x, double **y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
@@ -352,6 +426,97 @@ void NWDP_SE(bool **path, double **val, double **x, double **y,
             j--;
         }
         else 
+        {
+            h=val[i-1][j];
+            if(path[i-1][j]) h +=gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v +=gap_open;
+
+            if(v>=h) j--;
+            else i--;
+        }
+    }
+}
+
+void NWDP_SE(bool **path, double **val, Coords& x, Coords& y,
+    int len1, int len2, double d02, double gap_open, int j2i[],
+    const int hinge)
+{
+    if (hinge==0)
+    {
+        NWDP_SE(path, val, x, y, len1, len2, d02, gap_open, j2i);
+        return;
+    }
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
+
+    int L=(len2>len1)?len2:len1;
+    int int_min=L*(gap_open-1);
+
+    for (i=0; i<=len1; i++)
+    {
+        for (j=0; j<=len2; j++)
+        {
+            val[i][j]=0;
+            path[i][j]=false;
+        }
+    }
+
+    int k=0;
+    for (j=0; j<len2; j++)
+    {
+        i=j2i[j];
+        if (i<0) continue;
+        path[i+1][j+1]=true;
+        val[i+1][j+1]=0;
+    }
+
+    double dij;
+
+    for(i=1; i<=len1; i++)
+    {
+        for(j=1; j<=len2; j++)
+        {
+            if (path[i][j]==false) dij=dist(&x[i-1][0], &y[j-1][0]);
+            else continue;
+
+            d=val[i-1][j-1] +  1.0/(1+dij/d02);
+
+            h=val[i-1][j];
+            if(path[i-1][j]) h += gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v += gap_open;
+
+            if(d>=h && d>=v)
+            {
+                path[i][j]=true;
+                val[i][j]=d;
+            }
+            else
+            {
+                path[i][j]=false;
+                if(v>=h) val[i][j]=v;
+                else val[i][j]=h;
+            }
+        }
+    }
+
+    i=len1;
+    j=len2;
+    while(i>0 && j>0)
+    {
+        if(path[i][j])
+        {
+            j2i[j-1]=i-1;
+            i--;
+            j--;
+        }
+        else
         {
             h=val[i-1][j];
             if(path[i-1][j]) h +=gap_open;
