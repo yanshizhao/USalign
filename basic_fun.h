@@ -823,6 +823,28 @@ int read_PDB(const std::vector<std::string> &PDB_lines, double **a, std::string 
     return i;
 }
 
+int read_PDB(const std::vector<std::string> &PDB_lines, Coords& a, std::string &seq,
+    std::vector<std::string> &resi_vec, const int read_resi)
+{
+    size_t i;
+    seq.clear();
+    seq.reserve(PDB_lines.size());
+    a.clear();
+    a.reserve(PDB_lines.size());
+    for (i=0;i<PDB_lines.size();i++)
+    {
+        a.push_back({safe_stod(PDB_lines[i].substr(30, 8)),
+                     safe_stod(PDB_lines[i].substr(38, 8)),
+                     safe_stod(PDB_lines[i].substr(46, 8))});
+        seq += AAmap(PDB_lines[i].substr(17, 3));
+
+        if (read_resi>=2) resi_vec.push_back(PDB_lines[i].substr(22,5)+
+                                             PDB_lines[i][21]);
+        if (read_resi==1) resi_vec.push_back(PDB_lines[i].substr(22,5));
+    }
+    return i;
+}
+
 double dist(double x[3], double y[3])
 {
     double d1=x[0]-y[0];

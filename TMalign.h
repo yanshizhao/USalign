@@ -1512,6 +1512,42 @@ void make_sec(double **x, int len, char *sec)
     sec[len]=0;
 }
 
+void make_sec(const Coords& x, int len, char *sec)
+{
+    int j1;
+    int j2;
+    int j3;
+    int j4;
+    int j5;
+    double d13;
+    double d14;
+    double d15;
+    double d24;
+    double d25;
+    double d35;
+    for(int i=0; i<len; i++)
+    {
+        sec[i]='C';
+        j1=i-2;
+        j2=i-1;
+        j3=i;
+        j4=i+1;
+        j5=i+2;
+
+        if(j1>=0 && j5<len)
+        {
+            d13=sqrt(dist(x[j1], x[j3]));
+            d14=sqrt(dist(x[j1], x[j4]));
+            d15=sqrt(dist(x[j1], x[j5]));
+            d24=sqrt(dist(x[j2], x[j4]));
+            d25=sqrt(dist(x[j2], x[j5]));
+            d35=sqrt(dist(x[j3], x[j5]));
+            sec[i]=sec_str(d13, d14, d15, d24, d25, d35);
+        }
+    }
+    sec[len]=0;
+}
+
 // a c d b: a paired to b, c paired to d
 bool overlap(const int a1,const int b1,const int c1,const int d1,
              const int a2,const int b2,const int c2,const int d2)
@@ -1654,6 +1690,135 @@ void get_initial_ss(bool **path, double **val,
 {
     double gap_open=-1.0;
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
+}
+
+void make_sec(const char *seq, const Coords& x, int len, char *sec,const string atom_opt)
+{
+    int ii;
+    int jj;
+    int i;
+    int j;
+
+    float lb=12.5;
+    float ub=15.0;
+    if     (atom_opt==" C4'") {lb=14.0;ub=16.0;}
+    else if(atom_opt==" C5'") {lb=16.0;ub=18.0;}
+    else if(atom_opt==" O3'") {lb=13.5;ub=16.5;}
+    else if(atom_opt==" O5'") {lb=15.5;ub=18.5;}
+    else if(atom_opt==" P  ") {lb=16.5;ub=21.0;}
+
+    float dis;
+    vector<bool> bp_tmp(len,false);
+    vector<vector<bool> > bp(len,bp_tmp);
+    bp_tmp.clear();
+    for (i=0; i<len; i++)
+    {
+        sec[i]='.';
+        for (j=i+1; j<len; j++)
+        {
+            if (((seq[i]=='u'||seq[i]=='t')&&(seq[j]=='a'             ))||
+                ((seq[i]=='a'             )&&(seq[j]=='u'||seq[j]=='t'))||
+                ((seq[i]=='g'             )&&(seq[j]=='c'||seq[j]=='u'))||
+                ((seq[i]=='c'||seq[i]=='u')&&(seq[j]=='g'             )))
+            {
+                dis=sqrt(dist(x[i], x[j]));
+                bp[j][i]=bp[i][j]=(dis>lb && dis<ub);
+            }
+        }
+    }
+
+    vector<int> A0_var,B0_var,C0_var,D0_var;
+    for (i=0; i<len-2; i++)
+    {
+        for (j=i+3; j<len; j++)
+        {
+            if (!bp[i][j]) continue;
+            if (i>0 && j+1<len && bp[i-1][j+1]) continue;
+            if (!bp[i+1][j-1]) continue;
+            sec_str(len,seq, bp, i,j,ii,jj);
+            if (jj<i || j<ii)
+            {
+                ii=i;
+                jj=j;
+            }
+            A0_var.push_back(i);
+            B0_var.push_back(j);
+            C0_var.push_back(ii);
+            D0_var.push_back(jj);
+        }
+    }
+
+    for (i=0;i<A0_var.size();i++)
+    {
+        if (A0_var[i]==D0_var[i] && C0_var[i]==B0_var[i])
+        {
+            for (int k=A0_var[i];k<=C0_var[i];k++) sec[k]='(';
+            for (int k=D0_var[i];k<=B0_var[i];k++) sec[k]=')';
+            continue;
+        }
+
+        if (A0_var[i]!=C0_var[i])
+        {
+            int k1=0;
+            int ks=-1;
+            for (int k=A0_var[i];k<=C0_var[i];k++)
+            {
+                for (int l=max(k+1,D0_var[i]);l<=B0_var[i];l++)
+                {
+                    if (!bp[k][l]) continue;
+                    int nn=0;
+                    int best_nn=0;
+                    for (int kk=k+1;kk<k+5 && kk<C0_var[i]+1;kk++)
+                    {
+                        int ll=l-(kk-k);
+                        if (ll<=kk || bp[kk][ll]==false) continue;
+                        nn++;
+                    }
+                    if (nn>best_nn)
+                    {
+                        best_nn=nn;
+                        ks=k;
+                        k1=l;
+                    }
+                }
+            }
+            if (ks>=0)
+            {
+                A0_var.push_back(A0_var[i]);
+                B0_var.push_back(B0_var[i]);
+                C0_var.push_back(ks);
+                D0_var.push_back(k1);
+
+                A0_var.push_back(A0_var[i]);
+                B0_var.push_back(B0_var[i]);
+                C0_var.push_back(k1-1);
+                D0_var.push_back(B0_var[i]);
+            }
+        }
+    }
+    for (i=0;i<len;i++) sec[i]='.';
+    for (i=0;i<A0_var.size();i++)
+    {
+        bool skip=false;
+        for (int j=0;j<A0_var.size();j++)
+        {
+            if (i==j) continue;
+            if (overlap(A0_var[i],B0_var[i],C0_var[i],D0_var[i],
+                       A0_var[j],B0_var[j],C0_var[j],D0_var[j]))
+            {
+                if ((C0_var[j]-A0_var[j])*(D0_var[j]-B0_var[j]) <
+                    (C0_var[i]-A0_var[i])*(D0_var[i]-B0_var[i]))
+                {
+                    skip=true;
+                    break;
+                }
+            }
+        }
+        if (skip) continue;
+        for (int k=A0_var[i];k<=C0_var[i];k++) sec[k]='(';
+        for (int k=D0_var[i];k<=B0_var[i];k++) sec[k]=')';
+    }
+    sec[len]=0;
 }
 
 

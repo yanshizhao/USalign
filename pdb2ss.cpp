@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     int    chain_i;                   // chain index
     int    xlen;                      // chain length
     int    xchainnum;                 // number of chains in a PDB file    std::string secx;                     // for the secondary structure
-    double **xa;                      // for input vectors xa[0...xlen-1][0..2] and
+    Coords xa;                        // for input vectors xa[0...xlen-1][0..2] and
     vector<string> resi_vec;          // residue index for chain
 
     // loop over file names
@@ -206,7 +206,6 @@ int main(int argc, char *argv[])
                     <<". Chain length 0."<<endl;
                 continue;
             }
-            NewArray(&xa, xlen, 3);
             string seqx;
             string secx;
             secx.resize(xlen + 1);
@@ -219,7 +218,7 @@ int main(int argc, char *argv[])
                 <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<secx.c_str()<<endl;
 
             PDB_lines[chain_i].clear();
-            DeleteArray(&xa, xlen);
+            // xa auto-destruct (Coords)
         } // chain_i
         xname.clear();
         PDB_lines.clear();
