@@ -76,6 +76,78 @@ int score_fun8( double **xa, double **ya, int n_ali, double d, int i_ali[],
     return n_cut;
 }
 
+int score_fun8(const Coords& xa, const Coords& ya, int n_ali, double d, int i_ali[],
+    double *score1, int score_sum_method, const double Lnorm,
+    const double score_d8, const double d0,
+    double GDT_list_tmp[5], double &maxsub_tmp)
+{
+    double score_sum=0;
+    double di;
+    double d_tmp=d*d;
+    double d02=d0*d0;
+    double score_d8_cut = score_d8*score_d8;
+
+    int i;
+    int n_cut;
+    int inc=0;
+
+    while(1)
+    {
+        for (i=0;i<5;i++) GDT_list_tmp[i]=0;
+        maxsub_tmp=0;
+
+        n_cut=0;
+        score_sum=0;
+        for(i=0; i<n_ali; i++)
+        {
+            di = dist(xa[i], ya[i]);
+            if(di<d_tmp)
+            {
+                i_ali[n_cut]=i;
+                n_cut++;
+            }
+            if(score_sum_method==8)
+            {
+                if(di<=score_d8_cut) score_sum += 1/(1+di/d02);
+            }
+            else score_sum += 1/(1+di/d02);
+
+            if (di<64)
+            {
+                GDT_list_tmp[4]+=1;
+                if (di<16)
+                {
+                    GDT_list_tmp[3]+=1;
+                    if (di<12.25)
+                    {
+                        maxsub_tmp+=1/(1+di/12.25);
+                        if (di<4)
+                        {
+                            GDT_list_tmp[2]+=1;
+                            if (di<1)
+                            {
+                                GDT_list_tmp[1]+=1;
+                                if (di<0.25)
+                                    GDT_list_tmp[0]+=1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(n_cut<3 && n_ali>3)
+        {
+            inc++;
+            double dinc=(d+inc*0.5);
+            d_tmp = dinc * dinc;
+        }
+        else break;
+    }
+
+    *score1=score_sum/Lnorm;
+    return n_cut;
+}
+
 int score_fun8_standard(double **xa, double **ya, int n_ali, double d,
     int i_ali[], double *score1, int score_sum_method,
     double score_d8, double d0, double GDT_list_tmp[5], double &maxsub_tmp)
@@ -138,6 +210,78 @@ int score_fun8_standard(double **xa, double **ya, int n_ali, double d,
             }
         }
         //there are not enough feasible pairs, relieve the threshold         
+        if (n_cut<3 && n_ali>3)
+        {
+            inc++;
+            double dinc = (d + inc*0.5);
+            d_tmp = dinc * dinc;
+        }
+        else break;
+    }
+
+    *score1 = score_sum / n_ali;
+    return n_cut;
+}
+
+int score_fun8_standard(const Coords& xa, const Coords& ya, int n_ali, double d,
+    int i_ali[], double *score1, int score_sum_method,
+    double score_d8, double d0, double GDT_list_tmp[5], double &maxsub_tmp)
+{
+    double score_sum = 0;
+    double di;
+    double d_tmp = d*d;
+    double d02 = d0*d0;
+    double score_d8_cut = score_d8*score_d8;
+
+    int i;
+    int n_cut;
+    int inc = 0;
+    while (1)
+    {
+        for (i=0;i<5;i++) GDT_list_tmp[i]=0;
+        maxsub_tmp=0;
+        n_cut = 0;
+        score_sum = 0;
+        for (i = 0; i<n_ali; i++)
+        {
+            di = dist(xa[i], ya[i]);
+            if (di<d_tmp)
+            {
+                i_ali[n_cut] = i;
+                n_cut++;
+            }
+            if (score_sum_method == 8)
+            {
+                if (di <= score_d8_cut) score_sum += 1 / (1 + di / d02);
+            }
+            else
+            {
+                score_sum += 1 / (1 + di / d02);
+            }
+
+            if (di<64)
+            {
+                GDT_list_tmp[4]+=1;
+                if (di<16)
+                {
+                    GDT_list_tmp[3]+=1;
+                    if (di<12.25)
+                    {
+                        maxsub_tmp+=1/(1+di/12.25);
+                        if (di<4)
+                        {
+                            GDT_list_tmp[2]+=1;
+                            if (di<1)
+                            {
+                                GDT_list_tmp[1]+=1;
+                                if (di<0.25)
+                                    GDT_list_tmp[0]+=1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if (n_cut<3 && n_ali>3)
         {
             inc++;
@@ -323,6 +467,178 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     return score_max;
 }
 
+double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
+    int score_sum_method, double *Rcomm, double local_d0_search, double Lnorm,
+    double score_d8, double d0, double GDT_list[5], double &maxsub)
+{
+    double GDT_list_tmp[5]={0,0,0,0,0};
+    double maxsub_tmp=0;
+    int i;
+    int m;
+    double score_max;
+    double score;
+    double rmsd;
+    const int kmax=Lali;
+    std::vector<int> k_ali(kmax);
+    int ka;
+    int k;
+    double t[3];
+    double u[3][3];
+    double d;
+
+
+    //iterative parameters
+    int n_it=20;            //maximum number of iterations
+    int n_init_max=6; //maximum number of different fragment length
+    std::vector<int> L_ini(n_init_max);  //fragment lengths, Lali, Lali/2, Lali/4 ... 4
+    int L_ini_min=4;
+    if(Lali<L_ini_min) L_ini_min=Lali;
+
+    int n_init=0;
+    int i_init;
+    for(i=0; i<n_init_max-1; i++)
+    {
+        n_init++;
+        L_ini[i]=static_cast<int>(Lali/pow(2.0, static_cast<double>(i)));
+        if(L_ini[i]<=L_ini_min)
+        {
+            L_ini[i]=L_ini_min;
+            break;
+        }
+    }
+    if(i==n_init_max-1)
+    {
+        n_init++;
+        L_ini[i]=L_ini_min;
+    }
+
+    score_max=-1;
+    //find the maximum score starting from local structures superposition
+    std::vector<int> i_ali(kmax);
+    int n_cut;
+    int L_frag; //fragment length
+    int iL_max; //maximum starting postion for the fragment
+
+    for(i_init=0; i_init<n_init; i_init++)
+    {
+        L_frag=L_ini[i_init];
+        iL_max=Lali-L_frag;
+
+        i=0;
+        while(1)
+        {
+            //extract the fragment starting from position i
+            ka=0;
+            for(k=0; k<L_frag; k++)
+            {
+                int kk=k+i;
+                r1[k][0]=xtm[kk][0];
+                r1[k][1]=xtm[kk][1];
+                r1[k][2]=xtm[kk][2];
+
+                r2[k][0]=ytm[kk][0];
+                r2[k][1]=ytm[kk][1];
+                r2[k][2]=ytm[kk][2];
+
+                k_ali[ka]=kk;
+                ka++;
+            }
+
+            //extract rotation matrix based on the fragment
+            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            if (simplify_step != 1)
+                *Rcomm = 0;
+            do_rotation(xtm, xt, Lali, t, u);
+
+            //get subsegment of this fragment
+            d = local_d0_search - 1;
+            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
+                score_sum_method, Lnorm, score_d8, d0,
+                GDT_list_tmp, maxsub_tmp);
+            if(score>score_max)
+            {
+                score_max=score;
+
+                //save the rotation matrix
+                for(k=0; k<3; k++)
+                {
+                    t0[k]=t[k];
+                    u0[k][0]=u[k][0];
+                    u0[k][1]=u[k][1];
+                    u0[k][2]=u[k][2];
+                }
+            }
+            if (maxsub_tmp>maxsub) maxsub=maxsub_tmp;
+            for (k=0;k<5;k++)
+                if (GDT_list_tmp[k]>GDT_list[k])
+                    GDT_list[k]=GDT_list_tmp[k];
+
+            //try to extend the alignment iteratively
+            d = local_d0_search + 1;
+            for(int it=0; it<n_it; it++)
+            {
+                ka=0;
+                for(k=0; k<n_cut; k++)
+                {
+                    m=i_ali[k];
+                    r1[k][0]=xtm[m][0];
+                    r1[k][1]=xtm[m][1];
+                    r1[k][2]=xtm[m][2];
+
+                    r2[k][0]=ytm[m][0];
+                    r2[k][1]=ytm[m][1];
+                    r2[k][2]=ytm[m][2];
+
+                    k_ali[ka]=m;
+                    ka++;
+                }
+                //extract rotation matrix based on the fragment
+                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                do_rotation(xtm, xt, Lali, t, u);
+                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
+                    score_sum_method, Lnorm, score_d8, d0);
+                if(score>score_max)
+                {
+                    score_max=score;
+
+                    //save the rotation matrix
+                    for(k=0; k<3; k++)
+                    {
+                        t0[k]=t[k];
+                        u0[k][0]=u[k][0];
+                        u0[k][1]=u[k][1];
+                        u0[k][2]=u[k][2];
+                    }
+                }
+                if (maxsub_tmp>maxsub) maxsub=maxsub_tmp;
+                for (k=0;k<5;k++)
+                    if (GDT_list_tmp[k]>GDT_list[k])
+                        GDT_list[k]=GDT_list_tmp[k];
+
+                //check if it converges
+                if(n_cut==ka)
+                {
+                    for(k=0; k<n_cut; k++)
+                    {
+                        if(i_ali[k]!=k_ali[k]) break;
+                    }
+                    if(k==n_cut) break;
+                }
+            } //for iteration
+
+            if(i<iL_max)
+            {
+                i=i+simplify_step; //shift the fragment
+                if(i>iL_max) i=iL_max;  //do this to use the last missed fragment
+            }
+            else if(i>=iL_max) break;
+        }//while(1)
+        //end of one fragment
+    }//for(i_init
+    return score_max;
+}
+
 
 double TMscore8_search_standard( double **r1, double **r2,
     double **xtm, double **ytm, double **xt, int Lali,
@@ -495,6 +811,166 @@ double TMscore8_search_standard( double **r1, double **r2,
     return score_max;
 }
 
+double TMscore8_search_standard(Coords& r1, Coords& r2,
+    Coords& xtm, Coords& ytm, Coords& xt, int Lali,
+    double t0[3], double u0[3][3], int simplify_step, int score_sum_method,
+    double *Rcomm, double local_d0_search, double score_d8, double d0,
+    double GDT_list[5], double &maxsub)
+{
+    double GDT_list_tmp[5]={0,0,0,0,0};
+    double maxsub_tmp=0;
+    int i;
+    int m;
+    double score_max;
+    double score;
+    double rmsd;
+    const int kmax = Lali;
+    std::vector<int> k_ali(kmax);
+    int ka;
+    int k;
+    double t[3];
+    double u[3][3];
+    double d;
+
+    //iterative parameters
+    int n_it = 20;
+    int n_init_max = 6;
+    std::vector<int> L_ini(n_init_max);
+    int L_ini_min = 4;
+    if (Lali<L_ini_min) L_ini_min = Lali;
+
+    int n_init = 0;
+    int i_init;
+    for (i = 0; i<n_init_max - 1; i++)
+    {
+        n_init++;
+        L_ini[i] = static_cast<int>(Lali / pow(2.0, static_cast<double>(i)));
+        if (L_ini[i] <= L_ini_min)
+        {
+            L_ini[i] = L_ini_min;
+            break;
+        }
+    }
+    if (i == n_init_max - 1)
+    {
+        n_init++;
+        L_ini[i] = L_ini_min;
+    }
+
+    score_max = -1;
+    std::vector<int> i_ali(kmax);
+    int n_cut;
+    int L_frag;
+    int iL_max;
+
+    for (i_init = 0; i_init<n_init; i_init++)
+    {
+        L_frag = L_ini[i_init];
+        iL_max = Lali - L_frag;
+
+        i = 0;
+        while (1)
+        {
+            ka = 0;
+            for (k = 0; k<L_frag; k++)
+            {
+                int kk = k + i;
+                r1[k][0] = xtm[kk][0];
+                r1[k][1] = xtm[kk][1];
+                r1[k][2] = xtm[kk][2];
+
+                r2[k][0] = ytm[kk][0];
+                r2[k][1] = ytm[kk][1];
+                r2[k][2] = ytm[kk][2];
+
+                k_ali[ka] = kk;
+                ka++;
+            }
+            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            if (simplify_step != 1)
+                *Rcomm = 0;
+            do_rotation(xtm, xt, Lali, t, u);
+
+            d = local_d0_search - 1;
+            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
+                score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);
+
+            if (score>score_max)
+            {
+                score_max = score;
+                for (k = 0; k<3; k++)
+                {
+                    t0[k] = t[k];
+                    u0[k][0] = u[k][0];
+                    u0[k][1] = u[k][1];
+                    u0[k][2] = u[k][2];
+                }
+            }
+            if (maxsub_tmp>maxsub) maxsub=maxsub_tmp;
+            for (k=0;k<5;k++)
+                if (GDT_list_tmp[k]>GDT_list[k])
+                    GDT_list[k]=GDT_list_tmp[k];
+
+            d = local_d0_search + 1;
+            for (int it = 0; it<n_it; it++)
+            {
+                ka = 0;
+                for (k = 0; k<n_cut; k++)
+                {
+                    m = i_ali[k];
+                    r1[k][0] = xtm[m][0];
+                    r1[k][1] = xtm[m][1];
+                    r1[k][2] = xtm[m][2];
+
+                    r2[k][0] = ytm[m][0];
+                    r2[k][1] = ytm[m][1];
+                    r2[k][2] = ytm[m][2];
+
+                    k_ali[ka] = m;
+                    ka++;
+                }
+                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                do_rotation(xtm, xt, Lali, t, u);
+                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
+                    score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);
+                if (score>score_max)
+                {
+                    score_max = score;
+                    for (k = 0; k<3; k++)
+                    {
+                        t0[k] = t[k];
+                        u0[k][0] = u[k][0];
+                        u0[k][1] = u[k][1];
+                        u0[k][2] = u[k][2];
+                    }
+                }
+                if (maxsub_tmp>maxsub) maxsub=maxsub_tmp;
+                for (k=0;k<5;k++)
+                    if (GDT_list_tmp[k]>GDT_list[k])
+                        GDT_list[k]=GDT_list_tmp[k];
+
+                if (n_cut == ka)
+                {
+                    for (k = 0; k<n_cut; k++)
+                    {
+                        if (i_ali[k] != k_ali[k]) break;
+                    }
+                    if (k == n_cut) break;
+                }
+            }
+
+            if (i<iL_max)
+            {
+                i = i + simplify_step;
+                if (i>iL_max) i = iL_max;
+            }
+            else if (i >= iL_max) break;
+        }
+    }
+    return score_max;
+}
+
+
 double detailed_search_standard( double **r1, double **r2,
     double **xtm, double **ytm, double **xt, double **x, double **y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
@@ -530,7 +1006,47 @@ double detailed_search_standard( double **r1, double **r2,
     tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
         simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0,
         GDT_list, maxsub);
-    if (bNormalize)// "-i", to use standard_TMscore, then bNormalize=true, else bNormalize=false; 
+    if (bNormalize)// "-i", to use standard_TMscore, then bNormalize=true, else bNormalize=false;
+        tmscore = tmscore * k / Lnorm;
+
+    return tmscore;
+}
+
+double detailed_search_standard( Coords& r1, Coords& r2,
+    Coords& xtm, Coords& ytm, Coords& xt, double **x, double **y,
+    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
+    int simplify_step, int score_sum_method, double local_d0_search,
+    const bool& bNormalize, double Lnorm, double score_d8, double d0,
+    double GDT_list[5], double &maxsub)
+{
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double rmsd;
+
+    k=0;
+    for(i=0; i<ylen; i++)
+    {
+        j=invmap0[i];
+        if(j>=0) //aligned
+        {
+            xtm[k][0]=x[j][0];
+            xtm[k][1]=x[j][1];
+            xtm[k][2]=x[j][2];
+
+            ytm[k][0]=y[i][0];
+            ytm[k][1]=y[i][1];
+            ytm[k][2]=y[i][2];
+            k++;
+        }
+    }
+
+    //detailed search 40-->1
+    tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
+        simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0,
+        GDT_list, maxsub);
+    if (bNormalize)
         tmscore = tmscore * k / Lnorm;
 
     return tmscore;
@@ -560,24 +1076,24 @@ int TMscore_main(double **xa, double **ya,
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
     double **score;       // Input score table for dynamic programming
-    bool   **path;        // for dynamic programming  
-    double **val;         // for dynamic programming  
-    double **xtm, **ytm;  // for TMscore search engine
-    double **xt;          //for saving the superposed version of r_1 or xtm
-    double **r1, **r2;    // for Kabsch rotation
+    bool   **path;        // for dynamic programming
+    double **val;         // for dynamic programming
+    Coords xtm, ytm;     // for TMscore search engine
+    Coords xt;            //for saving the superposed version of r_1 or xtm
+    Coords r1, r2;        // for Kabsch rotation
 
     /***********************/
-    // allocate memory    
+    // allocate memory
     /***********************/
     int minlen = min(xlen, ylen);
     NewArray(&score, xlen+1, ylen+1);
     NewArray(&path, xlen+1, ylen+1);
     NewArray(&val, xlen+1, ylen+1);
-    NewArray(&xtm, minlen, 3);
-    NewArray(&ytm, minlen, 3);
-    NewArray(&xt, xlen, 3);
-    NewArray(&r1, minlen, 3);
-    NewArray(&r2, minlen, 3);
+    xtm.resize(minlen);
+    ytm.resize(minlen);
+    xt.resize(xlen);
+    r1.resize(minlen);
+    r2.resize(minlen);
 
     /***********************/
     //    parameter set   
@@ -668,7 +1184,7 @@ int TMscore_main(double **xa, double **ya,
         {
             TM1=TM2=TM3=TM4=TM5=TMtmp;
             clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                xtm, ytm, xt, r1, r2, xlen, minlen);
+                xtm, ytm, xt, r1, r2, xlen);
             return 7;
         }
     }
@@ -861,7 +1377,7 @@ int TMscore_main(double **xa, double **ya,
 
     // free memory
     clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-        xtm, ytm, xt, r1, r2, xlen, minlen);
+        xtm, ytm, xt, r1, r2, xlen);
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception

@@ -938,6 +938,45 @@ double detailed_search_standard( double **r1, double **r2,
     return tmscore;
 }
 
+double detailed_search_standard( Coords& r1, Coords& r2,
+    Coords& xtm, Coords& ytm, Coords& xt, double **x, double **y,
+    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
+    int simplify_step, int score_sum_method, double local_d0_search,
+    const bool& bNormalize, double Lnorm, double score_d8, double d0)
+{
+    //x is model, y is template, try to superpose onto y
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double rmsd;
+
+    k=0;
+    for(i=0; i<ylen; i++) 
+    {
+        j=invmap0[i];
+        if(j>=0) //aligned
+        {
+            xtm[k][0]=x[j][0];
+            xtm[k][1]=x[j][1];
+            xtm[k][2]=x[j][2];
+                
+            ytm[k][0]=y[i][0];
+            ytm[k][1]=y[i][1];
+            ytm[k][2]=y[i][2];
+            k++;
+        }
+    }
+
+    //detailed search 40-->1
+    tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
+        simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0);
+    if (bNormalize)// "-i", to use standard_TMscore, then bNormalize=true, else bNormalize=false; 
+        tmscore = tmscore * k / Lnorm;
+
+    return tmscore;
+}
+
 //compute the score quickly in three iterations
 double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
     double **x, double **y, int xlen, int ylen, int invmap[],
@@ -2517,6 +2556,79 @@ double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 double DP_iter(double **r1, double **r2, double **xtm, double **ytm,
     double **xt, bool **path, double **val, double **x, double **y,
+    int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
+    int g1, int g2, int iteration_max, double local_d0_search,
+    double D0_MIN, double Lnorm, double d0, double score_d8)
+{
+    double gap_open[2]={-0.6, 0};
+    double rmsd; 
+    int *invmap=new int[ylen+1];
+    
+    int iteration;
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double tmscore_max;
+    double tmscore_old=0;
+    int score_sum_method=8;
+    int simplify_step=40;
+    tmscore_max=-1;
+
+    //double d01=d0+1.5;
+    double d02=d0*d0;
+    for(int g=g1; g<g2; g++)
+    {
+        for(iteration=0; iteration<iteration_max; iteration++)
+        {           
+            NWDP_TM(path, val, x, y, xlen, ylen,
+                t, u, d02, gap_open[g], invmap);
+            
+            k=0;
+            for(j=0; j<ylen; j++) 
+            {
+                i=invmap[j];
+
+                if(i>=0) //aligned
+                {
+                    xtm[k][0]=x[i][0];
+                    xtm[k][1]=x[i][1];
+                    xtm[k][2]=x[i][2];
+                    
+                    ytm[k][0]=y[j][0];
+                    ytm[k][1]=y[j][1];
+                    ytm[k][2]=y[j][2];
+                    k++;
+                }
+            }
+
+            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+                simplify_step, score_sum_method, &rmsd, local_d0_search,
+                Lnorm, score_d8, d0);
+
+           
+            if(tmscore>tmscore_max)
+            {
+                tmscore_max=tmscore;
+                for(i=0; i<ylen; i++) invmap0[i]=invmap[i];
+            }
+    
+            if(iteration>0)
+            {
+                if(fabs(tmscore_old-tmscore)<0.000001) break;       
+            }
+            tmscore_old=tmscore;
+        }// for iteration           
+        
+    }//for gapopen
+    
+    
+    delete []invmap;
+    return tmscore_max;
+}
+
+double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, bool **path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -4319,6 +4431,19 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
     return;
 }
 
+void clean_up_after_approx_TM(int *invmap0, int *invmap,
+    double **score, bool **path, double **val, Coords& xtm, Coords& ytm,
+    Coords& xt, Coords& r1, Coords& r2, const int xlen)
+{
+    delete [] invmap0;
+    delete [] invmap;
+    DeleteArray(&score, xlen+1);
+    DeleteArray(&path, xlen+1);
+    DeleteArray(&val, xlen+1);
+
+    return;
+}
+
 /* Entry function for TM-align. Return TM-score calculation status:
  * 0   - full TM-score calculation 
  * 1   - terminated due to exception
@@ -4345,9 +4470,9 @@ int TMalign_main(double **xa, double **ya,
     double **score;       // Input score table for dynamic programming
     bool   **path;        // for dynamic programming  
     double **val;         // for dynamic programming  
-    double **xtm, **ytm;  // for TMscore search engine
-    double **xt;          //for saving the superposed version of r_1 or xtm
-    double **r1, **r2;    // for Kabsch rotation
+    Coords xtm, ytm;     // for TMscore search engine
+    Coords xt;            //for saving the superposed version of r_1 or xtm
+    Coords r1, r2;        // for Kabsch rotation
 
     /***********************/
     // allocate memory    
@@ -4356,11 +4481,11 @@ int TMalign_main(double **xa, double **ya,
     NewArray(&score, xlen+1, ylen+1);
     NewArray(&path, xlen+1, ylen+1);
     NewArray(&val, xlen+1, ylen+1);
-    NewArray(&xtm, minlen, 3);
-    NewArray(&ytm, minlen, 3);
-    NewArray(&xt, xlen, 3);
-    NewArray(&r1, minlen, 3);
-    NewArray(&r2, minlen, 3);
+    xtm.resize(minlen);
+    ytm.resize(minlen);
+    xt.resize(xlen);
+    r1.resize(minlen);
+    r2.resize(minlen);
 
     /***********************/
     //    parameter set   
@@ -4459,7 +4584,7 @@ int TMalign_main(double **xa, double **ya,
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen, minlen);
+                    xtm, ytm, xt, r1, r2, xlen);
                 return 2;
             }
         }
@@ -4499,7 +4624,7 @@ int TMalign_main(double **xa, double **ya,
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen, minlen);
+                    xtm, ytm, xt, r1, r2, xlen);
                 return 3;
             }
         }
@@ -4545,7 +4670,7 @@ int TMalign_main(double **xa, double **ya,
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen, minlen);
+                    xtm, ytm, xt, r1, r2, xlen);
                 return 4;
             }
         }
@@ -4587,7 +4712,7 @@ int TMalign_main(double **xa, double **ya,
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen, minlen);
+                    xtm, ytm, xt, r1, r2, xlen);
                 return 5;
             }
         }
@@ -4629,7 +4754,7 @@ int TMalign_main(double **xa, double **ya,
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen, minlen);
+                    xtm, ytm, xt, r1, r2, xlen);
                 return 6;
             }
         }
@@ -4723,7 +4848,7 @@ int TMalign_main(double **xa, double **ya,
         {
             TM1=TM2=TM3=TM4=TM5=TMtmp;
             clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                xtm, ytm, xt, r1, r2, xlen, minlen);
+                xtm, ytm, xt, r1, r2, xlen);
             return 7;
         }
     }
@@ -4934,7 +5059,7 @@ int TMalign_main(double **xa, double **ya,
 
     // free memory
     clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-        xtm, ytm, xt, r1, r2, xlen, minlen);
+        xtm, ytm, xt, r1, r2, xlen);
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception
