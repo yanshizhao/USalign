@@ -80,9 +80,7 @@ bool adjust_dimer_assignment(
     parameter_set4final(getmin(xlen,ylen), D0_MIN, Lnorm, d0, 
         d0_search, mol_type);
 
-    double **xa;
-    double **ya;
-    double **xt;
+    double **xa, **ya, **xt;
     NewArray(&xa, xlen, 3);
     NewArray(&ya, ylen, 3);
     NewArray(&xt, xlen, 3);
@@ -459,8 +457,8 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     int chain_num=getmin(chain1_num,chain2_num);
     int *assign1_tmp=new int [chain1_num];
     int *assign2_tmp=new int [chain2_num];
-    double **xt;
-    NewArray(&xt, chain1_num, 3);
+    Coords xt;
+    xt.resize(chain1_num);
     double t[3];
     double u[3][3];
     int ui;
@@ -559,7 +557,7 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     delete[]assign2_tmp;
     delete[]ut_tmc_mat;
     ut_tm_vec.clear();
-    DeleteArray(&xt, chain1_num);
+    // xt auto-destruct (Coords)
     return MMscore;
 }
 
@@ -573,10 +571,8 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     int i;
     int j;
 
-    double **r1;
-    double **r2;
-    double **xt;
     int chain_num=getmin(chain1_num,chain2_num);
+    double **r1, **r2, **xt;
     NewArray(&r1, chain_num, 3);
     NewArray(&r2, chain_num, 3);
     NewArray(&xt, chain_num, 3);
@@ -1235,6 +1231,59 @@ int copy_chain_pair_data(
             ya[ylen][0]= ya_vec[j][r][0];
             ya[ylen][1]= ya_vec[j][r][1];
             ya[ylen][2]= ya_vec[j][r][2];
+            ylen++;
+        }
+        sequence[1]+=seqyA_mat[i][j];
+        mol_type+=mol_vec1[i]+mol_vec2[j];
+    }
+    secx[xlen]=0;
+    secy[ylen]=0;
+    return mol_type;
+}
+
+int copy_chain_pair_data(
+    const vector<vector<vector<double> > >&xa_vec,
+    const vector<vector<vector<double> > >&ya_vec,
+    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
+    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
+    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    Coords& xa, Coords& ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
+    int chain1_num, int chain2_num,
+    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
+    int *assign1_list, int *assign2_list, vector<string>&sequence)
+{
+    int i;
+    int j;
+    int r;
+    for (i=0;i<sequence.size();i++) sequence[i].clear();
+    sequence.clear();
+    sequence.push_back("");
+    sequence.push_back("");
+    int mol_type=0;
+    int xlen=0;
+    int ylen=0;
+    seqx.clear();
+    seqy.clear();
+    xa.clear();
+    ya.clear();
+    for (i=0;i<chain1_num;i++)
+    {
+        j=assign1_list[i];
+        if (j<0) continue;
+        for (r=0;r<xlen_vec[i];r++)
+        {
+            seqx += seqx_vec[i][r];
+            secx[xlen]=secx_vec[i][r];
+            xa.push_back({xa_vec[i][r][0], xa_vec[i][r][1], xa_vec[i][r][2]});
+            xlen++;
+        }
+        sequence[0]+=seqxA_mat[i][j];
+        for (r=0;r<ylen_vec[j];r++)
+        {
+            seqy += seqy_vec[j][r];
+            secy[ylen]=secy_vec[j][r];
+            ya.push_back({ya_vec[j][r][0], ya_vec[j][r][1], ya_vec[j][r][2]});
             ylen++;
         }
         sequence[1]+=seqyA_mat[i][j];
