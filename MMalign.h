@@ -1497,7 +1497,7 @@ void MMalign_final(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
+    double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
     double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
@@ -1520,10 +1520,12 @@ void MMalign_final(
     std::string seqy;
     std::string secx;
     std::string secy;
+    Coords xa;
+    Coords ya;
     secx.resize(xlen+1);
-    NewArray(&xa, xlen, 3);
+    xa.resize(xlen);
     secy.resize(ylen+1);
-    NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
@@ -1623,8 +1625,6 @@ void MMalign_final(
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
-    DeleteArray(&xa,xlen);
-    DeleteArray(&ya,ylen);
     sequence[0].clear();
     sequence[1].clear();
     sequence[2].clear();
@@ -1640,12 +1640,12 @@ void MMalign_final(
     {
         xlen=xlen_vec[i];
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+    xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        double **xt;
-        NewArray(&xt, xlen, 3);
+        Coords xt;
+        xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
         for (j=0;j<chain2_num;j++)
@@ -1657,7 +1657,7 @@ void MMalign_final(
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -1699,12 +1699,9 @@ void MMalign_final(
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-            DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        DeleteArray(&xa,xlen);
-        DeleteArray(&xt,xlen);
     }
     sequence.clear();
     return;
@@ -1720,7 +1717,7 @@ void MMalign_se_final(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
+    double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
     double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
@@ -1743,10 +1740,11 @@ void MMalign_se_final(
     std::string seqy;
     std::string secx;
     std::string secy;
-    secx.resize(xlen+1);
-    NewArray(&xa, xlen, 3);
+    Coords xa;
+    Coords ya;
+    xa.resize(xlen);
     secy.resize(ylen+1);
-    NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
@@ -1853,8 +1851,6 @@ void MMalign_se_final(
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
-    DeleteArray(&xa,xlen);
-    DeleteArray(&ya,ylen);
     sequence[0].clear();
     sequence[1].clear();
     sequence[2].clear();
@@ -1870,12 +1866,12 @@ void MMalign_se_final(
     {
         xlen=xlen_vec[i];
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+    xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        double **xt;
-        NewArray(&xt, xlen, 3);
+        Coords xt;
+        xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
         for (j=0;j<chain2_num;j++)
@@ -1887,7 +1883,7 @@ void MMalign_se_final(
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -1933,12 +1929,9 @@ void MMalign_se_final(
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-            DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        DeleteArray(&xa,xlen);
-        DeleteArray(&xt,xlen);
     }
     sequence.clear();
     return;
