@@ -4390,6 +4390,46 @@ double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore;
 }
 
+// const Coords& x/y overload
+double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, const Coords& x, const Coords& y, int xlen, int ylen, int invmap[],
+    int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
+    double d0_search, double score_d8, double t[3], double u[3][3],
+    const int mol_type)
+{
+    D0_MIN = 0.5; Lnorm = ylen;
+    if (mol_type>0) {
+        if(Lnorm<=11) d0=0.3; else if(Lnorm<=15) d0=0.4;
+        else if(Lnorm<=19) d0=0.5; else if(Lnorm<=23) d0=0.6;
+        else if(Lnorm<30) d0=0.7; else d0=(0.6*pow((Lnorm*1.0-0.5),1.0/2)-2.5);
+    } else {
+        if(Lnorm>21) d0=(1.24*pow((Lnorm*1.0-15),1.0/3)-1.8); else d0=D0_MIN;
+        if(d0<D0_MIN) d0=D0_MIN;
+    }
+    double d0_input=d0;
+    double tmscore; int n_al=0, ii;
+    for(int j=0;j<ylen;j++) {
+        ii=invmap[j];
+        if(ii>=0) {
+            xtm[n_al][0]=x[ii][0]; xtm[n_al][1]=x[ii][1]; xtm[n_al][2]=x[ii][2];
+            ytm[n_al][0]=y[j][0]; ytm[n_al][1]=y[j][1]; ytm[n_al][2]=y[j][2];
+            r1[n_al][0]=x[ii][0]; r1[n_al][1]=x[ii][1]; r1[n_al][2]=x[ii][2];
+            r2[n_al][0]=y[j][0]; r2[n_al][1]=y[j][1]; r2[n_al][2]=y[j][2];
+            n_al++;
+        }
+        else if(ii!=-1) PrintErrorAndQuit("Wrong map!");
+    }
+    L_ali=n_al;
+    Kabsch(r1,r2,n_al,0,&RMSD,t,u);
+    RMSD=sqrt(RMSD/(1.0*n_al));
+    int temp_simplify_step=1, temp_score_sum_method=0;
+    d0_search=d0_input; double rms=0.0;
+    tmscore=TMscore8_search_standard(r1,r2,xtm,ytm,xt,n_al,t,u,
+        temp_simplify_step,temp_score_sum_method,&rms,d0_input,score_d8,d0);
+    tmscore=tmscore*n_al/(1.0*Lnorm);
+    return tmscore;
+}
+
 // copy the value of t and u into t0,u0
 void copy_t_u(double t[3], double u[3][3], double t0[3], double u0[3][3])
 {
