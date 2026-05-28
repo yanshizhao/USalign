@@ -1330,9 +1330,91 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     
     if(tmscore1>=tmscore) tmscore=tmscore1;
     if(tmscore2>=tmscore) tmscore=tmscore2;
-    return tmscore; // no need to normalize this score because it will not be used for latter scoring
+    return tmscore;
 }
 
+// const Coords& x/y overload — function body identical to double** version
+double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    const Coords& x, const Coords& y, int xlen, int ylen, int invmap[],
+    double d0, double d0_search, double t[3], double u[3][3])
+{
+    double rms,tmscore,tmscore1,tmscore2;
+    int i,j,k;
+    k=0;
+    for(j=0; j<ylen; j++) {
+        i=invmap[j];
+        if(i>=0) {
+            r1[k][0]=x[i][0]; r1[k][1]=x[i][1]; r1[k][2]=x[i][2];
+            r2[k][0]=y[j][0]; r2[k][1]=y[j][1]; r2[k][2]=y[j][2];
+            xtm[k][0]=x[i][0]; xtm[k][1]=x[i][1]; xtm[k][2]=x[i][2];
+            ytm[k][0]=y[j][0]; ytm[k][1]=y[j][1]; ytm[k][2]=y[j][2];
+            k++;
+        }
+        else if(i!=-1) PrintErrorAndQuit("Wrong map!\n");
+    }
+    Kabsch(r1, r2, k, 1, &rms, t, u);
+    double di; const int len=k;
+    std::vector<double> dis(len);
+    double d00=d0_search,d002=d00*d00,d02=d0*d0;
+    int n_ali=k; double xrot[3];
+    tmscore=0;
+    for(k=0; k<n_ali; k++) {
+        transform(t, u, &xtm[k][0], xrot);
+        di=dist(xrot, &ytm[k][0]); dis[k]=di;
+        tmscore += 1/(1+di/d02);
+    }
+    double d002t=d002;
+    vector<double> dis_vec(dis.begin(), dis.begin()+n_ali);
+    sort(dis_vec.begin(), dis_vec.end());
+    if (d002t<dis_vec[2]) d002t=dis_vec[2];
+    dis_vec.clear();
+    while(1) {
+        j=0;
+        for(k=0; k<n_ali; k++) {
+            if(dis[k]<=d002t) {
+                r1[j][0]=xtm[k][0]; r1[j][1]=xtm[k][1]; r1[j][2]=xtm[k][2];
+                r2[j][0]=ytm[k][0]; r2[j][1]=ytm[k][1]; r2[j][2]=ytm[k][2];
+                j++;
+            }
+        }
+        if(j<3 && n_ali>3) d002t += 0.5; else break;
+    }
+    if(n_ali!=j) {
+        Kabsch(r1, r2, j, 1, &rms, t, u);
+        tmscore1=0;
+        for(k=0; k<n_ali; k++) {
+            transform(t, u, &xtm[k][0], xrot);
+            di=dist(xrot, &ytm[k][0]); dis[k]=di;
+            tmscore1 += 1/(1+di/d02);
+        }
+        d002t=d002+1;
+        vector<double> dis_vec2(dis.begin(), dis.begin()+n_ali);
+        sort(dis_vec2.begin(), dis_vec2.end());
+        if (d002t<dis_vec2[2]) d002t=dis_vec2[2];
+        dis_vec2.clear();
+        while(1) {
+            j=0;
+            for(k=0; k<n_ali; k++) {
+                if(dis[k]<=d002t) {
+                    r1[j][0]=xtm[k][0]; r1[j][1]=xtm[k][1]; r1[j][2]=xtm[k][2];
+                    r2[j][0]=ytm[k][0]; r2[j][1]=ytm[k][1]; r2[j][2]=ytm[k][2];
+                    j++;
+                }
+            }
+            if(j<3 && n_ali>3) d002t += 0.5; else break;
+        }
+        Kabsch(r1, r2, j, 1, &rms, t, u);
+        tmscore2=0;
+        for(k=0; k<n_ali; k++) {
+            transform(t, u, &xtm[k][0], xrot);
+            di=dist(xrot, &ytm[k][0]);
+            tmscore2 += 1/(1+di/d02);
+        }
+    } else { tmscore1=tmscore; tmscore2=tmscore; }
+    if(tmscore1>=tmscore) tmscore=tmscore1;
+    if(tmscore2>=tmscore) tmscore=tmscore2;
+    return tmscore;
+}
 
 //perform gapless threading to find the best initial alignment
 //input: x, y, xlen, ylen
