@@ -96,6 +96,29 @@ void NWDP_TM(double **score, bool **path, double **val,
     }
 }
 
+// DPMatrix overload — path uses char(1/0) instead of bool(true/false)
+void NWDP_TM(const std::vector<std::vector<double>>& score, std::vector<std::vector<char>>& path,
+    std::vector<std::vector<double>>& val, int len1, int len2, double gap_open, int j2i[])
+{
+    int i,j; double h,v,d;
+    for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
+    for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=0; j2i[j]=-1; }
+    for(i=1; i<=len1; i++) {
+        for(j=1; j<=len2; j++) {
+            d=val[i-1][j-1]+score[i][j];
+            h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
+            v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
+            if(d>=h && d>=v) { path[i][j]=1; val[i][j]=d; }
+            else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
+        }
+    }
+    i=len1; j=len2;
+    while(i>0 && j>0) {
+        if(path[i][j]) { j2i[j-1]=i-1; i--; j--; }
+        else if(val[i-1][j] > val[i][j-1]) i--; else j--;
+    }
+}
+
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
