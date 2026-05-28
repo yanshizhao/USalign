@@ -58,47 +58,35 @@ void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
         secx_bond[i][0]=secx_bond[i][1]=-1;
 }
 
-void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
+// Coords& real implementation (flipped from double** version)
+inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, double **xk)
 {
     double **score;
     NewArray(&score, xlen+1, xlen+1);
     vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
-    int i;
-    int j;
-    int k;
-    for (i=0;i<xlen;i++)
-    {
+    int i,j,k;
+    for(i=0;i<xlen;i++) {
         score[i+1][i+1]=0;
-        for (j=i+1;j<xlen;j++) score[j+1][i+1]=score[i+1][j+1]=dist(xa[i], xa[j]);
+        for(j=i+1;j<xlen;j++) score[j+1][i+1]=score[i+1][j+1]=dist(xa[i], xa[j]);
     }
-    for (i=0;i<xlen;i++)
-    {
-        for (j=0;j<xlen;j++)
-        {
-            close_idx_vec[j].first=score[i+1][j+1];
-            close_idx_vec[j].second=j;
-        }
+    for(i=0;i<xlen;i++) {
+        for(j=0;j<xlen;j++) { close_idx_vec[j].first=score[i+1][j+1]; close_idx_vec[j].second=j; }
         sort(close_idx_vec.begin(), close_idx_vec.end());
-        for (k=0;k<closeK_opt;k++)
-        {
+        for(k=0;k<closeK_opt;k++) {
             j=close_idx_vec[k % xlen].second;
-            xk[i*closeK_opt+k][0]=xa[j][0];
-            xk[i*closeK_opt+k][1]=xa[j][1];
-            xk[i*closeK_opt+k][2]=xa[j][2];
+            xk[i*closeK_opt+k][0]=xa[j][0]; xk[i*closeK_opt+k][1]=xa[j][1]; xk[i*closeK_opt+k][2]=xa[j][2];
         }
     }
-
-    // clean up
     vector<pair<double,int> >().swap(close_idx_vec);
     DeleteArray(&score, xlen+1);
 }
 
-// Coords& bridge — builds temp double** view and delegates
-inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, double **xk)
+// double** thin wrapper — copies to Coords and delegates
+inline void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
 {
-    vector<double*> xa_view(xlen);
-    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
-    getCloseK(xa_view.data(), xlen, closeK_opt, xk);
+    Coords xa_c; xa_c.resize(xlen);
+    for(int i=0;i<xlen;i++) {xa_c[i][0]=xa[i][0]; xa_c[i][1]=xa[i][1]; xa_c[i][2]=xa[i][2];}
+    getCloseK(xa_c, xlen, closeK_opt, xk);
 }
 
 // check if pairing i to j conform to sequantiality within the SSE
