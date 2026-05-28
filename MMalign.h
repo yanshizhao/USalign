@@ -3079,6 +3079,39 @@ int TMalign_dimer_main(double **xa, double **ya,
     return 0; // zero for no exception
 }
 
+// Coords& bridge — builds temp double** views and delegates
+inline int TMalign_dimer_main(Coords& xa, Coords& ya,
+    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    bool **mask,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const double TMcut=-1)
+{
+    vector<double*> xa_view(xlen);
+    vector<double*> ya_view(ylen);
+    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
+    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
+    return TMalign_dimer_main(xa_view.data(), ya_view.data(),
+        seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, mask,
+        sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, TMcut);
+}
+
 void MMalign_dimer(double & total_score, 
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -3086,7 +3119,7 @@ void MMalign_dimer(double & total_score,
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
+    double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
@@ -3134,10 +3167,11 @@ void MMalign_dimer(double & total_score,
 
     std::string secx;
     std::string secy;
-    secx.resize(xlen+1);
-    NewArray(&xa, xlen, 3);
+    Coords xa;
+    Coords ya;    secx.resize(xlen+1);
+    xa.resize(xlen);
     secy.resize(ylen+1);
-    NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
@@ -3175,8 +3209,6 @@ void MMalign_dimer(double & total_score,
         1, false, true, false, fast_opt, mol_type, -1);
 
     // clean up TM-align
-    DeleteArray(&xa,xlen);
-    DeleteArray(&ya,ylen);
     DeleteArray(&mask,xlen+1);
 
     // re-compute chain level alignment
@@ -3190,12 +3222,12 @@ void MMalign_dimer(double & total_score,
             continue;
         }
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+    xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        double **xt;
-        NewArray(&xt, xlen, 3);
+        Coords xt;
+        xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
         for (j=0;j<chain2_num;j++)
@@ -3213,7 +3245,7 @@ void MMalign_dimer(double & total_score,
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -3252,12 +3284,9 @@ void MMalign_dimer(double & total_score,
             seqxA.clear();
             seqyA.clear();
 
-            DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        DeleteArray(&xa,xlen);
-        DeleteArray(&xt,xlen);
     }
     return;
 }
