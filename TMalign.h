@@ -2751,6 +2751,39 @@ double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore_max;
 }
 
+// const Coords& x/y overload
+double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    const Coords& x, const Coords& y, int xlen, int ylen,
+    int *y2x, double d0, double d0_search,
+    double dcu0, const bool fast_opt, double t[3], double u[3][3])
+{
+    int fra_min=4; if(fast_opt) fra_min=8; int fra_min1=fra_min-1;
+    int xstart=0,ystart=0,xend=xlen-1,yend=ylen-1;
+    find_max_frag(x, xlen, &xstart, &xend, dcu0, fast_opt);
+    find_max_frag(y, ylen, &ystart, &yend, dcu0, fast_opt);
+    int *y2x_=new int[ylen]; int *y2x_best=new int[ylen];
+    double tmscore,tmscore_max=-1;
+    for(int i=ystart-fra_min1;i<=yend-fra_min1;i++) y2x_[i]=-1;
+    for(int i=0;i<ylen-yend+fra_min1;i++) y2x_[yend+i]=-1;
+    int frag_len=getmin(xlen,ylen); int k;
+    for(int i1=xstart; i1<=xend-fra_min1; i1++) {
+        for(int j1=ystart; j1<=yend-fra_min1; j1++) {
+            for(k=0;k<frag_len;k++) {
+                int ii=i1+k; int jj=j1+k;
+                if(ii>=xlen||jj>=ylen) break;
+                y2x_[jj]=ii;
+            }
+            tmscore=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,y2x_,d0,d0_search,t,u);
+            if(tmscore>tmscore_max) { tmscore_max=tmscore; for(int ii=0;ii<ylen;ii++) y2x_best[ii]=y2x_[ii]; }
+            for(int jj=j1;jj<getmin(j1+k,ylen);jj++) y2x_[jj]=-1;
+        }
+    }
+    for(int i=0;i<ylen;i++) y2x[i]=y2x_best[i];
+    delete [] y2x_; delete [] y2x_best;
+    if(tmscore_max<=0) { tmscore_max=get_initial(r1,r2,xtm,ytm,x,y,xlen,ylen,y2x,d0,d0_search,fast_opt,t,u); }
+    return tmscore_max;
+}
+
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
