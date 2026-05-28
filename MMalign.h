@@ -2296,6 +2296,26 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore_max;
 }
 
+// Coords& bridge — builds temp double** views and delegates
+inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, bool **path, double **val, double **x, double **y,
+    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    int g1, int g2, int iteration_max, double local_d0_search,
+    double D0_MIN, double Lnorm, double d0, double score_d8)
+{
+    vector<double*> r1_view(r1.size()), r2_view(r2.size());
+    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
+    vector<double*> xt_view(xt.size());
+    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
+    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
+    for (size_t i=0; i<xtm.size(); i++) xtm_view[i]=(double*)xtm[i].data();
+    for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
+    for (size_t i=0; i<xt.size(); i++) xt_view[i]=(double*)xt[i].data();
+    return DP_iter_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
+        xt_view.data(), path, val, x, y, xlen, ylen, mask, t, u, invmap0,
+        g1, g2, iteration_max, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+}
+
 void get_initial_ss_dimer(bool **path, double **val, const char *secx,
     const char *secy, int xlen, int ylen, bool **mask, int *y2x)
 {
@@ -2403,6 +2423,22 @@ bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
     return flag;
 }
 
+// Coords& bridge — builds temp double** views and delegates
+inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    bool **path, double **val, double **x, double **y, int xlen, int ylen,
+    bool **mask, int *y2x,
+    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
+{
+    vector<double*> r1_view(r1.size()), r2_view(r2.size());
+    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
+    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
+    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
+    for (size_t i=0; i<xtm.size(); i++) xtm_view[i]=(double*)xtm[i].data();
+    for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
+    return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
+        path, val, x, y, xlen, ylen, mask, y2x, d0, d0_search, fast_opt, D0_MIN);
+}
+
 void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
     bool **path, double **val, const char *secx, const char *secy,
     double **x, double **y, int xlen, int ylen, bool **mask,
@@ -2418,6 +2454,19 @@ void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
     
     double gap_open=-1.0;
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
+}
+
+// Coords& bridge — builds temp double** views and delegates
+inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
+    bool **path, double **val, const char *secx, const char *secy,
+    double **x, double **y, int xlen, int ylen, bool **mask,
+    int *y2x0, int *y2x, const double D0_MIN, double d0)
+{
+    vector<double*> r1_view(r1.size()), r2_view(r2.size());
+    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
+    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
+    get_initial_ssplus_dimer(r1_view.data(), r2_view.data(), score,
+        path, val, secx, secy, x, y, xlen, ylen, mask, y2x0, y2x, D0_MIN, d0);
 }
 
 /* Entry function for TM-align. Return TM-score calculation status:
@@ -2445,24 +2494,24 @@ int TMalign_dimer_main(double **xa, double **ya,
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
     double **score;       // Input score table for dynamic programming
-    bool   **path;        // for dynamic programming  
-    double **val;         // for dynamic programming  
-    double **xtm, **ytm;  // for TMscore search engine
-    double **xt;          //for saving the superposed version of r_1 or xtm
-    double **r1, **r2;    // for Kabsch rotation
+    bool   **path;        // for dynamic programming
+    double **val;         // for dynamic programming
+    Coords xtm, ytm;      // for TMscore search engine
+    Coords xt;            //for saving the superposed version of r_1 or xtm
+    Coords r1, r2;        // for Kabsch rotation
 
     /***********************/
-    // allocate memory    
+    // allocate memory
     /***********************/
     int minlen = min(xlen, ylen);
     NewArray(&score, xlen+1, ylen+1);
     NewArray(&path, xlen+1, ylen+1);
     NewArray(&val, xlen+1, ylen+1);
-    NewArray(&xtm, minlen, 3);
-    NewArray(&ytm, minlen, 3);
-    NewArray(&xt, xlen, 3);
-    NewArray(&r1, minlen, 3);
-    NewArray(&r2, minlen, 3);
+    xtm.resize(minlen);
+    ytm.resize(minlen);
+    xt.resize(xlen);
+    r1.resize(minlen);
+    r2.resize(minlen);
 
     /***********************/
     //    parameter set   

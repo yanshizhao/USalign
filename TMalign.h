@@ -4544,7 +4544,7 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
 
 void clean_up_after_approx_TM(int *invmap0, int *invmap,
     double **score, bool **path, double **val, Coords& xtm, Coords& ytm,
-    Coords& xt, Coords& r1, Coords& r2, const int xlen)
+    Coords& xt, Coords& r1, Coords& r2, const int xlen, const int /*minlen*/ = 0)
 {
     delete [] invmap0;
     delete [] invmap;
