@@ -360,8 +360,8 @@ double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
  * chain pair i and j multiple by getmin(Li*Lj) */
 double calMMscore(double **TMave_mat,int *assign1_list,
     const int chain1_num, const int chain2_num, double **xcentroids,
-    double **ycentroids, const double d0MM, double **r1, double **r2,
-    double **xt, double t[3], double u[3][3], const int L)
+    double **ycentroids, const double d0MM, Coords& r1, Coords& r2,
+    Coords& xt, double t[3], double u[3][3], const int L)
 {
     int Nali=0; // number of aligned chain
     int i;
@@ -571,10 +571,10 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     int j;
 
     int chain_num=getmin(chain1_num,chain2_num);
-    double **r1, **r2, **xt;
-    NewArray(&r1, chain_num, 3);
-    NewArray(&r2, chain_num, 3);
-    NewArray(&xt, chain_num, 3);
+    Coords r1, r2, xt;
+    r1.resize(chain_num);
+    r2.resize(chain_num);
+    xt.resize(chain_num);
     double t[3];
     double u[3][3];
 
@@ -663,9 +663,6 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     // clean up
     delete[]assign1_tmp;
     delete[]assign2_tmp;
-    DeleteArray(&r1, chain_num);
-    DeleteArray(&r2, chain_num);
-    DeleteArray(&xt, chain_num);
     return MMscore;
 }
 
