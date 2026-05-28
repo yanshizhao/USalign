@@ -688,6 +688,25 @@ void copy_chain_data(const vector<vector<double> >&a_vec_i,
     sec[len]=0;
 }
 
+void copy_chain_data(const vector<vector<double> >&a_vec_i,
+    const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
+    const int len,Coords& a,std::string &seq,char *sec)
+{
+    int r;
+    seq.clear();
+    seq.reserve(len);
+    a.resize(len);
+    for (r=0;r<len;r++)
+    {
+        a[r][0]=a_vec_i[r][0];
+        a[r][1]=a_vec_i[r][1];
+        a[r][2]=a_vec_i[r][2];
+        seq += seq_vec_i[r];
+        sec[r]=sec_vec_i[r];
+    }
+    sec[len]=0;
+}
+
 // clear chains with L<3
 void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_opt)
 {
@@ -1300,7 +1319,7 @@ double MMalign_search(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
+    double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
@@ -1323,10 +1342,12 @@ double MMalign_search(
     std::string seqy;
     std::string secx;
     std::string secy;
+    Coords xa;
+    Coords ya;
     secx.resize(xlen+1);
-    NewArray(&xa, xlen, 3);
+    xa.resize(xlen);
     secy.resize(ylen+1);
-    NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
@@ -1366,8 +1387,6 @@ double MMalign_search(
         i_opt, false, true, false, fast_opt, mol_type, -1);
 
     // clean up
-    DeleteArray(&xa,xlen);
-    DeleteArray(&ya,ylen);
     do_vec.clear();
 
     // re-compute chain level alignment
@@ -1380,12 +1399,12 @@ double MMalign_search(
             continue;
         }
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+    xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        double **xt;
-        NewArray(&xt, xlen, 3);
+        Coords xt;
+        xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
         for (j=0;j<chain2_num;j++)
@@ -1403,7 +1422,7 @@ double MMalign_search(
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+    ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -1445,12 +1464,9 @@ double MMalign_search(
             seqyA.clear();
             vector<string>().swap(sequence_tmp);
 
-            DeleteArray(&ya,ylen);
             delete[]invmap;
             do_vec.clear();
         }
-        DeleteArray(&xa,xlen);
-        DeleteArray(&xt,xlen);
     }
     if (byresi_opt)
     {
