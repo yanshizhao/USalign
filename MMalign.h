@@ -80,10 +80,12 @@ bool adjust_dimer_assignment(
     parameter_set4final(getmin(xlen,ylen), D0_MIN, Lnorm, d0, 
         d0_search, mol_type);
 
-    double **xa, **ya, **xt;
-    NewArray(&xa, xlen, 3);
-    NewArray(&ya, ylen, 3);
-    NewArray(&xt, xlen, 3);
+    Coords xa;
+    Coords ya;
+    Coords xt;
+    xa.resize(xlen);
+    ya.resize(ylen);
+    xt.resize(xlen);
 
     double RMSD = 0;
     double dd   = 0;
@@ -186,9 +188,6 @@ bool adjust_dimer_assignment(
     }
 
     // clean up
-    DeleteArray(&xa, xlen);
-    DeleteArray(&ya, ylen);
-    DeleteArray(&xt, xlen);
     return total_score1<total_score2;
 }
 
@@ -1084,7 +1083,7 @@ void parse_chain_list(const vector<string>&chain_list,
     int r;
     string name;
     int chainnum;
-    double **xa;
+    Coords xa;
     int len;
     std::string seq;
     std::string sec;
@@ -1123,7 +1122,8 @@ void parse_chain_list(const vector<string>&chain_list,
                 cerr<<"Sequence is too short <3!: "<<name<<endl;
                 continue;
             }
-            NewArray(&xa, len, 3);
+            xa.clear();
+            xa.reserve(len);
             sec.resize(len + 1);
             len = read_PDB(PDB_lines[chain_i], xa, seq, resi_vec, read_resi);
             if (mirror_opt) for (r=0;r<len;r++) xa[r][2]=-xa[r][2];
@@ -1153,7 +1153,6 @@ void parse_chain_list(const vector<string>&chain_list,
             tmp_seq_array.clear();
             tmp_sec_array.clear();
             PDB_lines[chain_i].clear();
-            DeleteArray(&xa, len);
         } // chain_i
         name.clear();
         PDB_lines.clear();
