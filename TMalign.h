@@ -1999,6 +1999,46 @@ bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return flag;
 }
 
+// const Coords& x/y overload
+bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    bool **path, double **val,
+    const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
+    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
+{
+    double GL,rmsd,t[3],u[3][3];
+    double d01=d0+1.5; if(d01<D0_MIN) d01=D0_MIN; double d02=d01*d01;
+    double GLmax=0; int aL=getmin(xlen,ylen);
+    int *invmap=new int[ylen+1];
+    int n_jump1=0,n_jump2=0;
+    if(xlen>250) n_jump1=45; else if(xlen>200) n_jump1=35; else if(xlen>150) n_jump1=25; else n_jump1=15;
+    if(n_jump1>(xlen/3)) n_jump1=xlen/3;
+    if(ylen>250) n_jump2=45; else if(ylen>200) n_jump2=35; else if(ylen>150) n_jump2=25; else n_jump2=15;
+    if(n_jump2>(ylen/3)) n_jump2=ylen/3;
+    int n_frag[2]={20,100};
+    if(n_frag[0]>(aL/3)) n_frag[0]=aL/3;
+    if(n_frag[1]>(aL/2)) n_frag[1]=aL/2;
+    if(fast_opt) { n_jump1*=5; n_jump2*=5; }
+    bool flag=false;
+    for(int i_frag=0;i_frag<2;i_frag++) {
+        int m1=xlen-n_frag[i_frag]+1, m2=ylen-n_frag[i_frag]+1;
+        for(int i=0;i<m1;i+=n_jump1) {
+            for(int j=0;j<m2;j+=n_jump2) {
+                for(int k=0;k<n_frag[i_frag];k++) {
+                    r1[k][0]=x[k+i][0]; r1[k][1]=x[k+i][1]; r1[k][2]=x[k+i][2];
+                    r2[k][0]=y[k+j][0]; r2[k][1]=y[k+j][1]; r2[k][2]=y[k+j][2];
+                }
+                Kabsch(r1,r2,n_frag[i_frag],1,&rmsd,t,u);
+                double gap_open=0.0;
+                NWDP_TM(path,val,x,y,xlen,ylen,t,u,d02,gap_open,invmap);
+                GL=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,invmap,d0,d0_search,t,u);
+                if(GL>GLmax) { GLmax=GL; for(int ii=0;ii<ylen;ii++) y2x[ii]=invmap[ii]; flag=true; }
+            }
+        }
+    }
+    delete[] invmap;
+    return flag;
+}
+
 void score_matrix_rmsd_sec( double **r1, double **r2, double **score,
     const char *secx, const char *secy, double **x, double **y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
@@ -2934,6 +2974,40 @@ double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore_max;
 }
 
+// const Coords& x/y overload
+double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, bool **path, double **val, const Coords& x, const Coords& y,
+    int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
+    int g1, int g2, int iteration_max, double local_d0_search,
+    double D0_MIN, double Lnorm, double d0, double score_d8)
+{
+    double gap_open[2]={-0.6,0};
+    double rmsd; int *invmap=new int[ylen+1];
+    int iteration,i,j,k; double tmscore,tmscore_max,tmscore_old=0;
+    int score_sum_method=8, simplify_step=40;
+    tmscore_max=-1;
+    double d02=d0*d0;
+    for(int g=g1;g<g2;g++) {
+        for(iteration=0;iteration<iteration_max;iteration++) {
+            NWDP_TM(path,val,x,y,xlen,ylen,t,u,d02,gap_open[g],invmap);
+            k=0;
+            for(j=0;j<ylen;j++) {
+                i=invmap[j];
+                if(i>=0) {
+                    xtm[k][0]=x[i][0]; xtm[k][1]=x[i][1]; xtm[k][2]=x[i][2];
+                    ytm[k][0]=y[j][0]; ytm[k][1]=y[j][1]; ytm[k][2]=y[j][2];
+                    k++;
+                }
+            }
+            tmscore=TMscore8_search(r1,r2,xtm,ytm,xt,k,t,u,simplify_step,score_sum_method,&rmsd,local_d0_search,Lnorm,score_d8,d0);
+            if(tmscore>tmscore_max) { tmscore_max=tmscore; for(i=0;i<ylen;i++) invmap0[i]=invmap[i]; }
+            if(iteration>0) { if(fabs(tmscore_old-tmscore)<0.000001) break; }
+            tmscore_old=tmscore;
+        }
+    }
+    delete[] invmap;
+    return tmscore_max;
+}
 
 // script format: 0 - no script; 1 - pymol; 3 - chimerax
 void output_pymol(const string xname, const string yname,
