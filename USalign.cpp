@@ -2790,7 +2790,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     int    xchainnum,ychainnum;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
-    double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
+    Coords xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    Coords ya;
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
@@ -2829,7 +2830,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                 cerr<<"Sequence is too short <3!: "<<xname<<endl;
                 continue;
             }
-            NewArray(&xa, xlen, 3);
+            xa.clear();
+            xa.reserve(xlen);
             string seqx;
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
@@ -2871,7 +2873,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         cerr<<"Sequence is too short <3!: "<<yname<<endl;
                         continue;
                     }
-                    NewArray(&ya, ylen, 3);
+                    ya.clear();
+                    ya.reserve(ylen);
                     string seqy;
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
@@ -3011,7 +3014,6 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    DeleteArray(&ya, ylen);
                     resi_vec2.clear();
                     do_vec.clear();
                 } // chain_j
@@ -3026,7 +3028,6 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            DeleteArray(&xa, xlen);
             resi_vec1.clear();
         } // chain_i
         xname.clear();

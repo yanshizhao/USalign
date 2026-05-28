@@ -1845,4 +1845,35 @@ void output_flexalign_results(const string xname, const string yname,
             xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
 }
 
+// Coords& bridge — builds temp double** views and delegates
+inline int flexalign_main(Coords& xa, Coords& ya,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3], vector<vector<double> >&tu_vec,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const int hinge_opt)
+{
+    vector<double*> xa_view(xlen);
+    vector<double*> ya_view(ylen);
+    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
+    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
+    return flexalign_main(xa_view.data(), ya_view.data(),
+        seqx, seqy, secx, secy,
+        t0, u0, tu_vec,
+        TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, hinge_opt);
+}
 #endif
