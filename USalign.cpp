@@ -1225,7 +1225,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     string seqx, seqy;             // for the protein sequence
-    double **xa, **ya;             // structure of single chain
+    Coords xa;                     // structure of single chain
+    Coords ya;
     string secx;                   // for the secondary structure
     string secy;
     int    xlen_aa,ylen_aa;        // total length of protein
@@ -1260,8 +1261,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         ylen = ylen_vec[0];
         secx.resize(xlen+1);
         secy.resize(ylen+1);
-        NewArray(&xa, xlen, 3);
-        NewArray(&ya, ylen, 3);
+        xa.clear();
+        xa.reserve(xlen);
+        ya.clear();
+        ya.reserve(ylen);
         copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
 
@@ -1321,8 +1324,6 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         
 
 
-        DeleteArray(&xa,xlen);
-        DeleteArray(&ya,ylen);
         do_vec.clear();
 
         vector<vector<vector<double> > >().swap(xa_vec); // structure of complex1
@@ -1367,10 +1368,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         secy_trim_vec,ylen_trim_vec,ya_vec,seqy_vec,secy_vec,ylen_vec,
         mol_vec2,Lchain_aa_max1,Lchain_na_max1);
     int    ylen_trim;             // chain length
-    double **ya_trim;             // structure of single chain
+    Coords ya_trim;             // structure of single chain
     std::string seqy_trim;           // for the protein sequence
     std::string secy_trim;           // for the secondary structure
-    double **xt;
+    Coords xt;
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
@@ -1383,7 +1384,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             continue;
         }
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+        xa.clear();
+        xa.reserve(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
@@ -1402,7 +1404,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+            ya.clear();
+            ya.reserve(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -1436,7 +1439,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             {
                 ylen_trim = ylen_trim_vec[j];
                 secy_trim.resize(ylen_trim+1);
-                NewArray(&ya_trim, ylen_trim, 3);
+                ya_trim.clear();
+                ya_trim.reserve(ylen_trim);
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
                     ylen_trim,ya_trim,seqy_trim,&secy_trim[0]);
                 TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
@@ -1449,9 +1453,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     mol_vec1[i]+mol_vec2[j],TMcut);
                 seqxA.clear();
                 seqyA.clear();
-                DeleteArray(&ya_trim,ylen_trim);
 
-                NewArray(&xt,xlen,3);
+                xt.resize(xlen);
                 do_rotation(xa, xt, xlen, t0, u0);
                 int *invmap = new int[ylen+1];
                 se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
@@ -1473,7 +1476,6 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
                     2, false, true, false, fast_opt,
                     mol_vec1[i]+mol_vec2[j],TMcut);
-                DeleteArray(&xt, xlen);
             }
             else
             {
@@ -1500,12 +1502,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
             
 
-            DeleteArray(&ya,ylen);
         }
 
         
 
-        DeleteArray(&xa,xlen);
     }
     vector<vector<vector<double> > >().swap(ya_trim_vec);
     vector<vector<char> >().swap(seqy_trim_vec);
@@ -1548,12 +1548,14 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
         xlen =xlen_vec[i];
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+        xa.clear();
+        xa.reserve(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,&secx[0]);
 
         ylen =ylen_vec[j];
         secy.resize(ylen+1);
-        NewArray(&ya, ylen, 3);
+        ya.clear();
+        ya.reserve(ylen);
         copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,&secy[0]);
 
         // declare variable specific to this pair of TMalign
@@ -1620,11 +1622,9 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
         
 
-        DeleteArray(&ya,ylen);
 
         
 
-        DeleteArray(&xa,xlen);
         do_vec.clear();
     }
     if (outfmt_opt==2)
