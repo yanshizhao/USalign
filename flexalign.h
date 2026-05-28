@@ -112,10 +112,10 @@ int flexalign_main(double **xa, double **ya,
         std::string secy_h;
         secx_h.resize(xlen + 1);
         secy_h.resize(ylen + 1);
-        double **xa_h;
-        double **ya_h;
-        NewArray(&xa_h, xlen, 3);
-        NewArray(&ya_h, ylen, 3);
+        Coords xa_h;
+        Coords ya_h;
+        xa_h.resize(xlen);
+        ya_h.resize(ylen);
 
         int r1;
         int r2;
@@ -268,8 +268,6 @@ int flexalign_main(double **xa, double **ya,
         
         // clean up
         delete [] invmap_h;
-        DeleteArray(&xa_h, xlen);
-        DeleteArray(&ya_h, ylen);
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
@@ -289,10 +287,10 @@ int flexalign_main(double **xa, double **ya,
         std::string secy_h;
         secx_h.resize(xlen_h + 1);
         secy_h.resize(ylen_h + 1);
-        double **xa_h;
-        double **ya_h;
-        NewArray(&xa_h, xlen_h, 3);
-        NewArray(&ya_h, ylen_h, 3);
+        Coords xa_h;
+        Coords ya_h;
+        xa_h.resize(xlen_h);
+        ya_h.resize(ylen_h);
         vector<int> r1toi(xlen_h,0);
         vector<int> r2toj(ylen_h,0);
 
@@ -398,8 +396,6 @@ int flexalign_main(double **xa, double **ya,
         
         // clean up
         delete [] invmap_h;
-        DeleteArray(&xa_h, xlen_h);
-        DeleteArray(&ya_h, ylen_h);
         r1toi.clear();
         r2toj.clear();
         seqM_h.clear();

@@ -365,7 +365,8 @@ int main(int argc, char *argv[])
     vector<int> xlen_vec;          // length of complex1
     vector<int> ylen_vec;          // length of complex2
     int    xlen, ylen;             // chain length
-    double **xa, **ya;             // structure of single chain
+    Coords xa;                     // structure of single chain
+    Coords ya;
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
     vector<string> resi_vec1;  // residue index for chain1
@@ -403,8 +404,10 @@ int main(int argc, char *argv[])
         string seqy;
         secx.resize(xlen+1);
         secy.resize(ylen+1);
-        NewArray(&xa, xlen, 3);
-        NewArray(&ya, ylen, 3);
+        xa.clear();
+        xa.reserve(xlen);
+        ya.clear();
+        ya.reserve(ylen);
         copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
         
@@ -457,8 +460,6 @@ int main(int argc, char *argv[])
         seqxA.clear();
         seqyA.clear();
 
-        DeleteArray(&xa,xlen);
-        DeleteArray(&ya,ylen);
         chain1_list.clear();
         chain2_list.clear();
         sequence.clear();
@@ -515,7 +516,8 @@ int main(int argc, char *argv[])
             continue;
         }
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+        xa.clear();
+        xa.reserve(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
@@ -541,7 +543,8 @@ int main(int argc, char *argv[])
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+            ya.clear();
+            ya.reserve(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -599,12 +602,10 @@ int main(int argc, char *argv[])
             seqyA.clear();
 
             
-            DeleteArray(&ya,ylen);
             do_vec.clear();
         }
 
         
-        DeleteArray(&xa,xlen);
     }
 
     // calculate initial chain-chain assignment
