@@ -666,25 +666,6 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
-// C++ string overload (real implementation)
-void copy_chain_data(const vector<vector<double> >&a_vec_i,
-    const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
-    const int len,double **a,std::string &seq,char *sec)
-{
-    int r;
-    seq.clear();
-    seq.reserve(len);
-    for (r=0;r<len;r++)
-    {
-        a[r][0]=a_vec_i[r][0];
-        a[r][1]=a_vec_i[r][1];
-        a[r][2]=a_vec_i[r][2];
-        seq += seq_vec_i[r];
-        sec[r]=sec_vec_i[r];
-    }
-    sec[len]=0;
-}
-
 void copy_chain_data(const vector<vector<double> >&a_vec_i,
     const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
     const int len,Coords& a,std::string &seq,char *sec)
