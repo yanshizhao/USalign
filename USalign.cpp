@@ -570,7 +570,8 @@ int MMalign(const string &xname, const string &yname,
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     string seqx, seqy;             // for the protein sequence
-    double **xa, **ya;             // structure of single chain
+    Coords xa;                     // structure of single chain
+    Coords ya;
     string secx;                   // for the secondary structure
     string secy;
     int    xlen_aa,ylen_aa;        // total length of protein
@@ -663,8 +664,8 @@ int MMalign(const string &xname, const string &yname,
         ylen = ylen_vec[0];
         secx.resize(xlen+1);
         secy.resize(ylen+1);
-        NewArray(&xa, xlen, 3);
-        NewArray(&ya, ylen, 3);
+        xa.resize(xlen);
+        ya.resize(ylen);
         copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
 
@@ -750,8 +751,6 @@ int MMalign(const string &xname, const string &yname,
         seqyA.clear();
         
         
-        DeleteArray(&xa,xlen);
-        DeleteArray(&ya,ylen);
         do_vec.clear();
 
         vector<vector<vector<double> > >().swap(xa_vec); // structure of complex1
@@ -800,7 +799,7 @@ int MMalign(const string &xname, const string &yname,
             continue;
         }
         secx.resize(xlen+1);
-        NewArray(&xa, xlen, 3);
+        xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
@@ -831,7 +830,7 @@ int MMalign(const string &xname, const string &yname,
                 continue;
             }
             secy.resize(ylen+1);
-            NewArray(&ya, ylen, 3);
+            ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,&secy[0]);
 
@@ -877,7 +876,6 @@ int MMalign(const string &xname, const string &yname,
                     seqyA.clear();
 
                     
-                    DeleteArray(&ya,ylen);
                     continue;
                 }
             }
@@ -942,7 +940,6 @@ int MMalign(const string &xname, const string &yname,
             seqyA.clear();
 
             
-            DeleteArray(&ya,ylen);
             do_vec.clear();
         }
 
