@@ -325,7 +325,8 @@ int main(int argc, char *argv[])
     vector<string> chainID_list;      // list of chainID
     size_t xchainnum=0;         // number of chains in a PDB file
     int    xlen,ylen;           // chain length
-    double **xa,**ya;           // xyz coordinate
+    Coords xa;
+    Coords ya;           // xyz coordinate
     vector<string> resi_vec;    // residue index for chain, dummy variable
     vector<pair<int,size_t> >chainLen_list; // vector of (length,index) pair
     vector<vector<char> > seq_vec;
@@ -385,7 +386,8 @@ int main(int argc, char *argv[])
             if (mol_opt=="RNA") mol_vec[j+xchainnum]=1;
             else if (mol_opt=="protein") mol_vec[j+xchainnum]=-1;
 
-            NewArray(&xa, xlen, 3);
+            xa.clear();
+            xa.reserve(xlen);
             seq_tmp.assign(xlen+1,'A');
             sec_tmp.assign(xlen+1,0);
 
@@ -414,7 +416,6 @@ int main(int argc, char *argv[])
             seq_tmp.clear();
             sec_tmp.clear();
             xyz_tmp.clear();
-            DeleteArray(&xa, xlen);
             PDB_lines[j].clear();
         }
         PDB_lines.clear();
@@ -465,7 +466,8 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        NewArray(&xa, xlen, 3);
+        xa.clear();
+        xa.reserve(xlen);
         for (int r=0;r<xlen;r++)
         {
             xa[r][0]=xyz_vec[chain_i][r][0];
@@ -521,7 +523,8 @@ int main(int argc, char *argv[])
             
             //cout<<chainID_list[chain_i]<<" => "<<chainID_list[chain_j]<<endl;
             
-            NewArray(&ya, ylen, 3);
+            ya.clear();
+            ya.reserve(ylen);
             for (int r=0;r<ylen;r++)
             {
                 ya[r][0]=xyz_vec[chain_j][r][0];
@@ -590,7 +593,6 @@ int main(int argc, char *argv[])
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
-            DeleteArray(&ya, ylen);
             delete [] invmap;
 
             // if a good hit is guaranteed to be found, stop the loop
@@ -638,7 +640,8 @@ int main(int argc, char *argv[])
             if (s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast,
                 TMcut, s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
 
-            NewArray(&ya, ylen, 3);
+            ya.clear();
+            ya.reserve(ylen);
             for (int r=0;r<ylen;r++)
             {
                 ya[r][0]=xyz_vec[chain_j][r][0];
@@ -703,7 +706,6 @@ int main(int argc, char *argv[])
             if (TM<lb_TMfast || 
                (TM<TMcut && (fast_opt || overwrite_fast_opt==false)))
             {
-                DeleteArray(&ya, ylen);
                 continue;
             }
 
@@ -711,7 +713,6 @@ int main(int argc, char *argv[])
                (TM>=TMcut && (fast_opt || overwrite_fast_opt==false)))
             {
                 clust_mem_vec[chain_i]=clust_repr_map[chain_j];
-                DeleteArray(&ya, ylen);
                 found_clust=true;
                 break;
             }
@@ -732,7 +733,6 @@ int main(int argc, char *argv[])
                 seqxA.clear();
                 seqyA.clear();
                 do_vec.clear();
-                DeleteArray(&ya, ylen);
                 
                 TM=TM3;                // average length
                 if      (s_opt==1) TM=TM2; // shorter length
@@ -750,7 +750,6 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        DeleteArray(&xa, xlen);
         index_vec.clear();
 
         if (!found_clust) // new cluster

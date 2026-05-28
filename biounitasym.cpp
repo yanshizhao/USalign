@@ -141,7 +141,9 @@ int main(int argc, char *argv[])
     int    l;                         // residue index
     int    chain_i,chain_j;           // chain index
     int    xlen,ylen;                 // chain length
-    int    chainnum;       // number of chains in a PDB file    double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
+    int    chainnum;       // number of chains in a PDB file
+    Coords xa;
+    Coords ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
@@ -184,7 +186,8 @@ int main(int argc, char *argv[])
                     <<". Chain length 0."<<endl;
                 continue;
             }
-            NewArray(&xa, xlen, 3);
+            xa.clear();
+            xa.reserve(xlen);
             string seqx;
             xlen = read_PDB(PDB_lines[chain_i], xa, seqx, resi_vec1, 0);
             for (chain_j=chain_i+1;chain_j<chainnum;chain_j++)
@@ -196,7 +199,8 @@ int main(int argc, char *argv[])
                         <<". Chain length 0."<<endl;
                     continue;
                 }
-                NewArray(&ya, ylen, 3);
+                ya.clear();
+                ya.reserve(ylen);
                 string seqy;
                 ylen = read_PDB(PDB_lines[chain_j], ya, seqy, resi_vec2, 0);
                 clashcount=0;
@@ -211,10 +215,8 @@ int main(int argc, char *argv[])
                 if (xlen<=ylen) clashratio_vec.push_back(clashcount/xlen);
                 else            clashratio_vec.push_back(clashcount/ylen);
             
-                DeleteArray(&ya, ylen);
                 vector<string>().swap(resi_vec2);
             }
-            DeleteArray(&xa, xlen);
             vector<string>().swap(resi_vec1);
         } // chain_i
         clashcount=0;
