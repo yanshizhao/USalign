@@ -93,6 +93,14 @@ void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
     DeleteArray(&score, xlen+1);
 }
 
+// Coords& bridge — builds temp double** view and delegates
+inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, double **xk)
+{
+    vector<double*> xa_view(xlen);
+    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
+    getCloseK(xa_view.data(), xlen, closeK_opt, xk);
+}
+
 // check if pairing i to j conform to sequantiality within the SSE
 inline bool sec2sq(const int i, const int j,
     int **secx_bond, int **secy_bond, int *fwdmap, int *invmap)
@@ -372,6 +380,36 @@ int soi_se_main(
     DeleteArray(&path, xlen+1);
     DeleteArray(&val, xlen+1);
     return 0; // zero for no exception
+}
+
+// Coords& bridge — builds temp double** views and delegates
+inline int soi_se_main(
+    Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, int *invmap, double *dist_list,
+    int **secx_bond, int **secy_bond, const int mm_opt)
+{
+    vector<double*> xa_view(xlen);
+    vector<double*> ya_view(ylen);
+    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
+    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
+    return soi_se_main(xa_view.data(), ya_view.data(),
+        seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type,
+        outfmt_opt, invmap, dist_list,
+        secx_bond, secy_bond, mm_opt);
 }
 
 inline void SOI_super2score(double **xt, double **ya, const int xlen,
@@ -1085,5 +1123,40 @@ int SOIalign_main(double **xa, double **ya,
     delete[]m1;
     delete[]m2;
     return 0;
+}
+
+// Coords& bridge — builds temp double** views and delegates
+inline int SOIalign_main(Coords& xa, Coords& ya,
+    double **xk, double **yk, const int closeK_opt,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    int *invmap, double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double *dist_list,
+    int **secx_bond, int **secy_bond, const int mm_opt)
+{
+    vector<double*> xa_view(xlen);
+    vector<double*> ya_view(ylen);
+    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
+    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
+    return SOIalign_main(xa_view.data(), ya_view.data(),
+        xk, yk, closeK_opt,
+        seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, invmap, rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, dist_list,
+        secx_bond, secy_bond, mm_opt);
 }
 #endif

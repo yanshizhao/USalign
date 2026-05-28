@@ -2513,7 +2513,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    **secx_bond;        // boundary of secondary structure
     int    **secy_bond;        // boundary of secondary structure
     string seqx, seqy;         // for the protein sequence
-    double **xa, **ya;         // for input vectors xa[0...xlen-1][0..2] and
+    Coords xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    Coords ya;
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
@@ -2553,7 +2554,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                 cerr<<"Sequence is too short <3!: "<<xname<<endl;
                 continue;
             }
-            NewArray(&xa, xlen, 3);
+            xa.clear();
+            xa.reserve(xlen);
             if (closeK_opt>=3) NewArray(&xk, xlen*closeK_opt, 3);
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
@@ -2601,7 +2603,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         cerr<<"Sequence is too short <3!: "<<yname<<endl;
                         continue;
                     }
-                    NewArray(&ya, ylen, 3);
+                    ya.clear();
+                    ya.reserve(ylen);
                     if (closeK_opt>=3) NewArray(&yk, ylen*closeK_opt, 3);
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
@@ -2721,7 +2724,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    DeleteArray(&ya, ylen);
                     if (closeK_opt>=3) DeleteArray(&yk, ylen*closeK_opt);
                     resi_vec2.clear();
                     if (mm_opt==6) DeleteArray(&secy_bond, ylen);
@@ -2737,7 +2739,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            DeleteArray(&xa, xlen);
             if (closeK_opt>=3) DeleteArray(&xk, xlen*closeK_opt);
             resi_vec1.clear();
             if (mm_opt==6) DeleteArray(&secx_bond, xlen);
