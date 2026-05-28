@@ -61,8 +61,8 @@ void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
 // Coords& real implementation (flipped from double** version)
 inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, double **xk)
 {
-    double **score;
-    NewArray(&score, xlen+1, xlen+1);
+    vector<vector<double>> score;
+    score.assign(xlen+1, vector<double>(xlen+1, 0));
     vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
     int i,j,k;
     for(i=0;i<xlen;i++) {
@@ -78,7 +78,6 @@ inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, do
         }
     }
     vector<pair<double,int> >().swap(close_idx_vec);
-    DeleteArray(&score, xlen+1);
 }
 
 // double** thin wrapper — copies to Coords and delegates
