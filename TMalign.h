@@ -1476,42 +1476,6 @@ char sec_str(double dis13, double dis14, double dis15,
 
 /* secondary structure assignment for protein:
  * 1->coil, 2->helix, 3->turn, 4->strand */
-void make_sec(double **x, int len, char *sec)
-{
-    int j1;
-    int j2;
-    int j3;
-    int j4;
-    int j5;
-    double d13;
-    double d14;
-    double d15;
-    double d24;
-    double d25;
-    double d35;
-    for(int i=0; i<len; i++)
-    {     
-        sec[i]='C';
-        j1=i-2;
-        j2=i-1;
-        j3=i;
-        j4=i+1;
-        j5=i+2;        
-        
-        if(j1>=0 && j5<len)
-        {
-            d13=sqrt(dist(x[j1], x[j3]));
-            d14=sqrt(dist(x[j1], x[j4]));
-            d15=sqrt(dist(x[j1], x[j5]));
-            d24=sqrt(dist(x[j2], x[j4]));
-            d25=sqrt(dist(x[j2], x[j5]));
-            d35=sqrt(dist(x[j3], x[j5]));
-            sec[i]=sec_str(d13, d14, d15, d24, d25, d35);            
-        }    
-    } 
-    sec[len]=0;
-}
-
 void make_sec(const Coords& x, int len, char *sec)
 {
     int j1;
