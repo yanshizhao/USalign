@@ -1750,75 +1750,21 @@ void make_sec(const char *seq, const Coords& x, int len, char *sec,const string 
 
     for (i=0;i<A0_var.size();i++)
     {
-        if (A0_var[i]==D0_var[i] && C0_var[i]==B0_var[i])
+        for (j=0;;j++)
         {
-            for (int k=A0_var[i];k<=C0_var[i];k++) sec[k]='(';
-            for (int k=D0_var[i];k<=B0_var[i];k++) sec[k]=')';
-            continue;
+            if(A0_var[i]+j>C0_var[i]) break;
+            sec[A0_var[i]+j]='<';
+            sec[D0_var[i]+j]='>';
         }
-
-        if (A0_var[i]!=C0_var[i])
-        {
-            int k1=0;
-            int ks=-1;
-            for (int k=A0_var[i];k<=C0_var[i];k++)
-            {
-                for (int l=max(k+1,D0_var[i]);l<=B0_var[i];l++)
-                {
-                    if (!bp[k][l]) continue;
-                    int nn=0;
-                    int best_nn=0;
-                    for (int kk=k+1;kk<k+5 && kk<C0_var[i]+1;kk++)
-                    {
-                        int ll=l-(kk-k);
-                        if (ll<=kk || bp[kk][ll]==false) continue;
-                        nn++;
-                    }
-                    if (nn>best_nn)
-                    {
-                        best_nn=nn;
-                        ks=k;
-                        k1=l;
-                    }
-                }
-            }
-            if (ks>=0)
-            {
-                A0_var.push_back(A0_var[i]);
-                B0_var.push_back(B0_var[i]);
-                C0_var.push_back(ks);
-                D0_var.push_back(k1);
-
-                A0_var.push_back(A0_var[i]);
-                B0_var.push_back(B0_var[i]);
-                C0_var.push_back(k1-1);
-                D0_var.push_back(B0_var[i]);
-            }
-        }
-    }
-    for (i=0;i<len;i++) sec[i]='.';
-    for (i=0;i<A0_var.size();i++)
-    {
-        bool skip=false;
-        for (int j=0;j<A0_var.size();j++)
-        {
-            if (i==j) continue;
-            if (overlap(A0_var[i],B0_var[i],C0_var[i],D0_var[i],
-                       A0_var[j],B0_var[j],C0_var[j],D0_var[j]))
-            {
-                if ((C0_var[j]-A0_var[j])*(D0_var[j]-B0_var[j]) <
-                    (C0_var[i]-A0_var[i])*(D0_var[i]-B0_var[i]))
-                {
-                    skip=true;
-                    break;
-                }
-            }
-        }
-        if (skip) continue;
-        for (int k=A0_var[i];k<=C0_var[i];k++) sec[k]='(';
-        for (int k=D0_var[i];k<=B0_var[i];k++) sec[k]=')';
     }
     sec[len]=0;
+
+    // clean up
+    A0_var.clear();
+    B0_var.clear();
+    C0_var.clear();
+    D0_var.clear();
+    bp.clear();
 }
 
 
