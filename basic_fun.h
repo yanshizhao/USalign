@@ -803,26 +803,6 @@ size_t get_FASTA_lines(const std::string filename,
 }
 
 // C++ string overload (real implementation)
-int read_PDB(const std::vector<std::string> &PDB_lines, double **a, std::string &seq,
-    std::vector<std::string> &resi_vec, const int read_resi)
-{
-    size_t i;
-    seq.clear();
-    seq.reserve(PDB_lines.size());
-    for (i=0;i<PDB_lines.size();i++)
-    {
-        a[i][0] = safe_stod(PDB_lines[i].substr(30, 8));
-        a[i][1] = safe_stod(PDB_lines[i].substr(38, 8));
-        a[i][2] = safe_stod(PDB_lines[i].substr(46, 8));
-        seq += AAmap(PDB_lines[i].substr(17, 3));
-
-        if (read_resi>=2) resi_vec.push_back(PDB_lines[i].substr(22,5)+
-                                             PDB_lines[i][21]);
-        if (read_resi==1) resi_vec.push_back(PDB_lines[i].substr(22,5));
-    }
-    return i;
-}
-
 int read_PDB(const std::vector<std::string> &PDB_lines, Coords& a, std::string &seq,
     std::vector<std::string> &resi_vec, const int read_resi)
 {
