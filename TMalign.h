@@ -2265,6 +2265,19 @@ void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
+// Coords& x/y overload — for TMalign_main flip
+void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
+    double **val, const char *secx, const char *secy, const Coords& x, const Coords& y,
+    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
+{
+    //create score matrix for DP
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
+        y2x0, D0_MIN,d0);
+
+    double gap_open=-1.0;
+    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
+}
+
 
 void find_max_frag(double **x, int len, int *start_max,
     int *end_max, double dcu0, const bool fast_opt)
@@ -2865,30 +2878,244 @@ double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     int *y2x, double d0, double d0_search,
     double dcu0, const bool fast_opt, double t[3], double u[3][3])
 {
-    int fra_min=4; if(fast_opt) fra_min=8; int fra_min1=fra_min-1;
-    int xstart=0,ystart=0,xend=xlen-1,yend=ylen-1;
+    int fra_min=4;           //minimum fragment for search
+    if (fast_opt) fra_min=8;
+    int fra_min1=fra_min-1;  //cutoff for shift, save time
+
+    int xstart=0;
+    int ystart=0;
+    int xend=0;
+    int yend=0;
+
     find_max_frag(x, xlen, &xstart, &xend, dcu0, fast_opt);
     find_max_frag(y, ylen, &ystart, &yend, dcu0, fast_opt);
-    int *y2x_=new int[ylen]; int *y2x_best=new int[ylen];
-    double tmscore,tmscore_max=-1;
-    for(int i=ystart-fra_min1;i<=yend-fra_min1;i++) y2x_[i]=-1;
-    for(int i=0;i<ylen-yend+fra_min1;i++) y2x_[yend+i]=-1;
-    int frag_len=getmin(xlen,ylen); int k;
-    for(int i1=xstart; i1<=xend-fra_min1; i1++) {
-        for(int j1=ystart; j1<=yend-fra_min1; j1++) {
-            for(k=0;k<frag_len;k++) {
-                int ii=i1+k; int jj=j1+k;
-                if(ii>=xlen||jj>=ylen) break;
-                y2x_[jj]=ii;
+
+
+    int Lx = xend-xstart+1;
+    int Ly = yend-ystart+1;
+    int *ifr;
+    int *y2x_;
+    int L_fr=getmin(Lx, Ly);
+    ifr= new int[L_fr];
+    y2x_= new int[ylen+1];
+
+    //select what piece will be used. The original implement may cause 
+    //asymetry, but only when xlen==ylen and Lx==Ly
+    //if L1=Lfr1 and L2=Lfr2 (normal proteins), it will be the same as initial1
+
+    if(Lx<Ly || (Lx==Ly && xlen<ylen))
+    {        
+        for(int i=0; i<L_fr; i++) ifr[i]=xstart+i;
+    }
+    else if(Lx>Ly || (Lx==Ly && xlen>ylen))
+    {        
+        for(int i=0; i<L_fr; i++) ifr[i]=ystart+i;
+    }
+    else // solve asymetric for 1x5gA vs 2q7nA5
+    {
+        // In this case, L0==xlen==ylen; L_fr==Lx==Ly
+        int L0=xlen;
+        double tmscore;
+        double tmscore_max=-1;
+        int i;
+        int j;
+        int k;
+        int n1;
+        int n2;
+        int min_len;
+        int min_ali;
+
+        // part 1, normalized by xlen
+        for(i=0; i<L_fr; i++) ifr[i]=xstart+i;
+
+        if(L_fr==L0)
+        {
+            n1= static_cast<int>(L0*0.1); //my index starts from 0
+            n2= static_cast<int>(L0*0.89);
+            j=0;
+            for(i=n1; i<= n2; i++)
+            {
+                ifr[j]=ifr[i];
+                j++;
             }
-            tmscore=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,y2x_,d0,d0_search,t,u);
-            if(tmscore>tmscore_max) { tmscore_max=tmscore; for(int ii=0;ii<ylen;ii++) y2x_best[ii]=y2x_[ii]; }
-            for(int jj=j1;jj<getmin(j1+k,ylen);jj++) y2x_[jj]=-1;
+            L_fr=j;
+        }
+
+        int L1=L_fr;
+        min_len=getmin(L1, ylen);    
+        min_ali= static_cast<int>(min_len/2.5); //minimum size of considered fragment 
+        if(min_ali<=fra_min1)  min_ali=fra_min1;    
+        n1 = -ylen+min_ali; 
+        n2 = L1-min_ali;
+
+        for(k=n1; k<=n2; k+=(fast_opt)?3:1)
+        {
+            //get the map
+            for(j=0; j<ylen; j++)
+            {
+                i=j+k;
+                if(i>=0 && i<L1) y2x_[j]=ifr[i];
+                else             y2x_[j]=-1;
+            }
+
+            //evaluate the map quickly in three iterations
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
+                d0, d0_search, t, u);
+
+            if(tmscore>=tmscore_max)
+            {
+                tmscore_max=tmscore;
+                for(j=0; j<ylen; j++) y2x[j]=y2x_[j];
+            }
+        }
+
+        // part 2, normalized by ylen
+        L_fr=Ly;
+        for(i=0; i<L_fr; i++) ifr[i]=ystart+i;
+
+        if (L_fr==L0)
+        {
+            n1= static_cast<int>(L0*0.1); //my index starts from 0
+            n2= static_cast<int>(L0*0.89);
+
+            j=0;
+            for(i=n1; i<= n2; i++)
+            {
+                ifr[j]=ifr[i];
+                j++;
+            }
+            L_fr=j;
+        }
+
+        int L2=L_fr;
+        min_len=getmin(xlen, L2);    
+        min_ali= static_cast<int>(min_len/2.5); //minimum size of considered fragment 
+        if(min_ali<=fra_min1)  min_ali=fra_min1;    
+        n1 = -L2+min_ali; 
+        n2 = xlen-min_ali;
+
+        for(k=n1; k<=n2; k++)
+        {
+            //get the map
+            for(j=0; j<ylen; j++) y2x_[j]=-1;
+
+            for(j=0; j<L2; j++)
+            {
+                i=j+k;
+                if(i>=0 && i<xlen) y2x_[ifr[j]]=i;
+            }
+        
+            //evaluate the map quickly in three iterations
+            tmscore=get_score_fast(r1, r2, xtm, ytm,
+                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
+            if(tmscore>=tmscore_max)
+            {
+                tmscore_max=tmscore;
+                for(j=0; j<ylen; j++) y2x[j]=y2x_[j];
+            }
+        }
+
+        delete [] ifr;
+        delete [] y2x_;
+        return tmscore_max;
+    }
+
+    
+    int L0=getmin(xlen, ylen); //non-redundant to get_initial1
+    if(L_fr==L0)
+    {
+        int n1= static_cast<int>(L0*0.1); //my index starts from 0
+        int n2= static_cast<int>(L0*0.89);
+
+        int j=0;
+        for(int i=n1; i<= n2; i++)
+        {
+            ifr[j]=ifr[i];
+            j++;
+        }
+        L_fr=j;
+    }
+
+
+    //gapless threading for the extracted fragment
+    double tmscore;
+    double tmscore_max=-1;
+
+    if(Lx<Ly || (Lx==Ly && xlen<=ylen))
+    {
+        int L1=L_fr;
+        int min_len=getmin(L1, ylen);    
+        int min_ali= static_cast<int>(min_len/2.5);              //minimum size of considered fragment 
+        if(min_ali<=fra_min1)  min_ali=fra_min1;    
+        int n1;
+        int n2;
+        n1 = -ylen+min_ali; 
+        n2 = L1-min_ali;
+
+        int i;
+        int j;
+        int k;
+        for(k=n1; k<=n2; k+=(fast_opt)?3:1)
+        {
+            //get the map
+            for(j=0; j<ylen; j++)
+            {
+                i=j+k;
+                if(i>=0 && i<L1) y2x_[j]=ifr[i];
+                else             y2x_[j]=-1;
+            }
+
+            //evaluate the map quickly in three iterations
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
+                d0, d0_search, t, u);
+
+            if(tmscore>=tmscore_max)
+            {
+                tmscore_max=tmscore;
+                for(j=0; j<ylen; j++) y2x[j]=y2x_[j];
+            }
         }
     }
-    for(int i=0;i<ylen;i++) y2x[i]=y2x_best[i];
-    delete [] y2x_; delete [] y2x_best;
-    if(tmscore_max<=0) { tmscore_max=get_initial(r1,r2,xtm,ytm,x,y,xlen,ylen,y2x,d0,d0_search,fast_opt,t,u); }
+    else
+    {
+        int L2=L_fr;
+        int min_len=getmin(xlen, L2);    
+        int min_ali= static_cast<int>(min_len/2.5);              //minimum size of considered fragment 
+        if(min_ali<=fra_min1)  min_ali=fra_min1;    
+        int n1;
+        int n2;
+        n1 = -L2+min_ali; 
+        n2 = xlen-min_ali;
+
+        int i;
+        int j;
+        int k;
+
+        for(k=n1; k<=n2; k++)
+        {
+            //get the map
+            for(j=0; j<ylen; j++) y2x_[j]=-1;
+
+            for(j=0; j<L2; j++)
+            {
+                i=j+k;
+                if(i>=0 && i<xlen) y2x_[ifr[j]]=i;
+            }
+        
+            //evaluate the map quickly in three iterations
+            tmscore=get_score_fast(r1, r2, xtm, ytm,
+                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
+            if(tmscore>=tmscore_max)
+            {
+                tmscore_max=tmscore;
+                for(j=0; j<ylen; j++) y2x[j]=y2x_[j];
+            }
+        }
+    }    
+
+
+    delete [] ifr;
+    delete [] y2x_;
     return tmscore_max;
 }
 
@@ -4859,6 +5086,39 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
     return TMtmp;
 }
 
+// Coords& overload — const_cast safe: transform/dist only read, never write
+double approx_TM(const int xlen, const int ylen, const int a_opt,
+    const Coords& xa, const Coords& ya, double t[3], double u[3][3],
+    const int invmap0[], const int mol_type)
+{
+    double Lnorm_0=ylen; // normalized by the second protein
+    if (a_opt==-2 && xlen>ylen) Lnorm_0=xlen;      // longer
+    else if (a_opt==-1 && xlen<ylen) Lnorm_0=xlen; // shorter
+    else if (a_opt==1) Lnorm_0=(xlen+ylen)/2.;     // average
+
+    double D0_MIN;
+    double Lnorm;
+    double d0;
+    double d0_search;
+    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+    double TMtmp=0;
+    double d;
+    double xtmp[3]={0,0,0};
+
+    for(int i=0,j=0; j<ylen; j++)
+    {
+        i=invmap0[j];
+        if(i>=0)//aligned
+        {
+            transform(t, u, (double*)&xa[i][0], &xtmp[0]);
+            d=sqrt(dist((double*)&xtmp[0], (double*)&ya[j][0]));
+            TMtmp+=1/(1+(d/d0)*(d/d0));
+        }
+    }
+    TMtmp/=Lnorm_0;
+    return TMtmp;
+}
+
 void clean_up_after_approx_TM(int *invmap0, int *invmap,
     double **score, bool **path, double **val, double **xtm, double **ytm,
     double **xt, double **r1, double **r2, const int xlen, const int minlen)
@@ -4899,6 +5159,23 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
     return;
 }
 
+// Forward declaration of Coords& overload (defined below, after CPalign_main)
+int TMalign_main(Coords& xa, Coords& ya,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const double TMcut);
+
 /* Entry function for TM-align. Return TM-score calculation status:
  * 0   - full TM-score calculation
  * 1   - terminated due to exception
@@ -4923,14 +5200,15 @@ int TMalign_main(double **xa, double **ya,
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
     double **score;       // Input score table for dynamic programming
-    bool   **path;        // for dynamic programming  
-    double **val;         // for dynamic programming  
+    bool   **path;        // for dynamic programming
+    double **val;         // for dynamic programming
     Coords xtm, ytm;     // for TMscore search engine
     Coords xt;            //for saving the superposed version of r_1 or xtm
     Coords r1, r2;        // for Kabsch rotation
+// [Coords& true implementation]
 
     /***********************/
-    // allocate memory    
+    // allocate memory
     /***********************/
     int minlen = min(xlen, ylen);
     NewArray(&score, xlen+1, ylen+1);
@@ -4941,6 +5219,12 @@ int TMalign_main(double **xa, double **ya,
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
+
+    /***********************/
+    //    parameter set
+    /***********************/
+    parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
+        score_d8, d0, d0_search, dcu0);
 
     /***********************/
     //    parameter set   
@@ -5173,7 +5457,7 @@ int TMalign_main(double **xa, double **ya,
         }
 
         /*******************************************************************/
-        //    get initial alignment based on fragment gapless threading   
+        //    get initial alignment based on fragment gapless threading
         /*******************************************************************/
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa, ya, xlen, ylen,
@@ -5536,9 +5820,9 @@ inline int TMalign_main(Coords& xa, double **ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1)
 {
-    vector<double*> xa_view(xlen);
-    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
-    return TMalign_main(xa_view.data(), ya,
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return TMalign_main(xa, ya_tmp,
         seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
