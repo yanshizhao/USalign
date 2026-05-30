@@ -25,9 +25,8 @@ int se_main(
     double d0;
     double d0_search;
     double dcu0; //for TMscore search
-    double **score;       // Input score table for dynamic programming
-    bool   **path;        // for dynamic programming  
-    double **val;         // for dynamic programming  
+    PathMat path;          // for dynamic programming (char: 1/0)
+    DPMatrix val;          // for dynamic programming
 
     int *m1=nullptr;
     int *m2=nullptr;
@@ -39,11 +38,10 @@ int se_main(
     }
 
     /***********************/
-    // allocate memory    
+    // allocate memory
     /***********************/
-    NewArray(&score, xlen+1, ylen+1);
-    NewArray(&path, xlen+1, ylen+1);
-    NewArray(&val, xlen+1, ylen+1);
+    path.assign(xlen+1, vector<char>(ylen+1));
+    val.assign(xlen+1, vector<double>(ylen+1));
     int *invmap0          = new int[ylen+1];
     int i;
     int j;
@@ -155,9 +153,7 @@ int se_main(
     {
         if (hinge) seqM_char.clear();    
         delete []invmap0;
-        DeleteArray(&score, xlen+1);
-        DeleteArray(&path, xlen+1);
-        DeleteArray(&val, xlen+1);
+        // path/val auto-destruct (PathMat/DPMatrix)
         return 0;
     }
 
@@ -240,9 +236,7 @@ int se_main(
     delete [] invmap0;
     delete [] m1;
     delete [] m2;
-    DeleteArray(&score, xlen+1);
-    DeleteArray(&path, xlen+1);
-    DeleteArray(&val, xlen+1);
+    // path/val auto-destruct (PathMat/DPMatrix)
     return 0; // zero for no exception
 }
 
