@@ -207,6 +207,21 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * */
+
+// Forward declaration for Coords& overload — needed by double** wrapper below
+inline int soi_se_main(Coords& xa, Coords& ya, const std::string &seqx,
+    const std::string &seqy, double &TM1, double &TM2, double &TM3,
+    double &TM4, double &TM5, double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt,
+    const int mol_type, const int outfmt_opt, int *invmap,
+    double *dist_list, int **secx_bond, int **secy_bond, const int mm_opt);
+
 int soi_se_main(
     double **xa, double **ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -221,6 +236,38 @@ int soi_se_main(
     const int outfmt_opt, int *invmap, double *dist_list,
     int **secx_bond, int **secy_bond, const int mm_opt)
 {
+    Coords xa_tmp; xa_tmp.reserve(xlen);
+    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return soi_se_main(xa_tmp, ya_tmp,
+        seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type,
+        outfmt_opt, invmap, dist_list,
+        secx_bond, secy_bond, mm_opt);
+}
+
+// Coords& bridge — builds temp double** views and delegates
+inline int soi_se_main(
+    Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, int *invmap, double *dist_list,
+    int **secx_bond, int **secy_bond, const int mm_opt)
+{
+// [Coords& true implementation]
+
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
@@ -367,36 +414,6 @@ int soi_se_main(
     DeleteArray(&path, xlen+1);
     DeleteArray(&val, xlen+1);
     return 0; // zero for no exception
-}
-
-// Coords& bridge — builds temp double** views and delegates
-inline int soi_se_main(
-    Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const double Lnorm_ass, const double d0_scale, const bool i_opt,
-    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, int *invmap, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt)
-{
-    vector<double*> xa_view(xlen);
-    vector<double*> ya_view(ylen);
-    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
-    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
-    return soi_se_main(xa_view.data(), ya_view.data(),
-        seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, rmsd0, L_ali, Liden,
-        TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type,
-        outfmt_opt, invmap, dist_list,
-        secx_bond, secy_bond, mm_opt);
 }
 
 inline void SOI_super2score(double **xt, double **ya, const int xlen,
@@ -700,8 +717,57 @@ void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     do_rotation(xa, xt, xlen, t, u);
 }
 
+// Coords& x/y overload — for SOIalign_main flip
+void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, Coords& xa, Coords& ya,
+    const int xlen, const int ylen, double t[3], double u[3][3], int invmap[],
+    double local_d0_search, double Lnorm, double d0, double score_d8)
+{
+    int i;
+    int j;
+    int k;
+    double rmsd;
+
+    k=0;
+    for (j=0; j<ylen; j++)
+    {
+        i=invmap[j];
+        if (i<0) continue;
+        xtm[k][0]=xa[i][0];
+        xtm[k][1]=xa[i][1];
+        xtm[k][2]=xa[i][2];
+
+        ytm[k][0]=ya[j][0];
+        ytm[k][1]=ya[j][1];
+        ytm[k][2]=ya[j][2];
+        k++;
+    }
+    TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+        40, 8, &rmsd, local_d0_search, Lnorm, score_d8, d0);
+    do_rotation(xa, xt, xlen, t, u);
+}
+
 /* entry function for TM-align with circular permutation
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
+
+// Forward declaration for Coords& overload — needed by double** wrapper below
+inline int SOIalign_main(Coords& xa, Coords& ya,
+    double **xk, double **yk, const int closeK_opt,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    int *invmap, double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double *dist_list,
+    int **secx_bond, int **secy_bond, const int mm_opt);
+
 int SOIalign_main(double **xa, double **ya,
     double **xk, double **yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
@@ -719,6 +785,49 @@ int SOIalign_main(double **xa, double **ya,
     const int mol_type, double *dist_list, 
     int **secx_bond, int **secy_bond, const int mm_opt)
 {
+    Coords xa_tmp; xa_tmp.reserve(xlen);
+    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return SOIalign_main(xa_tmp, ya_tmp,
+        xk, yk, closeK_opt,
+        seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, invmap, rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, dist_list, secx_bond, secy_bond, mm_opt);
+}
+
+// Coords& bridge — builds temp double** views and delegates
+inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
+    double **xk, double **yk, const int closeK_opt,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    int *invmap, double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double *dist_list,
+    int **secx_bond, int **secy_bond, const int mm_opt)
+{
+    // Build double** views for sub-function compatibility
+    vector<double*> _xa_v(xlen);
+    vector<double*> _ya_v(ylen);
+    for (int i=0; i<xlen; i++) _xa_v[i]=xa_c[i].data();
+    for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
+    double **xa = _xa_v.data();
+    double **ya = _ya_v.data();
+// [Coords& true implementation]
+
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
@@ -838,7 +947,7 @@ int SOIalign_main(double **xa, double **ya,
             secx_bond, secy_bond, mm_opt);
         for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
 
-        SOI_assign2super(r1, r2, xtm, ytm, xt, xa, ya,
+        SOI_assign2super(r1, r2, xtm, ytm, xt, xa_c, ya_c,
             xlen, ylen, t, u, invmap, local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa, ya,
             xlen, ylen, t, u, invmap, iteration_max,
@@ -901,7 +1010,7 @@ int SOIalign_main(double **xa, double **ya,
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
     
@@ -1110,40 +1219,5 @@ int SOIalign_main(double **xa, double **ya,
     delete[]m1;
     delete[]m2;
     return 0;
-}
-
-// Coords& bridge — builds temp double** views and delegates
-inline int SOIalign_main(Coords& xa, Coords& ya,
-    double **xk, double **yk, const int closeK_opt,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    int *invmap, double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt)
-{
-    vector<double*> xa_view(xlen);
-    vector<double*> ya_view(ylen);
-    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
-    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
-    return SOIalign_main(xa_view.data(), ya_view.data(),
-        xk, yk, closeK_opt,
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, invmap, rmsd0, L_ali, Liden,
-        TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, dist_list,
-        secx_bond, secy_bond, mm_opt);
 }
 #endif
