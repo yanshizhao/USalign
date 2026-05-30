@@ -1075,9 +1075,9 @@ int TMscore_main(double **xa, double **ya,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    double **score;       // Input score table for dynamic programming
-    bool   **path;        // for dynamic programming
-    double **val;         // for dynamic programming
+    DPMatrix score;      // Input score table for dynamic programming
+    PathMat path;         // for dynamic programming
+    DPMatrix val;         // for dynamic programming
     Coords xtm, ytm;     // for TMscore search engine
     Coords xt;            //for saving the superposed version of r_1 or xtm
     Coords r1, r2;        // for Kabsch rotation
@@ -1086,9 +1086,9 @@ int TMscore_main(double **xa, double **ya,
     // allocate memory
     /***********************/
     int minlen = min(xlen, ylen);
-    NewArray(&score, xlen+1, ylen+1);
-    NewArray(&path, xlen+1, ylen+1);
-    NewArray(&val, xlen+1, ylen+1);
+    score.assign(xlen+1, std::vector<double>(ylen+1));
+    path.assign(xlen+1, std::vector<char>(ylen+1));
+    val.assign(xlen+1, std::vector<double>(ylen+1));
     xtm.resize(minlen);
     ytm.resize(minlen);
     xt.resize(xlen);
