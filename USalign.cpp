@@ -2075,7 +2075,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
         // recover alignment
         int    ylen_ext=ylen;        // chain length
-        double **ya_ext;             // structure of single chain
+        Coords ya_ext;               // structure of single chain
         std::string seqy_ext;            // for the protein sequence
         std::string secy_ext;            // for the secondary structure
         for (r=0;r<msa.size();r++) msa[r].clear(); msa.clear();
@@ -2127,7 +2127,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             int rx=0;
             int ry=0;
             ylen_ext=seqxA.size();
-            NewArray(&ya_ext, ylen_ext, 3);             // structure of single chain
+            ya_ext.resize(ylen_ext);                    // structure of single chain
             seqy_ext.resize(ylen_ext+1);            // for the protein sequence
             secy_ext.resize(ylen_ext+1);            // for the secondary structure
             string tmp_gap="";
@@ -2163,8 +2163,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
 
             ylen=ylen_ext;
-            ya.clear();
-            ya.reserve(ylen);
+            ya.resize(ylen);
             seqy.assign(seqy_ext, 0, ylen);
             secy.resize(ylen+1);
             for (r=0;r<ylen;r++)
@@ -2191,7 +2190,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             
 
-            DeleteArray(&ya_ext,ylen_ext);
+            // ya_ext auto-destruct (Coords)
             do_vec.clear();
         }
         vector<string>().swap(msa_ext);
