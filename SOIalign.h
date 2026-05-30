@@ -80,6 +80,28 @@ inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, do
     vector<pair<double,int> >().swap(close_idx_vec);
 }
 
+// Coords& xk overload
+inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, Coords& xk)
+{
+    vector<vector<double>> score;
+    score.assign(xlen+1, vector<double>(xlen+1, 0));
+    vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
+    int i,j,k;
+    for(i=0;i<xlen;i++) {
+        score[i+1][i+1]=0;
+        for(j=i+1;j<xlen;j++) score[j+1][i+1]=score[i+1][j+1]=dist(xa[i], xa[j]);
+    }
+    for(i=0;i<xlen;i++) {
+        for(j=0;j<xlen;j++) { close_idx_vec[j].first=score[i+1][j+1]; close_idx_vec[j].second=j; }
+        sort(close_idx_vec.begin(), close_idx_vec.end());
+        for(k=0;k<closeK_opt;k++) {
+            j=close_idx_vec[k % xlen].second;
+            xk[i*closeK_opt+k][0]=xa[j][0]; xk[i*closeK_opt+k][1]=xa[j][1]; xk[i*closeK_opt+k][2]=xa[j][2];
+        }
+    }
+    vector<pair<double,int> >().swap(close_idx_vec);
+}
+
 // double** thin wrapper — copies to Coords and delegates
 inline void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
 {
@@ -767,6 +789,39 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
     int **secx_bond, int **secy_bond, const int mm_opt);
+
+// Coords& xk/yk bridge — converts to double** views, delegates to true impl
+inline int SOIalign_main(Coords& xa, Coords& ya,
+    Coords& xk, Coords& yk, const int closeK_opt,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    int *invmap, double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double *dist_list,
+    int **secx_bond, int **secy_bond, const int mm_opt)
+{
+    vector<double*> xk_view(xk.size());
+    vector<double*> yk_view(yk.size());
+    for (size_t i=0; i<xk.size(); i++) xk_view[i]=(double*)xk[i].data();
+    for (size_t i=0; i<yk.size(); i++) yk_view[i]=(double*)yk[i].data();
+    return SOIalign_main(xa, ya, xk_view.data(), yk_view.data(), closeK_opt,
+        seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, invmap, rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, dist_list, secx_bond, secy_bond, mm_opt);
+}
 
 int SOIalign_main(double **xa, double **ya,
     double **xk, double **yk, const int closeK_opt,

@@ -2517,7 +2517,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
-    double **xk, **yk;         // k closest residues
+    Coords xk, yk;             // k closest residues
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
     int read_resi=0;  // whether to read residue index
@@ -2555,7 +2555,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             }
             xa.clear();
             xa.reserve(xlen);
-            if (closeK_opt>=3) NewArray(&xk, xlen*closeK_opt, 3);
+            if (closeK_opt>=3) xk.resize(xlen*closeK_opt);
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, read_resi);
@@ -2604,7 +2604,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     }
                     ya.clear();
                     ya.reserve(ylen);
-                    if (closeK_opt>=3) NewArray(&yk, ylen*closeK_opt, 3);
+                    if (closeK_opt>=3) yk.resize(ylen*closeK_opt);
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, read_resi);
@@ -2723,7 +2723,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    if (closeK_opt>=3) DeleteArray(&yk, ylen*closeK_opt);
+                    // yk auto-destruct (Coords)
                     resi_vec2.clear();
                     if (mm_opt==6) DeleteArray(&secy_bond, ylen);
                 } // chain_j
@@ -2738,7 +2738,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            if (closeK_opt>=3) DeleteArray(&xk, xlen*closeK_opt);
+            // xk auto-destruct (Coords)
             resi_vec1.clear();
             if (mm_opt==6) DeleteArray(&secx_bond, xlen);
         } // chain_i
