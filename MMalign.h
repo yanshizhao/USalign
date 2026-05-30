@@ -2447,10 +2447,45 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
         path, val, secx, secy, x, y, xlen, ylen, mask, y2x0, y2x, D0_MIN, d0);
 }
 
+// const Coords& x/y overload — for TMalign_dimer_main flip
+inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
+    bool **path, double **val, const char *secx, const char *secy,
+    const Coords& x, const Coords& y, int xlen, int ylen, bool **mask,
+    int *y2x0, int *y2x, const double D0_MIN, double d0)
+{
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
+        y2x0, D0_MIN,d0);
+
+    int i;
+    int j;
+    for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
+
+    double gap_open=-1.0;
+    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
+}
+
 /* Entry function for TM-align. Return TM-score calculation status:
- * 0   - full TM-score calculation 
+ * 0   - full TM-score calculation
  * 1   - terminated due to exception
  * 2-7 - pre-terminated due to low TM-score */
+
+// Forward declaration for Coords& overload — needed by double** wrapper below
+inline int TMalign_dimer_main(Coords& xa, Coords& ya,
+    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    bool **mask,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const double TMcut);
+
 int TMalign_dimer_main(double **xa, double **ya,
     const char *seqx, const char *seqy, const char *secx, const char *secy,
     double t0[3], double u0[3][3],
@@ -2467,6 +2502,48 @@ int TMalign_dimer_main(double **xa, double **ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1)
 {
+    Coords xa_tmp; xa_tmp.reserve(xlen);
+    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return TMalign_dimer_main(xa_tmp, ya_tmp,
+        seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, mask,
+        sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, TMcut);
+}
+
+// Coords& bridge — builds temp double** views and delegates
+inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
+    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    bool **mask,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const double TMcut=-1)
+{
+    // Build double** views for sub-function compatibility
+    vector<double*> _xa_v(xlen);
+    vector<double*> _ya_v(ylen);
+    for (int i=0; i<xlen; i++) _xa_v[i]=xa_c[i].data();
+    for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
+    double **xa = _xa_v.data();
+    double **ya = _ya_v.data();
+// [Coords& true implementation]
+
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
@@ -2542,13 +2619,13 @@ int TMalign_dimer_main(double **xa, double **ya,
         double prevD0_MIN = D0_MIN;// stored for later use
         int prevLnorm = Lnorm;
         double prevd0 = d0;
-        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
             invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
         d0 = prevd0;
-        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
             invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
         if (TM > TMmax)
         {
@@ -2563,9 +2640,9 @@ int TMalign_dimer_main(double **xa, double **ya,
     /******************************************************/
     if (!bAlignStick)
     {
-        get_initial(r1, r2, xtm, ytm, xa, ya, xlen, ylen, invmap0, d0,
+        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
             d0_search, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap0,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax) TMmax = TM;
@@ -2599,7 +2676,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         //    get initial alignment based on secondary structure   
         /************************************************************/
         get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2642,7 +2719,7 @@ int TMalign_dimer_main(double **xa, double **ya,
         if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa, ya,
             xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
-            TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
                 invmap, t, u, simplify_step, score_sum_method,
                 local_d0_search, Lnorm, score_d8, d0);
             if (TM>TMmax)
@@ -2685,9 +2762,9 @@ int TMalign_dimer_main(double **xa, double **ya,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa, ya,
+        get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
             xlen, ylen, mask, invmap0, invmap, D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
         if (TM>TMmax)
@@ -2727,9 +2804,9 @@ int TMalign_dimer_main(double **xa, double **ya,
         //    get initial alignment based on fragment gapless threading   
         /*******************************************************************/
         //=initial4 in original TM-align
-        get_initial_fgt(r1, r2, xtm, ytm, xa, ya, xlen, ylen,
+        get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
             invmap, d0, d0_search, dcu0, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2794,14 +2871,14 @@ int TMalign_dimer_main(double **xa, double **ya,
             double prevD0_MIN = D0_MIN;// stored for later use
             int prevLnorm = Lnorm;
             double prevd0 = d0;
-            TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya,
+            TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
                 xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
                 d0_search, score_d8, t, u, mol_type);
             D0_MIN = prevD0_MIN;
             Lnorm = prevLnorm;
             d0 = prevd0;
 
-            TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya,
+            TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
                 xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
                 score_d8, d0);
             if (TM > TMmax)
@@ -2848,7 +2925,7 @@ int TMalign_dimer_main(double **xa, double **ya,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa, ya, t0, u0, invmap0, mol_type);
+            xa_c, ya_c, t0, u0, invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
@@ -2867,7 +2944,7 @@ int TMalign_dimer_main(double **xa, double **ya,
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
@@ -3058,39 +3135,6 @@ int TMalign_dimer_main(double **xa, double **ya,
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception
-}
-
-// Coords& bridge — builds temp double** views and delegates
-inline int TMalign_dimer_main(Coords& xa, Coords& ya,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    bool **mask,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
-{
-    vector<double*> xa_view(xlen);
-    vector<double*> ya_view(ylen);
-    for (int i=0; i<xlen; i++) xa_view[i]=(double*)xa[i].data();
-    for (int i=0; i<ylen; i++) ya_view[i]=(double*)ya[i].data();
-    return TMalign_dimer_main(xa_view.data(), ya_view.data(),
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, mask,
-        sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, TMcut);
 }
 
 void MMalign_dimer(double & total_score, 
