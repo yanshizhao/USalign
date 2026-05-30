@@ -13,8 +13,8 @@ const int gapopen_blastn=-15; //-5;
 const int gapext_blastn =-4;  //-2;
 
 // initialize matrix in gotoh algorithm
-void init_gotoh_mat(int **S, int **JumpH, int **JumpV, int **P,
-    int **H, int **V, const int xlen, const int ylen, const int gapopen,
+void init_gotoh_mat(IntMat& S, IntMat& JumpH, IntMat& JumpV, IntMat& P,
+    IntMat& H, IntMat& V, const int xlen, const int ylen, const int gapopen,
     const int gapext, const int glocal=0, const int alt_init=1)
 {
     // fill first row/colum of JumpH,jumpV and path matrix P
@@ -51,7 +51,7 @@ void init_gotoh_mat(int **S, int **JumpH, int **JumpV, int **P,
 
 /* locate the cell with highest alignment score. reset path after
  * the cell to zero */
-void find_highest_align_score( int **S, int **P,
+void find_highest_align_score( IntMat& S, IntMat& P,
     int &aln_score, const int xlen,const int ylen)
 {
     // locate the cell with highest alignment score
@@ -99,14 +99,12 @@ void find_highest_align_score( int **S, int **P,
  *         0 : use yang zhang's matrix initialization, does NOT work
  *             for glocal alignment
  */
-int calculate_score_gotoh(const int xlen,const int ylen, int **S,
-    int** JumpH, int** JumpV, int **P, const int gapopen,const int gapext,
+int calculate_score_gotoh(const int xlen,const int ylen, IntMat& S,
+    IntMat& JumpH, IntMat& JumpV, IntMat& P, const int gapopen,const int gapext,
     const int glocal=0, const int alt_init=1)
 {
-    int **H;
-    int **V;
-    NewArray(&H,xlen+1,ylen+1); // penalty score for horizontal long gap
-    NewArray(&V,xlen+1,ylen+1); // penalty score for vertical long gap
+    IntMat H; H.assign(xlen+1, std::vector<int>(ylen+1));
+    IntMat V; V.assign(xlen+1, std::vector<int>(ylen+1));
     
     // fill first row/colum of JumpH,jumpV and path matrix P
     int i;
@@ -186,14 +184,13 @@ int calculate_score_gotoh(const int xlen,const int ylen, int **S,
         find_highest_align_score(S,P,aln_score,xlen,ylen);
 
     // release memory
-    DeleteArray(&H,xlen+1);
-    DeleteArray(&V,xlen+1);
+    // H,V auto-destruct (IntMat)
     return aln_score; // final alignment score
 }
 
 // trace back dynamic programming path to diciper pairwise alignment
 void trace_back_gotoh(const char *seqx, const char *seqy,
-    int ** JumpH, int ** JumpV, int ** P, std::string& seqxA, std::string& seqyA,
+    IntMat& JumpH, IntMat& JumpV, IntMat& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
     int i;
@@ -265,7 +262,7 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
 /* trace back Smith-Waterman dynamic programming path to diciper 
  * pairwise local alignment */
 void trace_back_sw(const char *seqx, const char *seqy,
-    int **JumpH, int **JumpV, int **P, std::string& seqxA, std::string& seqyA,
+    IntMat& JumpH, IntMat& JumpV, IntMat& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
     int i;
@@ -368,14 +365,14 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
     int *invmap, const int invmap_only=0, const int glocal=0)
 {
-    int **JumpH;
-    int **JumpV;
-    int **P;
-    int **S;
-    NewArray(&JumpH,xlen+1,ylen+1);
-    NewArray(&JumpV,xlen+1,ylen+1);
-    NewArray(&P,xlen+1,ylen+1);
-    NewArray(&S,xlen+1,ylen+1);
+    IntMat JumpH;
+    IntMat JumpV;
+    IntMat P;
+    IntMat S;
+    JumpH.assign(xlen+1, std::vector<int>(ylen+1));
+    JumpV.assign(xlen+1, std::vector<int>(ylen+1));
+    P.assign(xlen+1, std::vector<int>(ylen+1));
+    S.assign(xlen+1, std::vector<int>(ylen+1));
     
     int aln_score;
     int gapopen=gapopen_blosum62;
@@ -413,10 +410,7 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     else trace_back_sw(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
 
-    DeleteArray(&JumpH, xlen+1);
-    DeleteArray(&JumpV, xlen+1);
-    DeleteArray(&P, xlen+1);
-    DeleteArray(&S, xlen+1);
+    // JumpH/JumpV/P/S auto-destruct (IntMat)
     return aln_score; // aligment score
 }
 
