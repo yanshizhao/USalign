@@ -5120,23 +5120,6 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
 }
 
 void clean_up_after_approx_TM(int *invmap0, int *invmap,
-    double **score, bool **path, double **val, double **xtm, double **ytm,
-    double **xt, double **r1, double **r2, const int xlen, const int minlen)
-{
-    delete [] invmap0;
-    delete [] invmap;
-    DeleteArray(&score, xlen+1);
-    DeleteArray(&path, xlen+1);
-    DeleteArray(&val, xlen+1);
-    DeleteArray(&xtm, minlen);
-    DeleteArray(&ytm, minlen);
-    DeleteArray(&xt, xlen);
-    DeleteArray(&r1, minlen);
-    DeleteArray(&r2, minlen);
-    return;
-}
-
-void clean_up_after_approx_TM(int *invmap0, int *invmap,
     double **score, bool **path, double **val, Coords& xtm, Coords& ytm,
     Coords& xt, Coords& r1, Coords& r2, const int xlen, const int /*minlen*/ = 0)
 {
