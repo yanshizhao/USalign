@@ -305,6 +305,106 @@ double enhanced_greedy_search(double **TMave_mat,int *assign1_list,
     return total_score;
 }
 
+// [DPMatrix overload]
+double enhanced_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
+    int *assign2_list, const int chain1_num, const int chain2_num)
+{
+    double total_score=0;
+    double tmp_score=0;
+    int i;
+    int j;
+    int maxi=0;
+    int maxj=0;
+
+    // initialize parameters
+    for (i=0;i<chain1_num;i++) assign1_list[i]=-1;
+    for (j=0;j<chain2_num;j++) assign2_list[j]=-1;
+
+    /* greedy assignment: in each iteration, the highest chain pair is
+     * assigned, until no assignable chain is left */
+    while(1)
+    {
+        tmp_score=-1;
+        for (i=0;i<chain1_num;i++)
+        {
+            if (assign1_list[i]>=0) continue;
+            for (j=0;j<chain2_num;j++)
+            {
+                if (assign2_list[j]>=0 || TMave_mat[i][j]<=0) continue;
+                if (TMave_mat[i][j]>tmp_score)
+                {
+                    maxi=i;
+                    maxj=j;
+                    tmp_score=TMave_mat[i][j];
+                }
+            }
+        }
+        if (tmp_score<=0) break; // error: no assignable chain
+        assign1_list[maxi]=maxj;
+        assign2_list[maxj]=maxi;
+        total_score+=tmp_score;
+    }
+    if (total_score<=0) return total_score; // error: no assignable chain
+
+    // iterative refinemnt
+    double delta_score;
+    int *assign1_tmp=new int [chain1_num];
+    int *assign2_tmp=new int [chain2_num];
+    for (i=0;i<chain1_num;i++) assign1_tmp[i]=assign1_list[i];
+    for (j=0;j<chain2_num;j++) assign2_tmp[j]=assign2_list[j];
+    int old_i=-1;
+    int old_j=-1;
+
+    for (int iter=0;iter<getmin(chain1_num,chain2_num)*5;iter++)
+    {
+        delta_score=-1;
+        for (i=0;i<chain1_num;i++)
+        {
+            old_j=assign1_list[i];
+            for (j=0;j<chain2_num;j++)
+            {
+                // attempt to swap (i,old_j=assign1_list[i]) with (i,j)
+                if (j==assign1_list[i] || TMave_mat[i][j]<=0) continue;
+                old_i=assign2_list[j];
+
+                assign1_tmp[i]=j;
+                if (old_i>=0) assign1_tmp[old_i]=old_j;
+                assign2_tmp[j]=i;
+                if (old_j>=0) assign2_tmp[old_j]=old_i;
+
+                delta_score=TMave_mat[i][j];
+                if (old_j>=0) delta_score-=TMave_mat[i][old_j];
+                if (old_i>=0) delta_score-=TMave_mat[old_i][j];
+                if (old_i>=0 && old_j>=0) delta_score+=TMave_mat[old_i][old_j];
+
+                if (delta_score>0) // successful swap
+                {
+                    assign1_list[i]=j;
+                    if (old_i>=0) assign1_list[old_i]=old_j;
+                    assign2_list[j]=i;
+                    if (old_j>=0) assign2_list[old_j]=old_i;
+                    total_score+=delta_score;
+                    break;
+                }
+                else
+                {
+                    assign1_tmp[i]=assign1_list[i];
+                    if (old_i>=0) assign1_tmp[old_i]=assign1_list[old_i];
+                    assign2_tmp[j]=assign2_list[j];
+                    if (old_j>=0) assign2_tmp[old_j]=assign2_list[old_j];
+                }
+            }
+            if (delta_score>0) break;
+        }
+        if (delta_score<=0) break; // cannot swap any chain pair
+    }
+
+    // clean up
+    delete[]assign1_tmp;
+    delete[]assign2_tmp;
+    return total_score;
+}
+
 double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
     const int chain_num, double ** centroids)
 {
@@ -534,6 +634,27 @@ double check_heterooligomer(double **TMave_mat, const int chain1_num,
     het_deg=(max_TM-min_TM)/max_TM;
     //cout<<"min_TM="<<min_TM<<endl;
     //cout<<"max_TM="<<max_TM<<endl;
+    return het_deg;
+}
+
+// [DPMatrix overload]
+double check_heterooligomer(const DPMatrix& TMave_mat, const int chain1_num,
+    const int chain2_num)
+{
+    double het_deg=0;
+    double min_TM=-1;
+    double max_TM=-1;
+    int i;
+    int j;
+    for (i=0;i<chain1_num;i++)
+    {
+        for (j=0;j<chain2_num;j++)
+        {
+            if (min_TM<0 || TMave_mat[i][j] <min_TM) min_TM=TMave_mat[i][j];
+            if (max_TM<0 || TMave_mat[i][j]>=max_TM) max_TM=TMave_mat[i][j];
+        }
+    }
+    het_deg=(max_TM-min_TM)/max_TM;
     return het_deg;
 }
 

@@ -688,9 +688,13 @@ int main(int argc, char *argv[])
                               // score was from monomeric chain superpositions
     int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
+    // MMalign_iter/MMalign_final/MMalign_dimer internally overwrite work
+    // buffers with new[]/NewArray — pass nullptr placeholders
+    char *sx=nullptr, *sy=nullptr, *scx=nullptr, *scy=nullptr;
+    double **xa_buf=nullptr, **ya_buf=nullptr;
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num,
+        ylen_vec, xa_buf, ya_buf, sx, sy, scx, scy, len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap);
 
@@ -701,7 +705,7 @@ int main(int argc, char *argv[])
             fname_super, fname_lign, fname_matrix,
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
+            xa_buf, ya_buf, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
             seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
@@ -750,7 +754,7 @@ int main(int argc, char *argv[])
         max_total_score=maxTMmono;
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
+            xa_buf, ya_buf, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
@@ -775,7 +779,7 @@ int main(int argc, char *argv[])
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
+            xa_buf, ya_buf, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -794,7 +798,7 @@ int main(int argc, char *argv[])
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
+        xa_buf, ya_buf, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
