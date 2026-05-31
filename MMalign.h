@@ -768,6 +768,109 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
+// [Coords& + Rotation overload] ut_mat containerized
+double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
+    int *assign2_list, const int chain1_num, const int chain2_num,
+    Coords& xcentroids, const Coords& ycentroids, const double d0MM,
+    const int L, const Rotation& ut_mat)
+{
+    double MMscore_max=0;
+    double MMscore=0;
+    int i;
+    int j;
+    int c1;
+    int c2;
+    int max_i=-1;
+    int max_j=-1;
+
+    int chain_num=getmin(chain1_num,chain2_num);
+    int *assign1_tmp=new int [chain1_num];
+    int *assign2_tmp=new int [chain2_num];
+    Coords xt;
+    xt.resize(chain1_num);
+    double t[3];
+    double u[3][3];
+    int ui;
+    int uj;
+    int ut_idx;
+    double TMscore=0;
+    double TMsum  =0;
+    double TMnow  =0;
+    double TMmax  =0;
+    double dd=0;
+
+    size_t  total_pair=chain1_num*chain2_num;
+    double *ut_tmc_mat=new double [total_pair];
+    vector<pair<double,int> > ut_tm_vec(total_pair,make_pair(0.0,0));
+
+    for (c1=0;c1<chain1_num;c1++)
+    {
+        for (c2=0;c2<chain2_num;c2++)
+        {
+            if (TMave_mat[c1][c2]<=0) continue;
+            ut_idx=c1*chain2_num+c2;
+            for (ui=0;ui<3;ui++)
+                for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[ut_idx][ui*3+uj];
+            for (uj=0;uj<3;uj++) t[uj]=ut_mat[ut_idx][9+uj];
+
+            do_rotation(xcentroids, xt, chain1_num, t, u);
+
+            for (i=0;i<chain1_num;i++) assign1_tmp[i]=-1;
+            for (j=0;j<chain2_num;j++) assign2_tmp[j]=-1;
+
+            for (i=0;i<chain1_num;i++)
+            {
+                for (j=0;j<chain2_num;j++)
+                {
+                    ut_idx=i*chain2_num+j;
+                    ut_tmc_mat[ut_idx]=0;
+                    ut_tm_vec[ut_idx].first=-1;
+                    ut_tm_vec[ut_idx].second=ut_idx;
+                    if (TMave_mat[i][j]<=0) continue;
+                    dd=dist(xt[i],ycentroids[j]);
+                    ut_tmc_mat[ut_idx]=1/(1+dd/(d0MM*d0MM));
+                    ut_tm_vec[ut_idx].first=
+                        ut_tmc_mat[ut_idx]*TMave_mat[i][j];
+                }
+            }
+
+            assign1_tmp[c1]=c2;
+            assign2_tmp[c2]=c1;
+            TMsum=TMave_mat[c1][c2];
+            TMscore=ut_tmc_mat[c1*chain2_num+c2];
+
+            sort(ut_tm_vec.begin(), ut_tm_vec.end());
+            for (ut_idx=total_pair-1;ut_idx>=0;ut_idx--)
+            {
+                j=ut_tm_vec[ut_idx].second % chain2_num;
+                i=int(ut_tm_vec[ut_idx].second / chain2_num);
+                if (TMave_mat[i][j]<=0) break;
+                if (assign1_tmp[i]>=0 || assign2_tmp[j]>=0) continue;
+                assign1_tmp[i]=j;
+                assign2_tmp[j]=i;
+                TMsum+=TMave_mat[i][j];
+                TMscore+=ut_tmc_mat[i*chain2_num+j];
+            }
+
+            MMscore=(TMsum/L)*(TMscore/chain_num);
+            if (max_i<0 || max_j<0 || MMscore>MMscore_max)
+            {
+                max_i=c1;
+                max_j=c2;
+                MMscore_max=MMscore;
+                for (i=0;i<chain1_num;i++) assign1_list[i]=assign1_tmp[i];
+                for (j=0;j<chain2_num;j++) assign2_list[j]=assign2_tmp[j];
+            }
+        }
+    }
+
+    delete[]assign1_tmp;
+    delete[]assign2_tmp;
+    delete[]ut_tmc_mat;
+    ut_tm_vec.clear();
+    return MMscore;
+}
+
 // reassign chain-chain correspondence, specific for heterooligomer
 double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
@@ -3797,6 +3900,50 @@ void writeTrimComplex(vector<vector<vector<double> > >&a_trim_vec,
 void output_dock_rotation_matrix(const std::string& fname_matrix,
     const vector<string>&xname_vec, const vector<string>&yname_vec,
     double ** ut_mat, int *assign1_list)
+{
+    stringstream ss;
+    int i;
+    int k;
+    for (i=0;i<xname_vec.size();i++)
+    {
+        if (assign1_list[i]<0) continue;
+        ss << "------ The rotation matrix to rotate "
+             <<xname_vec[i]<<" to "<<yname_vec[i]<<" ------\n"
+             << "m               t[m]        u[m][0]        u[m][1]        u[m][2]\n";
+        for (k = 0; k < 3; k++)
+            ss<<k<<setiosflags(ios::fixed)<<setprecision(10)
+              <<' '<<setw(18)<<ut_mat[i][9+k]
+              <<' '<<setw(14)<<ut_mat[i][3*k+0]
+              <<' '<<setw(14)<<ut_mat[i][3*k+1]
+              <<' '<<setw(14)<<ut_mat[i][3*k+2]<<'\n';
+    }
+    ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"
+          "for(i=0; i<L; i++)\n"
+          "{\n"
+          "   X[i] = t[0] + u[0][0]*x[i] + u[0][1]*y[i] + u[0][2]*z[i];\n"
+          "   Y[i] = t[1] + u[1][0]*x[i] + u[1][1]*y[i] + u[1][2]*z[i];\n"
+          "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
+          "}"<<endl;
+    if (fname_matrix == "-")
+       cout<<ss.str();
+    else
+    {
+        fstream fout;
+        fout.open(fname_matrix, ios::out | ios::trunc);
+        if (fout)
+        {
+            fout<<ss.str();
+            fout.close();
+        }
+        else cout << "Open file to output rotation matrix fail.\n";
+    }
+    ss.str(string());
+}
+
+// [Rotation overload]
+void output_dock_rotation_matrix(const std::string& fname_matrix,
+    const vector<string>&xname_vec, const vector<string>&yname_vec,
+    const Rotation& ut_mat, int *assign1_list)
 {
     stringstream ss;
     int i;
