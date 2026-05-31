@@ -488,11 +488,11 @@ int main(int argc, char *argv[])
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
     vector<string> tmp_str_vec(chain2_num,"");
-    double **TMave_mat;
-    double **ut_mat; // rotation matrices for all-against-all alignment
+    DPMatrix TMave_mat;
+    TMave_mat.assign(chain1_num,vector<double>(chain2_num));
+    Rotation ut_mat; // rotation matrices for all-against-all alignment
+    ut_mat.resize(chain1_num*chain2_num);
     int ut_idx;
-    NewArray(&TMave_mat,chain1_num,chain2_num);
-    NewArray(&ut_mat,chain1_num*chain2_num,4*3);
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
     vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
@@ -674,8 +674,8 @@ int main(int argc, char *argv[])
     int *assign2_init;
     assign1_init=new int[chain1_num];
     assign2_init=new int[chain2_num];
-    double **TMave_init;
-    NewArray(&TMave_init,chain1_num,chain2_num);
+    DPMatrix TMave_init;
+    TMave_init.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
     vector<string> sequence_init;
@@ -807,8 +807,8 @@ int main(int argc, char *argv[])
     // clean up everything
     delete [] assign1_list;
     delete [] assign2_list;
-    DeleteArray(&TMave_mat,chain1_num);
-    DeleteArray(&ut_mat,   chain1_num*chain2_num);
+    // TMave_mat auto-destruct (DPMatrix)
+    // ut_mat auto-destruct (Rotation)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
@@ -816,7 +816,7 @@ int main(int argc, char *argv[])
 
     delete [] assign1_init;
     delete [] assign2_init;
-    DeleteArray(&TMave_init,chain1_num);
+    // TMave_init auto-destruct (DPMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
 

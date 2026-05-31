@@ -773,12 +773,12 @@ int MMalign(const string &xname, const string &yname,
     int chain2_num=ya_vec.size();
     int chain_num =std::max(chain1_num,chain2_num);
     vector<string> tmp_str_vec(chain2_num,"");
-    double **TMave_mat;
+    DPMatrix TMave_mat;
+    TMave_mat.assign(chain_num,vector<double>(chain_num));
     Rotation ut_mat; // rotation matrices for all-against-all alignment
     int ui;
     int uj;
     int ut_idx;
-    NewArray(&TMave_mat,chain_num,chain_num);
     ut_mat.resize(chain1_num*chain2_num);
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
     vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
@@ -1022,8 +1022,8 @@ int MMalign(const string &xname, const string &yname,
     int *assign2_init;
     assign1_init=new int[chain1_num];
     assign2_init=new int[chain2_num];
-    double **TMave_init;
-    NewArray(&TMave_init,chain1_num,chain2_num);
+    DPMatrix TMave_init;
+    TMave_init.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
     vector<string> sequence_init;
@@ -1159,7 +1159,7 @@ int MMalign(const string &xname, const string &yname,
     // clean up everything
     delete [] assign1_list;
     delete [] assign2_list;
-    DeleteArray(&TMave_mat,chain_num);
+    // TMave_mat auto-destruct (DPMatrix)
     // ut_mat auto-destruct (Rotation)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
@@ -1168,7 +1168,7 @@ int MMalign(const string &xname, const string &yname,
 
     delete [] assign1_init;
     delete [] assign2_init;
-    DeleteArray(&TMave_init,chain1_num);
+    // TMave_init auto-destruct (DPMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
 
@@ -1341,8 +1341,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
     vector<string> tmp_str_vec(chain2_num,"");
-    double **TMave_mat;
-    NewArray(&TMave_mat,chain1_num,chain2_num);
+    DPMatrix TMave_mat;
+    TMave_mat.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
     vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
@@ -1654,7 +1654,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<string>().swap(yname_vec);
     delete [] assign1_list;
     delete [] assign2_list;
-    DeleteArray(&TMave_mat,chain1_num);
+    // TMave_mat auto-destruct (DPMatrix)
     // ut_mat auto-destruct (Rotation)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
@@ -1728,8 +1728,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     if (total_len>750) fast_opt=true;
 
     // get all-against-all alignment
-    double **TMave_mat;
-    NewArray(&TMave_mat,chain_num,chain_num);
+    DPMatrix TMave_mat;
+    TMave_mat.assign(chain_num,vector<double>(chain_num));
     vector<string> tmp_str_vec(chain_num,"");
     vector<vector<string> >seqxA_mat(chain_num,tmp_str_vec);
     vector<vector<string> >seqyA_mat(chain_num,tmp_str_vec);
@@ -2458,7 +2458,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<string>().swap(xname_vec);
     vector<string>().swap(yname_vec);
     delete[]TMave_list;
-    DeleteArray(&TMave_mat,chain_num);
+    // TMave_mat auto-destruct (DPMatrix)
     vector<vector<vector<double> > >().swap(a_vec); // structure of complex
     vector<vector<char> >().swap(seq_vec); // sequence of complex
     vector<vector<char> >().swap(sec_vec); // secondary structure of complex
