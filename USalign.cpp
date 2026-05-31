@@ -774,12 +774,12 @@ int MMalign(const string &xname, const string &yname,
     int chain_num =std::max(chain1_num,chain2_num);
     vector<string> tmp_str_vec(chain2_num,"");
     double **TMave_mat;
-    double **ut_mat; // rotation matrices for all-against-all alignment
+    Rotation ut_mat; // rotation matrices for all-against-all alignment
     int ui;
     int uj;
     int ut_idx;
     NewArray(&TMave_mat,chain_num,chain_num);
-    NewArray(&ut_mat,chain1_num*chain2_num,4*3);
+    ut_mat.resize(chain1_num*chain2_num);
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
     vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
@@ -1160,7 +1160,7 @@ int MMalign(const string &xname, const string &yname,
     delete [] assign1_list;
     delete [] assign2_list;
     DeleteArray(&TMave_mat,chain_num);
-    DeleteArray(&ut_mat,   chain1_num*chain2_num);
+    // ut_mat auto-destruct (Rotation)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
