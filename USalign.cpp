@@ -1518,8 +1518,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
     // final alignment
     if (outfmt_opt==0) print_version();
-    double **ut_mat; // rotation matrices for all-against-all alignment
-    NewArray(&ut_mat,chain1_num,4*3);
+    Rotation ut_mat; // rotation matrices for all-against-all alignment
+    ut_mat.resize(chain1_num);
     int ui;
     int uj;
     vector<string>xname_vec;
@@ -1655,7 +1655,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     delete [] assign1_list;
     delete [] assign2_list;
     DeleteArray(&TMave_mat,chain1_num);
-    DeleteArray(&ut_mat,   chain1_num);
+    // ut_mat auto-destruct (Rotation)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
