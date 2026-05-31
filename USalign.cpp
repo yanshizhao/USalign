@@ -2406,13 +2406,13 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
     if (m_opt || o_opt)
     {
-        double **ut_mat; // rotation matrices for all-against-all alignment
+        Rotation ut_mat; // rotation matrices for all-against-all alignment
+        ut_mat.resize(chain_num);
         int ui;
         int uj;
         double t[3];
         double u[3][3];
         double rmsd;
-        NewArray(&ut_mat,chain_num,4*3);
         for (i=0;i<chain_num;i++)
         {
             xlen=ylen=a_vec[i].size();
@@ -2442,12 +2442,12 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 xname_vec,yname_vec, ut_mat, assign_list);
         }
 
-        //if (o_opt) output_dock(chain_list, ter_opt, split_opt, 
+        //if (o_opt) output_dock(chain_list, ter_opt, split_opt,
                 //infmt_opt, atom_opt, false, ut_mat, fname_super);
         if (o_opt) output_mTMalign_pymol(chain_list,
             infmt_opt, ut_mat, fname_super, o_opt);
-        
-        DeleteArray(&ut_mat,chain_num);
+
+        // ut_mat auto-destruct (Rotation)
     }
 
     // clean up

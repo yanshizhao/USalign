@@ -1458,6 +1458,72 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
     line.clear();
 }
 
+// [Rotation overload]
+void output_dock(const vector<string>&chain_list, const int ter_opt,
+    const int split_opt, const int infmt_opt, const string atom_opt,
+    const int mirror_opt, const Rotation& ut_mat, const string&fname_super)
+{
+    size_t i;
+    int chain_i;
+    int a;
+    string name;
+    int chainnum;
+    double x[3];  // before transform
+    double x1[3]; // after transform
+    string line;
+    vector<vector<string> >PDB_lines;
+    int m=0;
+    double t[3];
+    double u[3][3];
+    int ui;
+    int uj;
+    stringstream buf;
+    string filename;
+    int het_opt=1;
+    for (i=0;i<chain_list.size();i++)
+    {
+        name=chain_list[i];
+        chainnum=get_full_PDB_lines(name, PDB_lines,
+            ter_opt, infmt_opt, split_opt, het_opt);
+        if (!chainnum) continue;
+        clear_full_PDB_lines(PDB_lines, atom_opt); // clear chains with <3 residue
+        for (chain_i=0;chain_i<chainnum;chain_i++)
+        {
+            if (PDB_lines[chain_i].size()<3) continue;
+            buf<<fname_super<<'.'<<m<<".pdb";
+            filename=buf.str();
+            buf.str(string());
+            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
+            for (uj=0;uj<3;uj++) t[uj]=ut_mat[m][9+uj];
+            for (a=0;a<PDB_lines[chain_i].size();a++)
+            {
+                line=PDB_lines[chain_i][a];
+                x[0]=safe_stod(line.substr(30,8).c_str());
+                x[1]=safe_stod(line.substr(38,8).c_str());
+                x[2]=safe_stod(line.substr(46,8).c_str());
+                if (mirror_opt) x[2]=-x[2];
+                transform(t, u, x, x1);
+                buf<<line.substr(0,30)<<setiosflags(ios::fixed)
+                   <<setprecision(3)
+                   <<setw(8)<<x1[0]<<setw(8)<<x1[1]<<setw(8)<<x1[2]
+                   <<line.substr(54)<<'\n';
+            }
+            buf<<"TER"<<endl;
+            ofstream fp;
+            fp.open(filename.c_str());
+            fp<<buf.str();
+            fp.close();
+            buf.str(string());
+            PDB_lines[chain_i].clear();
+            m++;
+        } // chain_i
+        name.clear();
+        PDB_lines.clear();
+    } // i
+    vector<vector<string> >().swap(PDB_lines);
+    line.clear();
+}
+
 void parse_chain_list(const vector<string>&chain_list,
     vector<vector<vector<double> > >&a_vec, vector<vector<char> >&seq_vec,
     vector<vector<char> >&sec_vec, vector<int>&mol_vec, vector<int>&len_vec,
