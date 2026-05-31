@@ -648,10 +648,10 @@ int main(int argc, char *argv[])
     if (aln_chain_num>=3 || is_oligomer) // oligomer alignment
     {
         // extract centroid coordinates
-        double **xcentroids;
-        double **ycentroids;
-        NewArray(&xcentroids, chain1_num, 3);
-        NewArray(&ycentroids, chain2_num, 3);
+        Coords xcentroids;
+        Coords ycentroids;
+        xcentroids.resize(chain1_num);
+        ycentroids.resize(chain2_num);
         double d0MM=getmin(
             calculate_centroids(xa_vec, chain1_num, xcentroids),
             calculate_centroids(ya_vec, chain2_num, ycentroids));
@@ -664,10 +664,8 @@ int main(int argc, char *argv[])
         hetero_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
-        
-        // clean up
-        DeleteArray(&xcentroids, chain1_num);
-        DeleteArray(&ycentroids, chain2_num);
+
+        // xcentroids, ycentroids auto-destruct (Coords)
     }
 
     // store initial assignment
@@ -710,10 +708,10 @@ int main(int argc, char *argv[])
             0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
 
         // extract centroid coordinates
-        double **xcentroids;
-        double **ycentroids;
-        NewArray(&xcentroids, chain1_num, 3);
-        NewArray(&ycentroids, chain2_num, 3);
+        Coords xcentroids;
+        Coords ycentroids;
+        xcentroids.resize(chain1_num);
+        ycentroids.resize(chain2_num);
         double d0MM=getmin(
             calculate_centroids(xa_vec, chain1_num, xcentroids),
             calculate_centroids(ya_vec, chain2_num, ycentroids));
@@ -728,9 +726,7 @@ int main(int argc, char *argv[])
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        // clean up
-        DeleteArray(&xcentroids, chain1_num);
-        DeleteArray(&ycentroids, chain2_num);
+        // xcentroids, ycentroids auto-destruct (Coords)
     }
 
     // sometime MMalign_iter is even worse than monomer alignment
