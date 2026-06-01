@@ -1756,7 +1756,7 @@ void get_initial_ss(bool **path, double **val,
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
-// [NEW] ss DPMatrix
+// PathMat/DPMatrix overload
 void get_initial_ss(PathMat& path, DPMatrix& val,
     const char *secx, const char *secy, int xlen, int ylen, int *y2x)
 {
@@ -2051,7 +2051,7 @@ bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return flag;
 }
 
-// [NEW] init5 DPMatrix
+// PathMat/DPMatrix + const Coords& overload
 bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     PathMat& path, DPMatrix& val,
     const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
@@ -2210,7 +2210,7 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
     }
 }
 
-// [NEW] score DPMatrix
+// DPMatrix& score overload
 void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
     const char *secx, const char *secy, const Coords& x, const Coords& y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
@@ -2266,7 +2266,7 @@ void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-// [NEW] ssplus DPMatrix
+// DPMatrix/PathMat overload
 void get_initial_ssplus(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
     DPMatrix& val, const char *secx, const char *secy, const Coords& x, const Coords& y,
     int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
