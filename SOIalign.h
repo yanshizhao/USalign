@@ -293,9 +293,9 @@ inline int soi_se_main(
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
-    double **score;       // score for aligning a residue pair
-    bool   **path;        // for dynamic programming  
-    double **val;         // for dynamic programming  
+    DPMatrix score;       // score for aligning a residue pair
+    PathMat  path;        // for dynamic programming
+    DPMatrix val;         // for dynamic programming
 
     int *m1=nullptr;
     int *m2=nullptr;
@@ -309,11 +309,11 @@ inline int soi_se_main(
     }
 
     /***********************/
-    // allocate memory    
+    // allocate memory
     /***********************/
-    NewArray(&score, xlen+1, ylen+1);
-    NewArray(&path,  xlen+1, ylen+1);
-    NewArray(&val,   xlen+1, ylen+1);
+    score.assign(xlen+1, std::vector<double>(ylen+1));
+    path.assign( xlen+1, std::vector<char>(ylen+1));
+    val.assign(  xlen+1, std::vector<double>(ylen+1));
     //int *invmap          = new int[ylen+1];
 
     // set d0
@@ -352,7 +352,11 @@ inline int soi_se_main(
         }
     }
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
-    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+
+    // construct double** view from DPMatrix for soi_egs (read-only)
+    std::vector<double*> score_view(xlen+1);
+    for (int v=0; v<=xlen; v++) score_view[v]=score[v].data();
+    soi_egs(score_view.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
     rmsd0=TM1=TM2=TM3=TM4=TM5=0;
     int k=0;
@@ -394,7 +398,6 @@ inline int soi_se_main(
 
     if (outfmt_opt>=2)
     {
-        DeleteArray(&score, xlen+1);
         return 0;
     }
 
@@ -432,9 +435,7 @@ inline int soi_se_main(
     delete [] fwdmap;
     delete [] m1;
     delete [] m2;
-    DeleteArray(&score, xlen+1);
-    DeleteArray(&path, xlen+1);
-    DeleteArray(&val, xlen+1);
+    // score/path/val auto-destruct (DPMatrix/PathMat)
     return 0; // zero for no exception
 }
 
@@ -653,7 +654,11 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
                 yfrag[k][1]=yk[j*closeK_opt+k][1];
                 yfrag[k][2]=yk[j*closeK_opt+k][2];
             }
-            Kabsch(xfrag, yfrag, closeK_opt, 1, &rmsd, t, u);
+            {
+                std::vector<double*> xv(closeK_opt), yv(closeK_opt);
+                for(int _k=0;_k<closeK_opt;_k++){ xv[_k]=xfrag[_k].data(); yv[_k]=yfrag[_k].data(); }
+                Kabsch(xv.data(), yv.data(), closeK_opt, 1, &rmsd, t, u);
+            }
             do_rotation(xfrag, xtran, closeK_opt, t, u);
             
             //for (k=0; k<closeK_opt; k++)
@@ -1124,7 +1129,11 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     }
     n_ali8=k;
 
-    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    {
+        std::vector<double*> r1_v(n_ali8), r2_v(n_ali8);
+        for(int _k=0;_k<n_ali8;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), n_ali8, 0, &rmsd0, t, u);
+    }// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
     
     //normalized by length of structure A

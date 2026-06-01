@@ -415,7 +415,11 @@ double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
             }
             
             //extract rotation matrix based on the fragment
-            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            {
+                std::vector<double*> r1_v(L_frag), r2_v(L_frag);
+                for(int _k=0;_k<L_frag;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+                Kabsch(r1_v.data(), r2_v.data(), L_frag, 1, &rmsd, t, u);
+            }
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -458,7 +462,11 @@ double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
                     ka++;
                 } 
                 //extract rotation matrix based on the fragment                
-                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                {
+                    std::vector<double*> r1_v(n_cut), r2_v(n_cut);
+                    for(int _k=0;_k<n_cut;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+                    Kabsch(r1_v.data(), r2_v.data(), n_cut, 1, &rmsd, t, u);
+                }
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score, 
                     score_sum_method, Lnorm, score_d8, d0);
@@ -735,7 +743,11 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
                 ka++;
             }
             //extract rotation matrix based on the fragment
-            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            {
+                std::vector<double*> r1_v(L_frag), r2_v(L_frag);
+                for(int _k=0;_k<L_frag;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+                Kabsch(r1_v.data(), r2_v.data(), L_frag, 1, &rmsd, t, u);
+            }
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -779,7 +791,11 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
                     ka++;
                 }
                 //extract rotation matrix based on the fragment                
-                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                {
+                    std::vector<double*> r1_v(n_cut), r2_v(n_cut);
+                    for(int _k=0;_k<n_cut;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+                    Kabsch(r1_v.data(), r2_v.data(), n_cut, 1, &rmsd, t, u);
+                }
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, score_d8, d0);
@@ -1219,7 +1235,11 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         }
         else if(i!=-1) PrintErrorAndQuit("Wrong map!\n");
     }
-    Kabsch(r1, r2, k, 1, &rms, t, u);
+    {
+        std::vector<double*> r1_v(k), r2_v(k);
+        for(int _k=0;_k<k;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), k, 1, &rms, t, u);
+    }
     
     //evaluate score   
     double di;
@@ -1273,7 +1293,11 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     
     if(n_ali!=j)
     {
-        Kabsch(r1, r2, j, 1, &rms, t, u);
+        {
+            std::vector<double*> r1_v(j), r2_v(j);
+            for(int _k=0;_k<j;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+            Kabsch(r1_v.data(), r2_v.data(), j, 1, &rms, t, u);
+        }
         tmscore1=0;
         for(k=0; k<n_ali; k++)
         {
@@ -1313,7 +1337,11 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         }
 
         //evaluate the score
-        Kabsch(r1, r2, j, 1, &rms, t, u);
+        {
+            std::vector<double*> r1_v(j), r2_v(j);
+            for(int _k=0;_k<j;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+            Kabsch(r1_v.data(), r2_v.data(), j, 1, &rms, t, u);
+        }
         tmscore2=0;
         for(k=0; k<n_ali; k++)
         {
@@ -1352,7 +1380,11 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         }
         else if(i!=-1) PrintErrorAndQuit("Wrong map!\n");
     }
-    Kabsch(r1, r2, k, 1, &rms, t, u);
+    {
+        std::vector<double*> r1_v(k), r2_v(k);
+        for(int _k=0;_k<k;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), k, 1, &rms, t, u);
+    }
     double di; const int len=k;
     std::vector<double> dis(len);
     double d00=d0_search,d002=d00*d00,d02=d0*d0;
@@ -1380,7 +1412,11 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         if(j<3 && n_ali>3) d002t += 0.5; else break;
     }
     if(n_ali!=j) {
-        Kabsch(r1, r2, j, 1, &rms, t, u);
+        {
+            std::vector<double*> r1_v(j), r2_v(j);
+            for(int _k=0;_k<j;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+            Kabsch(r1_v.data(), r2_v.data(), j, 1, &rms, t, u);
+        }
         tmscore1=0;
         for(k=0; k<n_ali; k++) {
             transform(t, u, &xtm[k][0], xrot);
@@ -1403,7 +1439,11 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
             }
             if(j<3 && n_ali>3) d002t += 0.5; else break;
         }
-        Kabsch(r1, r2, j, 1, &rms, t, u);
+        {
+            std::vector<double*> r1_v(j), r2_v(j);
+            for(int _k=0;_k<j;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+            Kabsch(r1_v.data(), r2_v.data(), j, 1, &rms, t, u);
+        }
         tmscore2=0;
         for(k=0; k<n_ali; k++) {
             transform(t, u, &xtm[k][0], xrot);
@@ -1716,6 +1756,14 @@ void get_initial_ss(bool **path, double **val,
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
+// [NEW] ss DPMatrix
+void get_initial_ss(PathMat& path, DPMatrix& val,
+    const char *secx, const char *secy, int xlen, int ylen, int *y2x)
+{
+    double gap_open=-1.0;
+    NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
+}
+
 void make_sec(const char *seq, const Coords& x, int len, char *sec,const string atom_opt)
 {
     int ii;
@@ -1978,7 +2026,11 @@ bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
                 }
 
                 // superpose the two structures and rotate it
-                Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
+                {
+                    std::vector<double*> r1_v(n_frag[i_frag]), r2_v(n_frag[i_frag]);
+                    for(int _k=0;_k<n_frag[i_frag];_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+                    Kabsch(r1_v.data(), r2_v.data(), n_frag[i_frag], 1, &rmsd, t, u);
+                }
 
                 double gap_open = 0.0;
                 NWDP_TM(path, val, x, y, xlen, ylen,
@@ -1999,81 +2051,28 @@ bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return flag;
 }
 
-// const Coords& x/y overload
-bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    bool **path, double **val,
-    const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
-{
-    double GL,rmsd,t[3],u[3][3];
-    double d01=d0+1.5; if(d01<D0_MIN) d01=D0_MIN; double d02=d01*d01;
-    double GLmax=0; int aL=getmin(xlen,ylen);
-    int *invmap=new int[ylen+1];
-    int n_jump1=0,n_jump2=0;
-    if(xlen>250) n_jump1=45; else if(xlen>200) n_jump1=35; else if(xlen>150) n_jump1=25; else n_jump1=15;
-    if(n_jump1>(xlen/3)) n_jump1=xlen/3;
-    if(ylen>250) n_jump2=45; else if(ylen>200) n_jump2=35; else if(ylen>150) n_jump2=25; else n_jump2=15;
-    if(n_jump2>(ylen/3)) n_jump2=ylen/3;
-    int n_frag[2]={20,100};
-    if(n_frag[0]>(aL/3)) n_frag[0]=aL/3;
-    if(n_frag[1]>(aL/2)) n_frag[1]=aL/2;
-    if(fast_opt) { n_jump1*=5; n_jump2*=5; }
-    bool flag=false;
-    for(int i_frag=0;i_frag<2;i_frag++) {
-        int m1=xlen-n_frag[i_frag]+1, m2=ylen-n_frag[i_frag]+1;
-        for(int i=0;i<m1;i+=n_jump1) {
-            for(int j=0;j<m2;j+=n_jump2) {
-                for(int k=0;k<n_frag[i_frag];k++) {
-                    r1[k][0]=x[k+i][0]; r1[k][1]=x[k+i][1]; r1[k][2]=x[k+i][2];
-                    r2[k][0]=y[k+j][0]; r2[k][1]=y[k+j][1]; r2[k][2]=y[k+j][2];
-                }
-                Kabsch(r1,r2,n_frag[i_frag],1,&rmsd,t,u);
-                double gap_open=0.0;
-                NWDP_TM(path,val,x,y,xlen,ylen,t,u,d02,gap_open,invmap);
-                GL=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,invmap,d0,d0_search,t,u);
-                if(GL>GLmax) { GLmax=GL; for(int ii=0;ii<ylen;ii++) y2x[ii]=invmap[ii]; flag=true; }
-            }
-        }
-    }
-    delete[] invmap;
-    return flag;
-}
-
-// PathMat/DPMatrix overload — path: char(1/0), val: DPMatrix
+// [NEW] init5 DPMatrix
 bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     PathMat& path, DPMatrix& val,
     const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     double GL,rmsd,t[3],u[3][3];
-    double d01=d0+1.5; if(d01<D0_MIN) d01=D0_MIN; double d02=d01*d01;
-    double GLmax=0; int aL=getmin(xlen,ylen);
-    int *invmap=new int[ylen+1];
+    double d01=d0+1.5;if(d01<D0_MIN)d01=D0_MIN;double d02=d01*d01;double GLmax=0;int aL=getmin(xlen,ylen);int*invmap=new int[ylen+1];
     int n_jump1=0,n_jump2=0;
-    if(xlen>250) n_jump1=45; else if(xlen>200) n_jump1=35; else if(xlen>150) n_jump1=25; else n_jump1=15;
-    if(n_jump1>(xlen/3)) n_jump1=xlen/3;
-    if(ylen>250) n_jump2=45; else if(ylen>200) n_jump2=35; else if(ylen>150) n_jump2=25; else n_jump2=15;
-    if(n_jump2>(ylen/3)) n_jump2=ylen/3;
-    int n_frag[2]={20,100}; if(n_frag[0]>(aL/3)) n_frag[0]=aL/3; if(n_frag[1]>(aL/2)) n_frag[1]=aL/2;
-    if(fast_opt) { n_jump1*=5; n_jump2*=5; }
-    bool flag=false;
-    for(int i_frag=0;i_frag<2;i_frag++) {
-        int m1=xlen-n_frag[i_frag]+1, m2=ylen-n_frag[i_frag]+1;
-        for(int i=0;i<m1;i+=n_jump1) for(int j=0;j<m2;j+=n_jump2) {
-            for(int k=0;k<n_frag[i_frag];k++) {
-                r1[k][0]=x[k+i][0]; r1[k][1]=x[k+i][1]; r1[k][2]=x[k+i][2];
-                r2[k][0]=y[k+j][0]; r2[k][1]=y[k+j][1]; r2[k][2]=y[k+j][2];
-            }
-            Kabsch(r1,r2,n_frag[i_frag],1,&rmsd,t,u);
-            double gap_open=0.0;
-            NWDP_TM(path,val,x,y,xlen,ylen,t,u,d02,gap_open,invmap);
-            GL=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,invmap,d0,d0_search,t,u);
-            if(GL>GLmax) { GLmax=GL; for(int ii=0;ii<ylen;ii++) y2x[ii]=invmap[ii]; flag=true; }
-        }
-    }
-    delete[] invmap;
-    return flag;
+    if(xlen>250)n_jump1=45;else if(xlen>200)n_jump1=35;else if(xlen>150)n_jump1=25;else n_jump1=15;if(n_jump1>(xlen/3))n_jump1=xlen/3;
+    if(ylen>250)n_jump2=45;else if(ylen>200)n_jump2=35;else if(ylen>150)n_jump2=25;else n_jump2=15;if(n_jump2>(ylen/3))n_jump2=ylen/3;
+    int n_frag[2]={20,100};if(n_frag[0]>(aL/3))n_frag[0]=aL/3;if(n_frag[1]>(aL/2))n_frag[1]=aL/2;if(fast_opt){n_jump1*=5;n_jump2*=5;}bool flag=false;
+    std::vector<double*>xv(xlen),yv(ylen);for(int _i=0;_i<xlen;_i++)xv[_i]=(double*)x[_i].data();for(int _j=0;_j<ylen;_j++)yv[_j]=(double*)y[_j].data();
+    for(int i_frag=0;i_frag<2;i_frag++){int m1=xlen-n_frag[i_frag]+1,m2=ylen-n_frag[i_frag]+1;
+    for(int i=0;i<m1;i+=n_jump1)for(int j=0;j<m2;j+=n_jump2){for(int k=0;k<n_frag[i_frag];k++){r1[k][0]=x[k+i][0];r1[k][1]=x[k+i][1];r1[k][2]=x[k+i][2];r2[k][0]=y[k+j][0];r2[k][1]=y[k+j][1];r2[k][2]=y[k+j][2];}
+    {int _nf=n_frag[i_frag];std::vector<double*>_rv1(_nf),_rv2(_nf);for(int _k=0;_k<_nf;_k++){_rv1[_k]=r1[_k].data();_rv2[_k]=r2[_k].data();}Kabsch(_rv1.data(),_rv2.data(),_nf,1,&rmsd,t,u);}
+    double gap_open=0.0;NWDP_TM(path,val,xv.data(),yv.data(),xlen,ylen,t,u,d02,gap_open,invmap);
+    GL=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,invmap,d0,d0_search,t,u);if(GL>GLmax){GLmax=GL;for(int ii=0;ii<ylen;ii++)y2x[ii]=invmap[ii];flag=true;}}}
+    delete[]invmap;return flag;
 }
+
+
 
 void score_matrix_rmsd_sec( double **r1, double **r2, double **score,
     const char *secx, const char *secy, double **x, double **y,
@@ -2154,7 +2153,11 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
             k++;
         }
     }
-    Kabsch(r1, r2, k, 1, &rmsd, t, u);
+    {
+        std::vector<double*> r1_v(k), r2_v(k);
+        for(int _k=0;_k<k;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), k, 1, &rmsd, t, u);
+    }
 
     
     for(int ii=0; ii<xlen; ii++)
@@ -2190,7 +2193,11 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
             k++;
         }
     }
-    Kabsch(r1, r2, k, 1, &rmsd, t, u);
+    {
+        std::vector<double*> r1_v(k), r2_v(k);
+        for(int _k=0;_k<k;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), k, 1, &rmsd, t, u);
+    }
     for(int ii=0; ii<xlen; ii++) {
         transform(t, u, (double*)&x[ii][0], xx);
         for(int jj=0; jj<ylen; jj++) {
@@ -2203,37 +2210,18 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
     }
 }
 
-// DPMatrix& score overload
+// [NEW] score DPMatrix
 void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
     const char *secx, const char *secy, const Coords& x, const Coords& y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
 {
     double t[3],u[3][3],rmsd,dij;
-    double d01=d0+1.5;
-    if(d01 < D0_MIN) d01=D0_MIN;
-    double d02=d01*d01;
-    double xx[3];
-    int i,k=0;
-    for(int j=0; j<ylen; j++) {
-        i=y2x[j];
-        if(i>=0) {
-            r1[k][0]=x[i][0]; r1[k][1]=x[i][1]; r1[k][2]=x[i][2];
-            r2[k][0]=y[j][0]; r2[k][1]=y[j][1]; r2[k][2]=y[j][2];
-            k++;
-        }
-    }
-    Kabsch(r1, r2, k, 1, &rmsd, t, u);
-    for(int ii=0; ii<xlen; ii++) {
-        transform(t, u, (double*)&x[ii][0], xx);
-        for(int jj=0; jj<ylen; jj++) {
-            dij=dist(xx, (double*)&y[jj][0]);
-            if (secx[ii]==secy[jj])
-                score[ii+1][jj+1] = 1.0/(1+dij/d02) + 0.5;
-            else
-                score[ii+1][jj+1] = 1.0/(1+dij/d02);
-        }
-    }
+    double d01=d0+1.5;if(d01<D0_MIN)d01=D0_MIN;double d02=d01*d01;double xx[3];int i,k=0;
+    for(int j=0;j<ylen;j++){i=y2x[j];if(i>=0){r1[k][0]=x[i][0];r1[k][1]=x[i][1];r1[k][2]=x[i][2];r2[k][0]=y[j][0];r2[k][1]=y[j][1];r2[k][2]=y[j][2];k++;}}
+    {std::vector<double*>rv1(k),rv2(k);for(int _k=0;_k<k;_k++){rv1[_k]=r1[_k].data();rv2[_k]=r2[_k].data();}Kabsch(rv1.data(),rv2.data(),k,1,&rmsd,t,u);}
+    for(int ii=0;ii<xlen;ii++){transform(t,u,(double*)&x[ii][0],xx);for(int jj=0;jj<ylen;jj++){dij=dist(xx,(double*)&y[jj][0]);if(secx[ii]==secy[jj])score[ii+1][jj+1]=1.0/(1+dij/d02)+0.5;else score[ii+1][jj+1]=1.0/(1+dij/d02);}}
 }
+
 
 //get initial alignment from secondary structure and previous alignments
 //input: x, y, xlen, ylen
@@ -2274,6 +2262,16 @@ void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
         y2x0, D0_MIN,d0);
 
+    double gap_open=-1.0;
+    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
+}
+
+// [NEW] ssplus DPMatrix
+void get_initial_ssplus(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
+    DPMatrix& val, const char *secx, const char *secy, const Coords& x, const Coords& y,
+    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
+{
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
     double gap_open=-1.0;
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
@@ -3269,69 +3267,7 @@ double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore_max;
 }
 
-// const Coords& x/y overload
-double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, bool **path, double **val, const Coords& x, const Coords& y,
-    int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
-{
-    double gap_open[2]={-0.6,0};
-    double rmsd; int *invmap=new int[ylen+1];
-    int iteration,i,j,k; double tmscore,tmscore_max,tmscore_old=0;
-    int score_sum_method=8, simplify_step=40;
-    tmscore_max=-1;
-    double d02=d0*d0;
-    for(int g=g1;g<g2;g++) {
-        for(iteration=0;iteration<iteration_max;iteration++) {
-            NWDP_TM(path,val,x,y,xlen,ylen,t,u,d02,gap_open[g],invmap);
-            k=0;
-            for(j=0;j<ylen;j++) {
-                i=invmap[j];
-                if(i>=0) {
-                    xtm[k][0]=x[i][0]; xtm[k][1]=x[i][1]; xtm[k][2]=x[i][2];
-                    ytm[k][0]=y[j][0]; ytm[k][1]=y[j][1]; ytm[k][2]=y[j][2];
-                    k++;
-                }
-            }
-            tmscore=TMscore8_search(r1,r2,xtm,ytm,xt,k,t,u,simplify_step,score_sum_method,&rmsd,local_d0_search,Lnorm,score_d8,d0);
-            if(tmscore>tmscore_max) { tmscore_max=tmscore; for(i=0;i<ylen;i++) invmap0[i]=invmap[i]; }
-            if(iteration>0) { if(fabs(tmscore_old-tmscore)<0.000001) break; }
-            tmscore_old=tmscore;
-        }
-    }
-    delete[] invmap;
-    return tmscore_max;
-}
 
-// PathMat/DPMatrix overload — path: char(1/0), val: DPMatrix
-double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, PathMat& path, DPMatrix& val, const Coords& x, const Coords& y,
-    int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
-{
-    double gap_open[2]={-0.6,0};
-    double rmsd; int *invmap=new int[ylen+1];
-    int iteration,i,j,k; double tmscore,tmscore_max,tmscore_old=0;
-    int score_sum_method=8, simplify_step=40; tmscore_max=-1; double d02=d0*d0;
-    for(int g=g1;g<g2;g++) {
-        for(iteration=0;iteration<iteration_max;iteration++) {
-            NWDP_TM(path,val,x,y,xlen,ylen,t,u,d02,gap_open[g],invmap);
-            k=0;
-            for(j=0;j<ylen;j++) { i=invmap[j]; if(i>=0) {
-                xtm[k][0]=x[i][0]; xtm[k][1]=x[i][1]; xtm[k][2]=x[i][2];
-                ytm[k][0]=y[j][0]; ytm[k][1]=y[j][1]; ytm[k][2]=y[j][2]; k++; }
-            }
-            tmscore=TMscore8_search(r1,r2,xtm,ytm,xt,k,t,u,simplify_step,score_sum_method,&rmsd,local_d0_search,Lnorm,score_d8,d0);
-            if(tmscore>tmscore_max) { tmscore_max=tmscore; for(i=0;i<ylen;i++) invmap0[i]=invmap[i]; }
-            if(iteration>0) { if(fabs(tmscore_old-tmscore)<0.000001) break; }
-            tmscore_old=tmscore;
-        }
-    }
-    delete[] invmap;
-    return tmscore_max;
-}
 
 // script format: 0 - no script; 1 - pymol; 3 - chimerax
 void output_pymol(const string xname, const string yname,
@@ -5240,7 +5176,11 @@ double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     }
     L_ali = n_al;
 
-    Kabsch(r1, r2, n_al, 0, &RMSD, t, u);
+    {
+        std::vector<double*> r1_v(n_al), r2_v(n_al);
+        for(int _k=0;_k<n_al;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), n_al, 0, &RMSD, t, u);
+    }
     RMSD = sqrt( RMSD/(1.0*n_al) );
     
     int temp_simplify_step = 1;
@@ -5285,7 +5225,11 @@ double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         else if(ii!=-1) PrintErrorAndQuit("Wrong map!");
     }
     L_ali=n_al;
-    Kabsch(r1,r2,n_al,0,&RMSD,t,u);
+    {
+        std::vector<double*> r1_v(n_al), r2_v(n_al);
+        for(int _k=0;_k<n_al;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), n_al,0,&RMSD,t,u);
+    }
     RMSD=sqrt(RMSD/(1.0*n_al));
     int temp_simplify_step=1, temp_score_sum_method=0;
     d0_search=d0_input; double rms=0.0;

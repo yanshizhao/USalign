@@ -546,7 +546,11 @@ double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
             }
 
             //extract rotation matrix based on the fragment
-            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            {
+                std::vector<double*> _v1(L_frag), _v2(L_frag);
+                for(int _k=0;_k<L_frag;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+                Kabsch(_v1.data(), _v2.data(), L_frag, 1, &rmsd, t, u);
+            }
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -594,7 +598,11 @@ double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
                     ka++;
                 }
                 //extract rotation matrix based on the fragment
-                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                {
+                    std::vector<double*> _v1(n_cut), _v2(n_cut);
+                    for(int _k=0;_k<n_cut;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+                    Kabsch(_v1.data(), _v2.data(), n_cut, 1, &rmsd, t, u);
+                }
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, Lnorm, score_d8, d0);
@@ -886,7 +894,11 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
                 k_ali[ka] = kk;
                 ka++;
             }
-            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            {
+                std::vector<double*> _v1(L_frag), _v2(L_frag);
+                for(int _k=0;_k<L_frag;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+                Kabsch(_v1.data(), _v2.data(), L_frag, 1, &rmsd, t, u);
+            }
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -929,7 +941,11 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
                     k_ali[ka] = m;
                     ka++;
                 }
-                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                {
+                    std::vector<double*> _v1(n_cut), _v2(n_cut);
+                    for(int _k=0;_k<n_cut;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+                    Kabsch(_v1.data(), _v2.data(), n_cut, 1, &rmsd, t, u);
+                }
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);

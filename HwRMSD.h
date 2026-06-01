@@ -69,7 +69,11 @@ double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
     }
 
     double RMSD = 0;
-    Kabsch(r1, r2, L_ali, 1, &RMSD, t, u);
+    {
+        std::vector<double*> _v1(L_ali), _v2(L_ali);
+        for(int _k=0;_k<L_ali;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+        Kabsch(_v1.data(), _v2.data(), L_ali, 1, &RMSD, t, u);
+    }
     RMSD = sqrt( RMSD/(1.0*L_ali) );
 
     for (i=0; i<xlen; i++)

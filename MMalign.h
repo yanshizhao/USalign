@@ -125,7 +125,11 @@ bool adjust_dimer_assignment(
         L_ali++;
     }
 
-    Kabsch(xa, ya, L_ali, 1, &RMSD, t, u);
+    {
+        std::vector<double*> _v1(L_ali), _v2(L_ali);
+        for(int _k=0;_k<L_ali;_k++){ _v1[_k]=xa[_k].data(); _v2[_k]=ya[_k].data(); }
+        Kabsch(_v1.data(), _v2.data(), L_ali, 1, &RMSD, t, u);
+    }
     do_rotation(xa, xt, L_ali, t, u);
 
     double total_score1=0;
@@ -167,7 +171,11 @@ bool adjust_dimer_assignment(
         L_ali++;
     }
 
-    Kabsch(xa, ya, L_ali, 1, &RMSD, t, u);
+    {
+        std::vector<double*> _v1(L_ali), _v2(L_ali);
+        for(int _k=0;_k<L_ali;_k++){ _v1[_k]=xa[_k].data(); _v2[_k]=ya[_k].data(); }
+        Kabsch(_v1.data(), _v2.data(), L_ali, 1, &RMSD, t, u);
+    }
     do_rotation(xa, xt, L_ali, t, u);
 
     double total_score2=0;
@@ -534,7 +542,11 @@ double calMMscore(double **TMave_mat,int *assign1_list,
     if (Nali>=3)
     {
         // Kabsch superposition
-        Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
+        {
+            std::vector<double*> _v1(Nali), _v2(Nali);
+            for(int _k=0;_k<Nali;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+            Kabsch(_v1.data(), _v2.data(), Nali, 1, &RMSD, t, u);
+        }
         do_rotation(r1, xt, Nali, t, u);
 
         // calculate pseudo-TMscore
@@ -589,7 +601,11 @@ double calMMscore(double **TMave_mat,int *assign1_list,
     if (Nali>=3)
     {
         // Kabsch superposition
-        Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
+        {
+            std::vector<double*> _v1(Nali), _v2(Nali);
+            for(int _k=0;_k<Nali;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+            Kabsch(_v1.data(), _v2.data(), Nali, 1, &RMSD, t, u);
+        }
         do_rotation(r1, xt, Nali, t, u);
 
         // calculate pseudo-TMscore
@@ -644,7 +660,11 @@ double calMMscore(const DPMatrix& TMave_mat,int *assign1_list,
     if (Nali>=3)
     {
         // Kabsch superposition
-        Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
+        {
+            std::vector<double*> _v1(Nali), _v2(Nali);
+            for(int _k=0;_k<Nali;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
+            Kabsch(_v1.data(), _v2.data(), Nali, 1, &RMSD, t, u);
+        }
         do_rotation(r1, xt, Nali, t, u);
 
         // calculate pseudo-TMscore
@@ -3961,7 +3981,11 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     }
     n_ali8=k;
 
-    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    {
+        std::vector<double*> r1_v(n_ali8), r2_v(n_ali8);
+        for(int _k=0;_k<n_ali8;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
+        Kabsch(r1_v.data(), r2_v.data(), n_ali8, 0, &rmsd0, t, u);
+    }// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
 
 
