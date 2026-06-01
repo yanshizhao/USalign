@@ -1750,6 +1750,13 @@ void get_initial_ss(bool **path, double **val,
     double gap_open=-1.0;
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
+// PathMat/DPMatrix overload
+void get_initial_ss(PathMat& path, DPMatrix& val,
+    const char *secx, const char *secy, int xlen, int ylen, int *y2x)
+{
+    double gap_open=-1.0;
+    NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
+}
 
 void make_sec(const char *seq, const Coords& x, int len, char *sec,const string atom_opt)
 {
