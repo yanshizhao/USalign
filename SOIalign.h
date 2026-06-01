@@ -892,10 +892,10 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    double **score;       // Input score table for enhanced greedy search
-    double **scoret;      // Transposed score table for enhanced greedy search
+    DPMatrix score;       // Input score table for enhanced greedy search
+    DPMatrix scoret;      // Transposed score table for enhanced greedy search
     bool   **path;        // for dynamic programming
-    double **val;         // for dynamic programming
+    DPMatrix val;         // for dynamic programming
     Coords xtm, ytm;     // for TMscore search engine
     Coords xt;            //for saving the superposed version of r_1 or xtm
     Coords yt;            //for saving the superposed version of r_2 or ytm
@@ -906,11 +906,17 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     /***********************/
     int minlen = min(xlen, ylen);
     int maxlen = (xlen>ylen)?xlen:ylen;
-    NewArray(&score,  xlen+1, ylen+1);
-    NewArray(&scoret, ylen+1, xlen+1);
+    score.assign( xlen+1, std::vector<double>(ylen+1));
+    scoret.assign(ylen+1, std::vector<double>(xlen+1));
     NewArray(&path, maxlen+1, maxlen+1);
-    NewArray(&val,  maxlen+1, maxlen+1);
+    val.assign(  maxlen+1, std::vector<double>(maxlen+1));
     xtm.resize(minlen);
+    // build double** views from DPMatrix for sub-function compatibility
+    std::vector<double*> sv(xlen+1), stv(ylen+1), vv(maxlen+1);
+    for(int _i=0;_i<=xlen;_i++) sv[_i]=score[_i].data();
+    for(int _i=0;_i<=ylen;_i++) stv[_i]=scoret[_i].data();
+    for(int _i=0;_i<=maxlen;_i++) vv[_i]=val[_i].data();
+
     ytm.resize(minlen);
     xt.resize(xlen);
     yt.resize(ylen);
@@ -977,12 +983,12 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
         }
     }
     do_rotation(xa, xt, xlen, t0, u0);
-    SOI_super2score(xt, ya, xlen, ylen, score, d0, score_d8);
+    SOI_super2score(xt, ya, xlen, ylen, sv.data(), d0, score_d8);
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
-    TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa, ya,
+    TMmax=SOI_iter(r1, r2, xtm, ytm, xt, sv.data(), path, vv.data(), xa, ya,
         xlen, ylen, t0, u0, invmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, true);
-    TM   =SOI_iter(r2, r1, ytm, xtm, yt,scoret, path, val, ya, xa,
+    TM   =SOI_iter(r2, r1, ytm, xtm, yt,stv.data(), path, vv.data(), ya, xa,
         ylen, xlen, t0, u0, fwdmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, true);
     //cout<<"TM2="<<TM2<<"\tTM1="<<TM1<<"\tTMmax="<<TMmax<<"\tTM="<<TM<<endl;
@@ -1002,14 +1008,14 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     /***************************************************************/
     if (closeK_opt>=3)
     {
-        get_SOI_initial_assign(xk, yk, closeK_opt, score, path, val,
+        get_SOI_initial_assign(xk, yk, closeK_opt, sv.data(), path, vv.data(),
             xlen, ylen, t, u, invmap, local_d0_search, d0, score_d8,
             secx_bond, secy_bond, mm_opt);
         for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
 
         SOI_assign2super(r1, r2, xtm, ytm, xt, xa_c, ya_c,
             xlen, ylen, t, u, invmap, local_d0_search, Lnorm, d0, score_d8);
-        TM=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa, ya,
+        TM=SOI_iter(r1, r2, xtm, ytm, xt, sv.data(), path, vv.data(), xa, ya,
             xlen, ylen, t, u, invmap, iteration_max,
             local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt);
         if (TM>TMmax)
@@ -1019,11 +1025,11 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
         }
 
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
-        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0);
-        soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
+        if (mm_opt==6) NWDP_TM(stv.data(), path, vv.data(), ylen, xlen, -0.6, fwdmap0);
+        soi_egs(stv.data(), ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya, xa,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
-        TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya, xa, ylen, xlen, t, u,
+        TM=SOI_iter(r2, r1, ytm, xtm, yt, stv.data(), path, vv.data(), ya, xa, ylen, xlen, t, u,
             fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
         if (TM>TMmax)
         {
@@ -1273,10 +1279,8 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
 
 
     // clean up
-    DeleteArray(&score, xlen+1);
-    DeleteArray(&scoret,ylen+1);
+    // score/scoret/val auto-destruct (DPMatrix)
     DeleteArray(&path,maxlen+1);
-    DeleteArray(&val, maxlen+1);
     // xtm/ytm/xt/yt/r1/r2 auto-destruct (Coords)
     delete[]invmap0;
     delete[]fwdmap0;
