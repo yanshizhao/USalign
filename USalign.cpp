@@ -2509,8 +2509,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    xchainnum,ychainnum;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
-    int    **secx_bond;        // boundary of secondary structure
-    int    **secy_bond;        // boundary of secondary structure
+    Bond2   secx_bond;        // boundary of secondary structure
+    Bond2   secy_bond;        // boundary of secondary structure
     string seqx, seqy;         // for the protein sequence
     Coords xa;                  // for input vectors xa[0...xlen-1][0..2] and
     Coords ya;
@@ -2565,8 +2565,10 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             if (closeK_opt>=3) getCloseK(xa, xlen, closeK_opt, xk);
             if (mm_opt==6) 
             {
-                NewArray(&secx_bond, xlen, 2);
-                assign_sec_bond(secx_bond, secx.c_str(), xlen);
+                secx_bond.resize(xlen);
+                std::vector<int*> _sbv(xlen);
+                for(int _i=0;_i<xlen;_i++) _sbv[_i]=secx_bond[_i].data();
+                assign_sec_bond(_sbv.data(), secx.c_str(), xlen);
             }
 
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
@@ -2614,8 +2616,10 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     if (closeK_opt>=3) getCloseK(ya, ylen, closeK_opt, yk);
                     if (mm_opt==6) 
                     {
-                        NewArray(&secy_bond, ylen, 2);
-                        assign_sec_bond(secy_bond, secy.c_str(), ylen);
+                        secy_bond.resize(ylen);
+                        std::vector<int*> _sbv2(ylen);
+                        for(int _i=0;_i<ylen;_i++) _sbv2[_i]=secy_bond[_i].data();
+                        assign_sec_bond(_sbv2.data(), secy.c_str(), ylen);
                     }
 
                     // declare variable specific to this pair of TMalign
@@ -2650,6 +2654,9 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         u0[1][0]=         u0[1][2]=
                         u0[2][0]=         u0[2][1]=
                         t0[0]   =t0[1]   =t0[2]   =0;
+                        std::vector<int*> _sxb(xlen), _syb(ylen);
+                        for(int _i=0;_i<xlen;_i++) _sxb[_i]=secx_bond[_i].data();
+                        for(int _i=0;_i<ylen;_i++) _syb[_i]=secy_bond[_i].data();
                         soi_se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                             seqM, seqxA, seqyA,
@@ -2658,7 +2665,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                             i_opt, a_opt, u_opt, d_opt,
                             mol_vec1[chain_i]+mol_vec2[chain_j],
                             outfmt_opt, invmap, dist_list,
-                            secx_bond, secy_bond, mm_opt);
+                            _sxb.data(), _syb.data(), mm_opt);
                         if (outfmt_opt>=2) 
                         {
                             Liden=L_ali=0;
@@ -2673,7 +2680,12 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                             }
                         }
                     }
-                    else SOIalign_main(xa, ya, xk, yk, closeK_opt,
+                    else
+                    {
+                    std::vector<int*> _sxb2(xlen), _syb2(ylen);
+                    for(int _i=0;_i<xlen;_i++) _sxb2[_i]=secx_bond[_i].data();
+                    for(int _i=0;_i<ylen;_i++) _syb2[_i]=secy_bond[_i].data();
+                    SOIalign_main(xa, ya, xk, yk, closeK_opt,
                         seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -2682,7 +2694,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
                         i_opt, a_opt, u_opt, d_opt, force_fast_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j], dist_list,
-                        secx_bond, secy_bond, mm_opt);
+                        _sxb2.data(), _syb2.data(), mm_opt);
+                    }
 
                     // print result
                     if (outfmt_opt==0) print_version();
@@ -2725,7 +2738,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqyA.clear();
                     // yk auto-destruct (Coords)
                     resi_vec2.clear();
-                    if (mm_opt==6) DeleteArray(&secy_bond, ylen);
+                    // secy_bond auto-destruct (Bond2)
                 } // chain_j
                 if (chain2_list.size()>1)
                 {
@@ -2740,7 +2753,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             PDB_lines1[chain_i].clear();
             // xk auto-destruct (Coords)
             resi_vec1.clear();
-            if (mm_opt==6) DeleteArray(&secx_bond, xlen);
+            // secx_bond auto-destruct (Bond2)
         } // chain_i
         xname.clear();
         PDB_lines1.clear();
