@@ -2279,6 +2279,30 @@ double MMalign_search(
     return total_score;
 }
 
+// [DPMatrix bridge overload]
+double MMalign_search(
+    const vector<vector<vector<double> > >&xa_vec,
+    const vector<vector<vector<double> > >&ya_vec,
+    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
+    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
+    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    double** _xa, double** _ya, char *seqx_arg, char *seqy_arg, char *_secx, char *_secy,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
+    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
+    int *assign1_list, int *assign2_list, vector<string>&sequence,
+    double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
+{
+    vector<double*> view(TMave_mat.size());
+    for (size_t i=0; i<TMave_mat.size(); i++) view[i]=TMave_mat[i].data();
+    return MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
+        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+        _xa, _ya, seqx_arg, seqy_arg, _secx, _secy,
+        len_aa, len_na, chain1_num, chain2_num, view.data(),
+        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+        d0_scale, fast_opt, i_opt, byresi_opt);
+}
+
 void MMalign_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
@@ -2866,6 +2890,36 @@ void copy_chain_assign_data(int chain1_num, int chain2_num,
     return;
 }
 
+// [bridge: double** src, DPMatrix& dest]
+void copy_chain_assign_data(int chain1_num, int chain2_num,
+    vector<string> &sequence,
+    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
+    int *assign1_list, int *assign2_list, double **TMave_mat,
+    vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
+    int *assign1_tmp,  int *assign2_tmp,  DPMatrix& TMave_tmp)
+{
+    vector<double*> v(chain1_num);
+    for (int i=0; i<chain1_num; i++) v[i]=TMave_tmp[i].data();
+    copy_chain_assign_data(chain1_num, chain2_num, sequence,
+        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
+        seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, v.data());
+}
+
+// [bridge: const DPMatrix& src, double** dest]
+void copy_chain_assign_data(int chain1_num, int chain2_num,
+    vector<string> &sequence,
+    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
+    int *assign1_list, int *assign2_list, const DPMatrix& TMave_mat,
+    vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
+    int *assign1_tmp,  int *assign2_tmp,  double **TMave_tmp)
+{
+    vector<double*> v(chain1_num);
+    for (int i=0; i<chain1_num; i++) v[i]=const_cast<double*>(TMave_mat[i].data());
+    copy_chain_assign_data(chain1_num, chain2_num, sequence,
+        seqxA_mat, seqyA_mat, assign1_list, assign2_list, v.data(),
+        seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, TMave_tmp);
+}
+
 void MMalign_iter(double & max_total_score, const int max_iter,
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -2886,8 +2940,8 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     int *assign2_tmp;
     assign1_tmp=new int[chain1_num];
     assign2_tmp=new int[chain2_num];
-    double **TMave_tmp;
-    NewArray(&TMave_tmp,chain1_num,chain2_num);
+    DPMatrix TMave_tmp;
+    TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
     vector<string> tmp_str_vec(chain2_num,"");
     vector<vector<string> >seqxA_tmp(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_tmp(chain1_num,tmp_str_vec);
@@ -2929,7 +2983,6 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     // clean up everything
     delete [] assign1_tmp;
     delete [] assign2_tmp;
-    DeleteArray(&TMave_tmp,chain1_num);
     vector<string>().swap(tmp_str_vec);
     vector<vector<string> >().swap(seqxA_tmp);
     vector<vector<string> >().swap(seqyA_tmp);
@@ -4300,8 +4353,8 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     int *assign2_tmp;
     assign1_tmp=new int[chain1_num];
     assign2_tmp=new int[chain2_num];
-    double **TMave_tmp;
-    NewArray(&TMave_tmp,chain1_num,chain2_num);
+    DPMatrix TMave_tmp;
+    TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
     vector<string> tmp_str_vec(chain2_num,"");
     vector<vector<string> >seqxA_tmp(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_tmp(chain1_num,tmp_str_vec);
@@ -4333,7 +4386,6 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     // clean up everything
     delete [] assign1_tmp;
     delete [] assign2_tmp;
-    DeleteArray(&TMave_tmp,chain1_num);
     vector<string>().swap(tmp_str_vec);
     vector<vector<string> >().swap(seqxA_tmp);
     vector<vector<string> >().swap(seqyA_tmp);
