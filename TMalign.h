@@ -4911,7 +4911,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    double **score;       // Input score table for dynamic programming
+    DPMatrix score;       // Input score table for dynamic programming
     bool   **path;        // for dynamic programming
     double **val;         // for dynamic programming
     Coords xtm, ytm;     // for TMscore search engine
@@ -4931,7 +4931,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     // allocate memory
     /***********************/
     int minlen = min(xlen, ylen);
-    NewArray(&score, xlen+1, ylen+1);
+    score.assign(xlen+1, std::vector<double>(ylen+1));
     NewArray(&path, xlen+1, ylen+1);
     NewArray(&val, xlen+1, ylen+1);
     xtm.resize(minlen);
@@ -4939,6 +4939,8 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
+    std::vector<double*> sv(xlen+1);
+    for(int _i=0;_i<=xlen;_i++) sv[_i]=score[_i].data();
 
     /***********************/
     //    parameter set
@@ -5042,8 +5044,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             if (TMtmp<0.5*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen);
+                delete [] invmap0;
+                delete [] invmap;
+                // score auto-destruct (DPMatrix)
                 return 2;
             }
         }
@@ -5082,8 +5085,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             if (TMtmp<0.52*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen);
+                delete [] invmap0;
+                delete [] invmap;
+                // score auto-destruct (DPMatrix)
                 return 3;
             }
         }
@@ -5128,8 +5132,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             if (TMtmp<0.54*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen);
+                delete [] invmap0;
+                delete [] invmap;
+                // score auto-destruct (DPMatrix)
                 return 4;
             }
         }
@@ -5138,7 +5143,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus(r1, r2, score, path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
+        get_initial_ssplus(r1, r2, sv.data(), path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
@@ -5170,8 +5175,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             if (TMtmp<0.56*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen);
+                delete [] invmap0;
+                delete [] invmap;
+                // score auto-destruct (DPMatrix)
                 return 5;
             }
         }
@@ -5212,8 +5218,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             if (TMtmp<0.58*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                    xtm, ytm, xt, r1, r2, xlen);
+                delete [] invmap0;
+                delete [] invmap;
+                // score auto-destruct (DPMatrix)
                 return 6;
             }
         }
@@ -5306,8 +5313,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         if (TMtmp<0.6*TMcut)
         {
             TM1=TM2=TM3=TM4=TM5=TMtmp;
-            clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                xtm, ytm, xt, r1, r2, xlen);
+            delete [] invmap0;
+            delete [] invmap;
+            // score auto-destruct (DPMatrix)
             return 7;
         }
     }
@@ -5517,8 +5525,9 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     seqM =seqM.substr(0,kk);
 
     // free memory
-    clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-        xtm, ytm, xt, r1, r2, xlen);
+    delete [] invmap0;
+    delete [] invmap;
+    // score auto-destruct (DPMatrix)
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception
