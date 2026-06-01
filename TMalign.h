@@ -1839,105 +1839,6 @@ void make_sec(const char *seq, const Coords& x, int len, char *sec,const string 
 //y2x[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-bool get_initial5( double **r1, double **r2, double **xtm, double **ytm,
-    bool **path, double **val,
-    double **x, double **y, int xlen, int ylen, int *y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
-{
-    double GL;
-    double rmsd;
-    double t[3];
-    double u[3][3];
-
-    double d01 = d0 + 1.5;
-    if (d01 < D0_MIN) d01 = D0_MIN;
-    double d02 = d01*d01;
-
-    double GLmax = 0;
-    int aL = getmin(xlen, ylen);
-    int *invmap = new int[ylen + 1];
-
-    // jump on sequence1-------------->
-    int n_jump1 = 0;
-    if (xlen > 250)
-        n_jump1 = 45;
-    else if (xlen > 200)
-        n_jump1 = 35;
-    else if (xlen > 150)
-        n_jump1 = 25;
-    else
-        n_jump1 = 15;
-    if (n_jump1 > (xlen / 3))
-        n_jump1 = xlen / 3;
-
-    // jump on sequence2-------------->
-    int n_jump2 = 0;
-    if (ylen > 250)
-        n_jump2 = 45;
-    else if (ylen > 200)
-        n_jump2 = 35;
-    else if (ylen > 150)
-        n_jump2 = 25;
-    else
-        n_jump2 = 15;
-    if (n_jump2 > (ylen / 3))
-        n_jump2 = ylen / 3;
-
-    // fragment to superimpose-------------->
-    int n_frag[2] = { 20, 100 };
-    if (n_frag[0] > (aL / 3))
-        n_frag[0] = aL / 3;
-    if (n_frag[1] > (aL / 2))
-        n_frag[1] = aL / 2;
-
-    // start superimpose search-------------->
-    if (fast_opt)
-    {
-        n_jump1*=5;
-        n_jump2*=5;
-    }
-    bool flag = false;
-    for (int i_frag = 0; i_frag < 2; i_frag++)
-    {
-        int m1 = xlen - n_frag[i_frag] + 1;
-        int m2 = ylen - n_frag[i_frag] + 1;
-
-        for (int i = 0; i<m1; i = i + n_jump1) //index starts from 0, different from FORTRAN
-        {
-            for (int j = 0; j<m2; j = j + n_jump2)
-            {
-                for (int k = 0; k<n_frag[i_frag]; k++) //fragment in y
-                {
-                    r1[k][0] = x[k + i][0];
-                    r1[k][1] = x[k + i][1];
-                    r1[k][2] = x[k + i][2];
-
-                    r2[k][0] = y[k + j][0];
-                    r2[k][1] = y[k + j][1];
-                    r2[k][2] = y[k + j][2];
-                }
-
-                // superpose the two structures and rotate it
-                Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
-
-                double gap_open = 0.0;
-                NWDP_TM(path, val, x, y, xlen, ylen,
-                    t, u, d02, gap_open, invmap);
-                GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
-                    invmap, d0, d0_search, t, u);
-                if (GL>GLmax)
-                {
-                    GLmax = GL;
-                    for (int ii = 0; ii<ylen; ii++) y2x[ii] = invmap[ii];
-                    flag = true;
-                }
-            }
-        }
-    }
-
-    delete[] invmap;
-    return flag;
-}
 
 bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     bool **path, double **val,
@@ -2188,30 +2089,6 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
 //y2x[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-void get_initial_ssplus(double **r1, double **r2, double **score, bool **path,
-    double **val, const char *secx, const char *secy, double **x, double **y,
-    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    //create score matrix for DP
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
-        y2x0, D0_MIN,d0);
-    
-    double gap_open=-1.0;
-    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
-}
-
-void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
-    double **val, const char *secx, const char *secy, double **x, double **y,
-    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    //create score matrix for DP
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
-        y2x0, D0_MIN,d0);
-    
-    double gap_open=-1.0;
-    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
-}
-
 // Coords& x/y overload — for TMalign_main flip
 void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
     double **val, const char *secx, const char *secy, const Coords& x, const Coords& y,
