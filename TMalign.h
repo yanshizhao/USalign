@@ -2051,26 +2051,6 @@ bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return flag;
 }
 
-// PathMat/DPMatrix + const Coords& overload
-bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    PathMat& path, DPMatrix& val,
-    const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
-{
-    double GL,rmsd,t[3],u[3][3];
-    double d01=d0+1.5;if(d01<D0_MIN)d01=D0_MIN;double d02=d01*d01;double GLmax=0;int aL=getmin(xlen,ylen);int*invmap=new int[ylen+1];
-    int n_jump1=0,n_jump2=0;
-    if(xlen>250)n_jump1=45;else if(xlen>200)n_jump1=35;else if(xlen>150)n_jump1=25;else n_jump1=15;if(n_jump1>(xlen/3))n_jump1=xlen/3;
-    if(ylen>250)n_jump2=45;else if(ylen>200)n_jump2=35;else if(ylen>150)n_jump2=25;else n_jump2=15;if(n_jump2>(ylen/3))n_jump2=ylen/3;
-    int n_frag[2]={20,100};if(n_frag[0]>(aL/3))n_frag[0]=aL/3;if(n_frag[1]>(aL/2))n_frag[1]=aL/2;if(fast_opt){n_jump1*=5;n_jump2*=5;}bool flag=false;
-    std::vector<double*>xv(xlen),yv(ylen);for(int _i=0;_i<xlen;_i++)xv[_i]=(double*)x[_i].data();for(int _j=0;_j<ylen;_j++)yv[_j]=(double*)y[_j].data();
-    for(int i_frag=0;i_frag<2;i_frag++){int m1=xlen-n_frag[i_frag]+1,m2=ylen-n_frag[i_frag]+1;
-    for(int i=0;i<m1;i+=n_jump1)for(int j=0;j<m2;j+=n_jump2){for(int k=0;k<n_frag[i_frag];k++){r1[k][0]=x[k+i][0];r1[k][1]=x[k+i][1];r1[k][2]=x[k+i][2];r2[k][0]=y[k+j][0];r2[k][1]=y[k+j][1];r2[k][2]=y[k+j][2];}
-    {int _nf=n_frag[i_frag];std::vector<double*>_rv1(_nf),_rv2(_nf);for(int _k=0;_k<_nf;_k++){_rv1[_k]=r1[_k].data();_rv2[_k]=r2[_k].data();}Kabsch(_rv1.data(),_rv2.data(),_nf,1,&rmsd,t,u);}
-    double gap_open=0.0;NWDP_TM(path,val,xv.data(),yv.data(),xlen,ylen,t,u,d02,gap_open,invmap);
-    GL=get_score_fast(r1,r2,xtm,ytm,x,y,xlen,ylen,invmap,d0,d0_search,t,u);if(GL>GLmax){GLmax=GL;for(int ii=0;ii<ylen;ii++)y2x[ii]=invmap[ii];flag=true;}}}
-    delete[]invmap;return flag;
-}
 
 
 
