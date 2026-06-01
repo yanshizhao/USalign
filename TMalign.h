@@ -2193,12 +2193,6 @@ void find_max_frag(const Coords& x, int len, int *start_max,
 //y2x0[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-// const Coords& x/y overload
-//input: x, y, xlen, ylen
-//output: y2x0 stores the best alignment: e.g., 
-//y2x0[j]=i means:
-//the jth element in y is aligned to the ith element in x if i>=0 
-//the jth element in y is aligned to a gap in x if i==-1
 double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     const Coords& x, const Coords& y, int xlen, int ylen,
     int *y2x, double d0, double d0_search,
@@ -4583,17 +4577,6 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
     DeleteArray(&score, xlen+1);
     DeleteArray(&path, xlen+1);
     DeleteArray(&val, xlen+1);
-    return;
-}
-
-// DPMatrix overload — DP containers auto-destruct, no DeleteArray needed
-void clean_up_after_approx_TM(int *invmap0, int *invmap,
-    DPMatrix& /*score*/, PathMat& /*path*/, DPMatrix& /*val*/,
-    Coords& xtm, Coords& ytm, Coords& xt, Coords& r1, Coords& r2,
-    const int xlen, const int /*minlen*/ = 0)
-{
-    delete [] invmap0;
-    delete [] invmap;
     return;
 }
 
