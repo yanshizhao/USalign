@@ -1756,14 +1756,6 @@ void get_initial_ss(bool **path, double **val,
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
-// PathMat/DPMatrix overload
-void get_initial_ss(PathMat& path, DPMatrix& val,
-    const char *secx, const char *secy, int xlen, int ylen, int *y2x)
-{
-    double gap_open=-1.0;
-    NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
-}
-
 void make_sec(const char *seq, const Coords& x, int len, char *sec,const string atom_opt)
 {
     int ii;
@@ -2190,19 +2182,6 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
     }
 }
 
-// DPMatrix& score overload
-void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
-    const char *secx, const char *secy, const Coords& x, const Coords& y,
-    int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
-{
-    double t[3],u[3][3],rmsd,dij;
-    double d01=d0+1.5;if(d01<D0_MIN)d01=D0_MIN;double d02=d01*d01;double xx[3];int i,k=0;
-    for(int j=0;j<ylen;j++){i=y2x[j];if(i>=0){r1[k][0]=x[i][0];r1[k][1]=x[i][1];r1[k][2]=x[i][2];r2[k][0]=y[j][0];r2[k][1]=y[j][1];r2[k][2]=y[j][2];k++;}}
-    {std::vector<double*>rv1(k),rv2(k);for(int _k=0;_k<k;_k++){rv1[_k]=r1[_k].data();rv2[_k]=r2[_k].data();}Kabsch(rv1.data(),rv2.data(),k,1,&rmsd,t,u);}
-    for(int ii=0;ii<xlen;ii++){transform(t,u,(double*)&x[ii][0],xx);for(int jj=0;jj<ylen;jj++){dij=dist(xx,(double*)&y[jj][0]);if(secx[ii]==secy[jj])score[ii+1][jj+1]=1.0/(1+dij/d02)+0.5;else score[ii+1][jj+1]=1.0/(1+dij/d02);}}
-}
-
-
 //get initial alignment from secondary structure and previous alignments
 //input: x, y, xlen, ylen
 //output: y2x stores the best alignment: e.g., 
@@ -2245,17 +2224,6 @@ void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
     double gap_open=-1.0;
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
-
-// DPMatrix/PathMat overload
-void get_initial_ssplus(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
-    DPMatrix& val, const char *secx, const char *secy, const Coords& x, const Coords& y,
-    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
-    double gap_open=-1.0;
-    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
-}
-
 
 void find_max_frag(double **x, int len, int *start_max,
     int *end_max, double dcu0, const bool fast_opt)
