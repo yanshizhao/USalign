@@ -4200,11 +4200,13 @@ void MMalign_dimer(double & total_score,
     std::string seqx;
     std::string seqy;
 
-    bool **mask; // mask out inter-chain region
-    NewArray(&mask, xlen+1, ylen+1);
+    PathMat mask; // mask out inter-chain region
+    mask.assign(xlen+1, std::vector<char>(ylen+1));
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) mask[i][j]=false;
     for (i=0;i<xlen_dimer[0]+1;i++) mask[i][0]=true;
     for (j=0;j<ylen_dimer[0]+1;j++) mask[0][j]=true;
+    std::vector<char*> mv(xlen+1);
+    for(int _i=0;_i<=xlen;_i++) mv[_i]=mask[_i].data();
     int c;
     int prev_xlen;
     int prev_ylen;
@@ -4260,11 +4262,11 @@ void MMalign_dimer(double & total_score,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, mask, sequence, Lnorm_ass, d0_scale,
+        xlen, ylen, reinterpret_cast<bool**>(mv.data()), sequence, Lnorm_ass, d0_scale,
         1, false, true, false, fast_opt, mol_type, -1);
 
     // clean up TM-align
-    DeleteArray(&mask,xlen+1);
+    // mask auto-destruct (PathMat)
 
     // re-compute chain level alignment
     total_score=0;
