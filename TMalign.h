@@ -4913,7 +4913,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
     DPMatrix score;       // Input score table for dynamic programming
     bool   **path;        // for dynamic programming
-    double **val;         // for dynamic programming
+    DPMatrix val;         // for dynamic programming
     Coords xtm, ytm;     // for TMscore search engine
     Coords xt;            //for saving the superposed version of r_1 or xtm
     Coords r1, r2;        // for Kabsch rotation
@@ -4933,7 +4933,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     int minlen = min(xlen, ylen);
     score.assign(xlen+1, std::vector<double>(ylen+1));
     NewArray(&path, xlen+1, ylen+1);
-    NewArray(&val, xlen+1, ylen+1);
+    val.assign(  xlen+1, std::vector<double>(ylen+1));
     xtm.resize(minlen);
     ytm.resize(minlen);
     xt.resize(xlen);
@@ -4941,6 +4941,8 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     r2.resize(minlen);
     std::vector<double*> sv(xlen+1);
     for(int _i=0;_i<=xlen;_i++) sv[_i]=score[_i].data();
+    std::vector<double*> vv(xlen+1);
+    for(int _i=0;_i<=xlen;_i++) vv[_i]=val[_i].data();
 
     /***********************/
     //    parameter set
@@ -5026,7 +5028,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         if (TM>TMmax) TMmax = TM;
         if (TMcut>0) copy_t_u(t, u, t0, u0);
         //run dynamic programing iteratively to find the best alignment
-        TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa, ya, xlen, ylen,
+        TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya, xlen, ylen,
              t, u, invmap, 0, 2, (fast_opt)?2:30, local_d0_search,
              D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
@@ -5054,7 +5056,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure   
         /************************************************************/
-        get_initial_ss(path, val, secx.c_str(), secy.c_str(), xlen, ylen, invmap);
+        get_initial_ss(path, vv.data(), secx.c_str(), secy.c_str(), xlen, ylen, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
@@ -5066,7 +5068,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         }
         if (TM > TMmax*0.2)
         {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
                 xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -5096,7 +5098,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         //    get initial alignment based on local superposition   
         /************************************************************/
         //=initial5 in original TM-align
-        if (get_initial5( r1, r2, xtm, ytm, path, val, xa, ya,
+        if (get_initial5( r1, r2, xtm, ytm, path, vv.data(), xa, ya,
             xlen, ylen, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
@@ -5110,7 +5112,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             }
             if (TM > TMmax*ddcc)
             {
-                TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+                TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
                     xlen, ylen, t, u, invmap, 0, 2, 2, local_d0_search,
                     D0_MIN, Lnorm, d0, score_d8);
                 if (TM>TMmax)
@@ -5143,7 +5145,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus(r1, r2, sv.data(), path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
+        get_initial_ssplus(r1, r2, sv.data(), path, vv.data(), secx.c_str(), secy.c_str(), xa_c, ya_c,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
@@ -5156,7 +5158,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
                 xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -5199,7 +5201,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
                 xlen, ylen, t, u, invmap, 1, 2, 2, local_d0_search, D0_MIN,
                 Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -5271,7 +5273,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
         }
         // Different from get_initial, get_initial_ss and get_initial_ssplus
-        TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+        TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
             xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
             local_d0_search, D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
