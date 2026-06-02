@@ -86,6 +86,46 @@ double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
     return RMSD;
 }
 
+// Full Coords& overload — xa, ya are Coords, syntax identical to double**
+double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
+    Coords& xa, Coords& ya, int xlen, int ylen, int invmap[],
+    int& L_ali, double t[3], double u[3][3], const int mol_type)
+{
+    L_ali = 0;
+    int i;
+    int j;
+    for (j = 0; j<ylen; j++)
+    {
+        i = invmap[j];
+        if (i >= 0)
+        {
+            r1[L_ali][0]  = xa[i][0];
+            r1[L_ali][1]  = xa[i][1];
+            r1[L_ali][2]  = xa[i][2];
+
+            r2[L_ali][0]  = ya[j][0];
+            r2[L_ali][1]  = ya[j][1];
+            r2[L_ali][2]  = ya[j][2];
+
+            L_ali++;
+        }
+        else if (i != -1) PrintErrorAndQuit("Wrong map!\n");
+    }
+
+    double RMSD = 0;
+    Kabsch(r1, r2, L_ali, 1, &RMSD, t, u);
+    RMSD = sqrt( RMSD/(1.0*L_ali) );
+
+    for (i=0; i<xlen; i++)
+    {
+        xt[i][0] = xa[i][0];
+        xt[i][1] = xa[i][1];
+        xt[i][2] = xa[i][2];
+    }
+    do_rotation(xa, xt, xlen, t,u);
+    return RMSD;
+}
+
 void parse_alignment_into_invmap(const string seqxA_tmp,
     const string seqyA_tmp, const int xlen, const int ylen, int *invmap_tmp)
 {
@@ -108,8 +148,48 @@ void parse_alignment_into_invmap(const string seqxA_tmp,
     return;
 }
 
+// Forward declaration of Coords& overload (defined below)
+int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
+    const char *secx, const char *secy, double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
+    double &d0a, double &d0_out, string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden, double &TM_ali,
+    double &rmsd_ali, int &n_ali, int &n_ali8, const int xlen, const int ylen,
+    const vector<string>&sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt,
+    const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
+    int *invmap, const int glocal, const int iter_opt,
+    const int seq_opt, const double early_opt);
+
 // outfmt_opt is disabled for alignment consistency
 int HwRMSD_main(double **xa, double **ya, const char *seqx, const char *seqy,
+    const char *secx, const char *secy, double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
+    double &d0a, double &d0_out, string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden, double &TM_ali,
+    double &rmsd_ali, int &n_ali, int &n_ali8, const int xlen, const int ylen,
+    const vector<string>&sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt,
+    const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
+    int *invmap, const int glocal=0, const int iter_opt=10,
+    const int seq_opt=3, const double early_opt=0.01)
+{
+    Coords xa_tmp; xa_tmp.reserve(xlen);
+    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return HwRMSD_main(xa_tmp, ya_tmp, seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt, a_opt,
+        u_opt, d_opt, mol_type, invmap, glocal, iter_opt, seq_opt, early_opt);
+}
+
+// Coords& bridge overload — builds temp double** views and delegates to double** impl
+int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
     const char *secx, const char *secy, double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
@@ -300,34 +380,5 @@ int HwRMSD_main(double **xa, double **ya, const char *seqx, const char *seqy,
     // xt/r1/r2 auto-destruct (Coords)
     do_vec.clear();
     return 0;
-}
-
-// Coords& bridge overload — builds temp double** views and delegates to double** impl
-int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
-    const char *secx, const char *secy, double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
-    double &d0a, double &d0_out, string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden, double &TM_ali,
-    double &rmsd_ali, int &n_ali, int &n_ali8, const int xlen, const int ylen,
-    const vector<string>&sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt,
-    const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
-    int *invmap, const int glocal=0, const int iter_opt=10,
-    const int seq_opt=3, const double early_opt=0.01)
-{
-    vector<double*> xa_view(xlen);
-    vector<double*> ya_view(ylen);
-    for (int i=0; i<xlen; i++) xa_view[i]=xa[i].data();
-    for (int i=0; i<ylen; i++) ya_view[i]=ya[i].data();
-    return HwRMSD_main(xa_view.data(), ya_view.data(), seqx, seqy,
-        secx, secy, t0, u0,
-        TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type, invmap,
-        glocal, iter_opt, seq_opt, early_opt);
 }
 #endif

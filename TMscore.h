@@ -986,6 +986,45 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
     return score_max;
 }
 
+// Coords& x/y overload — syntax identical to double**
+double detailed_search_standard( Coords& r1, Coords& r2,
+    Coords& xtm, Coords& ytm, Coords& xt, const Coords& x, const Coords& y,
+    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
+    int simplify_step, int score_sum_method, double local_d0_search,
+    const bool& bNormalize, double Lnorm, double score_d8, double d0,
+    double GDT_list[5], double &maxsub)
+{
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double rmsd;
+
+    k=0;
+    for(i=0; i<ylen; i++)
+    {
+        j=invmap0[i];
+        if(j>=0) //aligned
+        {
+            xtm[k][0]=x[j][0];
+            xtm[k][1]=x[j][1];
+            xtm[k][2]=x[j][2];
+
+            ytm[k][0]=y[i][0];
+            ytm[k][1]=y[i][1];
+            ytm[k][2]=y[i][2];
+            k++;
+        }
+    }
+
+    //detailed search 40-->1
+    tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
+        simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0,
+        GDT_list, maxsub);
+    if (bNormalize)
+        tmscore = tmscore * k / Lnorm;
+    return tmscore;
+}
 
 double detailed_search_standard( double **r1, double **r2,
     double **xtm, double **ytm, double **xt, double **x, double **y,
@@ -1068,8 +1107,24 @@ double detailed_search_standard( Coords& r1, Coords& r2,
     return tmscore;
 }
 
+// Forward declaration of Coords& overload (defined below)
+int TMscore_main(Coords& xa, Coords& ya,
+    const char *seqx, const char *seqy, double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double GDT_list[5], double &maxsub,
+    const double TMcut=-1);
+
 /* Entry function for TM-score. Return TM-score calculation status:
- * 0   - full TM-score calculation 
+ * 0   - full TM-score calculation
  * 1   - terminated due to exception
  * 2-7 - pre-terminated due to low TM-score */
 int TMscore_main(double **xa, double **ya,
@@ -1086,6 +1141,155 @@ int TMscore_main(double **xa, double **ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double GDT_list[5], double &maxsub,
     const double TMcut=-1)
+{
+    Coords xa_tmp; xa_tmp.reserve(xlen);
+    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return TMscore_main(xa_tmp, ya_tmp,
+        seqx, seqy, t0, u0,
+        TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, GDT_list, maxsub, TMcut);
+}
+
+void output_TMscore_results(
+    const string xname, const string yname,
+    const string chainID1, const string chainID2,
+    const int xlen, const int ylen, double t[3], double u[3][3],
+    const double TM1, const double TM2,
+    const double TM3, const double TM4, const double TM5,
+    const double rmsd, const double d0_out,
+    const char *seqM, const char *seqxA, const char *seqyA, const double Liden,
+    const int n_ali8, const int L_ali,
+    const double TM_ali, const double rmsd_ali, const double TM_0,
+    const double d0_0, const double d0A, const double d0B,
+    const double Lnorm_ass, const double d0_scale, 
+    const double d0a, const double d0u, const char* fname_matrix,
+    const int outfmt_opt, const int ter_opt, const char *fname_super,
+    const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
+    int L_lt_d, const double rmsd_d0_out,
+    double GDT_list[5], double maxsub, const int split_opt,
+    const vector<string>&resi_vec1, const vector<string>&resi_vec2)
+{
+    if (outfmt_opt<=0)
+    {
+        fcout("\nStructure1: %s%s    Length=%5d\n",
+            xname, chainID1, xlen);
+        fcout("Structure2: %s%s    Length=%5d (by which all scores are normalized)\n",
+            yname, chainID2, ylen);
+
+        fcout("Number of residues in common=%5d\n", n_ali8);
+        fcout("RMSD of  the common residues=%9.3f\n\n", rmsd);
+        fcout("TM-score    = %6.4f  (d0= %.2f)\n", TM1, d0A);
+        fcout("MaxSub-score= %6.4f  (d0= 3.50)\n", maxsub/ylen);
+
+        double gdt_ts_score=0;
+        double gdt_ha_score=0;
+        int i;
+        for (i=0;i<4;i++)
+        {
+            gdt_ts_score+=GDT_list[i+1];
+            gdt_ha_score+=GDT_list[i];
+        }
+        gdt_ts_score/=(4*ylen);
+        gdt_ha_score/=(4*ylen);
+        fcout("GDT-TS-score= %6.4f %%(d<1)=%6.4f %%(d<2)=%6.4f %%(d<4)=%6.4f %%(d<8)=%6.4f\n",
+            gdt_ts_score, GDT_list[1]/ylen, GDT_list[2]/ylen,
+                          GDT_list[3]/ylen, GDT_list[4]/ylen);
+        fcout("GDT-HA-score= %6.4f %%(d<0.5)=%6.4f %%(d<1)=%6.4f %%(d<2)=%6.4f %%(d<4)=%6.4f\n",
+            gdt_ha_score, GDT_list[0]/ylen, GDT_list[1]/ylen,
+                          GDT_list[2]/ylen, GDT_list[3]/ylen);
+
+        if (a_opt==1)
+            fcout("TM-score    = %5.4f  (if normalized by average length of two structures, i.e., LN= %.1f, d0= %.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+        if (u_opt)
+            fcout("TM-score    = %5.4f  (if normalized by user-specified LN=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
+        if (d_opt)
+            fcout("TM-score    = %5.5f  (if scaled by user-specified d0= %.2f, and LN= %d)\n", TM5, d0_scale, ylen);
+    
+
+        cout << "\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n";
+        cout << " i          t(i)         u(i,1)         u(i,2)         u(i,3)\n";
+        fcout(" 1 %17.10f %14.10f %14.10f %14.10f\n",t[0],u[0][0],u[0][1],u[0][2]);
+        fcout(" 2 %17.10f %14.10f %14.10f %14.10f\n",t[1],u[1][0],u[1][1],u[1][2]);
+        fcout(" 3 %17.10f %14.10f %14.10f %14.10f\n",t[2],u[2][0],u[2][1],u[2][2]);
+
+        //output alignment
+        string seq_scale=seqM;
+        for (i=0;i<strlen(seqM);i++)
+        {
+            L_lt_d+=seqM[i]==':';
+            seq_scale[i]=(i+1)%10+'0';
+        }
+        fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d\n", d0_out, L_lt_d);
+        //fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d  RMSD=%6.2f\n", d0_out, L_lt_d, rmsd_d0_out);
+        fcout("(\":\" denotes the residue pairs of distance <%4.1f Angstrom)\n", d0_out);
+        cout << seqxA << "\n";
+        cout << seqM << "\n";
+        cout << seqyA << "\n";
+        cout << seq_scale.c_str() << "\n";
+        seq_scale.clear();
+    }
+    else if (outfmt_opt==1)
+    {
+        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+            xname, chainID1, xlen, d0B, Liden/xlen, TM2);
+        cout << seqxA << "\n";
+        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+            yname, chainID2, ylen, d0A, Liden/ylen, TM1);
+        cout << seqyA << "\n";
+
+        fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
+            n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
+
+        if(a_opt)
+            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+
+        if(u_opt)
+            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
+
+        if(d_opt)
+            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
+
+        cout << "$$$$\n";
+    }
+    else if (outfmt_opt==2)
+    {
+        fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
+            xname, chainID1, yname, chainID2,
+            TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
+            xlen, ylen, n_ali8);
+    }
+    cout << endl;
+
+    if (strlen(fname_matrix)) 
+        output_rotation_matrix(fname_matrix, t, u);
+    if (strlen(fname_super))
+        output_pymol(xname, yname, fname_super, t, u, ter_opt,
+            0, split_opt, mirror_opt, seqM, seqxA, seqyA,
+            resi_vec1, resi_vec2, chainID1, chainID2);
+}
+
+// Coords& bridge overload — builds temp double** views and delegates to double** impl
+int TMscore_main(Coords& xa, Coords& ya,
+    const char *seqx, const char *seqy, double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double GDT_list[5], double &maxsub,
+    const double TMcut)
 {
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
@@ -1397,153 +1601,4 @@ int TMscore_main(double **xa, double **ya,
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception
-}
-
-void output_TMscore_results(
-    const string xname, const string yname,
-    const string chainID1, const string chainID2,
-    const int xlen, const int ylen, double t[3], double u[3][3],
-    const double TM1, const double TM2,
-    const double TM3, const double TM4, const double TM5,
-    const double rmsd, const double d0_out,
-    const char *seqM, const char *seqxA, const char *seqyA, const double Liden,
-    const int n_ali8, const int L_ali,
-    const double TM_ali, const double rmsd_ali, const double TM_0,
-    const double d0_0, const double d0A, const double d0B,
-    const double Lnorm_ass, const double d0_scale, 
-    const double d0a, const double d0u, const char* fname_matrix,
-    const int outfmt_opt, const int ter_opt, const char *fname_super,
-    const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
-    int L_lt_d, const double rmsd_d0_out,
-    double GDT_list[5], double maxsub, const int split_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2)
-{
-    if (outfmt_opt<=0)
-    {
-        fcout("\nStructure1: %s%s    Length=%5d\n",
-            xname, chainID1, xlen);
-        fcout("Structure2: %s%s    Length=%5d (by which all scores are normalized)\n",
-            yname, chainID2, ylen);
-
-        fcout("Number of residues in common=%5d\n", n_ali8);
-        fcout("RMSD of  the common residues=%9.3f\n\n", rmsd);
-        fcout("TM-score    = %6.4f  (d0= %.2f)\n", TM1, d0A);
-        fcout("MaxSub-score= %6.4f  (d0= 3.50)\n", maxsub/ylen);
-
-        double gdt_ts_score=0;
-        double gdt_ha_score=0;
-        int i;
-        for (i=0;i<4;i++)
-        {
-            gdt_ts_score+=GDT_list[i+1];
-            gdt_ha_score+=GDT_list[i];
-        }
-        gdt_ts_score/=(4*ylen);
-        gdt_ha_score/=(4*ylen);
-        fcout("GDT-TS-score= %6.4f %%(d<1)=%6.4f %%(d<2)=%6.4f %%(d<4)=%6.4f %%(d<8)=%6.4f\n",
-            gdt_ts_score, GDT_list[1]/ylen, GDT_list[2]/ylen,
-                          GDT_list[3]/ylen, GDT_list[4]/ylen);
-        fcout("GDT-HA-score= %6.4f %%(d<0.5)=%6.4f %%(d<1)=%6.4f %%(d<2)=%6.4f %%(d<4)=%6.4f\n",
-            gdt_ha_score, GDT_list[0]/ylen, GDT_list[1]/ylen,
-                          GDT_list[2]/ylen, GDT_list[3]/ylen);
-
-        if (a_opt==1)
-            fcout("TM-score    = %5.4f  (if normalized by average length of two structures, i.e., LN= %.1f, d0= %.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
-        if (u_opt)
-            fcout("TM-score    = %5.4f  (if normalized by user-specified LN=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
-        if (d_opt)
-            fcout("TM-score    = %5.5f  (if scaled by user-specified d0= %.2f, and LN= %d)\n", TM5, d0_scale, ylen);
-    
-
-        cout << "\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n";
-        cout << " i          t(i)         u(i,1)         u(i,2)         u(i,3)\n";
-        fcout(" 1 %17.10f %14.10f %14.10f %14.10f\n",t[0],u[0][0],u[0][1],u[0][2]);
-        fcout(" 2 %17.10f %14.10f %14.10f %14.10f\n",t[1],u[1][0],u[1][1],u[1][2]);
-        fcout(" 3 %17.10f %14.10f %14.10f %14.10f\n",t[2],u[2][0],u[2][1],u[2][2]);
-
-        //output alignment
-        string seq_scale=seqM;
-        for (i=0;i<strlen(seqM);i++)
-        {
-            L_lt_d+=seqM[i]==':';
-            seq_scale[i]=(i+1)%10+'0';
-        }
-        fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d\n", d0_out, L_lt_d);
-        //fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d  RMSD=%6.2f\n", d0_out, L_lt_d, rmsd_d0_out);
-        fcout("(\":\" denotes the residue pairs of distance <%4.1f Angstrom)\n", d0_out);
-        cout << seqxA << "\n";
-        cout << seqM << "\n";
-        cout << seqyA << "\n";
-        cout << seq_scale.c_str() << "\n";
-        seq_scale.clear();
-    }
-    else if (outfmt_opt==1)
-    {
-        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            xname, chainID1, xlen, d0B, Liden/xlen, TM2);
-        cout << seqxA << "\n";
-        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            yname, chainID2, ylen, d0A, Liden/ylen, TM1);
-        cout << seqyA << "\n";
-
-        fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
-            n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
-
-        if(a_opt)
-            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
-
-        if(u_opt)
-            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
-
-        if(d_opt)
-            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
-
-        cout << "$$$$\n";
-    }
-    else if (outfmt_opt==2)
-    {
-        fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
-            xname, chainID1, yname, chainID2,
-            TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
-            xlen, ylen, n_ali8);
-    }
-    cout << endl;
-
-    if (strlen(fname_matrix)) 
-        output_rotation_matrix(fname_matrix, t, u);
-    if (strlen(fname_super))
-        output_pymol(xname, yname, fname_super, t, u, ter_opt,
-            0, split_opt, mirror_opt, seqM, seqxA, seqyA,
-            resi_vec1, resi_vec2, chainID1, chainID2);
-}
-
-// Coords& bridge overload — builds temp double** views and delegates to double** impl
-int TMscore_main(Coords& xa, Coords& ya,
-    const char *seqx, const char *seqy, double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, double GDT_list[5], double &maxsub,
-    const double TMcut=-1)
-{
-    vector<double*> xa_view(xlen);
-    vector<double*> ya_view(ylen);
-    for (int i=0; i<xlen; i++) xa_view[i]=xa[i].data();
-    for (int i=0; i<ylen; i++) ya_view[i]=ya[i].data();
-    return TMscore_main(xa_view.data(), ya_view.data(),
-        seqx, seqy, t0, u0,
-        TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, GDT_list, maxsub, TMcut);
 }
