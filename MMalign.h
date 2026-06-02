@@ -1309,7 +1309,7 @@ double MMalign_search(
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
     double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
-    int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
@@ -1475,31 +1475,6 @@ double MMalign_search(
     }
     return total_score;
 }
-
-
-double MMalign_search(
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double** _xa, double** _ya, char *seqx_arg, char *seqy_arg, char *_secx, char *_secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
-{
-    vector<double*> view(TMave_mat.size());
-    for (size_t i=0; i<TMave_mat.size(); i++) view[i]=TMave_mat[i].data();
-    return MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        _xa, _ya, seqx_arg, seqy_arg, _secx, _secy,
-        len_aa, len_na, chain1_num, chain2_num, view.data(),
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, fast_opt, i_opt, byresi_opt);
-}
-
 void MMalign_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
