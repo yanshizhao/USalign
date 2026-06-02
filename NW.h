@@ -113,9 +113,25 @@ void NWDP_TM(const std::vector<std::vector<double>>& score, std::vector<std::vec
         }
     }
     i=len1; j=len2;
-    while(i>0 && j>0) {
-        if(path[i][j]) { j2i[j-1]=i-1; i--; j--; }
-        else if(val[i-1][j] > val[i][j-1]) i--; else j--;
+    while(i>0 && j>0)
+    {
+        if(path[i][j]) //from diagonal
+        {
+            j2i[j-1]=i-1;
+            i--;
+            j--;
+        }
+        else
+        {
+            h=val[i-1][j];
+            if(path[i-1][j]) h +=gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v +=gap_open;
+
+            if(v>=h) j--;
+            else i--;
+        }
     }
 }
 
@@ -252,9 +268,25 @@ inline void NWDP_TM(PathMat& path, DPMatrix& val, double **x, double **y,
         }
     }
     i=len1; j=len2;
-    while(i>0 && j>0) {
-        if(path[i][j]) { j2i[j-1]=i-1; i--; j--; }
-        else if(val[i-1][j] > val[i][j-1]) i--; else j--;
+    while(i>0 && j>0)
+    {
+        if(path[i][j]) //from diagonal
+        {
+            j2i[j-1]=i-1;
+            i--;
+            j--;
+        }
+        else
+        {
+            h=val[i-1][j];
+            if(path[i-1][j]) h +=gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v +=gap_open;
+
+            if(v>=h) j--;
+            else i--;
+        }
     }
 }
 
@@ -793,9 +825,26 @@ inline void NWDP_TM(PathMat& path, DPMatrix& val, const char *secx, const char *
             else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
         }
     }
+    //trace back to extract the alignment
     i=len1; j=len2;
-    while(i>0 && j>0) {
-        if(path[i][j]) { j2i[j-1]=i-1; i--; j--; }
-        else if(val[i-1][j] > val[i][j-1]) i--; else j--;
+    while(i>0 && j>0)
+    {
+        if(path[i][j]) //from diagonal
+        {
+            j2i[j-1]=i-1;
+            i--;
+            j--;
+        }
+        else
+        {
+            h=val[i-1][j];
+            if(path[i-1][j]) h +=gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v +=gap_open;
+
+            if(v>=h) j--;
+            else i--;
+        }
     }
 }

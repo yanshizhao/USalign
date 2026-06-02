@@ -4856,7 +4856,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure   
         /************************************************************/
-        get_initial_ss(reinterpret_cast<bool**>(pv.data()), vv.data(), secx.c_str(), secy.c_str(), xlen, ylen, invmap);
+        get_initial_ss(path, val, secx.c_str(), secy.c_str(), xlen, ylen, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
@@ -4898,7 +4898,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         //    get initial alignment based on local superposition   
         /************************************************************/
         //=initial5 in original TM-align
-        if (get_initial5( r1, r2, xtm, ytm, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+        if (get_initial5( r1, r2, xtm, ytm, path, val, xa_c, ya_c,
             xlen, ylen, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
@@ -4945,7 +4945,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus(r1, r2, sv.data(), reinterpret_cast<bool**>(pv.data()), vv.data(), secx.c_str(), secy.c_str(), xa_c, ya_c,
+        get_initial_ssplus(r1, r2, score, path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
