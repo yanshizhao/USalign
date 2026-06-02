@@ -1193,60 +1193,6 @@ void parse_chain_list(const vector<string>&chain_list,
 }
 
 // C++ string overload (real implementation)
-int copy_chain_pair_data(
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
-    int chain1_num, int chain2_num,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence)
-{
-    int i;
-    int j;
-    int r;
-    for (i=0;i<sequence.size();i++) sequence[i].clear();
-    sequence.clear();
-    sequence.push_back("");
-    sequence.push_back("");
-    int mol_type=0;
-    int xlen=0;
-    int ylen=0;
-    seqx.clear();
-    seqy.clear();
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        if (j<0) continue;
-        for (r=0;r<xlen_vec[i];r++)
-        {
-            seqx += seqx_vec[i][r];
-            secx[xlen]=secx_vec[i][r];
-            xa[xlen][0]= xa_vec[i][r][0];
-            xa[xlen][1]= xa_vec[i][r][1];
-            xa[xlen][2]= xa_vec[i][r][2];
-            xlen++;
-        }
-        sequence[0]+=seqxA_mat[i][j];
-        for (r=0;r<ylen_vec[j];r++)
-        {
-            seqy += seqy_vec[j][r];
-            secy[ylen]=secy_vec[j][r];
-            ya[ylen][0]= ya_vec[j][r][0];
-            ya[ylen][1]= ya_vec[j][r][1];
-            ya[ylen][2]= ya_vec[j][r][2];
-            ylen++;
-        }
-        sequence[1]+=seqyA_mat[i][j];
-        mol_type+=mol_vec1[i]+mol_vec2[j];
-    }
-    secx[xlen]=0;
-    secy[ylen]=0;
-    return mol_type;
-}
 
 int copy_chain_pair_data(
     const vector<vector<vector<double> > >&xa_vec,
