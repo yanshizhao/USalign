@@ -40,19 +40,7 @@ template <typename T> inline T getmin(const T &a, const T &b)
     return b<a?b:a;
 }
 
-template <class A> void NewArray(A *** array, int Narray1, int Narray2)
-{
-    *array=new A* [Narray1];
-    for(int i=0; i<Narray1; i++) *(*array+i)=new A [Narray2];
-}
 
-template <class A> void DeleteArray(A *** array, int Narray)
-{
-    for(int i=0; i<Narray; i++)
-        if(*(*array+i)) delete [] *(*array+i);
-    if(Narray) delete [] (*array);
-    (*array)=nullptr;
-}
 
 inline int safe_stoi(const char* s, int default_val = 0)
 {

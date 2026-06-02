@@ -4628,86 +4628,6 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
     return;
 }
 
-// Forward declaration of Coords& overload (defined below, after CPalign_main)
-int TMalign_main(Coords& xa, Coords& ya,
-    const std::string &seqx, const std::string &seqy,
-    const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut);
-
-/* Entry function for TM-align. Return TM-score calculation status:
- * 0   - full TM-score calculation
- * 1   - terminated due to exception
- * 2-7 - pre-terminated due to low TM-score */
-int TMalign_main(double **xa, double **ya,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
-{
-    // Wrapper â delegates to Coords& true implementation
-    Coords xa_tmp; xa_tmp.reserve(xlen);
-    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
-    Coords ya_tmp; ya_tmp.reserve(ylen);
-    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
-    return TMalign_main(xa_tmp, ya_tmp,
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, TMcut);
-}
-
-// Mixed Coords&/double** bridge — for CPalign where xa_cp is Coords but ya is still double**
-inline int TMalign_main(Coords& xa, double **ya,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
-{
-    Coords ya_tmp; ya_tmp.reserve(ylen);
-    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
-    return TMalign_main(xa, ya_tmp,
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, TMcut);
-}
 #endif
 
 // Forward declaration of Coords& overload (defined after TMalign_main)
@@ -4725,37 +4645,6 @@ int CPalign_main(Coords& xa, Coords& ya,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1);
-
-/* entry function for TM-align with circular permutation
- * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
-int CPalign_main(double **xa, double **ya,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
-{
-    Coords xa_tmp; xa_tmp.reserve(xlen);
-    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
-    Coords ya_tmp; ya_tmp.reserve(ylen);
-    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
-    return CPalign_main(xa_tmp, ya_tmp,
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, TMcut);
-}
 
 bool output_cp(const string&xname, const string&yname,
     const string &seqxA, const string &seqyA, const int outfmt_opt,

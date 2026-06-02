@@ -3460,56 +3460,7 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
  * 1   - terminated due to exception
  * 2-7 - pre-terminated due to low TM-score */
 
-// Forward declaration for Coords& overload — needed by double** wrapper below
-inline int TMalign_dimer_main(Coords& xa, Coords& ya,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    bool **mask,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut);
-
-int TMalign_dimer_main(double **xa, double **ya,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    bool **mask,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
-{
-    Coords xa_tmp; xa_tmp.reserve(xlen);
-    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
-    Coords ya_tmp; ya_tmp.reserve(ylen);
-    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
-    return TMalign_dimer_main(xa_tmp, ya_tmp,
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, mask,
-        sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, TMcut);
-}
-
-// Coords& bridge — builds temp double** views and delegates
+// Coords& true implementation — semi-flip: inner sub-functions use double** via views
 inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     const char *seqx, const char *seqy, const char *secx, const char *secy,
     double t0[3], double u0[3][3],
