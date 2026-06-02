@@ -1832,7 +1832,7 @@ void make_sec(const char *seq, const Coords& x, int len, char *sec,const string 
 //get initial alignment of local structure superposition
 
 bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    bool **path, double **val,
+    char **path, double **val,
     double **x, double **y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
@@ -2477,13 +2477,13 @@ double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 
 // Forward declaration for bool** overload (defined below)
 double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, bool **path, double **val, double **x, double **y,
+    Coords& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8);
 
 double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, bool **path, double **val, double **x, double **y,
+    Coords& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2563,7 +2563,7 @@ double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 {
     std::vector<char*> _pv(path.size());
     for (size_t _i = 0; _i < path.size(); _i++) _pv[_i] = path[_i].data();
-    return DP_iter(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(_pv.data()),
+    return DP_iter(r1, r2, xtm, ytm, xt, _pv.data(),
         val, x, y, xlen, ylen, t, u, invmap0,
         g1, g2, iteration_max, local_d0_search,
         D0_MIN, Lnorm, d0, score_d8);

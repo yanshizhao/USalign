@@ -3012,8 +3012,8 @@ void MMalign_iter(double & max_total_score, const int max_iter,
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_TM_dimer(bool **path, double **val, double **x, double **y,
-    int len1, int len2, bool **mask,
+void NWDP_TM_dimer(char **path, double **val, double **x, double **y,
+    int len1, int len2, char **mask,
     double t[3], double u[3][3], double d02, double gap_open, int j2i[])
 {
     int i;
@@ -3106,8 +3106,8 @@ void NWDP_TM_dimer(bool **path, double **val, double **x, double **y,
  * Input: secondary structure secx, secy, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_TM_dimer(bool **path, double **val, const char *secx, const char *secy,
-    const int len1, const int len2, bool **mask, const double gap_open, int j2i[])
+void NWDP_TM_dimer(char **path, double **val, const char *secx, const char *secy,
+    const int len1, const int len2, char **mask, const double gap_open, int j2i[])
 {
 
     int i;
@@ -3253,14 +3253,14 @@ inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, const char *secx, const 
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 // Forward declaration for bool** overload (defined below)
 double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
-    double **xt, bool **path, double **val, double **x, double **y,
-    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    double **xt, char **path, double **val, double **x, double **y,
+    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8);
 
 double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
-    double **xt, bool **path, double **val, double **x, double **y,
-    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    double **xt, char **path, double **val, double **x, double **y,
+    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
 {
@@ -3333,7 +3333,7 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
 // PathMat/DPMatrix path/val overload - creates bool** views, delegates to bool** version
 inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     Coords& xt, PathMat& path, DPMatrix& val, double **x, double **y,
-    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
 {
@@ -3350,7 +3350,7 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     std::vector<double*> valv(xlen+1);
     for (int i=0; i<=xlen; i++) valv[i]=val[i].data();
     return DP_iter_dimer(r1v.data(), r2v.data(), xtmv.data(), ytmv.data(),
-        xtv.data(), reinterpret_cast<bool**>(pvv.data()), valv.data(),
+        xtv.data(), pvv.data(), valv.data(),
         x, y, xlen, ylen, mask, t, u, invmap0,
         g1, g2, iteration_max, local_d0_search,
         D0_MIN, Lnorm, d0, score_d8);
@@ -3359,8 +3359,8 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 
 // Coords& bridge — builds temp double** views and delegates
 inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, bool **path, double **val, double **x, double **y,
-    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    Coords& xt, char **path, double **val, double **x, double **y,
+    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
 {
@@ -3386,8 +3386,8 @@ inline void get_initial_ss_dimer(PathMat& path, DPMatrix& val, const char *secx,
 }
 
 bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
-    bool **path, double **val, double **x, double **y, int xlen, int ylen,
-    bool **mask, int *y2x,
+    char **path, double **val, double **x, double **y, int xlen, int ylen,
+    char **mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     double GL;
@@ -3487,8 +3487,8 @@ bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
 
 // Coords& bridge — builds temp double** views and delegates
 inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    bool **path, double **val, double **x, double **y, int xlen, int ylen,
-    bool **mask, int *y2x,
+    char **path, double **val, double **x, double **y, int xlen, int ylen,
+    char **mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     vector<double*> r1_view(r1.size()), r2_view(r2.size());
@@ -3504,7 +3504,7 @@ inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 // PathMat/DPMatrix path/val overload - creates bool** views, delegates to bool** version
 inline bool get_initial5_dimer( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     PathMat& path, DPMatrix& val,
-    double **x, double **y, int xlen, int ylen, bool **mask, int *y2x,
+    double **x, double **y, int xlen, int ylen, char **mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     vector<double*> r1_view(r1.size()), r2_view(r2.size());
@@ -3518,13 +3518,13 @@ inline bool get_initial5_dimer( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm
     std::vector<double*> valv(xlen+1);
     for (int i=0; i<=xlen; i++) valv[i]=val[i].data();
     return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
-        reinterpret_cast<bool**>(pvv.data()), valv.data(), x, y, xlen, ylen, mask, y2x,
+        pvv.data(), valv.data(), x, y, xlen, ylen, mask, y2x,
         d0, d0_search, fast_opt, D0_MIN);
 }
 
 void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
-    bool **path, double **val, const char *secx, const char *secy,
-    double **x, double **y, int xlen, int ylen, bool **mask,
+    char **path, double **val, const char *secx, const char *secy,
+    double **x, double **y, int xlen, int ylen, char **mask,
     int *y2x0, int *y2x, const double D0_MIN, double d0)
 {
     //create score matrix for DP
@@ -3554,8 +3554,8 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, DPMatrix& score, Pa
 
 // Coords& bridge — builds temp double** views and delegates
 inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
-    bool **path, double **val, const char *secx, const char *secy,
-    double **x, double **y, int xlen, int ylen, bool **mask,
+    char **path, double **val, const char *secx, const char *secy,
+    double **x, double **y, int xlen, int ylen, char **mask,
     int *y2x0, int *y2x, const double D0_MIN, double d0)
 {
     vector<double*> r1_view(r1.size()), r2_view(r2.size());
@@ -3567,8 +3567,8 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
 
 // const Coords& x/y overload — for TMalign_dimer_main flip
 inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
-    bool **path, double **val, const char *secx, const char *secy,
-    const Coords& x, const Coords& y, int xlen, int ylen, bool **mask,
+    char **path, double **val, const char *secx, const char *secy,
+    const Coords& x, const Coords& y, int xlen, int ylen, char **mask,
     int *y2x0, int *y2x, const double D0_MIN, double d0)
 {
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
@@ -3614,7 +3614,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     // Build bool** view for mask (sub-functions still expect bool**)
     std::vector<char*> _mask_v(xlen+1);
     for(int _i=0;_i<=xlen;_i++) _mask_v[_i]=mask[_i].data();
-    bool **mask_bp = reinterpret_cast<bool**>(_mask_v.data());
+    char **mask_bp = _mask_v.data();
 // [Coords& true implementation]
 
     double D0_MIN;        //for d0

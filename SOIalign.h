@@ -502,7 +502,7 @@ inline void SOI_super2score(const Coords& xt, const Coords& ya, const int xlen,
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 double SOI_iter(double **r1, double **r2, double **xtm, double **ytm,
-    double **xt, double **score, bool **path, double **val, double **xa, double **ya,
+    double **xt, double **score, char **path, double **val, double **xa, double **ya,
     int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
     int iteration_max, double local_d0_search,
     double Lnorm, double d0, double score_d8,
@@ -639,7 +639,7 @@ double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 
 
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
-    double **score, bool **path, double **val, const int xlen, const int ylen,
+    double **score, char **path, double **val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[], 
     double local_d0_search, double d0, double score_d8,
     int **secx_bond, int **secy_bond, const int mm_opt)

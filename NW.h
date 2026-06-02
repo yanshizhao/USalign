@@ -14,7 +14,7 @@
 /* Input: score[1:len1, 1:len2], and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_TM(double **score, bool **path, double **val,
+void NWDP_TM(double **score, char **path, double **val,
     int len1, int len2, double gap_open, int j2i[])
 {
 
@@ -161,7 +161,7 @@ inline void NWDP_TM(double **score, PathMat& path,
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_TM(bool **path, double **val, double **x, double **y,
+void NWDP_TM(char **path, double **val, double **x, double **y,
     int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, int j2i[])
 {
@@ -294,7 +294,7 @@ inline void NWDP_TM(PathMat& path, DPMatrix& val, double **x, double **y,
  * Input: vectors x, y, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_SE(bool **path, double **val, double **x, double **y,
+void NWDP_SE(char **path, double **val, double **x, double **y,
     int len1, int len2, double d02, double gap_open, int j2i[])
 {
     int i;
@@ -373,7 +373,7 @@ void NWDP_SE(bool **path, double **val, double **x, double **y,
     }
 }
 
-void NWDP_SE(bool **path, double **val, Coords& x, Coords& y,
+void NWDP_SE(char **path, double **val, Coords& x, Coords& y,
     int len1, int len2, double d02, double gap_open, int j2i[])
 {
     int i;
@@ -537,7 +537,7 @@ void NWDP_SE(PathMat& path, DPMatrix& val, Coords& x, Coords& y,
     }
 }
 
-void NWDP_SE(bool **path, double **val, double **x, double **y,
+void NWDP_SE(char **path, double **val, double **x, double **y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
 {
@@ -634,7 +634,7 @@ void NWDP_SE(bool **path, double **val, double **x, double **y,
     }
 }
 
-void NWDP_SE(bool **path, double **val, Coords& x, Coords& y,
+void NWDP_SE(char **path, double **val, Coords& x, Coords& y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
 {
@@ -729,7 +729,7 @@ void NWDP_SE(bool **path, double **val, Coords& x, Coords& y,
  * Input: secondary structure secx, secy, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_TM(bool **path, double **val, const char *secx, const char *secy,
+void NWDP_TM(char **path, double **val, const char *secx, const char *secy,
     const int len1, const int len2, const double gap_open, int j2i[])
 {
 
