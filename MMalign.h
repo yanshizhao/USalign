@@ -1930,40 +1930,7 @@ void MMalign_se_final(
 void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<string> &sequence,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, double **TMave_mat,
-    vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
-    int *assign1_tmp,  int *assign2_tmp,  double **TMave_tmp)
-{
-    int i;
-    int j;
-    for (i=0;i<sequence.size();i++) sequence[i].clear();
-    sequence.clear();
-    sequence.push_back("");
-    sequence.push_back("");
-    for (i=0;i<chain1_num;i++) assign1_tmp[i]=assign1_list[i];
-    for (i=0;i<chain2_num;i++) assign2_tmp[i]=assign2_list[i];
-    for (i=0;i<chain1_num;i++)
-    {
-        for (j=0;j<chain2_num;j++)
-        {
-            seqxA_tmp[i][j]=seqxA_mat[i][j];
-            seqyA_tmp[i][j]=seqyA_mat[i][j];
-            TMave_tmp[i][j]=TMave_mat[i][j];
-            if (assign1_list[i]==j)
-            {
-                sequence[0]+=seqxA_mat[i][j];
-                sequence[1]+=seqyA_mat[i][j];
-            }
-        }
-    }
-    return;
-}
-
-
-void copy_chain_assign_data(int chain1_num, int chain2_num,
-    vector<string> &sequence,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, const DPMatrix& TMave_mat,
+    int *assign1_list, int *assign2_list, DPMatrix& TMave_mat,
     vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
     int *assign1_tmp,  int *assign2_tmp,  DPMatrix& TMave_tmp)
 {
@@ -1990,36 +1957,6 @@ void copy_chain_assign_data(int chain1_num, int chain2_num,
         }
     }
     return;
-}
-
-// [bridge: double** src, DPMatrix& dest]
-void copy_chain_assign_data(int chain1_num, int chain2_num,
-    vector<string> &sequence,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, double **TMave_mat,
-    vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
-    int *assign1_tmp,  int *assign2_tmp,  DPMatrix& TMave_tmp)
-{
-    vector<double*> v(chain1_num);
-    for (int i=0; i<chain1_num; i++) v[i]=TMave_tmp[i].data();
-    copy_chain_assign_data(chain1_num, chain2_num, sequence,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, v.data());
-}
-
-// [bridge: const DPMatrix& src, double** dest]
-void copy_chain_assign_data(int chain1_num, int chain2_num,
-    vector<string> &sequence,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, const DPMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
-    int *assign1_tmp,  int *assign2_tmp,  double **TMave_tmp)
-{
-    vector<double*> v(chain1_num);
-    for (int i=0; i<chain1_num; i++) v[i]=const_cast<double*>(TMave_mat[i].data());
-    copy_chain_assign_data(chain1_num, chain2_num, sequence,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, v.data(),
-        seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, TMave_tmp);
 }
 
 void MMalign_iter(double & max_total_score, const int max_iter,
@@ -2030,7 +1967,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
     double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap,
@@ -3308,29 +3245,6 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
 }
 
 
-void MMalign_iter(double & max_total_score, const int max_iter,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, const DPMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt, map<int,int> &chainmap,
-    const int byresi_opt=0)
-{
-    vector<double*> view(TMave_mat.size());
-    for (size_t i=0; i<TMave_mat.size(); i++) view[i]=const_cast<double*>(TMave_mat[i].data());
-    MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
-        seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
-        view.data(), seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, fast_opt, chainmap, byresi_opt);
-}
-
 void MMalign_dimer(double & total_score,
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -3339,7 +3253,7 @@ void MMalign_dimer(double & total_score,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
     double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
-    int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt)
@@ -3511,29 +3425,6 @@ void MMalign_dimer(double & total_score,
 }
 
 
-void MMalign_dimer(double & total_score,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
-    int len_aa, int len_na, int chain1_num, int chain2_num, const DPMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt)
-{
-    vector<double*> view(TMave_mat.size());
-    for (size_t i=0; i<TMave_mat.size(); i++) view[i]=const_cast<double*>(TMave_mat[i].data());
-    MMalign_dimer(total_score, xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        nullptr, nullptr, seqx_arg, seqy_arg, nullptr, nullptr,
-        len_aa, len_na, chain1_num, chain2_num, view.data(),
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, fast_opt);
-}
-
 void MMalign_cross(double & max_total_score, const int max_iter,
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -3542,7 +3433,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
     double **xa, double **ya, char *seqx, char *seqy, char *secx, char *secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, double **TMave_mat,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap)
