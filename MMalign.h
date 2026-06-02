@@ -3492,6 +3492,19 @@ void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
+// DPMatrix/PathMat overload - score/path/val containers, x/y still double**
+inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
+    DPMatrix& val, const char *secx, const char *secy,
+    const Coords& x, const Coords& y, int xlen, int ylen,
+    int *y2x0, int *y2x, const double D0_MIN, double d0)
+{
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
+    int i,j;
+    for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
+    double gap_open=-1.0;
+    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
+}
+
 // Coords& bridge — builds temp double** views and delegates
 inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
     bool **path, double **val, const char *secx, const char *secy,
@@ -3693,7 +3706,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure
         /************************************************************/
-        get_initial_ss_dimer(reinterpret_cast<bool**>(pv.data()), vv.data(), secx, secy, xlen, ylen, mask_bp, invmap);
+        get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
@@ -3782,8 +3795,8 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus_dimer(r1, r2, sv.data(), reinterpret_cast<bool**>(pv.data()), vv.data(), secx, secy, xa_c, ya_c,
-            xlen, ylen, mask_bp, invmap0, invmap, D0_MIN, d0);
+        get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
+            xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
