@@ -1708,7 +1708,7 @@ void MMalign_se_final(
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
     double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
-    double **TMave_mat,
+    DPMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
     vector<vector<string> >&seqyA_mat, int *assign1_list, int *assign2_list,
     vector<string>&sequence, const double d0_scale, const bool m_opt,
@@ -1926,41 +1926,6 @@ void MMalign_se_final(
     return;
 }
 
-
-void MMalign_se_final(
-    const string xname, const string yname,
-    const vector<string> chainID_list1, const vector<string> chainID_list2,
-    string fname_super, string fname_lign, string fname_matrix,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    double** /*_xa*/, double** /*_ya*/, char *seqx_arg, char *seqy_arg, char * /*secx*/, char * /*secy*/,
-    int len_aa, int len_na, int chain1_num, int chain2_num,
-    const DPMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
-    vector<vector<string> >&seqyA_mat, int *assign1_list, int *assign2_list,
-    vector<string>&sequence, const double d0_scale, const bool m_opt,
-    const int o_opt, const int outfmt_opt, const int ter_opt,
-    const int split_opt, const bool a_opt, const bool d_opt,
-    const bool fast_opt, const bool full_opt, const int mirror_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2)
-{
-    vector<double*> view(TMave_mat.size());
-    for (size_t i=0; i<TMave_mat.size(); i++) view[i]=const_cast<double*>(TMave_mat[i].data());
-    MMalign_se_final(xname, yname, chainID_list1, chainID_list2,
-        fname_super, fname_lign, fname_matrix,
-        xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
-        mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        nullptr, nullptr, seqx_arg, seqy_arg, nullptr, nullptr,
-        len_aa, len_na, chain1_num, chain2_num, view.data(),
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
-        a_opt, d_opt, fast_opt, full_opt, mirror_opt,
-        resi_vec1, resi_vec2);
-}
 
 void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<string> &sequence,
