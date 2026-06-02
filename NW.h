@@ -97,8 +97,8 @@ void NWDP_TM(double **score, char **path, double **val,
 }
 
 // DoubleMatrix overload — path uses char(1/0) instead of bool(true/false)
-void NWDP_TM(const std::vector<std::vector<double>>& score, std::vector<std::vector<char>>& path,
-    std::vector<std::vector<double>>& val, int len1, int len2, double gap_open, int j2i[])
+void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, int len1, int len2, double gap_open, int j2i[])
 {
     int i,j; double h,v,d;
     for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
