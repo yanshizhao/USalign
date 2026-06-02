@@ -74,27 +74,6 @@ inline void assign_sec_bond(Bond2& secx_bond, const char *secx, const int xlen)
 }
 
 // Coords& real implementation (flipped from double** version)
-inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, double **xk)
-{
-    vector<vector<double>> score;
-    score.assign(xlen+1, vector<double>(xlen+1, 0));
-    vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
-    int i,j,k;
-    for(i=0;i<xlen;i++) {
-        score[i+1][i+1]=0;
-        for(j=i+1;j<xlen;j++) score[j+1][i+1]=score[i+1][j+1]=dist(xa[i], xa[j]);
-    }
-    for(i=0;i<xlen;i++) {
-        for(j=0;j<xlen;j++) { close_idx_vec[j].first=score[i+1][j+1]; close_idx_vec[j].second=j; }
-        sort(close_idx_vec.begin(), close_idx_vec.end());
-        for(k=0;k<closeK_opt;k++) {
-            j=close_idx_vec[k % xlen].second;
-            xk[i*closeK_opt+k][0]=xa[j][0]; xk[i*closeK_opt+k][1]=xa[j][1]; xk[i*closeK_opt+k][2]=xa[j][2];
-        }
-    }
-    vector<pair<double,int> >().swap(close_idx_vec);
-}
-
 // Coords& xk overload
 inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, Coords& xk)
 {
@@ -115,14 +94,6 @@ inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, Co
         }
     }
     vector<pair<double,int> >().swap(close_idx_vec);
-}
-
-// double** thin wrapper — copies to Coords and delegates
-inline void getCloseK(double **xa, const int xlen, const int closeK_opt, double **xk)
-{
-    Coords xa_c; xa_c.resize(xlen);
-    for(int i=0;i<xlen;i++) {xa_c[i][0]=xa[i][0]; xa_c[i][1]=xa[i][1]; xa_c[i][2]=xa[i][2];}
-    getCloseK(xa_c, xlen, closeK_opt, xk);
 }
 
 // check if pairing i to j conform to sequantiality within the SSE
