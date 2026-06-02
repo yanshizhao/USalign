@@ -1742,14 +1742,8 @@ void sec_str(int len,const char *seq, const vector<vector<bool> >&bp,
 //input: x, y, xlen, ylen
 //output: y2x stores the best alignment: e.g., 
 //y2x[j]=i means:
-//the jth element in y is aligned to the ith element in x if i>=0 
+//the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
-void get_initial_ss(bool **path, double **val,
-    const char *secx, const char *secy, int xlen, int ylen, int *y2x)
-{
-    double gap_open=-1.0;
-    NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
-}
 // PathMat/DPMatrix overload
 void get_initial_ss(PathMat& path, DPMatrix& val,
     const char *secx, const char *secy, int xlen, int ylen, int *y2x)
@@ -2119,18 +2113,6 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
 //y2x[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-// Coords& x/y overload — for TMalign_main flip
-void get_initial_ssplus(Coords& r1, Coords& r2, double **score, bool **path,
-    double **val, const char *secx, const char *secy, const Coords& x, const Coords& y,
-    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    //create score matrix for DP
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
-        y2x0, D0_MIN,d0);
-
-    double gap_open=-1.0;
-    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
-}
 // DPMatrix/PathMat overload
 void get_initial_ssplus(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
     DPMatrix& val, const char *secx, const char *secy, const Coords& x, const Coords& y,

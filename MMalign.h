@@ -3344,13 +3344,6 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         g1, g2, iteration_max, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
 }
 
-void get_initial_ss_dimer(bool **path, double **val, const char *secx,
-    const char *secy, int xlen, int ylen, bool **mask, int *y2x)
-{
-    double gap_open=-1.0;
-    NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
-}
-
 // PathMat/DPMatrix overload
 inline void get_initial_ss_dimer(PathMat& path, DPMatrix& val, const char *secx,
     const char *secy, int xlen, int ylen, PathMat& mask, int *y2x)
