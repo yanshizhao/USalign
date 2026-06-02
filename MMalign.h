@@ -590,7 +590,7 @@ double calMMscore(const DPMatrix& TMave_mat,int *assign1_list,
  * return het_deg, which ranges from 0 to 1.
  * The larger the value, the more "hetero"; 
  * Tthe smaller the value, the more "homo" */
-double check_heterooligomer(double **TMave_mat, const int chain1_num,
+double check_heterooligomer(const DPMatrix& TMave_mat, const int chain1_num,
     const int chain2_num)
 {
     double het_deg=0;
@@ -609,27 +609,6 @@ double check_heterooligomer(double **TMave_mat, const int chain1_num,
     het_deg=(max_TM-min_TM)/max_TM;
     //cout<<"min_TM="<<min_TM<<endl;
     //cout<<"max_TM="<<max_TM<<endl;
-    return het_deg;
-}
-
-
-double check_heterooligomer(const DPMatrix& TMave_mat, const int chain1_num,
-    const int chain2_num)
-{
-    double het_deg=0;
-    double min_TM=-1;
-    double max_TM=-1;
-    int i;
-    int j;
-    for (i=0;i<chain1_num;i++)
-    {
-        for (j=0;j<chain2_num;j++)
-        {
-            if (min_TM<0 || TMave_mat[i][j] <min_TM) min_TM=TMave_mat[i][j];
-            if (max_TM<0 || TMave_mat[i][j]>=max_TM) max_TM=TMave_mat[i][j];
-        }
-    }
-    het_deg=(max_TM-min_TM)/max_TM;
     return het_deg;
 }
 
