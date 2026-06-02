@@ -313,52 +313,6 @@ double enhanced_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     return total_score;
 }
 
-double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
-    const int chain_num, double ** centroids)
-{
-    int L=0;
-    int c; // index of chain
-    int r; // index of residue
-    for (c=0; c<chain_num; c++)
-    {
-        centroids[c][0]=0;
-        centroids[c][1]=0;
-        centroids[c][2]=0;
-        L=a_vec[c].size();
-        for (r=0; r<L; r++)
-        {
-            centroids[c][0]+=a_vec[c][r][0];
-            centroids[c][1]+=a_vec[c][r][1];
-            centroids[c][2]+=a_vec[c][r][2];
-        }
-        centroids[c][0]/=L;
-        centroids[c][1]/=L;
-        centroids[c][2]/=L;
-        //cout<<centroids[c][0]<<'\t'
-            //<<centroids[c][1]<<'\t'
-            //<<centroids[c][2]<<endl;
-    }
-
-    vector<double> d0_vec(chain_num,-1);
-    int c2=0;
-    double d0MM=0;
-    for (c=0; c<chain_num; c++)
-    {
-        for (c2=0; c2<chain_num; c2++)
-        {
-            if (c2==c) continue;
-            d0MM=sqrt(dist(centroids[c],centroids[c2]));
-            if (d0_vec[c]<=0) d0_vec[c]=d0MM;
-            else d0_vec[c]=getmin(d0_vec[c], d0MM);
-        }
-    }
-    d0MM=0;
-    for (c=0; c<chain_num; c++) d0MM+=d0_vec[c];
-    d0MM/=chain_num;
-    d0_vec.clear();
-    //cout<<d0MM<<endl;
-    return d0MM;
-}
 
 // [Coords& overload]
 double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
