@@ -1744,7 +1744,7 @@ void sec_str(int len,const char *seq, const vector<vector<bool> >&bp,
 //y2x[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
-// PathMat/DPMatrix overload
+
 void get_initial_ss(PathMat& path, DPMatrix& val,
     const char *secx, const char *secy, int xlen, int ylen, int *y2x)
 {
@@ -2113,7 +2113,7 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
 //y2x[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-// DPMatrix/PathMat overload
+
 void get_initial_ssplus(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
     DPMatrix& val, const char *secx, const char *secy, const Coords& x, const Coords& y,
     int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
@@ -2475,7 +2475,7 @@ double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
-// Forward declaration for bool** overload (defined below)
+
 double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     Coords& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
@@ -4621,7 +4621,7 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
     return TMtmp;
 }
 
-// DPMatrix/PathMat overload — containers auto-destruct, no manual free needed
+
 void clean_up_after_approx_TM(int *invmap0, int *invmap,
     DPMatrix& /*score*/, PathMat& /*path*/, DPMatrix& /*val*/, Coords& xtm, Coords& ytm,
     Coords& xt, Coords& r1, Coords& r2, const int xlen, const int /*minlen*/ = 0)
@@ -4634,7 +4634,7 @@ void clean_up_after_approx_TM(int *invmap0, int *invmap,
 
 #endif
 
-// Forward declaration of Coords& overload (defined after TMalign_main)
+
 int CPalign_main(Coords& xa, Coords& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
@@ -4692,7 +4692,7 @@ bool output_cp(const string&xname, const string&yname,
     return after_cp;
 }
 
-// Coords& true implementation — half-flip: outer flipped, sub-functions still use double** via views
+
 int TMalign_main(Coords& xa_c, Coords& ya_c,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -4727,7 +4727,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
     double **xa = _xa_v.data();
     double **ya = _ya_v.data();
-// [Coords& true implementation]
+
 
     /***********************/
     // allocate memory
@@ -5339,7 +5339,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     return 0; // zero for no exception
 }
 
-// Coords& true implementation
+
 int CPalign_main(Coords& xa, Coords& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],

@@ -313,7 +313,7 @@ double enhanced_greedy_search(double **TMave_mat,int *assign1_list,
     return total_score;
 }
 
-// [DPMatrix overload]
+
 double enhanced_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num)
 {
@@ -627,7 +627,7 @@ double calMMscore(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
-// [DPMatrix + const Coords& overload]
+
 double calMMscore(const DPMatrix& TMave_mat,int *assign1_list,
     const int chain1_num, const int chain2_num, const Coords& xcentroids,
     const Coords& ycentroids, const double d0MM, Coords& r1, Coords& r2,
@@ -712,7 +712,7 @@ double check_heterooligomer(double **TMave_mat, const int chain1_num,
     return het_deg;
 }
 
-// [DPMatrix overload]
+
 double check_heterooligomer(const DPMatrix& TMave_mat, const int chain1_num,
     const int chain2_num)
 {
@@ -1067,7 +1067,7 @@ double homo_refined_greedy_search(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
-// [DPMatrix + Coords& + Rotation overload]
+
 double homo_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
     Coords& xcentroids, const Coords& ycentroids, const double d0MM,
@@ -1357,7 +1357,7 @@ double hetero_refined_greedy_search(double **TMave_mat,int *assign1_list,
     return MMscore;
 }
 
-// [DPMatrix + const Coords& overload]
+
 double hetero_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
     const Coords& xcentroids, const Coords& ycentroids, const double d0MM, const int L)
@@ -2299,7 +2299,7 @@ double MMalign_search(
     return total_score;
 }
 
-// [DPMatrix bridge overload]
+
 double MMalign_search(
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -2543,7 +2543,7 @@ void MMalign_final(
     return;
 }
 
-// [DPMatrix bridge overload]
+
 void MMalign_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
@@ -2809,7 +2809,7 @@ void MMalign_se_final(
     return;
 }
 
-// [DPMatrix bridge overload]
+
 void MMalign_se_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
@@ -2877,7 +2877,7 @@ void copy_chain_assign_data(int chain1_num, int chain2_num,
     return;
 }
 
-// [DPMatrix overload]
+
 void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<string> &sequence,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
@@ -3188,7 +3188,7 @@ void NWDP_TM_dimer(char **path, double **val, const char *secx, const char *secy
     }
 }
 
-// PathMat/DPMatrix overload — path/val/mask containers, x/y still double**
+
 inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, double **x, double **y,
     int len1, int len2, PathMat& mask,
     double t[3], double u[3][3], double d02, double gap_open, int j2i[])
@@ -3219,7 +3219,7 @@ inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, double **x, double **y,
     }
 }
 
-// PathMat/DPMatrix sec-based overload
+
 inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, PathMat& mask, const double gap_open, int j2i[])
 {
@@ -3251,7 +3251,7 @@ inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, const char *secx, const 
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
-// Forward declaration for bool** overload (defined below)
+
 double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     double **xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
@@ -3330,7 +3330,7 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     delete []invmap;
     return tmscore_max;
 }
-// PathMat/DPMatrix path/val overload - creates bool** views, delegates to bool** version
+
 inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     Coords& xt, PathMat& path, DPMatrix& val, double **x, double **y,
     int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
@@ -3357,7 +3357,7 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 }
 
 
-// Coords& bridge — builds temp double** views and delegates
+
 inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     Coords& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
@@ -3377,7 +3377,7 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         g1, g2, iteration_max, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
 }
 
-// PathMat/DPMatrix overload
+
 inline void get_initial_ss_dimer(PathMat& path, DPMatrix& val, const char *secx,
     const char *secy, int xlen, int ylen, PathMat& mask, int *y2x)
 {
@@ -3485,7 +3485,7 @@ bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
     return flag;
 }
 
-// Coords& bridge — builds temp double** views and delegates
+
 inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     char **path, double **val, double **x, double **y, int xlen, int ylen,
     char **mask, int *y2x,
@@ -3501,7 +3501,7 @@ inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
         path, val, x, y, xlen, ylen, mask, y2x, d0, d0_search, fast_opt, D0_MIN);
 }
 
-// PathMat/DPMatrix path/val overload - creates bool** views, delegates to bool** version
+
 inline bool get_initial5_dimer( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     PathMat& path, DPMatrix& val,
     double **x, double **y, int xlen, int ylen, char **mask, int *y2x,
@@ -3539,7 +3539,7 @@ void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-// DPMatrix/PathMat overload - score/path/val containers, x/y still double**
+
 inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
     DPMatrix& val, const char *secx, const char *secy,
     const Coords& x, const Coords& y, int xlen, int ylen,
@@ -3552,7 +3552,7 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, DPMatrix& score, Pa
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-// Coords& bridge — builds temp double** views and delegates
+
 inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
     char **path, double **val, const char *secx, const char *secy,
     double **x, double **y, int xlen, int ylen, char **mask,
@@ -3587,7 +3587,7 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
  * 1   - terminated due to exception
  * 2-7 - pre-terminated due to low TM-score */
 
-// Coords& true implementation — semi-flip: inner sub-functions use double** via views
+
 inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     const char *seqx, const char *seqy, const char *secx, const char *secy,
     double t0[3], double u0[3][3],
@@ -3615,7 +3615,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     std::vector<char*> _mask_v(xlen+1);
     for(int _i=0;_i<=xlen;_i++) _mask_v[_i]=mask[_i].data();
     char **mask_bp = _mask_v.data();
-// [Coords& true implementation]
+
 
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
@@ -4225,7 +4225,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     return 0; // zero for no exception
 }
 
-// [DPMatrix bridge overload]
+
 void MMalign_iter(double & max_total_score, const int max_iter,
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -4428,7 +4428,7 @@ void MMalign_dimer(double & total_score,
     return;
 }
 
-// [DPMatrix bridge overload]
+
 void MMalign_dimer(double & total_score,
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,

@@ -148,7 +148,7 @@ void parse_alignment_into_invmap(const string seqxA_tmp,
     return;
 }
 
-// Coords& true implementation — uses Coords& xa, ya directly
+
 int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
     const char *secx, const char *secy, double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,

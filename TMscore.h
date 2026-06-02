@@ -986,7 +986,7 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
     return score_max;
 }
 
-// Coords& x/y overload — syntax identical to double**
+
 double detailed_search_standard( Coords& r1, Coords& r2,
     Coords& xtm, Coords& ytm, Coords& xt, const Coords& x, const Coords& y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
@@ -1225,7 +1225,7 @@ void output_TMscore_results(
             resi_vec1, resi_vec2, chainID1, chainID2);
 }
 
-// Coords& bridge overload — builds temp double** views and delegates to double** impl
+
 int TMscore_main(Coords& xa, Coords& ya,
     const char *seqx, const char *seqy, double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,

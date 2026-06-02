@@ -1282,7 +1282,7 @@ void output_flexalign_results(const string xname, const string yname,
             xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
 }
 
-// Coords& bridge — builds temp double** views and delegates
+
 inline int flexalign_main(Coords& xa, Coords& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3], vector<vector<double> >&tu_vec,
@@ -1298,7 +1298,7 @@ inline int flexalign_main(Coords& xa, Coords& ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const int hinge_opt)
 {
-// [Coords& true implementation]
+
     vector<double> tu_tmp(12,0);
     int round2=tu_vec.size();
     if (round2==0)

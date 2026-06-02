@@ -58,7 +58,7 @@ void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
         secx_bond[i][0]=secx_bond[i][1]=-1;
 }
 
-// Bond2 overload — syntax identical to int**
+
 inline void assign_sec_bond(Bond2& secx_bond, const char *secx, const int xlen)
 {
     int i,j,starti=-1,endi=-1;
@@ -151,7 +151,7 @@ inline bool sec2sq(const int i, const int j,
     return true;
 }
 
-// Bond2 overload
+
 inline bool sec2sq(const int i, const int j,
     const Bond2& secx_bond, const Bond2& secy_bond, int *fwdmap, int *invmap)
 {
@@ -259,7 +259,7 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
     delete[]fwdmap;
 }
 
-// Bond2 overload
+
 inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
     const Bond2& secx_bond, const Bond2& secy_bond, const int mm_opt)
 {
@@ -308,7 +308,7 @@ inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * */
 
-// Forward declaration for Coords& overload — needed by double** wrapper below
+
 inline int soi_se_main(Coords& xa, Coords& ya, const std::string &seqx,
     const std::string &seqy, double &TM1, double &TM2, double &TM3,
     double &TM4, double &TM5, double &d0_0, double &TM_0,
@@ -351,7 +351,7 @@ int soi_se_main(
         secx_bond, secy_bond, mm_opt);
 }
 
-// Coords& bridge — builds temp double** views and delegates
+
 inline int soi_se_main(
     Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -366,7 +366,7 @@ inline int soi_se_main(
     const int outfmt_opt, int *invmap, double *dist_list,
     Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
-// [Coords& true implementation]
+
 
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
@@ -555,7 +555,7 @@ inline void SOI_super2score(const Coords& xt, double **ya, const int xlen,
     }
 }
 
-// Coords& x/y overload — xt[i], ya[j] syntax same as double**
+
 inline void SOI_super2score(const Coords& xt, const Coords& ya, const int xlen,
     const int ylen, double **score, double d0, double score_d8)
 {
@@ -648,7 +648,7 @@ double SOI_iter(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore_max;
 }
 
-// PathMat/DPMatrix overload — path/val use containers, true/false unchanged
+
 double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     Coords& xt, double **score, PathMat& path, double **val, double **xa, double **ya,
     int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
@@ -795,7 +795,7 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
 
     // clean up — xfrag/xtran/yfrag auto-destruct (Coords)
 }
-// PathMat/DPMatrix overload
+
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double **score, PathMat& path, double **val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[],
@@ -912,7 +912,7 @@ void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     do_rotation(xa, xt, xlen, t, u);
 }
 
-// Coords& x/y overload — for SOIalign_main flip
+
 void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     Coords& xt, Coords& xa, Coords& ya,
     const int xlen, const int ylen, double t[3], double u[3][3], int invmap[],
@@ -945,7 +945,7 @@ void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 /* entry function for TM-align with circular permutation
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 
-// Forward declaration for Coords& overload — needed by double** wrapper below
+
 inline int SOIalign_main(Coords& xa, Coords& ya,
     double **xk, double **yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
@@ -963,7 +963,7 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
     const int mol_type, double *dist_list,
     Bond2& secx_bond, Bond2& secy_bond, const int mm_opt);
 
-// Coords& xk/yk bridge — converts to double** views, delegates to true impl
+
 inline int SOIalign_main(Coords& xa, Coords& ya,
     Coords& xk, Coords& yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
@@ -996,7 +996,7 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
         mol_type, dist_list, secx_bond, secy_bond, mm_opt);
 }
 
-// Coords& true implementation — semi-flip: inner sub-functions use double** via views
+
 inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     double **xk, double **yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
@@ -1021,7 +1021,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
     double **xa = _xa_v.data();
     double **ya = _ya_v.data();
-// [Coords& true implementation]
+
 
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length

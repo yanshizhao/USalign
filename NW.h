@@ -135,7 +135,7 @@ void NWDP_TM(const std::vector<std::vector<double>>& score, std::vector<std::vec
     }
 }
 
-// Mixed overload — double** score, PathMat path, double** val
+
 inline void NWDP_TM(double **score, PathMat& path,
     double **val, int len1, int len2, double gap_open, int j2i[])
 {
@@ -247,7 +247,7 @@ void NWDP_TM(char **path, double **val, double **x, double **y,
     }
 }
 
-// PathMat/DPMatrix overload - path/val: containers, x/y: double**
+
 inline void NWDP_TM(PathMat& path, DPMatrix& val, double **x, double **y,
     int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, int j2i[])
@@ -447,7 +447,7 @@ void NWDP_SE(char **path, double **val, Coords& x, Coords& y,
     }
 }
 
-// PathMat/DPMatrix overload — path: char(1/0), val: DPMatrix, handles both hinge cases
+
 void NWDP_SE(PathMat& path, DPMatrix& val, Coords& x, Coords& y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
@@ -809,7 +809,7 @@ void NWDP_TM(char **path, double **val, const char *secx, const char *secy,
     }
 }
 
-// PathMat/DPMatrix overload - path: char(1/0)
+
 inline void NWDP_TM(PathMat& path, DPMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, const double gap_open, int j2i[])
 {
