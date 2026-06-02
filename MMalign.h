@@ -3656,7 +3656,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa, ya, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
@@ -3669,7 +3669,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         }
 
         /************************************************************/
-        //    get initial alignment based on secondary structure   
+        //    get initial alignment based on secondary structure
         /************************************************************/
         get_initial_ss_dimer(reinterpret_cast<bool**>(pv.data()), vv.data(), secx, secy, xlen, ylen, mask, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
@@ -3697,7 +3697,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa, ya, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
@@ -3744,7 +3744,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa, ya, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
@@ -3787,7 +3787,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa, ya, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
@@ -3830,7 +3830,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa, ya, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
@@ -3956,7 +3956,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     double d;
     m1=new int[xlen]; //alignd index in x
     m2=new int[ylen]; //alignd index in y
-    do_rotation(xa, xt, xlen, t, u);
+    do_rotation(xa_c, xt, xlen, t, u);
     k=0;
     for(int j=0; j<ylen; j++)
     {
@@ -4074,9 +4074,9 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     seqxA.assign(ali_len,'-');
     seqM.assign( ali_len,' ');
     seqyA.assign(ali_len,'-');
-    
+
     //do_rotation(xa, xt, xlen, t, u);
-    do_rotation(xa, xt, xlen, t0, u0);
+    do_rotation(xa_c, xt, xlen, t0, u0);
 
     int kk=0;
     int i_old=0;

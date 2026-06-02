@@ -477,6 +477,26 @@ inline void SOI_super2score(const Coords& xt, double **ya, const int xlen,
     }
 }
 
+// Coords& x/y overload — xt[i], ya[j] syntax same as double**
+inline void SOI_super2score(const Coords& xt, const Coords& ya, const int xlen,
+    const int ylen, double **score, double d0, double score_d8)
+{
+    int i;
+    int j;
+    double d02=d0*d0;
+    double score_d82=score_d8*score_d8;
+    double d2;
+    for (i=0; i<xlen; i++)
+    {
+        for(j=0; j<ylen; j++)
+        {
+            d2=dist(xt[i], ya[j]);
+            if (d2>score_d82) score[i+1][j+1]=0;
+            else score[i+1][j+1]=1./(1+ d2/d02);
+        }
+    }
+}
+
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
@@ -1003,7 +1023,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     // initial alignment with sequence order dependent alignment
     /*************************************************************/
     vector<double> do_vec;
-    CPalign_main(xa, ya, seqx, seqy, secx, secy,
+    CPalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1037,8 +1057,8 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
             if (i>=0) fwdmap0[i]=j;
         }
     }
-    do_rotation(xa, xt, xlen, t0, u0);
-    SOI_super2score(xt, ya, xlen, ylen, sv.data(), d0, score_d8);
+    do_rotation(xa_c, xt, xlen, t0, u0);
+    SOI_super2score(xt, ya_c, xlen, ylen, sv.data(), d0, score_d8);
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
     TMmax=SOI_iter(r1, r2, xtm, ytm, xt, sv.data(), path, vv.data(), xa, ya,
         xlen, ylen, t0, u0, invmap0, iteration_max,
@@ -1082,7 +1102,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
         if (mm_opt==6) NWDP_TM(stv.data(), path, vv.data(), ylen, xlen, -0.6, fwdmap0);
         soi_egs(stv.data(), ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
-        SOI_assign2super(r2, r1, ytm, xtm, yt, ya, xa,
+        SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r2, r1, ytm, xtm, yt, stv.data(), path, vv.data(), ya, xa, ylen, xlen, t, u,
             fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
@@ -1153,7 +1173,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     //              Final TMscore 1           //
     //****************************************//
 
-    do_rotation(xa, xt, xlen, t, u);
+    do_rotation(xa_c, xt, xlen, t, u);
     k=0;
     n_ali=0;
     for (i=0; i<xlen; i++)
@@ -1207,8 +1227,8 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     //****************************************//
     //              Final TMscore 2           //
     //****************************************//
-    
-    do_rotation(xa, xt, xlen, t0, u0);
+
+    do_rotation(xa_c, xt, xlen, t0, u0);
     k=0;
     for (j=0; j<ylen; j++)
     {
@@ -1301,7 +1321,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     seqyA.assign(ali_len,'-');
     
     //do_rotation(xa, xt, xlen, t, u);
-    do_rotation(xa, xt, xlen, t0, u0);
+    do_rotation(xa_c, xt, xlen, t0, u0);
 
     Liden=0;
     //double SO=0;

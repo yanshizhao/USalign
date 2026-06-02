@@ -4617,15 +4617,14 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
     return TMtmp;
 }
 
+// DPMatrix/PathMat overload — containers auto-destruct, no manual free needed
 void clean_up_after_approx_TM(int *invmap0, int *invmap,
-    double **score, bool **path, double **val, Coords& xtm, Coords& ytm,
+    DPMatrix& /*score*/, PathMat& /*path*/, DPMatrix& /*val*/, Coords& xtm, Coords& ytm,
     Coords& xt, Coords& r1, Coords& r2, const int xlen, const int /*minlen*/ = 0)
 {
     delete [] invmap0;
     delete [] invmap;
-    DeleteArray(&score, xlen+1);
-    DeleteArray(&path, xlen+1);
-    DeleteArray(&val, xlen+1);
+    // score/path/val are DPMatrix/PathMat containers — auto-destruct on return
     return;
 }
 
@@ -4711,6 +4710,22 @@ inline int TMalign_main(Coords& xa, double **ya,
 }
 #endif
 
+// Forward declaration of Coords& overload (defined after TMalign_main)
+int CPalign_main(Coords& xa, Coords& ya,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    double t0[3], double u0[3][3],
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const double TMcut=-1);
+
 /* entry function for TM-align with circular permutation
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 int CPalign_main(double **xa, double **ya,
@@ -4728,173 +4743,18 @@ int CPalign_main(double **xa, double **ya,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1)
 {
-    std::string seqx_cp; // for the protein sequence
-    std::string secx_cp; // for the secondary structure
-    Coords xa_cp;   // coordinates
-    string seqxA_cp,seqyA_cp;  // alignment
-    int i;
-    int r;
-    int    cp_point=0;    // position of circular permutation
-    int    cp_aln_best=0; // amount of aligned residue in sliding window
-    int    cp_aln_current;// amount of aligned residue in sliding window
-
-    // duplicate structure
-    xa_cp.resize(xlen*2);
-    seqx_cp.resize(xlen*2 + 1);
-    secx_cp.resize(xlen*2 + 1);
-    for (r=0;r<xlen;r++)
-    {
-        xa_cp[r+xlen][0]=xa_cp[r][0]=xa[r][0];
-        xa_cp[r+xlen][1]=xa_cp[r][1]=xa[r][1];
-        xa_cp[r+xlen][2]=xa_cp[r][2]=xa[r][2];
-        seqx_cp[r+xlen]=seqx_cp[r]=seqx[r];
-        secx_cp[r+xlen]=secx_cp[r]=secx[r];
-    }
-    
-    // fTM-align alignment
-    double TM1_cp;
-    double TM2_cp;
-    double TM4_cp;
-    const double Lnorm_tmp=getmin(xlen,ylen);
-    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen*2, ylen, sequence, Lnorm_tmp, d0_scale,
-        0, false, true, false, true, mol_type, -1);
-
-    // delete gap in seqxA_cp
-    r=0;
-    seqxA=seqxA_cp;
-    seqyA=seqyA_cp;
-    for (i=0;i<seqxA_cp.size();i++)
-    {
-        if (seqxA_cp[i]!='-')
-        {
-            seqxA[r]=seqxA_cp[i];
-            seqyA[r]=seqyA_cp[i];
-            r++;
-        }
-    }
-    seqxA=seqxA.substr(0,r);
-    seqyA=seqyA.substr(0,r);
-
-    /* count the number of aligned residues in each window
-     * r - residue index in the original unaligned sequence 
-     * i - position in the alignment */
-    for (r=0;r<xlen-1;r++)
-    {
-        cp_aln_current=0;
-        for (i=r;i<r+xlen;i++) cp_aln_current+=(seqyA[i]!='-');
-
-        if (cp_aln_current>cp_aln_best)
-        {
-            cp_aln_best=cp_aln_current;
-            cp_point=r;
-        }
-    }
-    seqM.clear();
-    seqxA.clear();
-    seqyA.clear();
-    seqxA_cp.clear();
-    seqyA_cp.clear();
-    rmsd0=Liden=n_ali=n_ali8=0;
-
-    // fTM-align alignment
-    TMalign_main(xa, ya, seqx, seqy, secx, secy,
+    Coords xa_tmp; xa_tmp.reserve(xlen);
+    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
+    Coords ya_tmp; ya_tmp.reserve(ylen);
+    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
+    return CPalign_main(xa_tmp, ya_tmp,
+        seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-        0, false, true, false, true, mol_type, -1);
-
-    /* do not use circular permutation of number of aligned residues is not
-     * larger than sequence-order dependent alignment */
-    //cout<<"cp: aln="<<cp_aln_best<<"\tTM="<<TM4_cp<<endl;
-    //cout<<"TM: aln="<<n_ali8<<"\tTM="<<TM4<<endl;
-    if (n_ali8>=cp_aln_best || TM4>=TM4_cp) cp_point=0;
-
-    // prepare structure for final alignment
-    seqM.clear();
-    seqxA.clear();
-    seqyA.clear();
-    rmsd0=Liden=n_ali=n_ali8=0;
-    if (cp_point!=0)
-    {
-        for (r=0;r<xlen;r++)
-        {
-            xa_cp[r][0]=xa_cp[r+cp_point][0];
-            xa_cp[r][1]=xa_cp[r+cp_point][1];
-            xa_cp[r][2]=xa_cp[r+cp_point][2];
-            seqx_cp[r]=seqx_cp[r+cp_point];
-            secx_cp[r]=secx_cp[r+cp_point];
-        }
-    }
-    seqx_cp[xlen]=0;
-    secx_cp[xlen]=0;
-
-    /* test another round of alignment as concatenated alignment can
-     * inflate the number of aligned residues and TM-score. e.g. 1yadA 2duaA */
-    if (cp_point!=0)
-    {
-        TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-            t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
-            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
-            do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, cp_aln_best,
-            xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-            0, false, true, false, true, mol_type, -1);
-        //cout<<"cp: aln="<<cp_aln_best<<"\tTM="<<TM4_cp<<endl;
-        if (n_ali8>=cp_aln_best || TM4>=TM4_cp)
-        {
-            cp_point=0;
-            for (r=0;r<xlen;r++)
-            {
-                xa_cp[r][0]=xa[r][0];
-                xa_cp[r][1]=xa[r][1];
-                xa_cp[r][2]=xa[r][2];
-                seqx_cp[r]=seqx[r];
-                secx_cp[r]=secx[r];
-            }
-        }
-    }
-
-    // full TM-align
-    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, TMcut);
-
-    /* correct alignment
-     * r - residue index in the original unaligned sequence 
-     * i - position in the alignment */
-    if (cp_point>0)
-    {
-        r=0;
-        for (i=0;i<seqxA_cp.size();i++)
-        {
-            r+=(seqxA_cp[i]!='-');
-            if (r>=(xlen-cp_point)) 
-            {
-                i++;
-                break;
-            }
-        }
-        seqxA=seqxA_cp.substr(0,i)+'*'+seqxA_cp.substr(i);
-        seqM =seqM.substr(0,i)    +' '+seqM.substr(i);
-        seqyA=seqyA_cp.substr(0,i)+'-'+seqyA_cp.substr(i);
-    }
-    else
-    {
-        seqxA=seqxA_cp;
-        seqyA=seqyA_cp;
-    }
-
-    // clean up
-    seqxA_cp.clear();
-    seqyA_cp.clear();
-    return cp_point;
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
+        mol_type, TMcut);
 }
 
 bool output_cp(const string&xname, const string&yname,
@@ -5586,7 +5446,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     return 0; // zero for no exception
 }
 
-// Coords& bridge overload — builds temp double** views and delegates to double** impl
+// Coords& true implementation
 int CPalign_main(Coords& xa, Coords& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
@@ -5600,20 +5460,154 @@ int CPalign_main(Coords& xa, Coords& ya,
     const vector<string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
+    const int mol_type, const double TMcut)
 {
-    vector<double*> xa_view(xlen);
-    vector<double*> ya_view(ylen);
-    for (int i=0; i<xlen; i++) xa_view[i]=xa[i].data();
-    for (int i=0; i<ylen; i++) ya_view[i]=ya[i].data();
-    return CPalign_main(xa_view.data(), ya_view.data(),
-        seqx, seqy, secx, secy,
+    std::string seqx_cp;
+    std::string secx_cp;
+    Coords xa_cp;
+    string seqxA_cp,seqyA_cp;
+    int i;
+    int r;
+    int    cp_point=0;
+    int    cp_aln_best=0;
+    int    cp_aln_current;
+
+    xa_cp.resize(xlen*2);
+    seqx_cp.resize(xlen*2 + 1);
+    secx_cp.resize(xlen*2 + 1);
+    for (r=0;r<xlen;r++)
+    {
+        xa_cp[r+xlen][0]=xa_cp[r][0]=xa[r][0];
+        xa_cp[r+xlen][1]=xa_cp[r][1]=xa[r][1];
+        xa_cp[r+xlen][2]=xa_cp[r][2]=xa[r][2];
+        seqx_cp[r+xlen]=seqx_cp[r]=seqx[r];
+        secx_cp[r+xlen]=secx_cp[r]=secx[r];
+    }
+
+    double TM1_cp;
+    double TM2_cp;
+    double TM4_cp;
+    const double Lnorm_tmp=getmin(xlen,ylen);
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+        t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
+        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen*2, ylen, sequence, Lnorm_tmp, d0_scale,
+        0, false, true, false, true, mol_type, -1);
+
+    r=0;
+    seqxA=seqxA_cp;
+    seqyA=seqyA_cp;
+    for (i=0;i<seqxA_cp.size();i++)
+    {
+        if (seqxA_cp[i]!='-')
+        {
+            seqxA[r]=seqxA_cp[i];
+            seqyA[r]=seqyA_cp[i];
+            r++;
+        }
+    }
+    seqxA=seqxA.substr(0,r);
+    seqyA=seqyA.substr(0,r);
+
+    for (r=0;r<xlen-1;r++)
+    {
+        cp_aln_current=0;
+        for (i=r;i<r+xlen;i++) cp_aln_current+=(seqyA[i]!='-');
+
+        if (cp_aln_current>cp_aln_best)
+        {
+            cp_aln_best=cp_aln_current;
+            cp_point=r;
+        }
+    }
+    seqM.clear();
+    seqxA.clear();
+    seqyA.clear();
+    seqxA_cp.clear();
+    seqyA_cp.clear();
+    rmsd0=Liden=n_ali=n_ali8=0;
+
+    TMalign_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, TMcut);
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
+        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+        0, false, true, false, true, mol_type, -1);
+
+    if (n_ali8>=cp_aln_best || TM4>=TM4_cp) cp_point=0;
+
+    seqM.clear();
+    seqxA.clear();
+    seqyA.clear();
+    rmsd0=Liden=n_ali=n_ali8=0;
+    if (cp_point!=0)
+    {
+        for (r=0;r<xlen;r++)
+        {
+            xa_cp[r][0]=xa_cp[r+cp_point][0];
+            xa_cp[r][1]=xa_cp[r+cp_point][1];
+            xa_cp[r][2]=xa_cp[r+cp_point][2];
+            seqx_cp[r]=seqx_cp[r+cp_point];
+            secx_cp[r]=secx_cp[r+cp_point];
+        }
+    }
+    seqx_cp[xlen]=0;
+    secx_cp[xlen]=0;
+
+    if (cp_point!=0)
+    {
+        TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+            t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
+            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
+            do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, cp_aln_best,
+            xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+            0, false, true, false, true, mol_type, -1);
+        if (n_ali8>=cp_aln_best || TM4>=TM4_cp)
+        {
+            cp_point=0;
+            for (r=0;r<xlen;r++)
+            {
+                xa_cp[r][0]=xa[r][0];
+                xa_cp[r][1]=xa[r][1];
+                xa_cp[r][2]=xa[r][2];
+                seqx_cp[r]=seqx[r];
+                secx_cp[r]=secx[r];
+            }
+        }
+    }
+
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
+        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale,
+        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, TMcut);
+
+    if (cp_point>0)
+    {
+        r=0;
+        for (i=0;i<seqxA_cp.size();i++)
+        {
+            r+=(seqxA_cp[i]!='-');
+            if (r>=(xlen-cp_point))
+            {
+                i++;
+                break;
+            }
+        }
+        seqxA=seqxA_cp.substr(0,i)+'*'+seqxA_cp.substr(i);
+        seqM =seqM.substr(0,i)    +' '+seqM.substr(i);
+        seqyA=seqyA_cp.substr(0,i)+'-'+seqyA_cp.substr(i);
+    }
+    else
+    {
+        seqxA=seqxA_cp;
+        seqyA=seqyA_cp;
+    }
+
+    seqxA_cp.clear();
+    seqyA_cp.clear();
+    return cp_point;
 }
 
