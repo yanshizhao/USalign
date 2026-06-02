@@ -3251,6 +3251,13 @@ inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, const char *secx, const 
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
+// Forward declaration for bool** overload (defined below)
+double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
+    double **xt, bool **path, double **val, double **x, double **y,
+    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    int g1, int g2, int iteration_max, double local_d0_search,
+    double D0_MIN, double Lnorm, double d0, double score_d8);
+
 double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     double **xt, bool **path, double **val, double **x, double **y,
     int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
@@ -3323,6 +3330,32 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     delete []invmap;
     return tmscore_max;
 }
+// PathMat/DPMatrix path/val overload - creates bool** views, delegates to bool** version
+inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, PathMat& path, DPMatrix& val, double **x, double **y,
+    int xlen, int ylen, bool **mask, double t[3], double u[3][3], int invmap0[],
+    int g1, int g2, int iteration_max, double local_d0_search,
+    double D0_MIN, double Lnorm, double d0, double score_d8)
+{
+    std::vector<double*> r1v(r1.size()), r2v(r2.size());
+    std::vector<double*> xtmv(xtm.size()), ytmv(ytm.size());
+    std::vector<double*> xtv(xt.size());
+    for (size_t i=0; i<r1.size(); i++) r1v[i]=(double*)r1[i].data();
+    for (size_t i=0; i<r2.size(); i++) r2v[i]=(double*)r2[i].data();
+    for (size_t i=0; i<xtm.size(); i++) xtmv[i]=(double*)xtm[i].data();
+    for (size_t i=0; i<ytm.size(); i++) ytmv[i]=(double*)ytm[i].data();
+    for (size_t i=0; i<xt.size(); i++) xtv[i]=(double*)xt[i].data();
+    std::vector<char*> pvv(xlen+1);
+    for (int i=0; i<=xlen; i++) pvv[i]=path[i].data();
+    std::vector<double*> valv(xlen+1);
+    for (int i=0; i<=xlen; i++) valv[i]=val[i].data();
+    return DP_iter_dimer(r1v.data(), r2v.data(), xtmv.data(), ytmv.data(),
+        xtv.data(), reinterpret_cast<bool**>(pvv.data()), valv.data(),
+        x, y, xlen, ylen, mask, t, u, invmap0,
+        g1, g2, iteration_max, local_d0_search,
+        D0_MIN, Lnorm, d0, score_d8);
+}
+
 
 // Coords& bridge — builds temp double** views and delegates
 inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
@@ -3466,6 +3499,27 @@ inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
     return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
         path, val, x, y, xlen, ylen, mask, y2x, d0, d0_search, fast_opt, D0_MIN);
+}
+
+// PathMat/DPMatrix path/val overload - creates bool** views, delegates to bool** version
+inline bool get_initial5_dimer( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    PathMat& path, DPMatrix& val,
+    double **x, double **y, int xlen, int ylen, bool **mask, int *y2x,
+    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
+{
+    vector<double*> r1_view(r1.size()), r2_view(r2.size());
+    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
+    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
+    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
+    for (size_t i=0; i<xtm.size(); i++) xtm_view[i]=(double*)xtm[i].data();
+    for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
+    std::vector<char*> pvv(xlen+1);
+    for (int i=0; i<=xlen; i++) pvv[i]=path[i].data();
+    std::vector<double*> valv(xlen+1);
+    for (int i=0; i<=xlen; i++) valv[i]=val[i].data();
+    return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
+        reinterpret_cast<bool**>(pvv.data()), valv.data(), x, y, xlen, ylen, mask, y2x,
+        d0, d0_search, fast_opt, D0_MIN);
 }
 
 void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
@@ -3671,7 +3725,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TM>TMmax) TMmax = TM;
         if (TMcut>0) copy_t_u(t, u, t0, u0);
         //run dynamic programing iteratively to find the best alignment
-        TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya, xlen, ylen,
+        TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya, xlen, ylen,
              mask_bp, t, u, invmap, 0, 2, (fast_opt)?2:30,
              local_d0_search, D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
@@ -3711,7 +3765,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         }
         if (TM > TMmax*0.2)
         {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
                 xlen, ylen, mask_bp, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -3741,7 +3795,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         //    get initial alignment based on local superposition   
         /************************************************************/
         //=initial5 in original TM-align
-        if (get_initial5_dimer( r1, r2, xtm, ytm, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+        if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa, ya,
             xlen, ylen, mask_bp, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
@@ -3755,7 +3809,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
             }
             if (TM > TMmax*ddcc)
             {
-                TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+                TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
                     xlen, ylen, mask_bp, t, u, invmap, 0, 2, 2,
                     local_d0_search, D0_MIN, Lnorm, d0, score_d8);
                 if (TM>TMmax)
@@ -3801,7 +3855,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
                 xlen, ylen, mask_bp, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -3844,7 +3898,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
                 xlen, ylen, mask_bp, t, u, invmap, 1, 2, 2,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -3915,7 +3969,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
                 for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
             }
             // Different from get_initial, get_initial_ss and get_initial_ssplus
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
                 xlen, ylen, mask_bp, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
