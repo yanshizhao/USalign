@@ -58,6 +58,21 @@ void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
         secx_bond[i][0]=secx_bond[i][1]=-1;
 }
 
+// Bond2 overload — syntax identical to int**
+inline void assign_sec_bond(Bond2& secx_bond, const char *secx, const int xlen)
+{
+    int i,j,starti=-1,endi=-1;
+    char ss,prev_ss=0;
+    for (i=0; i<xlen; i++) { ss=secx[i]; secx_bond[i][0]=secx_bond[i][1]=-1;
+        if (ss!=prev_ss && !(ss=='C' && prev_ss=='T') && !(ss=='T' && prev_ss=='C')) {
+            if (starti>=0) { endi=i; for (j=starti;j<endi;j++) { secx_bond[j][0]=starti; secx_bond[j][1]=endi; } }
+            if (ss=='H' || ss=='E' || ss=='<' || ss=='>') starti=i; else starti=-1;
+        } prev_ss=secx[i];
+    }
+    if (starti>=0) { endi=i; for (j=starti;j<endi;j++) { secx_bond[j][0]=starti; secx_bond[j][1]=endi; } }
+    for (i=0;i<xlen;i++) if (secx_bond[i][1]-secx_bond[i][0]==1) secx_bond[i][0]=secx_bond[i][1]=-1;
+}
+
 // Coords& real implementation (flipped from double** version)
 inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, double **xk)
 {
@@ -131,6 +146,25 @@ inline bool sec2sq(const int i, const int j,
         {
             ii=invmap[jj];
             if (ii>=0 && (i-ii)*(j-jj)<=0) return false;
+        }
+    }
+    return true;
+}
+
+// Bond2 overload
+inline bool sec2sq(const int i, const int j,
+    const Bond2& secx_bond, const Bond2& secy_bond, int *fwdmap, int *invmap)
+{
+    if (i<0 || j<0) return true;
+    int ii,jj;
+    if (secx_bond[i][0]>=0) {
+        for (ii=secx_bond[i][0];ii<secx_bond[i][1];ii++) {
+            jj=fwdmap[ii]; if (jj>=0 && (i-ii)*(j-jj)<=0) return false;
+        }
+    }
+    if (secy_bond[j][0]>=0) {
+        for (jj=secy_bond[j][0];jj<secy_bond[j][1];jj++) {
+            ii=invmap[jj]; if (ii>=0 && (i-ii)*(j-jj)<=0) return false;
         }
     }
     return true;
@@ -225,6 +259,50 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
     delete[]fwdmap;
 }
 
+// Bond2 overload
+inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
+    const Bond2& secx_bond, const Bond2& secy_bond, const int mm_opt)
+{
+    int i,j;
+    int *fwdmap=new int[xlen];
+    for (i=0; i<xlen; i++) fwdmap[i]=-1;
+    for (j=0; j<ylen; j++) { i=invmap[j]; if (i>=0) fwdmap[i]=j; }
+    double max_score; int maxi,maxj;
+    while(1) {
+        max_score=0; maxi=maxj=-1;
+        for (i=0;i<xlen;i++) { if (fwdmap[i]>=0) continue;
+            for (j=0;j<ylen;j++) { if (invmap[j]>=0 || score[i+1][j+1]<=max_score) continue;
+                if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap)) continue;
+                maxi=i; maxj=j; max_score=score[i+1][j+1];
+            }
+        }
+        if (maxi<0) break;
+        invmap[maxj]=maxi; fwdmap[maxi]=maxj;
+    }
+    double total_score=0;
+    for (j=0;j<ylen;j++) { i=invmap[j]; if (i>=0) total_score+=score[i+1][j+1]; }
+    int iter,oldi,oldj; double delta_score;
+    for (iter=0; iter<getmin(xlen,ylen)*5; iter++) {
+        delta_score=-1;
+        for (i=0;i<xlen;i++) { oldj=fwdmap[i];
+            if (oldj>=0) for (j=0;j<ylen;j++) { if (invmap[j]>=0 || i==oldj) continue;
+                if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap)) continue;
+                delta_score=score[i+1][j+1]-score[i+1][oldj+1];
+                if (delta_score>0) { fwdmap[i]=j; invmap[j]=i; invmap[oldj]=-1; total_score+=delta_score;
+                    oldi=oldj; for (j=0;j<xlen;j++) { oldj=fwdmap[j]; if (oldj>=0 && oldi==oldj) delta_score=0; }
+                    break;
+                }
+            }
+        }
+        if (delta_score<=0) { for (j=0;j<ylen;j++) { i=invmap[j]; if (i>=0) for (int k=j+1;k<ylen;k++) { oldi=invmap[k];
+            if (oldi>=0 && mm_opt==6 && !sec2sq(i,k,secx_bond,secy_bond,fwdmap,invmap) && !sec2sq(oldi,j,secx_bond,secy_bond,fwdmap,invmap) && sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap) && sec2sq(oldi,k,secx_bond,secy_bond,fwdmap,invmap)) {
+                invmap[j]=i; invmap[k]=oldi; fwdmap[i]=j; fwdmap[oldi]=k; break;
+            }}
+        } break; }
+    }
+    delete[]fwdmap;
+}
+
 /* entry function for se
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
@@ -242,7 +320,7 @@ inline int soi_se_main(Coords& xa, Coords& ya, const std::string &seqx,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt,
     const int mol_type, const int outfmt_opt, int *invmap,
-    double *dist_list, int **secx_bond, int **secy_bond, const int mm_opt);
+    double *dist_list, Bond2& secx_bond, Bond2& secy_bond, const int mm_opt);
 
 int soi_se_main(
     double **xa, double **ya, const std::string &seqx, const std::string &seqy,
@@ -256,7 +334,7 @@ int soi_se_main(
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
     const int outfmt_opt, int *invmap, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt)
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
     Coords xa_tmp; xa_tmp.reserve(xlen);
     for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
@@ -286,7 +364,7 @@ inline int soi_se_main(
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
     const int outfmt_opt, int *invmap, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt)
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
 // [Coords& true implementation]
 
@@ -637,12 +715,27 @@ double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore_max;
 }
 
+// Bond2 secx_bond/secy_bond overload - creates int** views, delegates
+inline double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+    Coords& xt, double **score, PathMat& path, double **val, double **xa, double **ya,
+    int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
+    int iteration_max, double local_d0_search,
+    double Lnorm, double d0, double score_d8,
+    const Bond2& secx_bond, const Bond2& secy_bond, const int mm_opt, const bool init_invmap=false)
+{
+    std::vector<int*> sxb(xlen), syb(ylen);
+    for (int i=0; i<xlen; i++) sxb[i]=(int*)secx_bond[i].data();
+    for (int i=0; i<ylen; i++) syb[i]=(int*)secy_bond[i].data();
+    return SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa, ya,
+        xlen, ylen, t, u, invmap0, iteration_max, local_d0_search,
+        Lnorm, d0, score_d8, sxb.data(), syb.data(), mm_opt, init_invmap);
+}
 
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double **score, char **path, double **val, const int xlen, const int ylen,
-    double t[3], double u[3][3], int invmap[], 
+    double t[3], double u[3][3], int invmap[],
     double local_d0_search, double d0, double score_d8,
-    int **secx_bond, int **secy_bond, const int mm_opt)
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
     int i;
     int j;
@@ -707,7 +800,7 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double **score, PathMat& path, double **val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[],
     double local_d0_search, double d0, double score_d8,
-    int **secx_bond, int **secy_bond, const int mm_opt)
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
     int i;
     int j;
@@ -868,7 +961,7 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt);
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt);
 
 // Coords& xk/yk bridge — converts to double** views, delegates to true impl
 inline int SOIalign_main(Coords& xa, Coords& ya,
@@ -886,7 +979,7 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt)
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
     vector<double*> xk_view(xk.size());
     vector<double*> yk_view(yk.size());
@@ -919,7 +1012,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
-    int **secx_bond, int **secy_bond, const int mm_opt)
+    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
 {
     // Build double** views for sub-function compatibility
     vector<double*> _xa_v(xlen);
