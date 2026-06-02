@@ -3538,7 +3538,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
-    bool **mask,
+    PathMat& mask,
     const vector<string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
@@ -3551,6 +3551,10 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
     double **xa = _xa_v.data();
     double **ya = _ya_v.data();
+    // Build bool** view for mask (sub-functions still expect bool**)
+    std::vector<char*> _mask_v(xlen+1);
+    for(int _i=0;_i<=xlen;_i++) _mask_v[_i]=mask[_i].data();
+    bool **mask_bp = reinterpret_cast<bool**>(_mask_v.data());
 // [Coords& true implementation]
 
     double D0_MIN;        //for d0
@@ -3662,7 +3666,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TMcut>0) copy_t_u(t, u, t0, u0);
         //run dynamic programing iteratively to find the best alignment
         TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya, xlen, ylen,
-             mask, t, u, invmap, 0, 2, (fast_opt)?2:30,
+             mask_bp, t, u, invmap, 0, 2, (fast_opt)?2:30,
              local_d0_search, D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
         {
@@ -3689,7 +3693,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure
         /************************************************************/
-        get_initial_ss_dimer(reinterpret_cast<bool**>(pv.data()), vv.data(), secx, secy, xlen, ylen, mask, invmap);
+        get_initial_ss_dimer(reinterpret_cast<bool**>(pv.data()), vv.data(), secx, secy, xlen, ylen, mask_bp, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
@@ -3702,7 +3706,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TM > TMmax*0.2)
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
+                xlen, ylen, mask_bp, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -3732,7 +3736,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         /************************************************************/
         //=initial5 in original TM-align
         if (get_initial5_dimer( r1, r2, xtm, ytm, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
-            xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
+            xlen, ylen, mask_bp, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
                 invmap, t, u, simplify_step, score_sum_method,
@@ -3746,7 +3750,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
             if (TM > TMmax*ddcc)
             {
                 TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
-                    xlen, ylen, mask, t, u, invmap, 0, 2, 2,
+                    xlen, ylen, mask_bp, t, u, invmap, 0, 2, 2,
                     local_d0_search, D0_MIN, Lnorm, d0, score_d8);
                 if (TM>TMmax)
                 {
@@ -3779,7 +3783,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         /********************************************************************/
         //=initial3 in original TM-align
         get_initial_ssplus_dimer(r1, r2, sv.data(), reinterpret_cast<bool**>(pv.data()), vv.data(), secx, secy, xa_c, ya_c,
-            xlen, ylen, mask, invmap0, invmap, D0_MIN, d0);
+            xlen, ylen, mask_bp, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
@@ -3792,7 +3796,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TM > TMmax*ddcc)
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
+                xlen, ylen, mask_bp, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -3835,7 +3839,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
         if (TM > TMmax*ddcc)
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
-                xlen, ylen, mask, t, u, invmap, 1, 2, 2,
+                xlen, ylen, mask_bp, t, u, invmap, 1, 2, 2,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -3906,7 +3910,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
             }
             // Different from get_initial, get_initial_ss and get_initial_ssplus
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, reinterpret_cast<bool**>(pv.data()), vv.data(), xa, ya,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
+                xlen, ylen, mask_bp, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -4223,8 +4227,6 @@ void MMalign_dimer(double & total_score,
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) mask[i][j]=false;
     for (i=0;i<xlen_dimer[0]+1;i++) mask[i][0]=true;
     for (j=0;j<ylen_dimer[0]+1;j++) mask[0][j]=true;
-    std::vector<char*> mv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++) mv[_i]=mask[_i].data();
     int c;
     int prev_xlen;
     int prev_ylen;
@@ -4280,7 +4282,7 @@ void MMalign_dimer(double & total_score,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, reinterpret_cast<bool**>(mv.data()), sequence, Lnorm_ass, d0_scale,
+        xlen, ylen, mask, sequence, Lnorm_ass, d0_scale,
         1, false, true, false, fast_opt, mol_type, -1);
 
     // clean up TM-align
