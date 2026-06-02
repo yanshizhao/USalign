@@ -336,7 +336,7 @@ bool Kabsch(double **x, double **y, int n, int mode, double *rms,
     return true;
 }
 
-bool Kabsch(const Coords& x, const Coords& y, int n, int mode, double *rms,
+bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double *rms,
     double t[3], double u[3][3])
 {
     int i, j, m, m1, l, k;

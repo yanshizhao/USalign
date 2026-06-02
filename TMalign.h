@@ -107,7 +107,7 @@ int score_fun8_standard(double **xa, double **ya, int n_ali, double d,
     return n_cut;
 }
 
-int score_fun8(const Coords& xa, const Coords& ya, int n_ali, double d, int i_ali[],
+int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, int i_ali[],
     double *score1, int score_sum_method, const double Lnorm,
     const double score_d8, const double d0)
 {
@@ -152,7 +152,7 @@ int score_fun8(const Coords& xa, const Coords& ya, int n_ali, double d, int i_al
     return n_cut;
 }
 
-int score_fun8_standard(const Coords& xa, const Coords& ya, int n_ali, double d,
+int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, double d,
     int i_ali[], double *score1, int score_sum_method,
     double score_d8, double d0)
 {
@@ -338,8 +338,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     return score_max;
 }
 
-double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
+double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
     int score_sum_method, double *Rcomm, double local_d0_search, double Lnorm,
     double score_d8, double d0)
 {
@@ -668,8 +668,8 @@ double TMscore8_search_standard( double **r1, double **r2,
     return score_max;
 }
 
-double TMscore8_search_standard(Coords& r1, Coords& r2,
-    Coords& xtm, Coords& ytm, Coords& xt, int Lali,
+double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, int Lali,
     double t0[3], double u0[3][3], int simplify_step, int score_sum_method,
     double *Rcomm, double local_d0_search, double score_d8, double d0)
 {
@@ -879,8 +879,8 @@ double detailed_search(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore;
 }
 
-double detailed_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, double **x, double **y, int xlen, int ylen, 
+double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, double **x, double **y, int xlen, int ylen, 
     int invmap0[], double t[3], double u[3][3], int simplify_step,
     int score_sum_method, double local_d0_search, double Lnorm,
     double score_d8, double d0)
@@ -915,9 +915,9 @@ double detailed_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore;
 }
 
-// const Coords& x/y overload — function body identical to double** version
-double detailed_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, const Coords& x, const Coords& y, int xlen, int ylen,
+// const CoordArray& x/y overload — function body identical to double** version
+double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     int invmap0[], double t[3], double u[3][3], int simplify_step,
     int score_sum_method, double local_d0_search, double Lnorm,
     double score_d8, double d0)
@@ -979,8 +979,8 @@ double detailed_search_standard( double **r1, double **r2,
     return tmscore;
 }
 
-double detailed_search_standard( Coords& r1, Coords& r2,
-    Coords& xtm, Coords& ytm, Coords& xt, double **x, double **y,
+double detailed_search_standard( CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, double **x, double **y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0)
@@ -1017,9 +1017,9 @@ double detailed_search_standard( Coords& r1, Coords& r2,
     return tmscore;
 }
 
-// const Coords& x/y overload — function body identical to double** version
-double detailed_search_standard( Coords& r1, Coords& r2,
-    Coords& xtm, Coords& ytm, Coords& xt, const Coords& x, const Coords& y,
+// const CoordArray& x/y overload — function body identical to double** version
+double detailed_search_standard( CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0)
@@ -1197,7 +1197,7 @@ double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
     return tmscore; // no need to normalize this score because it will not be used for latter scoring
 }
 
-double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     double **x, double **y, int xlen, int ylen, int invmap[],
     double d0, double d0_search, double t[3], double u[3][3])
 {
@@ -1361,9 +1361,9 @@ double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore;
 }
 
-// const Coords& x/y overload — function body identical to double** version
-double get_score_fast( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    const Coords& x, const Coords& y, int xlen, int ylen, int invmap[],
+// const CoordArray& x/y overload — function body identical to double** version
+double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen, int invmap[],
     double d0, double d0_search, double t[3], double u[3][3])
 {
     double rms,tmscore,tmscore1,tmscore2;
@@ -1513,7 +1513,7 @@ double get_initial(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore_max;
 }
 
-double get_initial(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     double **x, double **y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt,
     double t[3], double u[3][3])
@@ -1569,9 +1569,9 @@ double get_initial(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore_max;
 }
 
-// const Coords& x/y overload
-double get_initial(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
+// const CoordArray& x/y overload
+double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt,
     double t[3], double u[3][3])
 {
@@ -1675,7 +1675,7 @@ char sec_str(double dis13, double dis14, double dis15,
 
 /* secondary structure assignment for protein:
  * 1->coil, 2->helix, 3->turn, 4->strand */
-void make_sec(const Coords& x, int len, char *sec)
+void make_sec(const CoordArray& x, int len, char *sec)
 {
     int j1;
     int j2;
@@ -1745,14 +1745,14 @@ void sec_str(int len,const char *seq, const vector<vector<bool> >&bp,
 //the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
 
-void get_initial_ss(PathMat& path, DPMatrix& val,
+void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
     const char *secx, const char *secy, int xlen, int ylen, int *y2x)
 {
     double gap_open=-1.0;
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
-void make_sec(const char *seq, const Coords& x, int len, char *sec,const string atom_opt)
+void make_sec(const char *seq, const CoordArray& x, int len, char *sec,const string atom_opt)
 {
     int ii;
     int jj;
@@ -1831,7 +1831,7 @@ void make_sec(const char *seq, const Coords& x, int len, char *sec,const string 
 // get_initial5 in TMalign fortran, get_initial_local in TMalign c by yangji
 //get initial alignment of local structure superposition
 
-bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     char **path, double **val,
     double **x, double **y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
@@ -1935,10 +1935,10 @@ bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return flag;
 }
 
-// PathMat/DPMatrix + const Coords& overload
-bool get_initial5( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    PathMat& path, DPMatrix& val,
-    const Coords& x, const Coords& y, int xlen, int ylen, int *y2x,
+// CharMatrix/DoubleMatrix + const CoordArray& overload
+bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CharMatrix& path, DoubleMatrix& val,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     double GL,rmsd,t[3],u[3][3];
@@ -2007,7 +2007,7 @@ void score_matrix_rmsd_sec( double **r1, double **r2, double **score,
     }
 }
 
-void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
+void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, double **score,
     const char *secx, const char *secy, double **x, double **y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
 {
@@ -2059,9 +2059,9 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
     }
 }
 
-// const Coords& x/y overload
-void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
-    const char *secx, const char *secy, const Coords& x, const Coords& y,
+// const CoordArray& x/y overload
+void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, double **score,
+    const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
 {
     double t[3],u[3][3],rmsd,dij;
@@ -2094,9 +2094,9 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, double **score,
         }
     }
 }
-// DPMatrix& score overload
-void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
-    const char *secx, const char *secy, const Coords& x, const Coords& y,
+// DoubleMatrix& score overload
+void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
+    const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
 {
     double t[3],u[3][3],rmsd,dij;
@@ -2114,8 +2114,8 @@ void score_matrix_rmsd_sec( Coords& r1, Coords& r2, DPMatrix& score,
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
 
-void get_initial_ssplus(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
-    DPMatrix& val, const char *secx, const char *secy, const Coords& x, const Coords& y,
+void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
 {
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
@@ -2183,8 +2183,8 @@ void find_max_frag(double **x, int len, int *start_max,
     }//while <;    
 }
 
-// const Coords& overload
-void find_max_frag(const Coords& x, int len, int *start_max,
+// const CoordArray& overload
+void find_max_frag(const CoordArray& x, int len, int *start_max,
     int *end_max, double dcu0, const bool fast_opt)
 {
     int r_min, fra_min=4;
@@ -2224,8 +2224,8 @@ void find_max_frag(const Coords& x, int len, int *start_max,
 //y2x0[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    const Coords& x, const Coords& y, int xlen, int ylen,
+double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     int *y2x, double d0, double d0_search,
     double dcu0, const bool fast_opt, double t[3], double u[3][3])
 {
@@ -2476,14 +2476,14 @@ double get_initial_fgt(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
 
-double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, char **path, double **val, double **x, double **y,
+double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8);
 
-double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, char **path, double **val, double **x, double **y,
+double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2554,9 +2554,9 @@ double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     delete []invmap;
     return tmscore_max;
 }
-// PathMat& path overload - creates bool** view, delegates to bool** version
-double DP_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, PathMat& path, double **val, double **x, double **y,
+// CharMatrix& path overload - creates bool** view, delegates to bool** version
+double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CharMatrix& path, double **val, double **x, double **y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2982,7 +2982,7 @@ void output_pymol(const string xname, const string yname,
 }
 
 void output_mTMalign_pymol(const vector<string>&chain_list,
-    const int infmt_opt, const Rotation& ut_mat, const string &fname_super,
+    const int infmt_opt, const RotArray& ut_mat, const string &fname_super,
     const int o_opt=1)
 {
     int compress_type=0; // uncompressed file
@@ -4169,8 +4169,8 @@ double standard_TMscore(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore;
 }
 
-double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, double **x, double **y, int xlen, int ylen, int invmap[],
+double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, double **x, double **y, int xlen, int ylen, int invmap[],
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
     double d0_search, double score_d8, double t[3], double u[3][3],
     const int mol_type)
@@ -4243,9 +4243,9 @@ double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore;
 }
 
-// const Coords& x/y overload
-double standard_TMscore(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, const Coords& x, const Coords& y, int xlen, int ylen, int invmap[],
+// const CoordArray& x/y overload
+double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, int invmap[],
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
     double d0_search, double score_d8, double t[3], double u[3][3],
     const int mol_type)
@@ -4333,9 +4333,9 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
     return TMtmp;
 }
 
-// Coords& overload — const_cast safe: transform/dist only read, never write
+// CoordArray& overload — const_cast safe: transform/dist only read, never write
 double approx_TM(const int xlen, const int ylen, const int a_opt,
-    const Coords& xa, const Coords& ya, double t[3], double u[3][3],
+    const CoordArray& xa, const CoordArray& ya, double t[3], double u[3][3],
     const int invmap0[], const int mol_type)
 {
     double Lnorm_0=ylen; // normalized by the second protein
@@ -4368,19 +4368,19 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
 
 
 void clean_up_after_approx_TM(int *invmap0, int *invmap,
-    DPMatrix& /*score*/, PathMat& /*path*/, DPMatrix& /*val*/, Coords& xtm, Coords& ytm,
-    Coords& xt, Coords& r1, Coords& r2, const int xlen, const int /*minlen*/ = 0)
+    DoubleMatrix& /*score*/, CharMatrix& /*path*/, DoubleMatrix& /*val*/, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CoordArray& r1, CoordArray& r2, const int xlen, const int /*minlen*/ = 0)
 {
     delete [] invmap0;
     delete [] invmap;
-    // score/path/val are DPMatrix/PathMat containers — auto-destruct on return
+    // score/path/val are DoubleMatrix/CharMatrix containers — auto-destruct on return
     return;
 }
 
 #endif
 
 
-int CPalign_main(Coords& xa, Coords& ya,
+int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -4438,7 +4438,7 @@ bool output_cp(const string&xname, const string&yname,
 }
 
 
-int TMalign_main(Coords& xa_c, Coords& ya_c,
+int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
@@ -4458,12 +4458,12 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    DPMatrix score;       // Input score table for dynamic programming
-    PathMat  path;        // for dynamic programming
-    DPMatrix val;         // for dynamic programming
-    Coords xtm, ytm;     // for TMscore search engine
-    Coords xt;            //for saving the superposed version of r_1 or xtm
-    Coords r1, r2;        // for Kabsch rotation
+    DoubleMatrix score;       // Input score table for dynamic programming
+    CharMatrix  path;        // for dynamic programming
+    DoubleMatrix val;         // for dynamic programming
+    CoordArray xtm, ytm;     // for TMscore search engine
+    CoordArray xt;            //for saving the superposed version of r_1 or xtm
+    CoordArray r1, r2;        // for Kabsch rotation
 
     // Build double** views for sub-function compatibility
     vector<double*> _xa_v(xlen);
@@ -4597,7 +4597,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score auto-destruct (DPMatrix)
+                // score auto-destruct (DoubleMatrix)
                 return 2;
             }
         }
@@ -4638,7 +4638,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score auto-destruct (DPMatrix)
+                // score auto-destruct (DoubleMatrix)
                 return 3;
             }
         }
@@ -4685,7 +4685,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score auto-destruct (DPMatrix)
+                // score auto-destruct (DoubleMatrix)
                 return 4;
             }
         }
@@ -4728,7 +4728,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score auto-destruct (DPMatrix)
+                // score auto-destruct (DoubleMatrix)
                 return 5;
             }
         }
@@ -4771,7 +4771,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score auto-destruct (DPMatrix)
+                // score auto-destruct (DoubleMatrix)
                 return 6;
             }
         }
@@ -4866,7 +4866,7 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
             TM1=TM2=TM3=TM4=TM5=TMtmp;
             delete [] invmap0;
             delete [] invmap;
-            // score auto-destruct (DPMatrix)
+            // score auto-destruct (DoubleMatrix)
             return 7;
         }
     }
@@ -5078,14 +5078,14 @@ int TMalign_main(Coords& xa_c, Coords& ya_c,
     // free memory
     delete [] invmap0;
     delete [] invmap;
-    // score auto-destruct (DPMatrix)
+    // score auto-destruct (DoubleMatrix)
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception
 }
 
 
-int CPalign_main(Coords& xa, Coords& ya,
+int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -5102,7 +5102,7 @@ int CPalign_main(Coords& xa, Coords& ya,
 {
     std::string seqx_cp;
     std::string secx_cp;
-    Coords xa_cp;
+    CoordArray xa_cp;
     string seqxA_cp,seqyA_cp;
     int i;
     int r;

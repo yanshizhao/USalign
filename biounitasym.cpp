@@ -142,8 +142,8 @@ int main(int argc, char *argv[])
     int    chain_i,chain_j;           // chain index
     int    xlen,ylen;                 // chain length
     int    chainnum;       // number of chains in a PDB file
-    Coords xa;
-    Coords ya;         // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray xa;
+    CoordArray ya;         // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya

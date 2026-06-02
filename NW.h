@@ -96,7 +96,7 @@ void NWDP_TM(double **score, char **path, double **val,
     }
 }
 
-// DPMatrix overload — path uses char(1/0) instead of bool(true/false)
+// DoubleMatrix overload — path uses char(1/0) instead of bool(true/false)
 void NWDP_TM(const std::vector<std::vector<double>>& score, std::vector<std::vector<char>>& path,
     std::vector<std::vector<double>>& val, int len1, int len2, double gap_open, int j2i[])
 {
@@ -136,7 +136,7 @@ void NWDP_TM(const std::vector<std::vector<double>>& score, std::vector<std::vec
 }
 
 
-inline void NWDP_TM(double **score, PathMat& path,
+inline void NWDP_TM(double **score, CharMatrix& path,
     double **val, int len1, int len2, double gap_open, int j2i[])
 {
     int i,j; double h,v,d;
@@ -248,7 +248,7 @@ void NWDP_TM(char **path, double **val, double **x, double **y,
 }
 
 
-inline void NWDP_TM(PathMat& path, DPMatrix& val, double **x, double **y,
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, double **x, double **y,
     int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, int j2i[])
 {
@@ -373,7 +373,7 @@ void NWDP_SE(char **path, double **val, double **x, double **y,
     }
 }
 
-void NWDP_SE(char **path, double **val, Coords& x, Coords& y,
+void NWDP_SE(char **path, double **val, CoordArray& x, CoordArray& y,
     int len1, int len2, double d02, double gap_open, int j2i[])
 {
     int i;
@@ -448,7 +448,7 @@ void NWDP_SE(char **path, double **val, Coords& x, Coords& y,
 }
 
 
-void NWDP_SE(PathMat& path, DPMatrix& val, Coords& x, Coords& y,
+void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
 {
@@ -634,7 +634,7 @@ void NWDP_SE(char **path, double **val, double **x, double **y,
     }
 }
 
-void NWDP_SE(char **path, double **val, Coords& x, Coords& y,
+void NWDP_SE(char **path, double **val, CoordArray& x, CoordArray& y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
 {
@@ -810,7 +810,7 @@ void NWDP_TM(char **path, double **val, const char *secx, const char *secy,
 }
 
 
-inline void NWDP_TM(PathMat& path, DPMatrix& val, const char *secx, const char *secy,
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, const double gap_open, int j2i[])
 {
     int i,j; double h,v,d;

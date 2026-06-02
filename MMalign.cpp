@@ -365,8 +365,8 @@ int main(int argc, char *argv[])
     vector<int> xlen_vec;          // length of complex1
     vector<int> ylen_vec;          // length of complex2
     int    xlen, ylen;             // chain length
-    Coords xa;                     // structure of single chain
-    Coords ya;
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
     vector<string> resi_vec1;  // residue index for chain1
@@ -488,9 +488,9 @@ int main(int argc, char *argv[])
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
     vector<string> tmp_str_vec(chain2_num,"");
-    DPMatrix TMave_mat;
+    DoubleMatrix TMave_mat;
     TMave_mat.assign(chain1_num,vector<double>(chain2_num));
-    Rotation ut_mat; // rotation matrices for all-against-all alignment
+    RotArray ut_mat; // rotation matrices for all-against-all alignment
     ut_mat.resize(chain1_num*chain2_num);
     int ut_idx;
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
@@ -648,8 +648,8 @@ int main(int argc, char *argv[])
     if (aln_chain_num>=3 || is_oligomer) // oligomer alignment
     {
         // extract centroid coordinates
-        Coords xcentroids;
-        Coords ycentroids;
+        CoordArray xcentroids;
+        CoordArray ycentroids;
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM=getmin(
@@ -665,7 +665,7 @@ int main(int argc, char *argv[])
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        // xcentroids, ycentroids auto-destruct (Coords)
+        // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // store initial assignment
@@ -674,7 +674,7 @@ int main(int argc, char *argv[])
     int *assign2_init;
     assign1_init=new int[chain1_num];
     assign2_init=new int[chain2_num];
-    DPMatrix TMave_init;
+    DoubleMatrix TMave_init;
     TMave_init.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
@@ -711,8 +711,8 @@ int main(int argc, char *argv[])
             0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
 
         // extract centroid coordinates
-        Coords xcentroids;
-        Coords ycentroids;
+        CoordArray xcentroids;
+        CoordArray ycentroids;
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM=getmin(
@@ -729,7 +729,7 @@ int main(int argc, char *argv[])
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        // xcentroids, ycentroids auto-destruct (Coords)
+        // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // sometime MMalign_iter is even worse than monomer alignment
@@ -806,8 +806,8 @@ int main(int argc, char *argv[])
     // clean up everything
     delete [] assign1_list;
     delete [] assign2_list;
-    // TMave_mat auto-destruct (DPMatrix)
-    // ut_mat auto-destruct (Rotation)
+    // TMave_mat auto-destruct (DoubleMatrix)
+    // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
@@ -815,7 +815,7 @@ int main(int argc, char *argv[])
 
     delete [] assign1_init;
     delete [] assign2_init;
-    // TMave_init auto-destruct (DPMatrix)
+    // TMave_init auto-destruct (DoubleMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
 

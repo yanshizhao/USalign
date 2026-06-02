@@ -1283,7 +1283,7 @@ void output_flexalign_results(const string xname, const string yname,
 }
 
 
-inline int flexalign_main(Coords& xa, Coords& ya,
+inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3], vector<vector<double> >&tu_vec,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -1319,7 +1319,7 @@ inline int flexalign_main(Coords& xa, Coords& ya,
     int r;
     int* invmap=new int[ylen+1];
     for (j=0;j<ylen+1;j++) invmap[j]=-1;
-    Coords xt;
+    CoordArray xt;
     xt.resize(xlen);
     do_rotation(xa, xt, xlen, t0, u0);
 
@@ -1344,8 +1344,8 @@ inline int flexalign_main(Coords& xa, Coords& ya,
         std::string secy_h;
         secx_h.resize(xlen + 1);
         secy_h.resize(ylen + 1);
-        Coords xa_h;
-        Coords ya_h;
+        CoordArray xa_h;
+        CoordArray ya_h;
         xa_h.resize(xlen);
         ya_h.resize(ylen);
 
@@ -1519,8 +1519,8 @@ inline int flexalign_main(Coords& xa, Coords& ya,
         std::string secy_h;
         secx_h.resize(xlen_h + 1);
         secy_h.resize(ylen_h + 1);
-        Coords xa_h;
-        Coords ya_h;
+        CoordArray xa_h;
+        CoordArray ya_h;
         xa_h.resize(xlen_h);
         ya_h.resize(ylen_h);
         vector<int> r1toi(xlen_h,0);
@@ -1638,7 +1638,7 @@ inline int flexalign_main(Coords& xa, Coords& ya,
 
     if (tu_vec.size()<=1)
     {
-        // xt auto-destruct (Coords)
+        // xt auto-destruct (CoordArray)
         delete[] invmap;
         return tu_vec.size();
     }
@@ -1839,7 +1839,7 @@ inline int flexalign_main(Coords& xa, Coords& ya,
     // clean up
     seqM_char.clear();
     di_vec.clear();
-    // xt auto-destruct (Coords)
+    // xt auto-destruct (CoordArray)
     delete[] invmap;
     return tu_vec.size();
 

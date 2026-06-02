@@ -325,8 +325,8 @@ int main(int argc, char *argv[])
     vector<string> chainID_list;      // list of chainID
     size_t xchainnum=0;         // number of chains in a PDB file
     int    xlen,ylen;           // chain length
-    Coords xa;
-    Coords ya;           // xyz coordinate
+    CoordArray xa;
+    CoordArray ya;           // xyz coordinate
     vector<string> resi_vec;    // residue index for chain, dummy variable
     vector<pair<int,size_t> >chainLen_list; // vector of (length,index) pair
     vector<vector<char> > seq_vec;

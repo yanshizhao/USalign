@@ -76,7 +76,7 @@ int score_fun8( double **xa, double **ya, int n_ali, double d, int i_ali[],
     return n_cut;
 }
 
-int score_fun8(const Coords& xa, const Coords& ya, int n_ali, double d, int i_ali[],
+int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, int i_ali[],
     double *score1, int score_sum_method, const double Lnorm,
     const double score_d8, const double d0,
     double GDT_list_tmp[5], double &maxsub_tmp)
@@ -223,7 +223,7 @@ int score_fun8_standard(double **xa, double **ya, int n_ali, double d,
     return n_cut;
 }
 
-int score_fun8_standard(const Coords& xa, const Coords& ya, int n_ali, double d,
+int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, double d,
     int i_ali[], double *score1, int score_sum_method,
     double score_d8, double d0, double GDT_list_tmp[5], double &maxsub_tmp)
 {
@@ -467,8 +467,8 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     return score_max;
 }
 
-double TMscore8_search(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
+double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
     int score_sum_method, double *Rcomm, double local_d0_search, double Lnorm,
     double score_d8, double d0, double GDT_list[5], double &maxsub)
 {
@@ -819,8 +819,8 @@ double TMscore8_search_standard( double **r1, double **r2,
     return score_max;
 }
 
-double TMscore8_search_standard(Coords& r1, Coords& r2,
-    Coords& xtm, Coords& ytm, Coords& xt, int Lali,
+double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, int Lali,
     double t0[3], double u0[3][3], int simplify_step, int score_sum_method,
     double *Rcomm, double local_d0_search, double score_d8, double d0,
     double GDT_list[5], double &maxsub)
@@ -987,8 +987,8 @@ double TMscore8_search_standard(Coords& r1, Coords& r2,
 }
 
 
-double detailed_search_standard( Coords& r1, Coords& r2,
-    Coords& xtm, Coords& ytm, Coords& xt, const Coords& x, const Coords& y,
+double detailed_search_standard( CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0,
@@ -1067,8 +1067,8 @@ double detailed_search_standard( double **r1, double **r2,
     return tmscore;
 }
 
-double detailed_search_standard( Coords& r1, Coords& r2,
-    Coords& xtm, Coords& ytm, Coords& xt, double **x, double **y,
+double detailed_search_standard( CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, double **x, double **y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0,
@@ -1226,7 +1226,7 @@ void output_TMscore_results(
 }
 
 
-int TMscore_main(Coords& xa, Coords& ya,
+int TMscore_main(CoordArray& xa, CoordArray& ya,
     const char *seqx, const char *seqy, double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
@@ -1245,12 +1245,12 @@ int TMscore_main(Coords& xa, Coords& ya,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    DPMatrix score;      // Input score table for dynamic programming
-    PathMat path;         // for dynamic programming
-    DPMatrix val;         // for dynamic programming
-    Coords xtm, ytm;     // for TMscore search engine
-    Coords xt;            //for saving the superposed version of r_1 or xtm
-    Coords r1, r2;        // for Kabsch rotation
+    DoubleMatrix score;      // Input score table for dynamic programming
+    CharMatrix path;         // for dynamic programming
+    DoubleMatrix val;         // for dynamic programming
+    CoordArray xtm, ytm;     // for TMscore search engine
+    CoordArray xt;            //for saving the superposed version of r_1 or xtm
+    CoordArray r1, r2;        // for Kabsch rotation
 
     /***********************/
     // allocate memory

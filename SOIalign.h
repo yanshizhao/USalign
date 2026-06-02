@@ -59,7 +59,7 @@ void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
 }
 
 
-inline void assign_sec_bond(Bond2& secx_bond, const char *secx, const int xlen)
+inline void assign_sec_bond(IntPairArray& secx_bond, const char *secx, const int xlen)
 {
     int i,j,starti=-1,endi=-1;
     char ss,prev_ss=0;
@@ -73,9 +73,9 @@ inline void assign_sec_bond(Bond2& secx_bond, const char *secx, const int xlen)
     for (i=0;i<xlen;i++) if (secx_bond[i][1]-secx_bond[i][0]==1) secx_bond[i][0]=secx_bond[i][1]=-1;
 }
 
-// Coords& real implementation (flipped from double** version)
-// Coords& xk overload
-inline void getCloseK(const Coords& xa, const int xlen, const int closeK_opt, Coords& xk)
+// CoordArray& real implementation (flipped from double** version)
+// CoordArray& xk overload
+inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt, CoordArray& xk)
 {
     vector<vector<double>> score;
     score.assign(xlen+1, vector<double>(xlen+1, 0));
@@ -124,7 +124,7 @@ inline bool sec2sq(const int i, const int j,
 
 
 inline bool sec2sq(const int i, const int j,
-    const Bond2& secx_bond, const Bond2& secy_bond, int *fwdmap, int *invmap)
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, int *fwdmap, int *invmap)
 {
     if (i<0 || j<0) return true;
     int ii,jj;
@@ -232,7 +232,7 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
 
 
 inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
-    const Bond2& secx_bond, const Bond2& secy_bond, const int mm_opt)
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt)
 {
     int i,j;
     int *fwdmap=new int[xlen];
@@ -280,7 +280,7 @@ inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
  * */
 
 
-inline int soi_se_main(Coords& xa, Coords& ya, const std::string &seqx,
+inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
     const std::string &seqy, double &TM1, double &TM2, double &TM3,
     double &TM4, double &TM5, double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -291,11 +291,11 @@ inline int soi_se_main(Coords& xa, Coords& ya, const std::string &seqx,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt,
     const int mol_type, const int outfmt_opt, int *invmap,
-    double *dist_list, Bond2& secx_bond, Bond2& secy_bond, const int mm_opt);
+    double *dist_list, IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
 inline int soi_se_main(
-    Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
+    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -306,16 +306,16 @@ inline int soi_se_main(
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
     const int outfmt_opt, int *invmap, double *dist_list,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
 
 
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
-    DPMatrix score;       // score for aligning a residue pair
-    PathMat  path;        // for dynamic programming
-    DPMatrix val;         // for dynamic programming
+    DoubleMatrix score;       // score for aligning a residue pair
+    CharMatrix  path;        // for dynamic programming
+    DoubleMatrix val;         // for dynamic programming
 
     int *m1=nullptr;
     int *m2=nullptr;
@@ -373,7 +373,7 @@ inline int soi_se_main(
     }
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
 
-    // construct double** view from DPMatrix for soi_egs (read-only)
+    // construct double** view from DoubleMatrix for soi_egs (read-only)
     std::vector<double*> score_view(xlen+1);
     for (int v=0; v<=xlen; v++) score_view[v]=score[v].data();
     soi_egs(score_view.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
@@ -455,7 +455,7 @@ inline int soi_se_main(
     delete [] fwdmap;
     delete [] m1;
     delete [] m2;
-    // score/path/val auto-destruct (DPMatrix/PathMat)
+    // score/path/val auto-destruct (DoubleMatrix/CharMatrix)
     return 0; // zero for no exception
 }
 
@@ -478,7 +478,7 @@ inline void SOI_super2score(double **xt, double **ya, const int xlen,
     }
 }
 
-inline void SOI_super2score(const Coords& xt, double **ya, const int xlen,
+inline void SOI_super2score(const CoordArray& xt, double **ya, const int xlen,
     const int ylen, double **score, double d0, double score_d8)
 {
     int i;
@@ -498,7 +498,7 @@ inline void SOI_super2score(const Coords& xt, double **ya, const int xlen,
 }
 
 
-inline void SOI_super2score(const Coords& xt, const Coords& ya, const int xlen,
+inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const int xlen,
     const int ylen, double **score, double d0, double score_d8)
 {
     int i;
@@ -591,8 +591,8 @@ double SOI_iter(double **r1, double **r2, double **xtm, double **ytm,
 }
 
 
-double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, double **score, PathMat& path, double **val, double **xa, double **ya,
+double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, double **score, CharMatrix& path, double **val, double **xa, double **ya,
     int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
     int iteration_max, double local_d0_search,
     double Lnorm, double d0, double score_d8,
@@ -657,13 +657,13 @@ double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
     return tmscore_max;
 }
 
-// Bond2 secx_bond/secy_bond overload - creates int** views, delegates
-inline double SOI_iter(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, double **score, PathMat& path, double **val, double **xa, double **ya,
+// IntPairArray secx_bond/secy_bond overload - creates int** views, delegates
+inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, double **score, CharMatrix& path, double **val, double **xa, double **ya,
     int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
     int iteration_max, double local_d0_search,
     double Lnorm, double d0, double score_d8,
-    const Bond2& secx_bond, const Bond2& secy_bond, const int mm_opt, const bool init_invmap=false)
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
 {
     std::vector<int*> sxb(xlen), syb(ylen);
     for (int i=0; i<xlen; i++) sxb[i]=(int*)secx_bond[i].data();
@@ -677,12 +677,12 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double **score, char **path, double **val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[],
     double local_d0_search, double d0, double score_d8,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     int i;
     int j;
     int k;
-    Coords xfrag, xtran, yfrag;
+    CoordArray xfrag, xtran, yfrag;
     xfrag.resize(closeK_opt);
     xtran.resize(closeK_opt);
     yfrag.resize(closeK_opt);
@@ -735,19 +735,19 @@ void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     for (j=0; j<ylen;j++) i=invmap[j];
     soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
-    // clean up — xfrag/xtran/yfrag auto-destruct (Coords)
+    // clean up — xfrag/xtran/yfrag auto-destruct (CoordArray)
 }
 
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
-    double **score, PathMat& path, double **val, const int xlen, const int ylen,
+    double **score, CharMatrix& path, double **val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[],
     double local_d0_search, double d0, double score_d8,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     int i;
     int j;
     int k;
-    Coords xfrag, xtran, yfrag;
+    CoordArray xfrag, xtran, yfrag;
     xfrag.resize(closeK_opt);
     xtran.resize(closeK_opt);
     yfrag.resize(closeK_opt);
@@ -825,8 +825,8 @@ void SOI_assign2super(double **r1, double **r2, double **xtm, double **ytm,
     do_rotation(xa, xt, xlen, t, u);
 }
 
-void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, double **xa, double **ya,
+void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, double **xa, double **ya,
     const int xlen, const int ylen, double t[3], double u[3][3], int invmap[],
     double local_d0_search, double Lnorm, double d0, double score_d8)
 {
@@ -855,8 +855,8 @@ void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 }
 
 
-void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, Coords& xa, Coords& ya,
+void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CoordArray& xa, CoordArray& ya,
     const int xlen, const int ylen, double t[3], double u[3][3], int invmap[],
     double local_d0_search, double Lnorm, double d0, double score_d8)
 {
@@ -888,7 +888,7 @@ void SOI_assign2super(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 
 
-inline int SOIalign_main(Coords& xa, Coords& ya,
+inline int SOIalign_main(CoordArray& xa, CoordArray& ya,
     double **xk, double **yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
@@ -903,11 +903,11 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt);
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
-inline int SOIalign_main(Coords& xa, Coords& ya,
-    Coords& xk, Coords& yk, const int closeK_opt,
+inline int SOIalign_main(CoordArray& xa, CoordArray& ya,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -921,7 +921,7 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     vector<double*> xk_view(xk.size());
     vector<double*> yk_view(yk.size());
@@ -939,7 +939,7 @@ inline int SOIalign_main(Coords& xa, Coords& ya,
 }
 
 
-inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
+inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     double **xk, double **yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
@@ -954,7 +954,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double *dist_list,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     // Build double** views for sub-function compatibility
     vector<double*> _xa_v(xlen);
@@ -969,14 +969,14 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    DPMatrix score;       // Input score table for enhanced greedy search
-    DPMatrix scoret;      // Transposed score table for enhanced greedy search
-    PathMat  path;        // for dynamic programming
-    DPMatrix val;         // for dynamic programming
-    Coords xtm, ytm;     // for TMscore search engine
-    Coords xt;            //for saving the superposed version of r_1 or xtm
-    Coords yt;            //for saving the superposed version of r_2 or ytm
-    Coords r1, r2;        // for Kabsch rotation
+    DoubleMatrix score;       // Input score table for enhanced greedy search
+    DoubleMatrix scoret;      // Transposed score table for enhanced greedy search
+    CharMatrix  path;        // for dynamic programming
+    DoubleMatrix val;         // for dynamic programming
+    CoordArray xtm, ytm;     // for TMscore search engine
+    CoordArray xt;            //for saving the superposed version of r_1 or xtm
+    CoordArray yt;            //for saving the superposed version of r_2 or ytm
+    CoordArray r1, r2;        // for Kabsch rotation
 
     /***********************/
     // allocate memory
@@ -988,7 +988,7 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
     path.assign( maxlen+1, std::vector<char>(maxlen+1));
     val.assign(  maxlen+1, std::vector<double>(maxlen+1));
     xtm.resize(minlen);
-    // build double** views from DPMatrix for sub-function compatibility
+    // build double** views from DoubleMatrix for sub-function compatibility
     std::vector<double*> sv(xlen+1), stv(ylen+1), vv(maxlen+1);
     for(int _i=0;_i<=xlen;_i++) sv[_i]=score[_i].data();
     for(int _i=0;_i<=ylen;_i++) stv[_i]=scoret[_i].data();
@@ -1356,9 +1356,9 @@ inline int SOIalign_main(Coords& xa_c, Coords& ya_c,
 
 
     // clean up
-    // score/scoret/val auto-destruct (DPMatrix)
-    // path auto-destruct (PathMat)
-    // xtm/ytm/xt/yt/r1/r2 auto-destruct (Coords)
+    // score/scoret/val auto-destruct (DoubleMatrix)
+    // path auto-destruct (CharMatrix)
+    // xtm/ytm/xt/yt/r1/r2 auto-destruct (CoordArray)
     delete[]invmap0;
     delete[]fwdmap0;
     delete[]m1;

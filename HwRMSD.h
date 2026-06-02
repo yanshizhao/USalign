@@ -43,7 +43,7 @@ double Kabsch_Superpose(double **r1, double **r2, double **xt,
     return RMSD;
 }
 
-double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
+double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     double **xa, double **ya, int xlen, int ylen, int invmap[],
     int& L_ali, double t[3], double u[3][3], const int mol_type)
 {
@@ -86,9 +86,9 @@ double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
     return RMSD;
 }
 
-// Full Coords& overload — xa, ya are Coords, syntax identical to double**
-double Kabsch_Superpose(Coords& r1, Coords& r2, Coords& xt,
-    Coords& xa, Coords& ya, int xlen, int ylen, int invmap[],
+// Full CoordArray& overload — xa, ya are CoordArray, syntax identical to double**
+double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
+    CoordArray& xa, CoordArray& ya, int xlen, int ylen, int invmap[],
     int& L_ali, double t[3], double u[3][3], const int mol_type)
 {
     L_ali = 0;
@@ -149,7 +149,7 @@ void parse_alignment_into_invmap(const string seqxA_tmp,
 }
 
 
-int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
+int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *seqy,
     const char *secx, const char *secy, double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
@@ -166,8 +166,8 @@ int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
     // allocate memory    
     /***********************/
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    Coords xt;            //for saving the superposed version of r_1 or xtm
-    Coords r1, r2;        // for Kabsch rotation
+    CoordArray xt;            //for saving the superposed version of r_1 or xtm
+    CoordArray r1, r2;        // for Kabsch rotation
     int minlen = min(xlen, ylen);
     xt.resize(xlen);
     r1.resize(minlen);
@@ -337,7 +337,7 @@ int HwRMSD_main(Coords& xa, Coords& ya, const char *seqx, const char *seqy,
     seqM_tmp.clear();
     seqyA_tmp.clear();
     delete [] invmap_tmp;
-    // xt/r1/r2 auto-destruct (Coords)
+    // xt/r1/r2 auto-destruct (CoordArray)
     do_vec.clear();
     return 0;
 }

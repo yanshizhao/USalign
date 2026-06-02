@@ -20,12 +20,12 @@
 #include <iomanip>
 #include <map>
 
-using Coords   = std::vector<std::array<double, 3>>;
-using DPMatrix = std::vector<std::vector<double>>;
-using PathMat  = std::vector<std::vector<char>>;
-using IntMat   = std::vector<std::vector<int>>;
-using Rotation = std::vector<std::array<double, 12>>;
-using Bond2    = std::vector<std::array<int, 2>>;
+using CoordArray = std::vector<std::array<double, 3>>;
+using DoubleMatrix = std::vector<std::vector<double>>;
+using CharMatrix   = std::vector<std::vector<char>>;
+using IntMatrix    = std::vector<std::vector<int>>;
+using RotArray     = std::vector<std::array<double, 12>>;
+using IntPairArray = std::vector<std::array<int, 2>>;
 
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
@@ -791,7 +791,7 @@ size_t get_FASTA_lines(const std::string filename,
 }
 
 // C++ string overload (real implementation)
-int read_PDB(const std::vector<std::string> &PDB_lines, Coords& a, std::string &seq,
+int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& a, std::string &seq,
     std::vector<std::string> &resi_vec, const int read_resi)
 {
     size_t i;
@@ -857,7 +857,7 @@ void do_rotation(double **x, double **x1, int len, double t[3], double u[3][3])
     }
 }
 
-void do_rotation(Coords& x, Coords& x1, int len, double t[3], double u[3][3])
+void do_rotation(CoordArray& x, CoordArray& x1, int len, double t[3], double u[3][3])
 {
     for(int i=0; i<len; i++)
     {
@@ -865,7 +865,7 @@ void do_rotation(Coords& x, Coords& x1, int len, double t[3], double u[3][3])
     }
 }
 
-void do_rotation(double **x, Coords& x1, int len, double t[3], double u[3][3])
+void do_rotation(double **x, CoordArray& x1, int len, double t[3], double u[3][3])
 {
     for(int i=0; i<len; i++)
     {

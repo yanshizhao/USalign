@@ -80,9 +80,9 @@ bool adjust_dimer_assignment(
     parameter_set4final(getmin(xlen,ylen), D0_MIN, Lnorm, d0, 
         d0_search, mol_type);
 
-    Coords xa;
-    Coords ya;
-    Coords xt;
+    CoordArray xa;
+    CoordArray ya;
+    CoordArray xt;
     xa.resize(xlen);
     ya.resize(ylen);
     xt.resize(xlen);
@@ -210,7 +210,7 @@ int count_assign_pair(int *assign1_list,const int chain1_num)
 
 
 // assign chain-chain correspondence
-double enhanced_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
+double enhanced_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num)
 {
     double total_score=0;
@@ -314,9 +314,9 @@ double enhanced_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
 }
 
 
-// [Coords& overload]
+// [CoordArray& overload]
 double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
-    const int chain_num, Coords& centroids)
+    const int chain_num, CoordArray& centroids)
 {
     int L=0;
     int c; // index of chain
@@ -364,10 +364,10 @@ double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
  * dij is the centroid distance between chain pair i and j
  * d0MM is scaling factor. TMave_mat[i][j] is the TM-score between
  * chain pair i and j multiple by getmin(Li*Lj) */
-double calMMscore(const DPMatrix& TMave_mat,int *assign1_list,
-    const int chain1_num, const int chain2_num, const Coords& xcentroids,
-    const Coords& ycentroids, const double d0MM, Coords& r1, Coords& r2,
-    Coords& xt, double t[3], double u[3][3], const int L)
+double calMMscore(const DoubleMatrix& TMave_mat,int *assign1_list,
+    const int chain1_num, const int chain2_num, const CoordArray& xcentroids,
+    const CoordArray& ycentroids, const double d0MM, CoordArray& r1, CoordArray& r2,
+    CoordArray& xt, double t[3], double u[3][3], const int L)
 {
     int Nali=0; // number of aligned chain
     int i;
@@ -426,7 +426,7 @@ double calMMscore(const DPMatrix& TMave_mat,int *assign1_list,
  * return het_deg, which ranges from 0 to 1.
  * The larger the value, the more "hetero"; 
  * Tthe smaller the value, the more "homo" */
-double check_heterooligomer(const DPMatrix& TMave_mat, const int chain1_num,
+double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
     const int chain2_num)
 {
     double het_deg=0;
@@ -449,10 +449,10 @@ double check_heterooligomer(const DPMatrix& TMave_mat, const int chain1_num,
 }
 
 // reassign chain-chain correspondence, specific for homooligomer
-double homo_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
+double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
-    Coords& xcentroids, const Coords& ycentroids, const double d0MM,
-    const int L, const Rotation& ut_mat)
+    CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM,
+    const int L, const RotArray& ut_mat)
 {
     double MMscore_max=0;
     double MMscore=0;
@@ -466,7 +466,7 @@ double homo_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     int chain_num=getmin(chain1_num,chain2_num);
     int *assign1_tmp=new int [chain1_num];
     int *assign2_tmp=new int [chain2_num];
-    Coords xt;
+    CoordArray xt;
     xt.resize(chain1_num);
     double t[3];
     double u[3][3];
@@ -566,14 +566,14 @@ double homo_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     delete[]assign2_tmp;
     delete[]ut_tmc_mat;
     ut_tm_vec.clear();
-    // xt auto-destruct (Coords)
+    // xt auto-destruct (CoordArray)
     return MMscore;
 }
 
 // reassign chain-chain correspondence, specific for heterooligomer
-double hetero_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
+double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
     int *assign2_list, const int chain1_num, const int chain2_num,
-    const Coords& xcentroids, const Coords& ycentroids, const double d0MM, const int L)
+    const CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM, const int L)
 {
     double MMscore_old=0;
     double MMscore=0;
@@ -581,7 +581,7 @@ double hetero_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
     int j;
 
     int chain_num=getmin(chain1_num,chain2_num);
-    Coords r1, r2, xt;
+    CoordArray r1, r2, xt;
     r1.resize(chain_num);
     r2.resize(chain_num);
     xt.resize(chain_num);
@@ -678,7 +678,7 @@ double hetero_refined_greedy_search(const DPMatrix& TMave_mat,int *assign1_list,
 
 void copy_chain_data(const vector<vector<double> >&a_vec_i,
     const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
-    const int len,Coords& a,std::string &seq,char *sec)
+    const int len,CoordArray& a,std::string &seq,char *sec)
 {
     int r;
     seq.clear();
@@ -1011,10 +1011,10 @@ size_t get_full_PDB_lines(const string filename,
     return PDB_lines.size();
 }
 
-// [Rotation overload]
+// [RotArray overload]
 void output_dock(const vector<string>&chain_list, const int ter_opt,
     const int split_opt, const int infmt_opt, const string atom_opt,
-    const int mirror_opt, const Rotation& ut_mat, const string&fname_super)
+    const int mirror_opt, const RotArray& ut_mat, const string&fname_super)
 {
     size_t i;
     int chain_i;
@@ -1091,7 +1091,7 @@ void parse_chain_list(const vector<string>&chain_list,
     int r;
     string name;
     int chainnum;
-    Coords xa;
+    CoordArray xa;
     int len;
     std::string seq;
     std::string sec;
@@ -1201,7 +1201,7 @@ int copy_chain_pair_data(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords& xa, Coords& ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
+    CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
     int chain1_num, int chain2_num,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence)
@@ -1254,8 +1254,8 @@ double MMalign_search(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords* /*_xa*/, Coords* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
-    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
+    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
@@ -1277,8 +1277,8 @@ double MMalign_search(
     std::string seqy;
     std::string secx;
     std::string secy;
-    Coords xa;
-    Coords ya;
+    CoordArray xa;
+    CoordArray ya;
     secx.resize(xlen+1);
     xa.resize(xlen);
     secy.resize(ylen+1);
@@ -1338,7 +1338,7 @@ double MMalign_search(
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        Coords xt;
+        CoordArray xt;
         xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
@@ -1431,9 +1431,9 @@ void MMalign_final(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords* /*_xa*/, Coords* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
+    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
-    DPMatrix& TMave_mat,
+    DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
     vector<vector<string> >&seqyA_mat, int *assign1_list, int *assign2_list,
     vector<string>&sequence, const double d0_scale, const bool m_opt,
@@ -1454,8 +1454,8 @@ void MMalign_final(
     std::string seqy;
     std::string secx;
     std::string secy;
-    Coords xa;
-    Coords ya;
+    CoordArray xa;
+    CoordArray ya;
     secx.resize(xlen+1);
     xa.resize(xlen);
     secy.resize(ylen+1);
@@ -1578,7 +1578,7 @@ void MMalign_final(
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        Coords xt;
+        CoordArray xt;
         xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
@@ -1652,9 +1652,9 @@ void MMalign_se_final(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords* /*_xa*/, Coords* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
+    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
-    DPMatrix& TMave_mat,
+    DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
     vector<vector<string> >&seqyA_mat, int *assign1_list, int *assign2_list,
     vector<string>&sequence, const double d0_scale, const bool m_opt,
@@ -1675,8 +1675,8 @@ void MMalign_se_final(
     std::string seqy;
     std::string secx;
     std::string secy;
-    Coords xa;
-    Coords ya;
+    CoordArray xa;
+    CoordArray ya;
     xa.resize(xlen);
     secy.resize(ylen+1);
     ya.resize(ylen);
@@ -1805,7 +1805,7 @@ void MMalign_se_final(
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        Coords xt;
+        CoordArray xt;
         xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
@@ -1876,9 +1876,9 @@ void MMalign_se_final(
 void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<string> &sequence,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, DPMatrix& TMave_mat,
+    int *assign1_list, int *assign2_list, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
-    int *assign1_tmp,  int *assign2_tmp,  DPMatrix& TMave_tmp)
+    int *assign1_tmp,  int *assign2_tmp,  DoubleMatrix& TMave_tmp)
 {
     int i;
     int j;
@@ -1912,8 +1912,8 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords* xa, Coords* ya, char *seqx, char *seqy, char *secx, char *secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
+    CoordArray* xa, CoordArray* ya, char *seqx, char *seqy, char *secx, char *secy,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap,
@@ -1925,7 +1925,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     int *assign2_tmp;
     assign1_tmp=new int[chain1_num];
     assign2_tmp=new int[chain2_num];
-    DPMatrix TMave_tmp;
+    DoubleMatrix TMave_tmp;
     TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
     vector<string> tmp_str_vec(chain2_num,"");
     vector<vector<string> >seqxA_tmp(chain1_num,tmp_str_vec);
@@ -2154,8 +2154,8 @@ void NWDP_TM_dimer(char **path, double **val, const char *secx, const char *secy
 }
 
 
-inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, double **x, double **y,
-    int len1, int len2, PathMat& mask,
+inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+    int len1, int len2, CharMatrix& mask,
     double t[3], double u[3][3], double d02, double gap_open, int j2i[])
 {
     int i,j; double h,v,d;
@@ -2185,8 +2185,8 @@ inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, double **x, double **y,
 }
 
 
-inline void NWDP_TM_dimer(PathMat& path, DPMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, PathMat& mask, const double gap_open, int j2i[])
+inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
+    const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
 {
     int i,j; double h,v,d;
     for(i=0; i<=len1; i++) { val[i][0]=i*gap_open; path[i][0]=0; }
@@ -2296,8 +2296,8 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
     return tmscore_max;
 }
 
-inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, PathMat& path, DPMatrix& val, double **x, double **y,
+inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, double **x, double **y,
     int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2323,8 +2323,8 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 
 
 
-inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    Coords& xt, char **path, double **val, double **x, double **y,
+inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, char **path, double **val, double **x, double **y,
     int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2343,8 +2343,8 @@ inline double DP_iter_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 }
 
 
-inline void get_initial_ss_dimer(PathMat& path, DPMatrix& val, const char *secx,
-    const char *secy, int xlen, int ylen, PathMat& mask, int *y2x)
+inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
+    const char *secy, int xlen, int ylen, CharMatrix& mask, int *y2x)
 {
     double gap_open=-1.0;
     NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
@@ -2451,7 +2451,7 @@ bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
 }
 
 
-inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
+inline bool get_initial5_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     char **path, double **val, double **x, double **y, int xlen, int ylen,
     char **mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
@@ -2467,8 +2467,8 @@ inline bool get_initial5_dimer(Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
 }
 
 
-inline bool get_initial5_dimer( Coords& r1, Coords& r2, Coords& xtm, Coords& ytm,
-    PathMat& path, DPMatrix& val,
+inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CharMatrix& path, DoubleMatrix& val,
     double **x, double **y, int xlen, int ylen, char **mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
@@ -2505,9 +2505,9 @@ void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
 }
 
 
-inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, DPMatrix& score, PathMat& path,
-    DPMatrix& val, const char *secx, const char *secy,
-    const Coords& x, const Coords& y, int xlen, int ylen,
+inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, const char *secx, const char *secy,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     int *y2x0, int *y2x, const double D0_MIN, double d0)
 {
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
@@ -2518,7 +2518,7 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, DPMatrix& score, Pa
 }
 
 
-inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
+inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, double **score,
     char **path, double **val, const char *secx, const char *secy,
     double **x, double **y, int xlen, int ylen, char **mask,
     int *y2x0, int *y2x, const double D0_MIN, double d0)
@@ -2530,10 +2530,10 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
         path, val, secx, secy, x, y, xlen, ylen, mask, y2x0, y2x, D0_MIN, d0);
 }
 
-// const Coords& x/y overload — for TMalign_dimer_main flip
-inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
+// const CoordArray& x/y overload — for TMalign_dimer_main flip
+inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, double **score,
     char **path, double **val, const char *secx, const char *secy,
-    const Coords& x, const Coords& y, int xlen, int ylen, char **mask,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen, char **mask,
     int *y2x0, int *y2x, const double D0_MIN, double d0)
 {
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
@@ -2553,7 +2553,7 @@ inline void get_initial_ssplus_dimer(Coords& r1, Coords& r2, double **score,
  * 2-7 - pre-terminated due to low TM-score */
 
 
-inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
+inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     const char *seqx, const char *seqy, const char *secx, const char *secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
@@ -2563,7 +2563,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
-    PathMat& mask,
+    CharMatrix& mask,
     const vector<string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
@@ -2586,12 +2586,12 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
     double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    DPMatrix score;       // Input score table for dynamic programming
-    PathMat  path;        // for dynamic programming
-    DPMatrix val;         // for dynamic programming
-    Coords xtm, ytm;      // for TMscore search engine
-    Coords xt;            //for saving the superposed version of r_1 or xtm
-    Coords r1, r2;        // for Kabsch rotation
+    DoubleMatrix score;       // Input score table for dynamic programming
+    CharMatrix  path;        // for dynamic programming
+    DoubleMatrix val;         // for dynamic programming
+    CoordArray xtm, ytm;      // for TMscore search engine
+    CoordArray xt;            //for saving the superposed version of r_1 or xtm
+    CoordArray r1, r2;        // for Kabsch rotation
 
     /***********************/
     // allocate memory
@@ -2710,7 +2710,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score/val auto-destruct (DPMatrix)
+                // score/val auto-destruct (DoubleMatrix)
                 return 2;
             }
         }
@@ -2751,7 +2751,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score/val auto-destruct (DPMatrix)
+                // score/val auto-destruct (DoubleMatrix)
                 return 3;
             }
         }
@@ -2798,7 +2798,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score/val auto-destruct (DPMatrix)
+                // score/val auto-destruct (DoubleMatrix)
                 return 4;
             }
         }
@@ -2841,7 +2841,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score/val auto-destruct (DPMatrix)
+                // score/val auto-destruct (DoubleMatrix)
                 return 5;
             }
         }
@@ -2884,7 +2884,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
                 delete [] invmap0;
                 delete [] invmap;
-                // score/val auto-destruct (DPMatrix)
+                // score/val auto-destruct (DoubleMatrix)
                 return 6;
             }
         }
@@ -2979,7 +2979,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
             TM1=TM2=TM3=TM4=TM5=TMtmp;
             delete [] invmap0;
             delete [] invmap;
-            // score/val auto-destruct (DPMatrix)
+            // score/val auto-destruct (DoubleMatrix)
             return 7;
         }
     }
@@ -3184,7 +3184,7 @@ inline int TMalign_dimer_main(Coords& xa_c, Coords& ya_c,
     // free memory
     delete [] invmap0;
     delete [] invmap;
-    // score/val auto-destruct (DPMatrix)
+    // score/val auto-destruct (DoubleMatrix)
     delete [] m1;
     delete [] m2;
     return 0; // zero for no exception
@@ -3198,8 +3198,8 @@ void MMalign_dimer(double & total_score,
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords* /*_xa*/, Coords* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
-    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
+    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt)
@@ -3224,7 +3224,7 @@ void MMalign_dimer(double & total_score,
     std::string seqx;
     std::string seqy;
 
-    PathMat mask; // mask out inter-chain region
+    CharMatrix mask; // mask out inter-chain region
     mask.assign(xlen+1, std::vector<char>(ylen+1));
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) mask[i][j]=false;
     for (i=0;i<xlen_dimer[0]+1;i++) mask[i][0]=true;
@@ -3246,8 +3246,8 @@ void MMalign_dimer(double & total_score,
 
     std::string secx;
     std::string secy;
-    Coords xa;
-    Coords ya;    secx.resize(xlen+1);
+    CoordArray xa;
+    CoordArray ya;    secx.resize(xlen+1);
     xa.resize(xlen);
     secy.resize(ylen+1);
     ya.resize(ylen);
@@ -3288,7 +3288,7 @@ void MMalign_dimer(double & total_score,
         1, false, true, false, fast_opt, mol_type, -1);
 
     // clean up TM-align
-    // mask auto-destruct (PathMat)
+    // mask auto-destruct (CharMatrix)
 
     // re-compute chain level alignment
     total_score=0;
@@ -3305,7 +3305,7 @@ void MMalign_dimer(double & total_score,
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,&secx[0]);
 
-        Coords xt;
+        CoordArray xt;
         xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
@@ -3378,8 +3378,8 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    Coords* xa, Coords* ya, char *seqx, char *seqy, char *secx, char *secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, DPMatrix& TMave_mat,
+    CoordArray* xa, CoordArray* ya, char *seqx, char *seqy, char *secx, char *secy,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     int *assign1_list, int *assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap)
@@ -3389,7 +3389,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     int *assign2_tmp;
     assign1_tmp=new int[chain1_num];
     assign2_tmp=new int[chain2_num];
-    DPMatrix TMave_tmp;
+    DoubleMatrix TMave_tmp;
     TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
     vector<string> tmp_str_vec(chain2_num,"");
     vector<vector<string> >seqxA_tmp(chain1_num,tmp_str_vec);
@@ -3561,7 +3561,7 @@ void writeTrimComplex(vector<vector<vector<double> > >&a_trim_vec,
 
 void output_dock_rotation_matrix(const std::string& fname_matrix,
     const vector<string>&xname_vec, const vector<string>&yname_vec,
-    const Rotation& ut_mat, int *assign1_list)
+    const RotArray& ut_mat, int *assign1_list)
 {
     stringstream ss;
     int i;

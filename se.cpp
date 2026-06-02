@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
     int    chain_i,chain_j;    // chain index
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    Coords xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
@@ -498,7 +498,7 @@ int main(int argc, char *argv[])
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    // ya auto-cleared by read_PDB (Coords)
+                    // ya auto-cleared by read_PDB (CoordArray)
                     resi_vec2.clear();
                     do_vec.clear();
                 } // chain_j
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
                     mol_vec2.clear();
                 }
             } // j
-            // xa auto-cleared by read_PDB (Coords)
+            // xa auto-cleared by read_PDB (CoordArray)
             resi_vec1.clear();
         } // chain_i
         xname.clear();

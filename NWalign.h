@@ -13,8 +13,8 @@ const int gapopen_blastn=-15; //-5;
 const int gapext_blastn =-4;  //-2;
 
 // initialize matrix in gotoh algorithm
-void init_gotoh_mat(IntMat& S, IntMat& JumpH, IntMat& JumpV, IntMat& P,
-    IntMat& H, IntMat& V, const int xlen, const int ylen, const int gapopen,
+void init_gotoh_mat(IntMatrix& S, IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P,
+    IntMatrix& H, IntMatrix& V, const int xlen, const int ylen, const int gapopen,
     const int gapext, const int glocal=0, const int alt_init=1)
 {
     // fill first row/colum of JumpH,jumpV and path matrix P
@@ -51,7 +51,7 @@ void init_gotoh_mat(IntMat& S, IntMat& JumpH, IntMat& JumpV, IntMat& P,
 
 /* locate the cell with highest alignment score. reset path after
  * the cell to zero */
-void find_highest_align_score( IntMat& S, IntMat& P,
+void find_highest_align_score( IntMatrix& S, IntMatrix& P,
     int &aln_score, const int xlen,const int ylen)
 {
     // locate the cell with highest alignment score
@@ -99,12 +99,12 @@ void find_highest_align_score( IntMat& S, IntMat& P,
  *         0 : use yang zhang's matrix initialization, does NOT work
  *             for glocal alignment
  */
-int calculate_score_gotoh(const int xlen,const int ylen, IntMat& S,
-    IntMat& JumpH, IntMat& JumpV, IntMat& P, const int gapopen,const int gapext,
+int calculate_score_gotoh(const int xlen,const int ylen, IntMatrix& S,
+    IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, const int gapopen,const int gapext,
     const int glocal=0, const int alt_init=1)
 {
-    IntMat H; H.assign(xlen+1, std::vector<int>(ylen+1));
-    IntMat V; V.assign(xlen+1, std::vector<int>(ylen+1));
+    IntMatrix H; H.assign(xlen+1, std::vector<int>(ylen+1));
+    IntMatrix V; V.assign(xlen+1, std::vector<int>(ylen+1));
     
     // fill first row/colum of JumpH,jumpV and path matrix P
     int i;
@@ -184,13 +184,13 @@ int calculate_score_gotoh(const int xlen,const int ylen, IntMat& S,
         find_highest_align_score(S,P,aln_score,xlen,ylen);
 
     // release memory
-    // H,V auto-destruct (IntMat)
+    // H,V auto-destruct (IntMatrix)
     return aln_score; // final alignment score
 }
 
 // trace back dynamic programming path to diciper pairwise alignment
 void trace_back_gotoh(const char *seqx, const char *seqy,
-    IntMat& JumpH, IntMat& JumpV, IntMat& P, std::string& seqxA, std::string& seqyA,
+    IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
     int i;
@@ -262,7 +262,7 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
 /* trace back Smith-Waterman dynamic programming path to diciper 
  * pairwise local alignment */
 void trace_back_sw(const char *seqx, const char *seqy,
-    IntMat& JumpH, IntMat& JumpV, IntMat& P, std::string& seqxA, std::string& seqyA,
+    IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, int *invmap, const int invmap_only=1)
 {
     int i;
@@ -365,10 +365,10 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
     int *invmap, const int invmap_only=0, const int glocal=0)
 {
-    IntMat JumpH;
-    IntMat JumpV;
-    IntMat P;
-    IntMat S;
+    IntMatrix JumpH;
+    IntMatrix JumpV;
+    IntMatrix P;
+    IntMatrix S;
     JumpH.assign(xlen+1, std::vector<int>(ylen+1));
     JumpV.assign(xlen+1, std::vector<int>(ylen+1));
     P.assign(xlen+1, std::vector<int>(ylen+1));
@@ -410,7 +410,7 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     else trace_back_sw(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
 
-    // JumpH/JumpV/P/S auto-destruct (IntMat)
+    // JumpH/JumpV/P/S auto-destruct (IntMatrix)
     return aln_score; // aligment score
 }
 

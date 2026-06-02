@@ -278,8 +278,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     int    xchainnum,ychainnum;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
-    Coords xa;                  // for input vectors xa[0...xlen-1][0..2] and
-    Coords ya;                  // ya[0...ylen-1][0..2], in general,
+    CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray ya;                  // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
     vector<string> resi_vec1;  // residue index for chain1
@@ -570,8 +570,8 @@ int MMalign(const string &xname, const string &yname,
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     string seqx, seqy;             // for the protein sequence
-    Coords xa;                     // structure of single chain
-    Coords ya;
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
     string secx;                   // for the secondary structure
     string secy;
     int    xlen_aa,ylen_aa;        // total length of protein
@@ -773,9 +773,9 @@ int MMalign(const string &xname, const string &yname,
     int chain2_num=ya_vec.size();
     int chain_num =std::max(chain1_num,chain2_num);
     vector<string> tmp_str_vec(chain2_num,"");
-    DPMatrix TMave_mat;
+    DoubleMatrix TMave_mat;
     TMave_mat.assign(chain_num,vector<double>(chain_num));
-    Rotation ut_mat; // rotation matrices for all-against-all alignment
+    RotArray ut_mat; // rotation matrices for all-against-all alignment
     int ui;
     int uj;
     int ut_idx;
@@ -986,8 +986,8 @@ int MMalign(const string &xname, const string &yname,
     if ((aln_chain_num>=3 || is_oligomer) && chainmap.size()==0 && !se_opt) // oligomer alignment
     {
         // extract centroid coordinates
-        Coords xcentroids;
-        Coords ycentroids;
+        CoordArray xcentroids;
+        CoordArray ycentroids;
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM=getmin(
@@ -1013,7 +1013,7 @@ int MMalign(const string &xname, const string &yname,
                 xcentroids, d0MM, len_aa+len_na);
         }
 
-        // xcentroids, ycentroids auto-destruct (Coords)
+        // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // store initial assignment
@@ -1022,7 +1022,7 @@ int MMalign(const string &xname, const string &yname,
     int *assign2_init;
     assign1_init=new int[chain1_num];
     assign2_init=new int[chain2_num];
-    DPMatrix TMave_init;
+    DoubleMatrix TMave_init;
     TMave_init.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
@@ -1061,8 +1061,8 @@ int MMalign(const string &xname, const string &yname,
             0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
 
         // extract centroid coordinates
-        Coords xcentroids;
-        Coords ycentroids;
+        CoordArray xcentroids;
+        CoordArray ycentroids;
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM=getmin(
@@ -1079,7 +1079,7 @@ int MMalign(const string &xname, const string &yname,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        // xcentroids, ycentroids auto-destruct (Coords)
+        // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // sometime MMalign_iter is even worse than monomer alignment
@@ -1158,8 +1158,8 @@ int MMalign(const string &xname, const string &yname,
     // clean up everything
     delete [] assign1_list;
     delete [] assign2_list;
-    // TMave_mat auto-destruct (DPMatrix)
-    // ut_mat auto-destruct (Rotation)
+    // TMave_mat auto-destruct (DoubleMatrix)
+    // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
@@ -1167,7 +1167,7 @@ int MMalign(const string &xname, const string &yname,
 
     delete [] assign1_init;
     delete [] assign2_init;
-    // TMave_init auto-destruct (DPMatrix)
+    // TMave_init auto-destruct (DoubleMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
 
@@ -1220,8 +1220,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     string seqx, seqy;             // for the protein sequence
-    Coords xa;                     // structure of single chain
-    Coords ya;
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
     string secx;                   // for the secondary structure
     string secy;
     int    xlen_aa,ylen_aa;        // total length of protein
@@ -1340,7 +1340,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
     vector<string> tmp_str_vec(chain2_num,"");
-    DPMatrix TMave_mat;
+    DoubleMatrix TMave_mat;
     TMave_mat.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
     vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
@@ -1363,10 +1363,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         secy_trim_vec,ylen_trim_vec,ya_vec,seqy_vec,secy_vec,ylen_vec,
         mol_vec2,Lchain_aa_max1,Lchain_na_max1);
     int    ylen_trim;             // chain length
-    Coords ya_trim;             // structure of single chain
+    CoordArray ya_trim;             // structure of single chain
     std::string seqy_trim;           // for the protein sequence
     std::string secy_trim;           // for the secondary structure
-    Coords xt;
+    CoordArray xt;
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
@@ -1517,7 +1517,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
     // final alignment
     if (outfmt_opt==0) print_version();
-    Rotation ut_mat; // rotation matrices for all-against-all alignment
+    RotArray ut_mat; // rotation matrices for all-against-all alignment
     ut_mat.resize(chain1_num);
     int ui;
     int uj;
@@ -1653,8 +1653,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<string>().swap(yname_vec);
     delete [] assign1_list;
     delete [] assign2_list;
-    // TMave_mat auto-destruct (DPMatrix)
-    // ut_mat auto-destruct (Rotation)
+    // TMave_mat auto-destruct (DoubleMatrix)
+    // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
@@ -1697,8 +1697,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<int> len_vec;           // length of complex
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
-    Coords xa;                     // structure of single chain
-    Coords ya;
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
     string secx;                   // for the secondary structure
     string secy;
     int    len_aa,len_na;          // total length of protein and RNA/DNA
@@ -1727,7 +1727,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     if (total_len>750) fast_opt=true;
 
     // get all-against-all alignment
-    DPMatrix TMave_mat;
+    DoubleMatrix TMave_mat;
     TMave_mat.assign(chain_num,vector<double>(chain_num));
     vector<string> tmp_str_vec(chain_num,"");
     vector<vector<string> >seqxA_mat(chain_num,tmp_str_vec);
@@ -1910,7 +1910,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
         // superpose
         yname=chain_list[repr_idx].substr(dir_opt.size())+chainID_list[repr_idx];
-        Coords xt;
+        CoordArray xt;
         vector<pair<double,int> >TM_pair_vec; // TM vs chain
 
         for (i=0; i<chain_num; i++) assign_list[i]=-1;
@@ -2070,7 +2070,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
         // recover alignment
         int    ylen_ext=ylen;        // chain length
-        Coords ya_ext;               // structure of single chain
+        CoordArray ya_ext;               // structure of single chain
         std::string seqy_ext;            // for the protein sequence
         std::string secy_ext;            // for the secondary structure
         for (r=0;r<msa.size();r++) msa[r].clear(); msa.clear();
@@ -2185,7 +2185,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             
 
-            // ya_ext auto-destruct (Coords)
+            // ya_ext auto-destruct (CoordArray)
             do_vec.clear();
         }
         vector<string>().swap(msa_ext);
@@ -2405,7 +2405,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
     if (m_opt || o_opt)
     {
-        Rotation ut_mat; // rotation matrices for all-against-all alignment
+        RotArray ut_mat; // rotation matrices for all-against-all alignment
         ut_mat.resize(chain_num);
         int ui;
         int uj;
@@ -2450,7 +2450,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         if (o_opt) output_mTMalign_pymol(chain_list,
             infmt_opt, ut_mat, fname_super, o_opt);
 
-        // ut_mat auto-destruct (Rotation)
+        // ut_mat auto-destruct (RotArray)
     }
 
     // clean up
@@ -2461,7 +2461,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<string>().swap(xname_vec);
     vector<string>().swap(yname_vec);
     delete[]TMave_list;
-    // TMave_mat auto-destruct (DPMatrix)
+    // TMave_mat auto-destruct (DoubleMatrix)
     vector<vector<vector<double> > >().swap(a_vec); // structure of complex
     vector<vector<char> >().swap(seq_vec); // sequence of complex
     vector<vector<char> >().swap(sec_vec); // secondary structure of complex
@@ -2508,15 +2508,15 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    xchainnum,ychainnum;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
-    Bond2   secx_bond;        // boundary of secondary structure
-    Bond2   secy_bond;        // boundary of secondary structure
+    IntPairArray   secx_bond;        // boundary of secondary structure
+    IntPairArray   secy_bond;        // boundary of secondary structure
     string seqx, seqy;         // for the protein sequence
-    Coords xa;                  // for input vectors xa[0...xlen-1][0..2] and
-    Coords ya;
+    CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray ya;
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
-    Coords xk, yk;             // k closest residues
+    CoordArray xk, yk;             // k closest residues
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
     int read_resi=0;  // whether to read residue index
@@ -2725,9 +2725,9 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    // yk auto-destruct (Coords)
+                    // yk auto-destruct (CoordArray)
                     resi_vec2.clear();
-                    // secy_bond auto-destruct (Bond2)
+                    // secy_bond auto-destruct (IntPairArray)
                 } // chain_j
                 if (chain2_list.size()>1)
                 {
@@ -2740,9 +2740,9 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            // xk auto-destruct (Coords)
+            // xk auto-destruct (CoordArray)
             resi_vec1.clear();
-            // secx_bond auto-destruct (Bond2)
+            // secx_bond auto-destruct (IntPairArray)
         } // chain_i
         xname.clear();
         PDB_lines1.clear();
@@ -2791,8 +2791,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     int    xchainnum,ychainnum;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
-    Coords xa;                  // for input vectors xa[0...xlen-1][0..2] and
-    Coords ya;
+    CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray ya;
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya

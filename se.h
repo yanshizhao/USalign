@@ -7,7 +7,7 @@
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
 int se_main(
-    Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
+    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -25,8 +25,8 @@ int se_main(
     double d0;
     double d0_search;
     double dcu0; //for TMscore search
-    PathMat path;          // for dynamic programming (char: 1/0)
-    DPMatrix val;          // for dynamic programming
+    CharMatrix path;          // for dynamic programming (char: 1/0)
+    DoubleMatrix val;          // for dynamic programming
 
     int *m1=nullptr;
     int *m2=nullptr;
@@ -153,7 +153,7 @@ int se_main(
     {
         if (hinge) seqM_char.clear();    
         delete []invmap0;
-        // path/val auto-destruct (PathMat/DPMatrix)
+        // path/val auto-destruct (CharMatrix/DoubleMatrix)
         return 0;
     }
 
@@ -236,14 +236,14 @@ int se_main(
     delete [] invmap0;
     delete [] m1;
     delete [] m2;
-    // path/val auto-destruct (PathMat/DPMatrix)
+    // path/val auto-destruct (CharMatrix/DoubleMatrix)
     return 0; // zero for no exception
 }
 
-// double** wrapper — constructs temp Coords from double** and delegates to Coords& impl
-// mixed overload: Coords& xa + double** ya — converts ya to Coords, delegates to Coords& impl
+// double** wrapper — constructs temp CoordArray from double** and delegates to CoordArray& impl
+// mixed overload: CoordArray& xa + double** ya — converts ya to CoordArray, delegates to CoordArray& impl
 int se_main(
-    Coords& xa, double **ya, const std::string &seqx, const std::string &seqy,
+    CoordArray& xa, double **ya, const std::string &seqx, const std::string &seqy,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -255,7 +255,7 @@ int se_main(
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
     const int outfmt_opt, int *invmap, const int hinge=0)
 {
-    Coords ya_coords; ya_coords.reserve(ylen);
+    CoordArray ya_coords; ya_coords.reserve(ylen);
     for (int i=0; i<ylen; i++) ya_coords.push_back({ya[i][0], ya[i][1], ya[i][2]});
     return se_main(xa, ya_coords, seqx, seqy,
         TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
