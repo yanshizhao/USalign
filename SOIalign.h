@@ -293,35 +293,6 @@ inline int soi_se_main(Coords& xa, Coords& ya, const std::string &seqx,
     const int mol_type, const int outfmt_opt, int *invmap,
     double *dist_list, Bond2& secx_bond, Bond2& secy_bond, const int mm_opt);
 
-int soi_se_main(
-    double **xa, double **ya, const std::string &seqx, const std::string &seqy,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen, 
-    const double Lnorm_ass, const double d0_scale, const bool i_opt,
-    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, int *invmap, double *dist_list,
-    Bond2& secx_bond, Bond2& secy_bond, const int mm_opt)
-{
-    Coords xa_tmp; xa_tmp.reserve(xlen);
-    for (int i=0; i<xlen; i++) xa_tmp.push_back({xa[i][0], xa[i][1], xa[i][2]});
-    Coords ya_tmp; ya_tmp.reserve(ylen);
-    for (int i=0; i<ylen; i++) ya_tmp.push_back({ya[i][0], ya[i][1], ya[i][2]});
-    return soi_se_main(xa_tmp, ya_tmp,
-        seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, rmsd0, L_ali, Liden,
-        TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type,
-        outfmt_opt, invmap, dist_list,
-        secx_bond, secy_bond, mm_opt);
-}
-
 
 inline int soi_se_main(
     Coords& xa, Coords& ya, const std::string &seqx, const std::string &seqy,
