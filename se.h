@@ -242,26 +242,3 @@ int se_main(
 
 // double** wrapper — constructs temp CoordArray from double** and delegates to CoordArray& impl
 // mixed overload: CoordArray& xa + double** ya — converts ya to CoordArray, delegates to CoordArray& impl
-int se_main(
-    CoordArray& xa, double **ya, const std::string &seqx, const std::string &seqy,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen, const vector<string> &sequence,
-    const double Lnorm_ass, const double d0_scale, const bool i_opt,
-    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, int *invmap, const int hinge=0)
-{
-    CoordArray ya_coords; ya_coords.reserve(ylen);
-    for (int i=0; i<ylen; i++) ya_coords.push_back({ya[i][0], ya[i][1], ya[i][2]});
-    return se_main(xa, ya_coords, seqx, seqy,
-        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-        d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap, hinge);
-}
