@@ -2184,14 +2184,7 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, double **x, doubl
     }
 }
 
-inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, CharMatrix& mask,
-    double t[3], double u[3][3], double d02, double gap_open, int j2i[])
-{
-    std::vector<double*> _xv(x.size()), _yv(y.size());
-    for (size_t i=0; i<x.size(); i++) { _xv[i]=(double*)x[i].data(); _yv[i]=(double*)y[i].data(); }
-    NWDP_TM_dimer(path, val, _xv.data(), _yv.data(), len1, len2, mask, t, u, d02, gap_open, j2i);
-}
+
 
 
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
