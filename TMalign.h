@@ -431,42 +431,6 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 // output:  the best rotaion matrix t, u that results in highest TMscore
 
 double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, double **x, double **y, int xlen, int ylen, 
-    int invmap0[], double t[3], double u[3][3], int simplify_step,
-    int score_sum_method, double local_d0_search, double Lnorm,
-    double score_d8, double d0)
-{
-    //x is model, y is template, try to superpose onto y
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double rmsd;
-
-    k=0;
-    for(i=0; i<ylen; i++) 
-    {
-        j=invmap0[i];
-        if(j>=0) //aligned
-        {
-            xtm[k][0]=x[j][0];
-            xtm[k][1]=x[j][1];
-            xtm[k][2]=x[j][2];
-                
-            ytm[k][0]=y[i][0];
-            ytm[k][1]=y[i][1];
-            ytm[k][2]=y[i][2];
-            k++;
-        }
-    }
-
-    //detailed search 40-->1
-    tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u, simplify_step,
-        score_sum_method, &rmsd, local_d0_search, Lnorm, score_d8, d0);
-    return tmscore;
-}
-
-double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     int invmap0[], double t[3], double u[3][3], int simplify_step,
     int score_sum_method, double local_d0_search, double Lnorm,
@@ -490,44 +454,6 @@ double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     return tmscore;
 }
 
-
-double detailed_search_standard( CoordArray& r1, CoordArray& r2,
-    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, double **x, double **y,
-    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
-    int simplify_step, int score_sum_method, double local_d0_search,
-    const bool& bNormalize, double Lnorm, double score_d8, double d0)
-{
-    //x is model, y is template, try to superpose onto y
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double rmsd;
-
-    k=0;
-    for(i=0; i<ylen; i++) 
-    {
-        j=invmap0[i];
-        if(j>=0) //aligned
-        {
-            xtm[k][0]=x[j][0];
-            xtm[k][1]=x[j][1];
-            xtm[k][2]=x[j][2];
-                
-            ytm[k][0]=y[i][0];
-            ytm[k][1]=y[i][1];
-            ytm[k][2]=y[i][2];
-            k++;
-        }
-    }
-
-    //detailed search 40-->1
-    tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
-        simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0);
-    if (bNormalize)
-        tmscore = tmscore * k / Lnorm;
-    return tmscore;
-}
 
 double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
@@ -2985,81 +2911,6 @@ void output_mTMalign_results(const string xname, const string yname,
 }
 
 
-double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, double **x, double **y, int xlen, int ylen, int invmap[],
-    int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
-    double d0_search, double score_d8, double t[3], double u[3][3],
-    const int mol_type)
-{
-    D0_MIN = 0.5;
-    Lnorm = ylen;
-    if (mol_type>0) // RNA
-    {
-        if     (Lnorm<=11) d0=0.3; 
-        else if(Lnorm>11 && Lnorm<=15) d0=0.4;
-        else if(Lnorm>15 && Lnorm<=19) d0=0.5;
-        else if(Lnorm>19 && Lnorm<=23) d0=0.6;
-        else if(Lnorm>23 && Lnorm<30)  d0=0.7;
-        else d0=(0.6*pow((Lnorm*1.0-0.5), 1.0/2)-2.5);
-    }
-    else
-    {
-        if (Lnorm > 21) d0=(1.24*pow((Lnorm*1.0-15), 1.0/3) -1.8);
-        else d0 = D0_MIN;
-        if (d0 < D0_MIN) d0 = D0_MIN;
-    }
-    double d0_input = d0;// Scaled by seq_min
-
-    double tmscore;// collected alined residues from invmap
-    int n_al = 0;
-    int i;
-    for (int j = 0; j<ylen; j++)
-    {
-        i = invmap[j];
-        if (i >= 0)
-        {
-            xtm[n_al][0] = x[i][0];
-            xtm[n_al][1] = x[i][1];
-            xtm[n_al][2] = x[i][2];
-
-            ytm[n_al][0] = y[j][0];
-            ytm[n_al][1] = y[j][1];
-            ytm[n_al][2] = y[j][2];
-
-            r1[n_al][0] = x[i][0];
-            r1[n_al][1] = x[i][1];
-            r1[n_al][2] = x[i][2];
-
-            r2[n_al][0] = y[j][0];
-            r2[n_al][1] = y[j][1];
-            r2[n_al][2] = y[j][2];
-
-            n_al++;
-        }
-        else if (i != -1) PrintErrorAndQuit("Wrong map!\n");
-    }
-    L_ali = n_al;
-
-    {
-        std::vector<double*> r1_v(n_al), r2_v(n_al);
-        for(int _k=0;_k<n_al;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-        Kabsch(r1_v.data(), r2_v.data(), n_al, 0, &RMSD, t, u);
-    }
-    RMSD = sqrt( RMSD/(1.0*n_al) );
-    
-    int temp_simplify_step = 1;
-    int temp_score_sum_method = 0;
-    d0_search = d0_input;
-    double rms = 0.0;
-    tmscore = TMscore8_search_standard(r1, r2, xtm, ytm, xt, n_al, t, u,
-        temp_simplify_step, temp_score_sum_method, &rms, d0_input,
-        score_d8, d0);
-    tmscore = tmscore * n_al / (1.0*Lnorm);
-
-    return tmscore;
-}
-
-// const CoordArray& x/y overload
 double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, int invmap[],
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
