@@ -347,10 +347,7 @@ inline int soi_se_main(
     }
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
 
-    // construct double** view from DoubleMatrix for soi_egs (read-only)
-    std::vector<double*> score_view(xlen+1);
-    for (int v=0; v<=xlen; v++) score_view[v]=score[v].data();
-    soi_egs(score_view.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
     rmsd0=TM1=TM2=TM3=TM4=TM5=0;
     int k=0;
@@ -1011,7 +1008,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
         if (mm_opt==6) NWDP_TM(stv.data(), path, vv.data(), ylen, xlen, -0.6, fwdmap0);
-        soi_egs(stv.data(), ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
+        soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c, ylen, xlen, t, u,
