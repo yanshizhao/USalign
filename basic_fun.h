@@ -849,14 +849,6 @@ void transform(double t[3], double u[3][3], double *x, double *x1)
     x1[2]=t[2]+dot(&u[2][0], x);
 }
 
-void do_rotation(double **x, double **x1, int len, double t[3], double u[3][3])
-{
-    for(int i=0; i<len; i++)
-    {
-        transform(t, u, &x[i][0], &x1[i][0]);
-    }
-}
-
 void do_rotation(CoordArray& x, CoordArray& x1, int len, double t[3], double u[3][3])
 {
     for(int i=0; i<len; i++)
