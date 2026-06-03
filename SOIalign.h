@@ -413,63 +413,12 @@ inline int soi_se_main(
     return 0; // zero for no exception
 }
 
-inline void SOI_super2score(double **xt, double **ya, const int xlen,
-    const int ylen, double **score, double d0, double score_d8)
-{
-    int i;
-    int j;
-    double d02=d0*d0;
-    double score_d82=score_d8*score_d8;
-    double d2;
-    for (i=0; i<xlen; i++)
-    {
-        for(j=0; j<ylen; j++)
-        {
-            d2=dist(xt[i], ya[j]);
-            if (d2>score_d82) score[i+1][j+1]=0;
-            else score[i+1][j+1]=1./(1+ d2/d02);
-        }
-    }
-}
-
-inline void SOI_super2score(const CoordArray& xt, double **ya, const int xlen,
-    const int ylen, double **score, double d0, double score_d8)
-{
-    int i;
-    int j;
-    double d02=d0*d0;
-    double score_d82=score_d8*score_d8;
-    double d2;
-    for (i=0; i<xlen; i++)
-    {
-        for(j=0; j<ylen; j++)
-        {
-            d2=dist(xt[i], ya[j]);
-            if (d2>score_d82) score[i+1][j+1]=0;
-            else score[i+1][j+1]=1./(1+ d2/d02);
-        }
-    }
-}
 
 
-inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const int xlen,
-    const int ylen, double **score, double d0, double score_d8)
-{
-    int i;
-    int j;
-    double d02=d0*d0;
-    double score_d82=score_d8*score_d8;
-    double d2;
-    for (i=0; i<xlen; i++)
-    {
-        for(j=0; j<ylen; j++)
-        {
-            d2=dist(xt[i], ya[j]);
-            if (d2>score_d82) score[i+1][j+1]=0;
-            else score[i+1][j+1]=1./(1+ d2/d02);
-        }
-    }
-}
+
+
+
+
 
 
 
