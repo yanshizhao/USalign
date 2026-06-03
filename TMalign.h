@@ -936,7 +936,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
                 }
 
                 double gap_open = 0.0;
-                NWDP_TM(path, val, xv.data(), yv.data(), xlen, ylen,
+                NWDP_TM(path, val, x, y, xlen, ylen,
                     t, u, d02, gap_open, invmap);
                 GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
                     invmap, d0, d0_search, t, u);
@@ -1336,16 +1336,12 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     tmscore_max=-1;
 
     // Build temp double** views for NWDP_TM
-    std::vector<double*> _xv(x.size()), _yv(y.size());
-    for (size_t _i=0; _i<x.size(); _i++) _xv[_i]=(double*)x[_i].data();
-    for (size_t _i=0; _i<y.size(); _i++) _yv[_i]=(double*)y[_i].data();
-
-    double d02=d0*d0;
+        double d02=d0*d0;
     for(int g=g1; g<g2; g++)
     {
         for(iteration=0; iteration<iteration_max; iteration++)
         {
-            NWDP_TM(path, val, _xv.data(), _yv.data(), xlen, ylen,
+            NWDP_TM(path, val, x, y, xlen, ylen,
                 t, u, d02, gap_open[g], invmap);
 
             k=0;

@@ -58,7 +58,7 @@ void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
     int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, int j2i[])
 {
@@ -67,9 +67,9 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, double **x, double **y,
     for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=false; j2i[j]=-1; }
     double xx[3], dij;
     for(i=1; i<=len1; i++) {
-        transform(t, u, &x[i-1][0], xx);
+        transform(t, u, (double*)&x[i-1][0], xx);
         for(j=1; j<=len2; j++) {
-            dij=dist(xx, &y[j-1][0]);
+            dij=dist(xx, (double*)&y[j-1][0]);
             d=val[i-1][j-1] + 1.0/(1+dij/d02);
             h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
             v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
@@ -124,7 +124,7 @@ void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
         {
             for(j=1; j<=len2; j++)
             {
-                dij=dist(&x[i-1][0], &y[j-1][0]);
+                dij=dist((double*)&x[i-1][0], (double*)&y[j-1][0]);
                 d=val[i-1][j-1] +  1.0/(1+dij/d02);
                 h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
                 v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
@@ -170,7 +170,7 @@ void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
         for(j=1; j<=len2; j++)
         {
             dij=0;
-            if (path[i][j]==0) dij=dist(&x[i-1][0], &y[j-1][0]);
+            if (path[i][j]==0) dij=dist((double*)&x[i-1][0], (double*)&y[j-1][0]);
             d=val[i-1][j-1] +  1.0/(1+dij/d02);
             h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
             v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
