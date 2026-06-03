@@ -2189,6 +2189,8 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, double **x, doubl
 
 
 
+
+
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
 {
@@ -2427,13 +2429,8 @@ bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& 
                     NWDP_TM_dimer(path, val, _xv2.data(), _yv2.data(), xlen, ylen, mask,
                         t, u, d02, gap_open, invmap);
                 }
-                {
-                    vector<double*> _xv(x.size()), _yv(y.size());
-                    for (size_t _i=0; _i<x.size(); _i++) _xv[_i]=(double*)x[_i].data();
-                    for (size_t _i=0; _i<y.size(); _i++) _yv[_i]=(double*)y[_i].data();
-                    GL = get_score_fast(r1, r2, xtm, ytm, _xv.data(), _yv.data(), xlen, ylen,
-                        invmap, d0, d0_search, t, u);
-                }
+                GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
+                    invmap, d0, d0_search, t, u);
                 if (GL>GLmax)
                 {
                     GLmax = GL;
