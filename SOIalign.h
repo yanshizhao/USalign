@@ -765,15 +765,6 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const int mol_type, double *dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
-    // Build double** views for sub-function compatibility
-    vector<double*> _xa_v(xlen);
-    vector<double*> _ya_v(ylen);
-    for (int i=0; i<xlen; i++) _xa_v[i]=xa_c[i].data();
-    for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
-    double **xa = _xa_v.data();
-    double **ya = _ya_v.data();
-
-
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
@@ -993,26 +984,26 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if(j>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xt[i][0], &ya[j][0]));
+            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
             if (d <= score_d8)
             {
                 m1[k]=i;
                 m2[k]=j;
 
-                xtm[k][0]=xa[i][0];
-                xtm[k][1]=xa[i][1];
-                xtm[k][2]=xa[i][2];
+                xtm[k][0]=xa_c[i][0];
+                xtm[k][1]=xa_c[i][1];
+                xtm[k][2]=xa_c[i][2];
 
-                ytm[k][0]=ya[j][0];
-                ytm[k][1]=ya[j][1];
-                ytm[k][2]=ya[j][2];
+                ytm[k][0]=ya_c[j][0];
+                ytm[k][1]=ya_c[j][1];
+                ytm[k][2]=ya_c[j][2];
 
                 r1[k][0] = xt[i][0];
                 r1[k][1] = xt[i][1];
                 r1[k][2] = xt[i][2];
-                r2[k][0] = ya[j][0];
-                r2[k][1] = ya[j][1];
-                r2[k][2] = ya[j][2];
+                r2[k][0] = ya_c[j][0];
+                r2[k][1] = ya_c[j][1];
+                r2[k][2] = ya_c[j][2];
 
                 k++;
             }
@@ -1046,26 +1037,26 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         i=invmap0[j];
         if(i>=0)//aligned
         {
-            d=sqrt(dist(&xt[i][0], &ya[j][0]));
+            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
             if (d <= score_d8)
             {
                 m1[k]=i;
                 m2[k]=j;
 
-                xtm[k][0]=xa[i][0];
-                xtm[k][1]=xa[i][1];
-                xtm[k][2]=xa[i][2];
+                xtm[k][0]=xa_c[i][0];
+                xtm[k][1]=xa_c[i][1];
+                xtm[k][2]=xa_c[i][2];
 
-                ytm[k][0]=ya[j][0];
-                ytm[k][1]=ya[j][1];
-                ytm[k][2]=ya[j][2];
+                ytm[k][0]=ya_c[j][0];
+                ytm[k][1]=ya_c[j][1];
+                ytm[k][2]=ya_c[j][2];
 
                 r1[k][0] = xt[i][0];
                 r1[k][1] = xt[i][1];
                 r1[k][2] = xt[i][2];
-                r2[k][0] = ya[j][0];
-                r2[k][1] = ya[j][1];
-                r2[k][2] = ya[j][2];
+                r2[k][0] = ya_c[j][0];
+                r2[k][1] = ya_c[j][1];
+                r2[k][2] = ya_c[j][2];
 
                 k++;
             }
@@ -1131,7 +1122,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     seqM.assign( ali_len,' ');
     seqyA.assign(ali_len,'-');
     
-    //do_rotation(xa, xt, xlen, t, u);
+    //do_rotation(xa_c, xt, xlen, t, u);
     do_rotation(xa_c, xt, xlen, t0, u0);
 
     Liden=0;
@@ -1142,7 +1133,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         i=invmap0[j];
         dist_list[j]=-1;
         if (i<0) continue;
-        d=sqrt(dist(xt[i], ya[j]));
+        d=sqrt(dist(xt[i], ya_c[j]));
         if (d<d0_out) seqM[j]=':';
         else seqM[j]='.';
         dist_list[j]=d;
