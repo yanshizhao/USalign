@@ -965,6 +965,7 @@ double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
     return tmscore; // no need to normalize this score because it will not be used for latter scoring
 }
 
+
 double get_score_fast( double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& x, CoordArray& y, int xlen, int ylen, int invmap[],
     double d0, double d0_search, double t[3], double u[3][3])
