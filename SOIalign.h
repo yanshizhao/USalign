@@ -709,11 +709,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     path.assign( maxlen+1, std::vector<char>(maxlen+1));
     val.assign(  maxlen+1, std::vector<double>(maxlen+1));
     xtm.resize(minlen);
-    // build double** views from DoubleMatrix for sub-function compatibility
-    std::vector<double*> sv(xlen+1), stv(ylen+1), vv(maxlen+1);
-    for(int _i=0;_i<=xlen;_i++) sv[_i]=score[_i].data();
-    for(int _i=0;_i<=ylen;_i++) stv[_i]=scoret[_i].data();
-    for(int _i=0;_i<=maxlen;_i++) vv[_i]=val[_i].data();
+
 
     ytm.resize(minlen);
     xt.resize(xlen);
@@ -781,7 +777,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
     }
     do_rotation(xa_c, xt, xlen, t0, u0);
-    SOI_super2score(xt, ya_c, xlen, ylen, sv.data(), d0, score_d8);
+    SOI_super2score(xt, ya_c, xlen, ylen, score, d0, score_d8);
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
     TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
         xlen, ylen, t0, u0, invmap0, iteration_max,
@@ -823,7 +819,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
 
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
-        if (mm_opt==6) NWDP_TM(stv.data(), path, vv.data(), ylen, xlen, -0.6, fwdmap0);
+        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0);
         soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
