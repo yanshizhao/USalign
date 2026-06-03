@@ -1977,7 +1977,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int len1, int len2, CharMatrix& mask,
     double t[3], double u[3][3], double d02, double gap_open, int j2i[])
 {
@@ -2060,10 +2060,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
     int score_sum_method=8;
     int simplify_step=40;
     tmscore_max=-1;
-    // Build temp double** views for NWDP_TM_dimer (no working CoordArray overload)
-    std::vector<double*> xv(x.size()), yv(y.size());
-    for (size_t _i=0; _i<x.size(); _i++) xv[_i]=(double*)x[_i].data();
-    for (size_t _i=0; _i<y.size(); _i++) yv[_i]=(double*)y[_i].data();
+
 
     //double d01=d0+1.5;
     double d02=d0*d0;
@@ -2071,7 +2068,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
     {
         for(iteration=0; iteration<iteration_max; iteration++)
         {           
-            NWDP_TM_dimer(path, val, xv.data(), yv.data(), xlen, ylen, mask,
+            NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
                 t, u, d02, gap_open[g], invmap);
             
             k=0;
@@ -2198,13 +2195,8 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                 }
 
                 double gap_open = 0.0;
-                {
-                    vector<double*> _xv2(x.size()), _yv2(y.size());
-                    for (size_t _i = 0; _i < x.size(); _i++) _xv2[_i] = (double*)x[_i].data();
-                    for (size_t _i = 0; _i < y.size(); _i++) _yv2[_i] = (double*)y[_i].data();
-                    NWDP_TM_dimer(path, val, _xv2.data(), _yv2.data(), xlen, ylen, mask,
-                        t, u, d02, gap_open, invmap);
-                }
+                NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
+                    t, u, d02, gap_open, invmap);
                 GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
                     invmap, d0, d0_search, t, u);
                 if (GL > GLmax)
