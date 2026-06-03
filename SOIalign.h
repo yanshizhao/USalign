@@ -728,23 +728,6 @@ void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArra
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 
 
-inline int SOIalign_main(CoordArray& xa, CoordArray& ya,
-    double **xk, double **yk, const int closeK_opt,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    int *invmap, double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, double *dist_list,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
-
 
 
 
