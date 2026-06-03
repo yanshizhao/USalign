@@ -524,11 +524,11 @@ inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const in
 
 
 double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, double **score, CharMatrix& path, double **val, double **xa, double **ya,
+    CoordArray& xt, DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, CoordArray& xa, CoordArray& ya,
     int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
     int iteration_max, double local_d0_search,
     double Lnorm, double d0, double score_d8,
-    int **secx_bond, int **secy_bond, const int mm_opt, const bool init_invmap=false)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
 {
     double rmsd;
     int *invmap=new int[ylen+1];
@@ -542,6 +542,15 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
     double tmscore_old=0;
     tmscore_max=-1;
 
+
+    // Build temp views for sub-functions that need raw pointers
+    std::vector<double*> sv(score.size());
+    std::vector<double*> valv(val.size());
+    std::vector<int*> sxb(xlen), syb(ylen);
+    for (size_t _i=0; _i<score.size(); _i++) sv[_i]=score[_i].data();
+    for (size_t _i=0; _i<val.size(); _i++) valv[_i]=val[_i].data();
+    for (int _i=0; _i<xlen; _i++) sxb[_i]=(int*)secx_bond[_i].data();
+    for (int _i=0; _i<ylen; _i++) syb[_i]=(int*)secy_bond[_i].data();
     double d02=d0*d0;
     for (iteration=0; iteration<iteration_max; iteration++)
     {
@@ -550,9 +559,9 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
         else
         {
             for (j=0; j<ylen; j++) invmap[j]=-1;
-            if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
+            if (mm_opt==6) NWDP_TM(sv.data(), path, valv.data(), xlen, ylen, -0.6, invmap);
         }
-        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+        soi_egs(sv.data(), xlen, ylen, invmap, sxb.data(), syb.data(), mm_opt);
 
         k=0;
         for (j=0; j<ylen; j++)
@@ -582,28 +591,14 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
         if (iteration>0 && fabs(tmscore_old-tmscore)<0.000001) break;
         tmscore_old=tmscore;
         do_rotation(xa, xt, xlen, t, u);
-        SOI_super2score(xt, ya, xlen, ylen, score, d0, score_d8);
+        SOI_super2score(xt, ya, xlen, ylen, sv.data(), d0, score_d8);
     }
 
     delete []invmap;
     return tmscore_max;
 }
 
-// IntPairArray secx_bond/secy_bond overload - creates int** views, delegates
-inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, double **score, CharMatrix& path, double **val, double **xa, double **ya,
-    int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
-    int iteration_max, double local_d0_search,
-    double Lnorm, double d0, double score_d8,
-    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
-{
-    std::vector<int*> sxb(xlen), syb(ylen);
-    for (int i=0; i<xlen; i++) sxb[i]=(int*)secx_bond[i].data();
-    for (int i=0; i<ylen; i++) syb[i]=(int*)secy_bond[i].data();
-    return SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa, ya,
-        xlen, ylen, t, u, invmap0, iteration_max, local_d0_search,
-        Lnorm, d0, score_d8, sxb.data(), syb.data(), mm_opt, init_invmap);
-}
+
 
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
     double **score, char **path, double **val, const int xlen, const int ylen,
@@ -994,10 +989,10 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     do_rotation(xa_c, xt, xlen, t0, u0);
     SOI_super2score(xt, ya_c, xlen, ylen, sv.data(), d0, score_d8);
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
-    TMmax=SOI_iter(r1, r2, xtm, ytm, xt, sv.data(), path, vv.data(), xa, ya,
+    TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
         xlen, ylen, t0, u0, invmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, true);
-    TM   =SOI_iter(r2, r1, ytm, xtm, yt,stv.data(), path, vv.data(), ya, xa,
+    TM   =SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c,
         ylen, xlen, t0, u0, fwdmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, true);
     //cout<<"TM2="<<TM2<<"\tTM1="<<TM1<<"\tTMmax="<<TMmax<<"\tTM="<<TM<<endl;
@@ -1024,7 +1019,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
         SOI_assign2super(r1, r2, xtm, ytm, xt, xa_c, ya_c,
             xlen, ylen, t, u, invmap, local_d0_search, Lnorm, d0, score_d8);
-        TM=SOI_iter(r1, r2, xtm, ytm, xt, sv.data(), path, vv.data(), xa, ya,
+        TM=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
             xlen, ylen, t, u, invmap, iteration_max,
             local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt);
         if (TM>TMmax)
@@ -1038,7 +1033,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         soi_egs(stv.data(), ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
-        TM=SOI_iter(r2, r1, ytm, xtm, yt, stv.data(), path, vv.data(), ya, xa, ylen, xlen, t, u,
+        TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c, ylen, xlen, t, u,
             fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
         if (TM>TMmax)
         {
