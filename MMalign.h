@@ -2323,24 +2323,6 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
 
 
 
-inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, char **path, double **val, double **x, double **y,
-    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
-{
-    vector<double*> r1_view(r1.size()), r2_view(r2.size());
-    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
-    vector<double*> xt_view(xt.size());
-    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
-    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
-    for (size_t i=0; i<xtm.size(); i++) xtm_view[i]=(double*)xtm[i].data();
-    for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
-    for (size_t i=0; i<xt.size(); i++) xt_view[i]=(double*)xt[i].data();
-    return DP_iter_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
-        xt_view.data(), path, val, x, y, xlen, ylen, mask, t, u, invmap0,
-        g1, g2, iteration_max, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-}
 
 
 inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
