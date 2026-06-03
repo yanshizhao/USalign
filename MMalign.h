@@ -2305,7 +2305,7 @@ double DP_iter_dimer(double **r1, double **r2, double **xtm, double **ytm,
 }
 
 inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2318,6 +2318,9 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
     for (size_t i=0; i<xtm.size(); i++) xtmv[i]=(double*)xtm[i].data();
     for (size_t i=0; i<ytm.size(); i++) ytmv[i]=(double*)ytm[i].data();
     for (size_t i=0; i<xt.size(); i++) xtv[i]=(double*)xt[i].data();
+    std::vector<double*> xv(x.size()), yv(y.size());
+    for (size_t i=0; i<x.size(); i++) xv[i]=(double*)x[i].data();
+    for (size_t i=0; i<y.size(); i++) yv[i]=(double*)y[i].data();
     std::vector<char*> pvv(xlen+1);
     for (int i=0; i<=xlen; i++) pvv[i]=path[i].data();
     std::vector<double*> valv(xlen+1);
@@ -2326,7 +2329,7 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
     for (int i=0; i<=xlen; i++) _mask_v[i]=mask[i].data();
     return DP_iter_dimer(r1v.data(), r2v.data(), xtmv.data(), ytmv.data(),
         xtv.data(), pvv.data(), valv.data(),
-        x, y, xlen, ylen, _mask_v.data(), t, u, invmap0,
+        xv.data(), yv.data(), xlen, ylen, _mask_v.data(), t, u, invmap0,
         g1, g2, iteration_max, local_d0_search,
         D0_MIN, Lnorm, d0, score_d8);
 }
@@ -2542,13 +2545,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1)
 {
-    // Build double** views for sub-function compatibility
-    vector<double*> _xa_v(xlen);
-    vector<double*> _ya_v(ylen);
-    for (int i=0; i<xlen; i++) _xa_v[i]=xa_c[i].data();
-    for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
-    double **xa = _xa_v.data();
-    double **ya = _ya_v.data();
+
 
 
 
@@ -2660,7 +2657,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TM>TMmax) TMmax = TM;
         if (TMcut>0) copy_t_u(t, u, t0, u0);
         //run dynamic programing iteratively to find the best alignment
-        TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya, xlen, ylen,
+        TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
              mask, t, u, invmap, 0, 2, (fast_opt)?2:30,
              local_d0_search, D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
@@ -2700,7 +2697,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         }
         if (TM > TMmax*0.2)
         {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -2744,7 +2741,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             }
             if (TM > TMmax*ddcc)
             {
-                TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+                TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                     xlen, ylen, mask, t, u, invmap, 0, 2, 2,
                     local_d0_search, D0_MIN, Lnorm, d0, score_d8);
                 if (TM>TMmax)
@@ -2790,7 +2787,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -2833,7 +2830,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 1, 2, 2,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -2904,7 +2901,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
                 for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
             }
             // Different from get_initial, get_initial_ss and get_initial_ssplus
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa, ya,
+            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
