@@ -2431,22 +2431,6 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
         d0, d0_search, fast_opt, D0_MIN);
 }
 
-void get_initial_ssplus_dimer(double **r1, double **r2, double **score,
-    char **path, double **val, const char *secx, const char *secy,
-    double **x, double **y, int xlen, int ylen, char **mask,
-    int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    //create score matrix for DP
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
-        y2x0, D0_MIN,d0);
-
-    int i;
-    int j;
-    for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
-    
-    double gap_open=-1.0;
-    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
-}
 
 
 inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
@@ -2462,34 +2446,8 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
 }
 
 
-inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, double **score,
-    char **path, double **val, const char *secx, const char *secy,
-    double **x, double **y, int xlen, int ylen, char **mask,
-    int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    vector<double*> r1_view(r1.size()), r2_view(r2.size());
-    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
-    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
-    get_initial_ssplus_dimer(r1_view.data(), r2_view.data(), score,
-        path, val, secx, secy, x, y, xlen, ylen, mask, y2x0, y2x, D0_MIN, d0);
-}
 
 // const CoordArray& x/y overload — for TMalign_dimer_main flip
-inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, double **score,
-    char **path, double **val, const char *secx, const char *secy,
-    const CoordArray& x, const CoordArray& y, int xlen, int ylen, char **mask,
-    int *y2x0, int *y2x, const double D0_MIN, double d0)
-{
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen,
-        y2x0, D0_MIN,d0);
-
-    int i;
-    int j;
-    for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
-
-    double gap_open=-1.0;
-    NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
-}
 
 /* Entry function for TM-align. Return TM-score calculation status:
  * 0   - full TM-score calculation
