@@ -2402,8 +2402,17 @@ bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& 
                     NWDP_TM_dimer(path, val, _xv2.data(), _yv2.data(), xlen, ylen, mask,
                         t, u, d02, gap_open, invmap);
                 }
-                GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
-                    invmap, d0, d0_search, t, u);
+                {
+                    // Build CoordArray views for double** r1/r2 (SVD-sensitive)
+                    int _mc = xlen < ylen ? xlen : ylen;
+                    CoordArray _r1cv(_mc), _r2cv(_mc);
+                    for (int _i = 0; _i < _mc; _i++) {
+                        _r1cv[_i][0] = r1[_i][0]; _r1cv[_i][1] = r1[_i][1]; _r1cv[_i][2] = r1[_i][2];
+                        _r2cv[_i][0] = r2[_i][0]; _r2cv[_i][1] = r2[_i][1]; _r2cv[_i][2] = r2[_i][2];
+                    }
+                    GL = get_score_fast(_r1cv, _r2cv, xtm, ytm, x, y, xlen, ylen,
+                        invmap, d0, d0_search, t, u);
+                }
                 if (GL>GLmax)
                 {
                     GLmax = GL;
