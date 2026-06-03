@@ -2225,14 +2225,8 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
-double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, double **x, double **y,
-    int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8);
-
-double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
@@ -2251,6 +2245,13 @@ double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
     int score_sum_method=8;
     int simplify_step=40;
     tmscore_max=-1;
+    // Build temp double** views for SVD-sensitive path and NWDP_TM_dimer
+    std::vector<double*> r1v(r1.size()), r2v(r2.size());
+    for (size_t _i=0; _i<r1.size(); _i++) r1v[_i]=(double*)r1[_i].data();
+    for (size_t _i=0; _i<r2.size(); _i++) r2v[_i]=(double*)r2[_i].data();
+    std::vector<double*> xv(x.size()), yv(y.size());
+    for (size_t _i=0; _i<x.size(); _i++) xv[_i]=(double*)x[_i].data();
+    for (size_t _i=0; _i<y.size(); _i++) yv[_i]=(double*)y[_i].data();
 
     //double d01=d0+1.5;
     double d02=d0*d0;
@@ -2258,7 +2259,7 @@ double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
     {
         for(iteration=0; iteration<iteration_max; iteration++)
         {           
-            NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
+            NWDP_TM_dimer(path, val, xv.data(), yv.data(), xlen, ylen, mask,
                 t, u, d02, gap_open[g], invmap);
             
             k=0;
@@ -2279,7 +2280,7 @@ double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
                 }
             }
 
-            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+            tmscore = TMscore8_search(r1v.data(), r2v.data(), xtm, ytm, xt, k, t, u,
                 simplify_step, score_sum_method, &rmsd, local_d0_search,
                 Lnorm, score_d8, d0);
 
@@ -2299,28 +2300,10 @@ double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
         
     }//for gapopen
     
-    
     delete []invmap;
     return tmscore_max;
 }
 
-inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
-{
-    std::vector<double*> r1v(r1.size()), r2v(r2.size());
-    for (size_t i=0; i<r1.size(); i++) r1v[i]=(double*)r1[i].data();
-    for (size_t i=0; i<r2.size(); i++) r2v[i]=(double*)r2[i].data();
-    std::vector<double*> xv(x.size()), yv(y.size());
-    for (size_t i=0; i<x.size(); i++) xv[i]=(double*)x[i].data();
-    for (size_t i=0; i<y.size(); i++) yv[i]=(double*)y[i].data();
-    return DP_iter_dimer(r1v.data(), r2v.data(), xtm, ytm,
-        xt, path, val, xv.data(), yv.data(), xlen, ylen, mask, t, u, invmap0,
-        g1, g2, iteration_max, local_d0_search,
-        D0_MIN, Lnorm, d0, score_d8);
-}
 
 
 
