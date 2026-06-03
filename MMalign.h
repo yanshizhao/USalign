@@ -2245,10 +2245,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
     int score_sum_method=8;
     int simplify_step=40;
     tmscore_max=-1;
-    // Build temp double** views for SVD-sensitive path and NWDP_TM_dimer
-    std::vector<double*> r1v(r1.size()), r2v(r2.size());
-    for (size_t _i=0; _i<r1.size(); _i++) r1v[_i]=(double*)r1[_i].data();
-    for (size_t _i=0; _i<r2.size(); _i++) r2v[_i]=(double*)r2[_i].data();
+    // Build temp double** views for NWDP_TM_dimer (no working CoordArray overload)
     std::vector<double*> xv(x.size()), yv(y.size());
     for (size_t _i=0; _i<x.size(); _i++) xv[_i]=(double*)x[_i].data();
     for (size_t _i=0; _i<y.size(); _i++) yv[_i]=(double*)y[_i].data();
@@ -2280,7 +2277,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
                 }
             }
 
-            tmscore = TMscore8_search(r1v.data(), r2v.data(), xtm, ytm, xt, k, t, u,
+            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
                 simplify_step, score_sum_method, &rmsd, local_d0_search,
                 Lnorm, score_d8, d0);
 
