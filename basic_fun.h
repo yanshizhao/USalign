@@ -857,14 +857,6 @@ void do_rotation(CoordArray& x, CoordArray& x1, int len, double t[3], double u[3
     }
 }
 
-void do_rotation(double **x, CoordArray& x1, int len, double t[3], double u[3][3])
-{
-    for(int i=0; i<len; i++)
-    {
-        transform(t, u, &x[i][0], x1[i].data());
-    }
-}
-
 /* read user specified pairwise alignment from 'fname_lign' to 'sequence'.
  * This function should only be called by main function, as it will
  * terminate a program if wrong alignment is given */

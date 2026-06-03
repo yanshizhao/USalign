@@ -5,50 +5,6 @@
 #include "se.h"
 
 double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
-    double **xa, double **ya, int xlen, int ylen, int invmap[],
-    int& L_ali, double t[3], double u[3][3], const int mol_type)
-{
-    L_ali = 0;
-    int i;
-    int j;
-    for (j = 0; j<ylen; j++)
-    {
-        i = invmap[j];
-        if (i >= 0)
-        {
-            r1[L_ali][0]  = xa[i][0];
-            r1[L_ali][1]  = xa[i][1];
-            r1[L_ali][2]  = xa[i][2];
-
-            r2[L_ali][0]  = ya[j][0];
-            r2[L_ali][1]  = ya[j][1];
-            r2[L_ali][2]  = ya[j][2];
-
-            L_ali++;
-        }
-        else if (i != -1) PrintErrorAndQuit("Wrong map!\n");
-    }
-
-    double RMSD = 0;
-    {
-        std::vector<double*> _v1(L_ali), _v2(L_ali);
-        for(int _k=0;_k<L_ali;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
-        Kabsch(_v1.data(), _v2.data(), L_ali, 1, &RMSD, t, u);
-    }
-    RMSD = sqrt( RMSD/(1.0*L_ali) );
-
-    for (i=0; i<xlen; i++)
-    {
-        xt[i][0] = xa[i][0];
-        xt[i][1] = xa[i][1];
-        xt[i][2] = xa[i][2];
-    }
-    do_rotation(xa, xt, xlen, t,u);
-    return RMSD;
-}
-
-// Full CoordArray& overload — xa, ya are CoordArray, syntax identical to double**
-double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     CoordArray& xa, CoordArray& ya, int xlen, int ylen, int invmap[],
     int& L_ali, double t[3], double u[3][3], const int mol_type)
 {
