@@ -966,6 +966,20 @@ double get_score_fast( double **r1, double **r2, double **xtm, double **ytm,
 }
 
 double get_score_fast( double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& x, CoordArray& y, int xlen, int ylen, int invmap[],
+    double d0, double d0_search, double t[3], double u[3][3])
+{
+    std::vector<double*> _xtmv(xtm.size()), _ytmv(ytm.size());
+    std::vector<double*> _xv(x.size()), _yv(y.size());
+    for (size_t i=0; i<xtm.size(); i++) _xtmv[i]=(double*)xtm[i].data();
+    for (size_t i=0; i<ytm.size(); i++) _ytmv[i]=(double*)ytm[i].data();
+    for (size_t i=0; i<x.size(); i++) _xv[i]=(double*)x[i].data();
+    for (size_t i=0; i<y.size(); i++) _yv[i]=(double*)y[i].data();
+    return get_score_fast(r1, r2, _xtmv.data(), _ytmv.data(), _xv.data(), _yv.data(),
+        xlen, ylen, invmap, d0, d0_search, t, u);
+}
+
+double get_score_fast( double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
     double **x, double **y, int xlen, int ylen, int invmap[],
     double d0, double d0_search, double t[3], double u[3][3])
 {
