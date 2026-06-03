@@ -1695,12 +1695,55 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
 {
-    double t[3],u[3][3],rmsd,dij;
-    double d01=d0+1.5;if(d01<D0_MIN)d01=D0_MIN;double d02=d01*d01;double xx[3];
-    int i,k=0;
-    for(int j=0;j<ylen;j++){i=y2x[j];if(i>=0){r1[k][0]=x[i][0];r1[k][1]=x[i][1];r1[k][2]=x[i][2];r2[k][0]=y[j][0];r2[k][1]=y[j][1];r2[k][2]=y[j][2];k++;}}
-    {std::vector<double*>rv1(k),rv2(k);for(int _k=0;_k<k;_k++){rv1[_k]=r1[_k].data();rv2[_k]=r2[_k].data();}Kabsch(rv1.data(),rv2.data(),k,1,&rmsd,t,u);}
-    for(int ii=0;ii<xlen;ii++){transform(t,u,(double*)&x[ii][0],xx);for(int jj=0;jj<ylen;jj++){dij=dist(xx,(double*)&y[jj][0]);if(secx[ii]==secy[jj])score[ii+1][jj+1]=1.0/(1+dij/d02)+0.5;else score[ii+1][jj+1]=1.0/(1+dij/d02);}}
+    double t[3];
+    double u[3][3];
+    double rmsd;
+    double dij;
+    double d01 = d0 + 1.5;
+    if (d01 < D0_MIN) d01 = D0_MIN;
+    double d02 = d01 * d01;
+    double xx[3];
+    int i;
+    int k = 0;
+
+    for (int j = 0; j < ylen; j++)
+    {
+        i = y2x[j];
+        if (i >= 0)
+        {
+            r1[k][0] = x[i][0];
+            r1[k][1] = x[i][1];
+            r1[k][2] = x[i][2];
+
+            r2[k][0] = y[j][0];
+            r2[k][1] = y[j][1];
+            r2[k][2] = y[j][2];
+            k++;
+        }
+    }
+
+    {
+        std::vector<double*> rv1(k), rv2(k);
+        for (int _k = 0; _k < k; _k++)
+        {
+            rv1[_k] = r1[_k].data();
+            rv2[_k] = r2[_k].data();
+        }
+        Kabsch(rv1.data(), rv2.data(), k, 1, &rmsd, t, u);
+    }
+
+    for (int ii = 0; ii < xlen; ii++)
+    {
+        transform(t, u, (double*)&x[ii][0], xx);
+        for (int jj = 0; jj < ylen; jj++)
+        {
+            dij = dist(xx, (double*)&y[jj][0]);
+            if (secx[ii] == secy[jj])
+                score[ii + 1][jj + 1] = 1.0 / (1 + dij / d02) + 0.5;
+            else
+                score[ii + 1][jj + 1] = 1.0 / (1 + dij / d02);
+        }
+    }
 }
 
 //get initial alignment from secondary structure and previous alignments
