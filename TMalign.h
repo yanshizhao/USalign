@@ -4194,12 +4194,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray r1, r2;        // for Kabsch rotation
 
     // Build double** views for sub-function compatibility
-    vector<double*> _xa_v(xlen);
-    vector<double*> _ya_v(ylen);
-    for (int i=0; i<xlen; i++) _xa_v[i]=xa_c[i].data();
-    for (int i=0; i<ylen; i++) _ya_v[i]=ya_c[i].data();
-    double **xa = _xa_v.data();
-    double **ya = _ya_v.data();
+
 
 
     /***********************/
@@ -4626,26 +4621,26 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if(i>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xt[i][0], &ya[j][0]));
+            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
             if (d <= score_d8 || (i_opt == 3))
             {
                 m1[k]=i;
                 m2[k]=j;
 
-                xtm[k][0]=xa[i][0];
-                xtm[k][1]=xa[i][1];
-                xtm[k][2]=xa[i][2];
+                xtm[k][0]=xa_c[i][0];
+                xtm[k][1]=xa_c[i][1];
+                xtm[k][2]=xa_c[i][2];
 
-                ytm[k][0]=ya[j][0];
-                ytm[k][1]=ya[j][1];
-                ytm[k][2]=ya[j][2];
+                ytm[k][0]=ya_c[j][0];
+                ytm[k][1]=ya_c[j][1];
+                ytm[k][2]=ya_c[j][2];
 
                 r1[k][0] = xt[i][0];
                 r1[k][1] = xt[i][1];
                 r1[k][2] = xt[i][2];
-                r2[k][0] = ya[j][0];
-                r2[k][1] = ya[j][1];
-                r2[k][2] = ya[j][2];
+                r2[k][0] = ya_c[j][0];
+                r2[k][1] = ya_c[j][1];
+                r2[k][2] = ya_c[j][2];
 
                 k++;
             }
@@ -4767,7 +4762,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         seqxA[kk]=seqx[m1[k]];
         seqyA[kk]=seqy[m2[k]];
         Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(&xt[m1[k]][0], &ya[m2[k]][0]));
+        d=sqrt(dist(&xt[m1[k]][0], &ya_c[m2[k]][0]));
         if(d<d0_out) seqM[kk]=':';
         else         seqM[kk]='.';
         do_vec[kk]=d;
