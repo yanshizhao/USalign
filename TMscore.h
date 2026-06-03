@@ -467,21 +467,6 @@ double TMscore8_search(double **r1, double **r2, double **xtm, double **ytm,
     return score_max;
 }
 
-double TMscore8_search( double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
-    int score_sum_method, double *Rcomm, double local_d0_search, double Lnorm,
-    double score_d8, double d0, double GDT_list[5], double &maxsub)
-{
-    std::vector<double*> _xtmv(xtm.size()), _ytmv(ytm.size());
-    std::vector<double*> _xtv(xt.size());
-    for (size_t i=0; i<xtm.size(); i++) _xtmv[i]=(double*)xtm[i].data();
-    for (size_t i=0; i<ytm.size(); i++) _ytmv[i]=(double*)ytm[i].data();
-    for (size_t i=0; i<xt.size(); i++) _xtv[i]=(double*)xt[i].data();
-    return TMscore8_search(r1, r2, _xtmv.data(), _ytmv.data(), _xtv.data(),
-        Lali, t0, u0, simplify_step, score_sum_method, Rcomm,
-        local_d0_search, Lnorm, score_d8, d0, GDT_list, maxsub);
-}
-
 
 double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
