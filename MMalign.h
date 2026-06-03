@@ -2226,14 +2226,14 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
 double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, char **path, double **val, double **x, double **y,
-    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+    int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8);
 
 double DP_iter_dimer(double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, char **path, double **val, double **x, double **y,
-    int xlen, int ylen, char **mask, double t[3], double u[3][3], int invmap0[],
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, double **x, double **y,
+    int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
 {
@@ -2316,15 +2316,8 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
     std::vector<double*> xv(x.size()), yv(y.size());
     for (size_t i=0; i<x.size(); i++) xv[i]=(double*)x[i].data();
     for (size_t i=0; i<y.size(); i++) yv[i]=(double*)y[i].data();
-    std::vector<char*> pvv(xlen+1);
-    for (int i=0; i<=xlen; i++) pvv[i]=path[i].data();
-    std::vector<double*> valv(xlen+1);
-    for (int i=0; i<=xlen; i++) valv[i]=val[i].data();
-    std::vector<char*> _mask_v(xlen+1);
-    for (int i=0; i<=xlen; i++) _mask_v[i]=mask[i].data();
     return DP_iter_dimer(r1v.data(), r2v.data(), xtm, ytm,
-        xt, pvv.data(), valv.data(),
-        xv.data(), yv.data(), xlen, ylen, _mask_v.data(), t, u, invmap0,
+        xt, path, val, xv.data(), yv.data(), xlen, ylen, mask, t, u, invmap0,
         g1, g2, iteration_max, local_d0_search,
         D0_MIN, Lnorm, d0, score_d8);
 }
