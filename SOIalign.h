@@ -578,7 +578,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
 
 
 
-void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
+void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt,
     DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[],
     double local_d0_search, double d0, double score_d8,
@@ -746,41 +746,10 @@ inline int SOIalign_main(CoordArray& xa, CoordArray& ya,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
-inline int SOIalign_main(CoordArray& xa, CoordArray& ya,
-    CoordArray& xk, CoordArray& yk, const int closeK_opt,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    int *invmap, double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, double *dist_list,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
-{
-    vector<double*> xk_view(xk.size());
-    vector<double*> yk_view(yk.size());
-    for (size_t i=0; i<xk.size(); i++) xk_view[i]=(double*)xk[i].data();
-    for (size_t i=0; i<yk.size(); i++) yk_view[i]=(double*)yk[i].data();
-    return SOIalign_main(xa, ya, xk_view.data(), yk_view.data(), closeK_opt,
-        seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA, invmap, rmsd0, L_ali, Liden,
-        TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass,
-        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type, dist_list, secx_bond, secy_bond, mm_opt);
-}
 
 
 inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
-    double **xk, double **yk, const int closeK_opt,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     double t0[3], double u0[3][3],
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
