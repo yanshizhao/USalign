@@ -579,72 +579,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
 
 
 void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
-    double **score, char **path, double **val, const int xlen, const int ylen,
-    double t[3], double u[3][3], int invmap[],
-    double local_d0_search, double d0, double score_d8,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
-{
-    int i;
-    int j;
-    int k;
-    CoordArray xfrag, xtran, yfrag;
-    xfrag.resize(closeK_opt);
-    xtran.resize(closeK_opt);
-    yfrag.resize(closeK_opt);
-    double rmsd;
-    double d02=d0*d0;
-    double score_d82=score_d8*score_d8;
-    double d2;
-
-    // fill in score
-    for (i=0;i<xlen;i++)
-    {
-        for (k=0;k<closeK_opt;k++)
-        {
-            xfrag[k][0]=xk[i*closeK_opt+k][0];
-            xfrag[k][1]=xk[i*closeK_opt+k][1];
-            xfrag[k][2]=xk[i*closeK_opt+k][2];
-        }
-
-        for (j=0;j<ylen;j++)
-        {
-            for (k=0;k<closeK_opt;k++)
-            {
-                yfrag[k][0]=yk[j*closeK_opt+k][0];
-                yfrag[k][1]=yk[j*closeK_opt+k][1];
-                yfrag[k][2]=yk[j*closeK_opt+k][2];
-            }
-            {
-                std::vector<double*> xv(closeK_opt), yv(closeK_opt);
-                for(int _k=0;_k<closeK_opt;_k++){ xv[_k]=xfrag[_k].data(); yv[_k]=yfrag[_k].data(); }
-                Kabsch(xv.data(), yv.data(), closeK_opt, 1, &rmsd, t, u);
-            }
-            do_rotation(xfrag, xtran, closeK_opt, t, u);
-            
-            //for (k=0; k<closeK_opt; k++)
-            //{
-                //d2=dist(xtran[k], yfrag[k]);
-                //if (d2>score_d82) score[i+1][j+1]=0;
-                //else score[i+1][j+1]=1./(1+d2/d02);
-            //}
-            k=closeK_opt-1;
-            d2=dist(xtran[k], yfrag[k]);
-            if (d2>score_d82) score[i+1][j+1]=0;
-            else score[i+1][j+1]=1./(1+d2/d02);
-        }
-    }
-
-    // initial assignment
-    for (j=0;j<ylen;j++) invmap[j]=-1;
-    if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
-    for (j=0; j<ylen;j++) i=invmap[j];
-    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
-
-    // clean up — xfrag/xtran/yfrag auto-destruct (CoordArray)
-}
-
-void get_SOI_initial_assign(double **xk, double **yk, const int closeK_opt,
-    double **score, CharMatrix& path, double **val, const int xlen, const int ylen,
+    DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
     double t[3], double u[3][3], int invmap[],
     double local_d0_search, double d0, double score_d8,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
@@ -990,7 +925,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     /***************************************************************/
     if (closeK_opt>=3)
     {
-        get_SOI_initial_assign(xk, yk, closeK_opt, sv.data(), path, vv.data(),
+        get_SOI_initial_assign(xk, yk, closeK_opt, score, path, val,
             xlen, ylen, t, u, invmap, local_d0_search, d0, score_d8,
             secx_bond, secy_bond, mm_opt);
         for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
