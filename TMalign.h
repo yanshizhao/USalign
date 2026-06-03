@@ -1394,84 +1394,6 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
 
-double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, char **path, double **val, double **x, double **y,
-    int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8);
-
-double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, char **path, double **val, double **x, double **y,
-    int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
-{
-    double gap_open[2]={-0.6, 0};
-    double rmsd; 
-    int *invmap=new int[ylen+1];
-    
-    int iteration;
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double tmscore_max;
-    double tmscore_old=0;
-    int score_sum_method=8;
-    int simplify_step=40;
-    tmscore_max=-1;
-
-    //double d01=d0+1.5;
-    double d02=d0*d0;
-    for(int g=g1; g<g2; g++)
-    {
-        for(iteration=0; iteration<iteration_max; iteration++)
-        {           
-            NWDP_TM(path, val, x, y, xlen, ylen,
-                t, u, d02, gap_open[g], invmap);
-            
-            k=0;
-            for(j=0; j<ylen; j++) 
-            {
-                i=invmap[j];
-
-                if(i>=0) //aligned
-                {
-                    xtm[k][0]=x[i][0];
-                    xtm[k][1]=x[i][1];
-                    xtm[k][2]=x[i][2];
-                    
-                    ytm[k][0]=y[j][0];
-                    ytm[k][1]=y[j][1];
-                    ytm[k][2]=y[j][2];
-                    k++;
-                }
-            }
-
-            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
-                simplify_step, score_sum_method, &rmsd, local_d0_search,
-                Lnorm, score_d8, d0);
-
-           
-            if(tmscore>tmscore_max)
-            {
-                tmscore_max=tmscore;
-                for(i=0; i<ylen; i++) invmap0[i]=invmap[i];
-            }
-    
-            if(iteration>0)
-            {
-                if(fabs(tmscore_old-tmscore)<0.000001) break;       
-            }
-            tmscore_old=tmscore;
-        }// for iteration           
-        
-    }//for gapopen
-    
-    
-    delete []invmap;
-    return tmscore_max;
-}
 // CharMatrix& path overload - creates bool** view, delegates to bool** version
 double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
@@ -1479,17 +1401,57 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
 {
-    std::vector<char*> _pv(path.size());
-    for (size_t _i = 0; _i < path.size(); _i++) _pv[_i] = path[_i].data();
-    std::vector<double*> _vv(val.size());
-    for (size_t _i = 0; _i < val.size(); _i++) _vv[_i] = val[_i].data();
+    double gap_open[2]={-0.6, 0};
+    double rmsd;
+    int *invmap=new int[ylen+1];
+    int iteration, i, j, k;
+    double tmscore, tmscore_max, tmscore_old=0;
+    int score_sum_method=8, simplify_step=40;
+    tmscore_max=-1;
+
+    // Build temp double** views for NWDP_TM
     std::vector<double*> _xv(x.size()), _yv(y.size());
-    for (size_t _i = 0; _i < x.size(); _i++) _xv[_i] = (double*)x[_i].data();
-    for (size_t _i = 0; _i < y.size(); _i++) _yv[_i] = (double*)y[_i].data();
-    return DP_iter(r1, r2, xtm, ytm, xt, _pv.data(),
-        _vv.data(), _xv.data(), _yv.data(), xlen, ylen, t, u, invmap0,
-        g1, g2, iteration_max, local_d0_search,
-        D0_MIN, Lnorm, d0, score_d8);
+    for (size_t _i=0; _i<x.size(); _i++) _xv[_i]=(double*)x[_i].data();
+    for (size_t _i=0; _i<y.size(); _i++) _yv[_i]=(double*)y[_i].data();
+
+    double d02=d0*d0;
+    for(int g=g1; g<g2; g++)
+    {
+        for(iteration=0; iteration<iteration_max; iteration++)
+        {
+            NWDP_TM(path, val, _xv.data(), _yv.data(), xlen, ylen,
+                t, u, d02, gap_open[g], invmap);
+
+            k=0;
+            for(j=0; j<ylen; j++)
+            {
+                i=invmap[j];
+                if(i>=0)
+                {
+                    xtm[k][0]=x[i][0];
+                    xtm[k][1]=x[i][1];
+                    xtm[k][2]=x[i][2];
+                    ytm[k][0]=y[j][0];
+                    ytm[k][1]=y[j][1];
+                    ytm[k][2]=y[j][2];
+                    k++;
+                }
+            }
+
+            tmscore=TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+                simplify_step, score_sum_method, &rmsd, local_d0_search,
+                Lnorm, score_d8, d0);
+
+            if(tmscore>tmscore_max)
+            { tmscore_max=tmscore; for(i=0; i<ylen; i++) invmap0[i]=invmap[i]; }
+
+            if(iteration>0 && fabs(tmscore_old-tmscore)<0.000001) break;
+            tmscore_old=tmscore;
+        }
+    }
+
+    delete []invmap;
+    return tmscore_max;
 }
 
 
