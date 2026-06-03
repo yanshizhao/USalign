@@ -234,44 +234,10 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
 inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
     const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt)
 {
-    int i,j;
-    int *fwdmap=new int[xlen];
-    for (i=0; i<xlen; i++) fwdmap[i]=-1;
-    for (j=0; j<ylen; j++) { i=invmap[j]; if (i>=0) fwdmap[i]=j; }
-    double max_score; int maxi,maxj;
-    while(1) {
-        max_score=0; maxi=maxj=-1;
-        for (i=0;i<xlen;i++) { if (fwdmap[i]>=0) continue;
-            for (j=0;j<ylen;j++) { if (invmap[j]>=0 || score[i+1][j+1]<=max_score) continue;
-                if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap)) continue;
-                maxi=i; maxj=j; max_score=score[i+1][j+1];
-            }
-        }
-        if (maxi<0) break;
-        invmap[maxj]=maxi; fwdmap[maxi]=maxj;
-    }
-    double total_score=0;
-    for (j=0;j<ylen;j++) { i=invmap[j]; if (i>=0) total_score+=score[i+1][j+1]; }
-    int iter,oldi,oldj; double delta_score;
-    for (iter=0; iter<getmin(xlen,ylen)*5; iter++) {
-        delta_score=-1;
-        for (i=0;i<xlen;i++) { oldj=fwdmap[i];
-            if (oldj>=0) for (j=0;j<ylen;j++) { if (invmap[j]>=0 || i==oldj) continue;
-                if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap)) continue;
-                delta_score=score[i+1][j+1]-score[i+1][oldj+1];
-                if (delta_score>0) { fwdmap[i]=j; invmap[j]=i; invmap[oldj]=-1; total_score+=delta_score;
-                    oldi=oldj; for (j=0;j<xlen;j++) { oldj=fwdmap[j]; if (oldj>=0 && oldi==oldj) delta_score=0; }
-                    break;
-                }
-            }
-        }
-        if (delta_score<=0) { for (j=0;j<ylen;j++) { i=invmap[j]; if (i>=0) for (int k=j+1;k<ylen;k++) { oldi=invmap[k];
-            if (oldi>=0 && mm_opt==6 && !sec2sq(i,k,secx_bond,secy_bond,fwdmap,invmap) && !sec2sq(oldi,j,secx_bond,secy_bond,fwdmap,invmap) && sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap) && sec2sq(oldi,k,secx_bond,secy_bond,fwdmap,invmap)) {
-                invmap[j]=i; invmap[k]=oldi; fwdmap[i]=j; fwdmap[oldi]=k; break;
-            }}
-        } break; }
-    }
-    delete[]fwdmap;
+    std::vector<int*> _sxb(xlen), _syb(ylen);
+    for (int i=0; i<xlen; i++) _sxb[i]=(int*)secx_bond[i].data();
+    for (int i=0; i<ylen; i++) _syb[i]=(int*)secy_bond[i].data();
+    soi_egs(score, xlen, ylen, invmap, _sxb.data(), _syb.data(), mm_opt);
 }
 
 /* entry function for se
@@ -517,6 +483,19 @@ inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const in
     }
 }
 
+
+
+
+inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const int xlen,
+    const int ylen, DoubleMatrix& score, double d0, double score_d8)
+{
+    int i,j; double d02=d0*d0,score_d82=score_d8*score_d8,d2;
+    for(i=0;i<xlen;i++) for(j=0;j<ylen;j++){
+        d2=dist(xt[i],ya[j]);
+        if(d2>score_d82)score[i+1][j+1]=0;else score[i+1][j+1]=1./(1+d2/d02);
+    }
+}
+
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
@@ -542,15 +521,11 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
     double tmscore_old=0;
     tmscore_max=-1;
 
-
-    // Build temp views for sub-functions that need raw pointers
+    // Build temp double** view for soi_egs
     std::vector<double*> sv(score.size());
-    std::vector<double*> valv(val.size());
-    std::vector<int*> sxb(xlen), syb(ylen);
     for (size_t _i=0; _i<score.size(); _i++) sv[_i]=score[_i].data();
-    for (size_t _i=0; _i<val.size(); _i++) valv[_i]=val[_i].data();
-    for (int _i=0; _i<xlen; _i++) sxb[_i]=(int*)secx_bond[_i].data();
-    for (int _i=0; _i<ylen; _i++) syb[_i]=(int*)secy_bond[_i].data();
+
+
     double d02=d0*d0;
     for (iteration=0; iteration<iteration_max; iteration++)
     {
@@ -559,9 +534,9 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
         else
         {
             for (j=0; j<ylen; j++) invmap[j]=-1;
-            if (mm_opt==6) NWDP_TM(sv.data(), path, valv.data(), xlen, ylen, -0.6, invmap);
+            if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
         }
-        soi_egs(sv.data(), xlen, ylen, invmap, sxb.data(), syb.data(), mm_opt);
+        soi_egs(sv.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
         k=0;
         for (j=0; j<ylen; j++)
@@ -591,7 +566,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
         if (iteration>0 && fabs(tmscore_old-tmscore)<0.000001) break;
         tmscore_old=tmscore;
         do_rotation(xa, xt, xlen, t, u);
-        SOI_super2score(xt, ya, xlen, ylen, sv.data(), d0, score_d8);
+        SOI_super2score(xt, ya, xlen, ylen, score, d0, score_d8);
     }
 
     delete []invmap;
