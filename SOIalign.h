@@ -240,6 +240,14 @@ inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
     soi_egs(score, xlen, ylen, invmap, _sxb.data(), _syb.data(), mm_opt);
 }
 
+inline void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt)
+{
+    std::vector<double*> _sv(score.size());
+    for (size_t i=0; i<score.size(); i++) _sv[i]=score[i].data();
+    soi_egs(_sv.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+}
+
 /* entry function for se
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
@@ -521,9 +529,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
     double tmscore_old=0;
     tmscore_max=-1;
 
-    // Build temp double** view for soi_egs
-    std::vector<double*> sv(score.size());
-    for (size_t _i=0; _i<score.size(); _i++) sv[_i]=score[_i].data();
+
 
 
     double d02=d0*d0;
@@ -536,7 +542,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
             for (j=0; j<ylen; j++) invmap[j]=-1;
             if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
         }
-        soi_egs(sv.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
         k=0;
         for (j=0; j<ylen; j++)
