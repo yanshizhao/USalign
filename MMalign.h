@@ -2184,6 +2184,15 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, double **x, doubl
     }
 }
 
+inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+    int len1, int len2, CharMatrix& mask,
+    double t[3], double u[3][3], double d02, double gap_open, int j2i[])
+{
+    std::vector<double*> _xv(x.size()), _yv(y.size());
+    for (size_t i=0; i<x.size(); i++) { _xv[i]=(double*)x[i].data(); _yv[i]=(double*)y[i].data(); }
+    NWDP_TM_dimer(path, val, _xv.data(), _yv.data(), len1, len2, mask, t, u, d02, gap_open, j2i);
+}
+
 
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
@@ -2334,7 +2343,7 @@ inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char
     NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
 }
 
-bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
+bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
     CharMatrix& path, DoubleMatrix& val, double **x, double **y, int xlen, int ylen,
     CharMatrix& mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
@@ -2440,15 +2449,12 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     vector<double*> r1_view(r1.size()), r2_view(r2.size());
-    vector<double*> xv(x.size()), yv(y.size());
     for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
     for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
+    vector<double*> xv(x.size()), yv(y.size());
     for (size_t i=0; i<x.size(); i++) xv[i]=(double*)x[i].data();
     for (size_t i=0; i<y.size(); i++) yv[i]=(double*)y[i].data();
-    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
-    for (size_t i=0; i<xtm.size(); i++) xtm_view[i]=(double*)xtm[i].data();
-    for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
-    return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
+    return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm, ytm,
         path, val, xv.data(), yv.data(), xlen, ylen, mask, y2x,
         d0, d0_search, fast_opt, D0_MIN);
 }
