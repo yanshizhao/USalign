@@ -2313,9 +2313,9 @@ inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char
     NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
 }
 
-bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& ytm,
-    CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y, int xlen, int ylen,
-    CharMatrix& mask, int *y2x,
+inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CharMatrix& path, DoubleMatrix& val,
+    CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     double GL;
@@ -2325,62 +2325,42 @@ bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& 
 
     double d01 = d0 + 1.5;
     if (d01 < D0_MIN) d01 = D0_MIN;
-    double d02 = d01*d01;
+    double d02 = d01 * d01;
 
     double GLmax = 0;
     int aL = getmin(xlen, ylen);
     int *invmap = new int[ylen + 1];
 
-    // jump on sequence1-------------->
     int n_jump1 = 0;
-    if (xlen > 250)
-        n_jump1 = 45;
-    else if (xlen > 200)
-        n_jump1 = 35;
-    else if (xlen > 150)
-        n_jump1 = 25;
-    else
-        n_jump1 = 15;
-    if (n_jump1 > (xlen / 3))
-        n_jump1 = xlen / 3;
+    if (xlen > 250) n_jump1 = 45;
+    else if (xlen > 200) n_jump1 = 35;
+    else if (xlen > 150) n_jump1 = 25;
+    else n_jump1 = 15;
+    if (n_jump1 > (xlen / 3)) n_jump1 = xlen / 3;
 
-    // jump on sequence2-------------->
     int n_jump2 = 0;
-    if (ylen > 250)
-        n_jump2 = 45;
-    else if (ylen > 200)
-        n_jump2 = 35;
-    else if (ylen > 150)
-        n_jump2 = 25;
-    else
-        n_jump2 = 15;
-    if (n_jump2 > (ylen / 3))
-        n_jump2 = ylen / 3;
+    if (ylen > 250) n_jump2 = 45;
+    else if (ylen > 200) n_jump2 = 35;
+    else if (ylen > 150) n_jump2 = 25;
+    else n_jump2 = 15;
+    if (n_jump2 > (ylen / 3)) n_jump2 = ylen / 3;
 
-    // fragment to superimpose-------------->
     int n_frag[2] = { 20, 100 };
-    if (n_frag[0] > (aL / 3))
-        n_frag[0] = aL / 3;
-    if (n_frag[1] > (aL / 2))
-        n_frag[1] = aL / 2;
+    if (n_frag[0] > (aL / 3)) n_frag[0] = aL / 3;
+    if (n_frag[1] > (aL / 2)) n_frag[1] = aL / 2;
 
-    // start superimpose search-------------->
-    if (fast_opt)
-    {
-        n_jump1*=5;
-        n_jump2*=5;
-    }
+    if (fast_opt) { n_jump1 *= 5; n_jump2 *= 5; }
     bool flag = false;
     for (int i_frag = 0; i_frag < 2; i_frag++)
     {
         int m1 = xlen - n_frag[i_frag] + 1;
         int m2 = ylen - n_frag[i_frag] + 1;
 
-        for (int i = 0; i<m1; i = i + n_jump1) //index starts from 0, different from FORTRAN
+        for (int i = 0; i < m1; i = i + n_jump1)
         {
-            for (int j = 0; j<m2; j = j + n_jump2)
+            for (int j = 0; j < m2; j = j + n_jump2)
             {
-                for (int k = 0; k<n_frag[i_frag]; k++) //fragment in y
+                for (int k = 0; k < n_frag[i_frag]; k++)
                 {
                     r1[k][0] = x[k + i][0];
                     r1[k][1] = x[k + i][1];
@@ -2391,32 +2371,31 @@ bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& 
                     r2[k][2] = y[k + j][2];
                 }
 
-                // superpose the two structures and rotate it
-                Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
+                // Build double** views for Kabsch (SVD sensitive)
+                {
+                    int _nf = n_frag[i_frag];
+                    vector<double*> _r1v(_nf), _r2v(_nf);
+                    for (int _k = 0; _k < _nf; _k++) {
+                        _r1v[_k] = (double*)r1[_k].data();
+                        _r2v[_k] = (double*)r2[_k].data();
+                    }
+                    Kabsch(_r1v.data(), _r2v.data(), _nf, 1, &rmsd, t, u);
+                }
 
                 double gap_open = 0.0;
                 {
                     vector<double*> _xv2(x.size()), _yv2(y.size());
-                    for (size_t _i=0; _i<x.size(); _i++) _xv2[_i]=(double*)x[_i].data();
-                    for (size_t _i=0; _i<y.size(); _i++) _yv2[_i]=(double*)y[_i].data();
+                    for (size_t _i = 0; _i < x.size(); _i++) _xv2[_i] = (double*)x[_i].data();
+                    for (size_t _i = 0; _i < y.size(); _i++) _yv2[_i] = (double*)y[_i].data();
                     NWDP_TM_dimer(path, val, _xv2.data(), _yv2.data(), xlen, ylen, mask,
                         t, u, d02, gap_open, invmap);
                 }
-                {
-                    // Build CoordArray views for double** r1/r2 (SVD-sensitive)
-                    int _mc = xlen < ylen ? xlen : ylen;
-                    CoordArray _r1cv(_mc), _r2cv(_mc);
-                    for (int _i = 0; _i < _mc; _i++) {
-                        _r1cv[_i][0] = r1[_i][0]; _r1cv[_i][1] = r1[_i][1]; _r1cv[_i][2] = r1[_i][2];
-                        _r2cv[_i][0] = r2[_i][0]; _r2cv[_i][1] = r2[_i][1]; _r2cv[_i][2] = r2[_i][2];
-                    }
-                    GL = get_score_fast(_r1cv, _r2cv, xtm, ytm, x, y, xlen, ylen,
-                        invmap, d0, d0_search, t, u);
-                }
-                if (GL>GLmax)
+                GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
+                    invmap, d0, d0_search, t, u);
+                if (GL > GLmax)
                 {
                     GLmax = GL;
-                    for (int ii = 0; ii<ylen; ii++) y2x[ii] = invmap[ii];
+                    for (int ii = 0; ii < ylen; ii++) y2x[ii] = invmap[ii];
                     flag = true;
                 }
             }
@@ -2425,19 +2404,6 @@ bool get_initial5_dimer( double **r1, double **r2, CoordArray& xtm, CoordArray& 
 
     delete[] invmap;
     return flag;
-}
-
-inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CharMatrix& path, DoubleMatrix& val,
-    CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, int *y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
-{
-    vector<double*> r1_view(r1.size()), r2_view(r2.size());
-    for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
-    for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
-    return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm, ytm,
-        path, val, x, y, xlen, ylen, mask, y2x,
-        d0, d0_search, fast_opt, D0_MIN);
 }
 
 
