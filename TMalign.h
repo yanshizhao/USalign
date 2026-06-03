@@ -999,63 +999,6 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
 //perform gapless threading to find the best initial alignment
 double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    double **x, double **y, int xlen, int ylen, int *y2x,
-    double d0, double d0_search, const bool fast_opt,
-    double t[3], double u[3][3])
-{
-    int min_len=getmin(xlen, ylen);
-    if(min_len<3) PrintErrorAndQuit("Sequence is too short <3!\n");
-    
-    int min_ali= min_len/2;              //minimum size of considered fragment 
-    if(min_ali<=5)  min_ali=5;    
-    int n1;
-    int n2;
-    n1 = -ylen+min_ali; 
-    n2 = xlen-min_ali;
-
-    int i;
-    int j;
-    int k;
-    int k_best;
-    double tmscore;
-    double tmscore_max=-1;
-
-    k_best=n1;
-    for(k=n1; k<=n2; k+=(fast_opt)?5:1)
-    {
-        //get the map
-        for(j=0; j<ylen; j++)
-        {
-            i=j+k;
-            if(i>=0 && i<xlen) y2x[j]=i;
-            else y2x[j]=-1;
-        }
-        
-        //evaluate the map quickly in three iterations
-        //this is not real tmscore, it is used to evaluate the goodness of the initial alignment
-        tmscore=get_score_fast(r1, r2, xtm, ytm,
-            x, y, xlen, ylen, y2x, d0,d0_search, t, u);
-        if(tmscore>=tmscore_max)
-        {
-            tmscore_max=tmscore;
-            k_best=k;
-        }
-    }
-    
-    //extract the best map
-    k=k_best;
-    for(j=0; j<ylen; j++)
-    {
-        i=j+k;
-        if(i>=0 && i<xlen) y2x[j]=i;
-        else y2x[j]=-1;
-    }    
-
-    return tmscore_max;
-}
-
-// const CoordArray& x/y overload
-double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt,
     double t[3], double u[3][3])
