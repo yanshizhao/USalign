@@ -16,9 +16,6 @@ void print_invmap(int *invmap, const int ylen)
     cout<<endl;
 }
 
-
-
-
 inline void assign_sec_bond(IntPairArray& secx_bond, const char *secx, const int xlen)
 {
     int i,j,starti=-1,endi=-1;

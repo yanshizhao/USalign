@@ -2008,14 +2008,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, double **x, doubl
 }
 
 
-
-
-
-
-
-
-
-
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
 {
