@@ -2347,15 +2347,20 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
 }
 // CharMatrix& path overload - creates bool** view, delegates to bool** version
 double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CharMatrix& path, double **val, double **x, double **y,
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
     int g1, int g2, int iteration_max, double local_d0_search,
     double D0_MIN, double Lnorm, double d0, double score_d8)
 {
     std::vector<char*> _pv(path.size());
     for (size_t _i = 0; _i < path.size(); _i++) _pv[_i] = path[_i].data();
+    std::vector<double*> _vv(val.size());
+    for (size_t _i = 0; _i < val.size(); _i++) _vv[_i] = val[_i].data();
+    std::vector<double*> _xv(x.size()), _yv(y.size());
+    for (size_t _i = 0; _i < x.size(); _i++) _xv[_i] = (double*)x[_i].data();
+    for (size_t _i = 0; _i < y.size(); _i++) _yv[_i] = (double*)y[_i].data();
     return DP_iter(r1, r2, xtm, ytm, xt, _pv.data(),
-        val, x, y, xlen, ylen, t, u, invmap0,
+        _vv.data(), _xv.data(), _yv.data(), xlen, ylen, t, u, invmap0,
         g1, g2, iteration_max, local_d0_search,
         D0_MIN, Lnorm, d0, score_d8);
 }
@@ -4299,7 +4304,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TM>TMmax) TMmax = TM;
         if (TMcut>0) copy_t_u(t, u, t0, u0);
         //run dynamic programing iteratively to find the best alignment
-        TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya, xlen, ylen,
+        TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
              t, u, invmap, 0, 2, (fast_opt)?2:30, local_d0_search,
              D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
@@ -4339,7 +4344,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
         if (TM > TMmax*0.2)
         {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -4383,7 +4388,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
             }
             if (TM > TMmax*ddcc)
             {
-                TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
+                TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                     xlen, ylen, t, u, invmap, 0, 2, 2, local_d0_search,
                     D0_MIN, Lnorm, d0, score_d8);
                 if (TM>TMmax)
@@ -4429,7 +4434,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -4472,7 +4477,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
         if (TM > TMmax*ddcc)
         {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, t, u, invmap, 1, 2, 2, local_d0_search, D0_MIN,
                 Lnorm, d0, score_d8);
             if (TM>TMmax)
@@ -4544,7 +4549,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
             for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
         }
         // Different from get_initial, get_initial_ss and get_initial_ssplus
-        TM = DP_iter(r1, r2, xtm, ytm, xt, path, vv.data(), xa, ya,
+        TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
             xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
             local_d0_search, D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
