@@ -16,47 +16,7 @@ void print_invmap(int *invmap, const int ylen)
     cout<<endl;
 }
 
-void assign_sec_bond(int **secx_bond, const char *secx, const int xlen)
-{
-    int i;
-    int j;
-    int starti=-1;
-    int endi=-1;
-    char ss;
-    char prev_ss=0;
-    for (i=0; i<xlen; i++)
-    {
-        ss=secx[i];
-        secx_bond[i][0]=secx_bond[i][1]=-1;
-        if (ss!=prev_ss && !(ss=='C' && prev_ss=='T') 
-                        && !(ss=='T' && prev_ss=='C'))
-        {
-            if (starti>=0) // previous SSE end
-            {
-                endi=i;
-                for (j=starti;j<endi;j++)
-                {
-                    secx_bond[j][0]=starti;
-                    secx_bond[j][1]=endi;
-                }
-            }
-            if (ss=='H' || ss=='E' || ss=='<' || ss=='>') starti=i;
-            else starti=-1;
-        }
-        prev_ss=secx[i];
-    }
-    if (starti>=0) // previous SSE end
-    {
-        endi=i;
-        for (j=starti;j<endi;j++)
-        {
-            secx_bond[j][0]=starti;
-            secx_bond[j][1]=endi;
-        }
-    }
-    for (i=0;i<xlen;i++) if (secx_bond[i][1]-secx_bond[i][0]==1)
-        secx_bond[i][0]=secx_bond[i][1]=-1;
-}
+
 
 
 inline void assign_sec_bond(IntPairArray& secx_bond, const char *secx, const int xlen)
@@ -97,30 +57,7 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
 }
 
 // check if pairing i to j conform to sequantiality within the SSE
-inline bool sec2sq(const int i, const int j,
-    int **secx_bond, int **secy_bond, int *fwdmap, int *invmap)
-{
-    if (i<0 || j<0) return true;
-    int ii;
-    int jj;
-    if (secx_bond[i][0]>=0)
-    {
-        for (ii=secx_bond[i][0];ii<secx_bond[i][1];ii++)
-        {
-            jj=fwdmap[ii];
-            if (jj>=0 && (i-ii)*(j-jj)<=0) return false;
-        }
-    }
-    if (secy_bond[j][0]>=0)
-    {
-        for (jj=secy_bond[j][0];jj<secy_bond[j][1];jj++)
-        {
-            ii=invmap[jj];
-            if (ii>=0 && (i-ii)*(j-jj)<=0) return false;
-        }
-    }
-    return true;
-}
+
 
 
 inline bool sec2sq(const int i, const int j,
