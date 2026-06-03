@@ -1506,67 +1506,6 @@ void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, Cha
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-void find_max_frag(double **x, int len, int *start_max,
-    int *end_max, double dcu0, const bool fast_opt)
-{
-    int r_min, fra_min=4;           //minimum fragment for search
-    if (fast_opt) fra_min=8;
-    int start;
-    int Lfr_max=0;
-
-    r_min= static_cast<int>(len*1.0/3.0); //minimum fragment, in case too small protein
-    if(r_min > fra_min) r_min=fra_min;
-    
-    int inc=0;
-    double dcu0_cut=dcu0*dcu0;;
-    double dcu_cut=dcu0_cut;
-
-    while(Lfr_max < r_min)
-    {        
-        Lfr_max=0;            
-        int j=1;    //number of residues at nf-fragment
-        start=0;
-        for(int i=1; i<len; i++)
-        {
-            if(dist(x[i-1], x[i]) < dcu_cut)
-            {
-                j++;
-
-                if(i==(len-1))
-                {
-                    if(j > Lfr_max) 
-                    {
-                        Lfr_max=j;
-                        *start_max=start;
-                        *end_max=i;                        
-                    }
-                    j=1;
-                }
-            }
-            else
-            {
-                if(j>Lfr_max) 
-                {
-                    Lfr_max=j;
-                    *start_max=start;
-                    *end_max=i-1;                                        
-                }
-
-                j=1;
-                start=i;
-            }
-        }// for i;
-        
-        if(Lfr_max < r_min)
-        {
-            inc++;
-            double dinc=pow(1.1, static_cast<double>(inc)) * dcu0;
-            dcu_cut= dinc*dinc;
-        }
-    }//while <;    
-}
-
-// const CoordArray& overload
 void find_max_frag(const CoordArray& x, int len, int *start_max,
     int *end_max, double dcu0, const bool fast_opt)
 {
