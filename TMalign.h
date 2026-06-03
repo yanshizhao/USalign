@@ -722,7 +722,6 @@ double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     return tmscore;
 }
 
-// const CoordArray& x/y overload — function body identical to double** version
 double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     int invmap0[], double t[3], double u[3][3], int simplify_step,
@@ -786,7 +785,6 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     return tmscore;
 }
 
-// const CoordArray& x/y overload — function body identical to double** version
 double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
@@ -1161,7 +1159,6 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     return tmscore;
 }
 
-// const CoordArray& x/y overload — function body identical to double** version
 double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen, int invmap[],
     double d0, double d0_search, double t[3], double u[3][3])
@@ -1257,62 +1254,6 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 }
 
 //perform gapless threading to find the best initial alignment
-double get_initial(double **r1, double **r2, double **xtm, double **ytm,
-    double **x, double **y, int xlen, int ylen, int *y2x,
-    double d0, double d0_search, const bool fast_opt,
-    double t[3], double u[3][3])
-{
-    int min_len=getmin(xlen, ylen);
-    if(min_len<3) PrintErrorAndQuit("Sequence is too short <3!\n");
-    
-    int min_ali= min_len/2;              //minimum size of considered fragment 
-    if(min_ali<=5)  min_ali=5;    
-    int n1;
-    int n2;
-    n1 = -ylen+min_ali; 
-    n2 = xlen-min_ali;
-
-    int i;
-    int j;
-    int k;
-    int k_best;
-    double tmscore;
-    double tmscore_max=-1;
-
-    k_best=n1;
-    for(k=n1; k<=n2; k+=(fast_opt)?5:1)
-    {
-        //get the map
-        for(j=0; j<ylen; j++)
-        {
-            i=j+k;
-            if(i>=0 && i<xlen) y2x[j]=i;
-            else y2x[j]=-1;
-        }
-        
-        //evaluate the map quickly in three iterations
-        //this is not real tmscore, it is used to evaluate the goodness of the initial alignment
-        tmscore=get_score_fast(r1, r2, xtm, ytm,
-            x, y, xlen, ylen, y2x, d0,d0_search, t, u);
-        if(tmscore>=tmscore_max)
-        {
-            tmscore_max=tmscore;
-            k_best=k;
-        }
-    }
-    
-    //extract the best map
-    k=k_best;
-    for(j=0; j<ylen; j++)
-    {
-        i=j+k;
-        if(i>=0 && i<xlen) y2x[j]=i;
-        else y2x[j]=-1;
-    }    
-
-    return tmscore_max;
-}
-
 double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     double **x, double **y, int xlen, int ylen, int *y2x,
     double d0, double d0_search, const bool fast_opt,
@@ -1690,7 +1631,6 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
         n_jump2 *= 5;
     }
 
-    // Build temp double** views for NWDP_TM (bridge approach crashes on MinGW)
     std::vector<double*> xv(xlen), yv(ylen);
     for (int _i = 0; _i < xlen; _i++) xv[_i] = (double*)x[_i].data();
     for (int _j = 0; _j < ylen; _j++) yv[_j] = (double*)y[_j].data();
@@ -1750,54 +1690,6 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
 
 
 
-
-void score_matrix_rmsd_sec( double **r1, double **r2, double **score,
-    const char *secx, const char *secy, double **x, double **y,
-    int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
-{
-    double t[3];
-    double u[3][3];
-    double rmsd;
-    double dij;
-    double d01=d0+1.5;
-    if(d01 < D0_MIN) d01=D0_MIN;
-    double d02=d01*d01;
-
-    double xx[3];
-    int i;
-    int k=0;
-    for(int j=0; j<ylen; j++)
-    {
-        i=y2x[j];
-        if(i>=0)
-        {
-            r1[k][0]=x[i][0];  
-            r1[k][1]=x[i][1]; 
-            r1[k][2]=x[i][2];   
-            
-            r2[k][0]=y[j][0];  
-            r2[k][1]=y[j][1]; 
-            r2[k][2]=y[j][2];
-            
-            k++;
-        }
-    }
-    Kabsch(r1, r2, k, 1, &rmsd, t, u);
-
-    
-    for(int ii=0; ii<xlen; ii++)
-    {        
-        transform(t, u, &x[ii][0], xx);
-        for(int jj=0; jj<ylen; jj++)
-        {
-            dij=dist(xx, &y[jj][0]); 
-            if (secx[ii]==secy[jj])
-                score[ii+1][jj+1] = 1.0/(1+dij/d02) + 0.5;
-            else
-                score[ii+1][jj+1] = 1.0/(1+dij/d02);
-        }
-    }
-}
 
 void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, double **score,
     const char *secx, const char *secy, double **x, double **y,
@@ -4161,10 +4053,6 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray xtm, ytm;     // for TMscore search engine
     CoordArray xt;            //for saving the superposed version of r_1 or xtm
     CoordArray r1, r2;        // for Kabsch rotation
-
-    // Build double** views for sub-function compatibility
-
-
 
     /***********************/
     // allocate memory
