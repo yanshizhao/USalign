@@ -231,21 +231,15 @@ void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
 }
 
 
-inline void soi_egs(double **score, const int xlen, const int ylen, int *invmap,
-    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt)
-{
-    std::vector<int*> _sxb(xlen), _syb(ylen);
-    for (int i=0; i<xlen; i++) _sxb[i]=(int*)secx_bond[i].data();
-    for (int i=0; i<ylen; i++) _syb[i]=(int*)secy_bond[i].data();
-    soi_egs(score, xlen, ylen, invmap, _sxb.data(), _syb.data(), mm_opt);
-}
-
 inline void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
     const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt)
 {
     std::vector<double*> _sv(score.size());
     for (size_t i=0; i<score.size(); i++) _sv[i]=score[i].data();
-    soi_egs(_sv.data(), xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+    std::vector<int*> _sxb(xlen), _syb(ylen);
+    for (int i=0; i<xlen; i++) _sxb[i]=(int*)secx_bond[i].data();
+    for (int i=0; i<ylen; i++) _syb[i]=(int*)secy_bond[i].data();
+    soi_egs(_sv.data(), xlen, ylen, invmap, _sxb.data(), _syb.data(), mm_opt);
 }
 
 /* entry function for se
