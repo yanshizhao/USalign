@@ -2335,8 +2335,8 @@ inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char
 }
 
 bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
-    char **path, double **val, double **x, double **y, int xlen, int ylen,
-    char **mask, int *y2x,
+    CharMatrix& path, DoubleMatrix& val, double **x, double **y, int xlen, int ylen,
+    CharMatrix& mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     double GL;
@@ -2434,29 +2434,22 @@ bool get_initial5_dimer( double **r1, double **r2, double **xtm, double **ytm,
     return flag;
 }
 
-
-
-
-
 inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CharMatrix& path, DoubleMatrix& val,
-    double **x, double **y, int xlen, int ylen, CharMatrix& mask, int *y2x,
+    CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, int *y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     vector<double*> r1_view(r1.size()), r2_view(r2.size());
-    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
+    vector<double*> xv(x.size()), yv(y.size());
     for (size_t i=0; i<r1.size(); i++) r1_view[i]=(double*)r1[i].data();
     for (size_t i=0; i<r2.size(); i++) r2_view[i]=(double*)r2[i].data();
+    for (size_t i=0; i<x.size(); i++) xv[i]=(double*)x[i].data();
+    for (size_t i=0; i<y.size(); i++) yv[i]=(double*)y[i].data();
+    vector<double*> xtm_view(xtm.size()), ytm_view(ytm.size());
     for (size_t i=0; i<xtm.size(); i++) xtm_view[i]=(double*)xtm[i].data();
     for (size_t i=0; i<ytm.size(); i++) ytm_view[i]=(double*)ytm[i].data();
-    std::vector<char*> pvv(xlen+1);
-    for (int i=0; i<=xlen; i++) pvv[i]=path[i].data();
-    std::vector<double*> valv(xlen+1);
-    for (int i=0; i<=xlen; i++) valv[i]=val[i].data();
-    std::vector<char*> _mask_v(xlen+1);
-    for (int i=0; i<=xlen; i++) _mask_v[i]=mask[i].data();
     return get_initial5_dimer(r1_view.data(), r2_view.data(), xtm_view.data(), ytm_view.data(),
-        pvv.data(), valv.data(), x, y, xlen, ylen, _mask_v.data(), y2x,
+        path, val, xv.data(), yv.data(), xlen, ylen, mask, y2x,
         d0, d0_search, fast_opt, D0_MIN);
 }
 
@@ -2730,7 +2723,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //    get initial alignment based on local superposition   
         /************************************************************/
         //=initial5 in original TM-align
-        if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa, ya,
+        if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa_c, ya_c,
             xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
