@@ -978,6 +978,9 @@ double get_score_fast( double **r1, double **r2, CoordArray& xtm, CoordArray& yt
 
 
 
+
+
+
 double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     double **x, double **y, int xlen, int ylen, int invmap[],
     double d0, double d0_search, double t[3], double u[3][3])
