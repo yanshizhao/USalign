@@ -4028,38 +4028,7 @@ void copy_t_u(double t[3], double u[3][3], double t0[3], double u0[3][3])
 }
 
 // calculate approximate TM-score given rotation matrix
-double approx_TM(const int xlen, const int ylen, const int a_opt,
-    double **xa, double **ya, double t[3], double u[3][3],
-    const int invmap0[], const int mol_type)
-{
-    double Lnorm_0=ylen; // normalized by the second protein
-    if (a_opt==-2 && xlen>ylen) Lnorm_0=xlen;      // longer
-    else if (a_opt==-1 && xlen<ylen) Lnorm_0=xlen; // shorter
-    else if (a_opt==1) Lnorm_0=(xlen+ylen)/2.;     // average
-    
-    double D0_MIN;
-    double Lnorm;
-    double d0;
-    double d0_search;
-    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-    double TMtmp=0;
-    double d;
-    double xtmp[3]={0,0,0};
 
-    for(int i=0,j=0; j<ylen; j++)
-    {
-        i=invmap0[j];
-        if(i>=0)//aligned
-        {
-            transform(t, u, &xa[i][0], &xtmp[0]);
-            d=sqrt(dist(&xtmp[0], &ya[j][0]));
-            TMtmp+=1/(1+(d/d0)*(d/d0));
-            //if (d <= score_d8) TMtmp+=1/(1+(d/d0)*(d/d0));
-        }
-    }
-    TMtmp/=Lnorm_0;
-    return TMtmp;
-}
 
 // CoordArray& overload — const_cast safe: transform/dist only read, never write
 double approx_TM(const int xlen, const int ylen, const int a_opt,
