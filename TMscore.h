@@ -534,45 +534,7 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 }
 
 
-double detailed_search_standard( CoordArray& r1, CoordArray& r2,
-    CoordArray& xtm, CoordArray& ytm, CoordArray& xt, double **x, double **y,
-    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
-    int simplify_step, int score_sum_method, double local_d0_search,
-    const bool& bNormalize, double Lnorm, double score_d8, double d0,
-    double GDT_list[5], double &maxsub)
-{
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double rmsd;
 
-    k=0;
-    for(i=0; i<ylen; i++)
-    {
-        j=invmap0[i];
-        if(j>=0) //aligned
-        {
-            xtm[k][0]=x[j][0];
-            xtm[k][1]=x[j][1];
-            xtm[k][2]=x[j][2];
-
-            ytm[k][0]=y[i][0];
-            ytm[k][1]=y[i][1];
-            ytm[k][2]=y[i][2];
-            k++;
-        }
-    }
-
-    //detailed search 40-->1
-    tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
-        simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0,
-        GDT_list, maxsub);
-    if (bNormalize)
-        tmscore = tmscore * k / Lnorm;
-
-    return tmscore;
-}
 
 void output_TMscore_results(
     const string xname, const string yname,
