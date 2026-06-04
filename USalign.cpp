@@ -995,20 +995,20 @@ std::vector<int> assign2_list(chain2_num);
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
 
         if (chain1_num<=chain2_num)
         {
-            hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
-                assign2_list.data(), chain1_num, chain2_num, xcentroids,
+            hetero_refined_greedy_search(TMave_mat, assign1_list,
+                assign2_list, chain1_num, chain2_num, xcentroids,
                 ycentroids, d0MM, len_aa+len_na);
         }
         else
         {
-            hetero_refined_greedy_search(TMave_mat, assign2_list.data(),
-                assign1_list.data(), chain2_num, chain1_num, ycentroids,
+            hetero_refined_greedy_search(TMave_mat, assign2_list,
+                assign1_list, chain2_num, chain1_num, ycentroids,
                 xcentroids, d0MM, len_aa+len_na);
         }
 
@@ -1068,12 +1068,12 @@ std::vector<int> assign2_init(chain2_num);
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
 
-        hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        hetero_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
         // xcentroids, ycentroids auto-destruct (CoordArray)

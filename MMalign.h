@@ -351,7 +351,7 @@ double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
  * dij is the centroid distance between chain pair i and j
  * d0MM is scaling factor. TMave_mat[i][j] is the TM-score between
  * chain pair i and j multiple by getmin(Li*Lj) */
-double calMMscore(const DoubleMatrix& TMave_mat,int *assign1_list,
+double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     const int chain1_num, const int chain2_num, const CoordArray& xcentroids,
     const CoordArray& ycentroids, const double d0MM, CoordArray& r1, CoordArray& r2,
     CoordArray& xt, double t[3], double u[3][3], const int L)
@@ -429,8 +429,8 @@ double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
 }
 
 // reassign chain-chain correspondence, specific for homooligomer
-double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
-    int *assign2_list, const int chain1_num, const int chain2_num,
+double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num,
     CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM,
     const int L, const RotArray& ut_mat)
 {
@@ -541,8 +541,8 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_lis
 }
 
 // reassign chain-chain correspondence, specific for heterooligomer
-double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
-    int *assign2_list, const int chain1_num, const int chain2_num,
+double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num,
     const CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM, const int L)
 {
     double MMscore_old=0;
@@ -569,8 +569,8 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
     /* iteratively refine chain assignment. in each iteration, attempt
      * to swap (i,old_j=assign1_list[i]) with (i,j) */
     double delta_score=-1;
-    int *assign1_tmp=new int [chain1_num];
-    int *assign2_tmp=new int [chain2_num];
+    std::vector<int> assign1_tmp(chain1_num);
+    std::vector<int> assign2_tmp(chain2_num);
     for (i=0;i<chain1_num;i++) assign1_tmp[i]=assign1_list[i];
     for (j=0;j<chain2_num;j++) assign2_tmp[j]=assign2_list[j];
     int old_i=-1;
@@ -622,9 +622,6 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
     }
     MMscore=MMscore_old;
 
-    // clean up
-    delete[]assign1_tmp;
-    delete[]assign2_tmp;
     return MMscore;
 }
 
