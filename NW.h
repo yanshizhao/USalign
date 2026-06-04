@@ -135,18 +135,86 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
  * Input: vectors x, y, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int len1, int len2, double d02, double gap_open, int j2i[],
     const int hinge)
 {
+    std::vector<int> j2i_v(len2+1);
+    for (int _k = 0; _k <= len2; _k++) j2i_v[_k] = j2i[_k];
+    NWDP_SE(path, val, x, y, len1, len2, d02, gap_open, j2i_v, hinge);
+    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
+}
+
+
+
+
+
+/* +ss
+ * Input: secondary structure secx, secy, and gap_open
+ * Output: j2i[1:len2] \in {1:len1} U {-1}
+ * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
+
+
+
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
+    const int len1, const int len2, const double gap_open, int j2i[])
+{
+    std::vector<int> j2i_v(len2+1);
+    NWDP_TM(path, val, secx, secy, len1, len2, gap_open, j2i_v);
+    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
+}
+
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
+    const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
+{
+    int i,j; double h,v,d;
+    for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
+    for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=0; j2i[j]=-1; }
+    for(i=1; i<=len1; i++) {
+        for(j=1; j<=len2; j++) {
+            d=val[i-1][j-1] + 1.0*(secx[i-1]==secy[j-1]);
+            h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
+            v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
+            if(d>=h && d>=v) { path[i][j]=1; val[i][j]=d; }
+            else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
+        }
+    }
+    //trace back to extract the alignment
+    i=len1; j=len2;
+    while(i>0 && j>0)
+    {
+        if(path[i][j]) //from diagonal
+        {
+            j2i[j-1]=i-1;
+            i--;
+            j--;
+        }
+        else
+        {
+            h=val[i-1][j];
+            if(path[i-1][j]) h +=gap_open;
+
+            v=val[i][j-1];
+            if(path[i][j-1]) v +=gap_open;
+
+            if(v>=h) j--;
+            else i--;
+        }
+    }
+}
+
+inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+    int len1, int len2, double d02, double gap_open, std::vector<int>& j2i,
+    const int hinge)
+{
+    int i;
+    int j;
+    double h;
+    double v;
+    double d;
+
     if (hinge==0)
     {
-        int i;
-        int j;
-        double h;
-        double v;
-        double d;
-
         for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
         for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=0; j2i[j]=-1; }
         double dij;
@@ -176,11 +244,6 @@ void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
         return;
     }
 
-    int i;
-    int j;
-    double h;
-    double v;
-    double d;
     int L=(len2>len1)?len2:len1;
     int int_min=L*(gap_open-1);
 
@@ -222,67 +285,4 @@ void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
             if(v>=h) j--; else i--;
         }
     }
-}
-
-
-
-
-
-/* +ss
- * Input: secondary structure secx, secy, and gap_open
- * Output: j2i[1:len2] \in {1:len1} U {-1}
- * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-
-
-
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, const double gap_open, int j2i[])
-{
-    int i,j; double h,v,d;
-    for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
-    for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=0; j2i[j]=-1; }
-    for(i=1; i<=len1; i++) {
-        for(j=1; j<=len2; j++) {
-            d=val[i-1][j-1] + 1.0*(secx[i-1]==secy[j-1]);
-            h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
-            v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
-            if(d>=h && d>=v) { path[i][j]=1; val[i][j]=d; }
-            else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
-        }
-    }
-    //trace back to extract the alignment
-    i=len1; j=len2;
-    while(i>0 && j>0)
-    {
-        if(path[i][j]) //from diagonal
-        {
-            j2i[j-1]=i-1;
-            i--;
-            j--;
-        }
-        else
-        {
-            h=val[i-1][j];
-            if(path[i-1][j]) h +=gap_open;
-
-            v=val[i][j-1];
-            if(path[i][j-1]) v +=gap_open;
-
-            if(v>=h) j--;
-            else i--;
-        }
-    }
-}
-
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
-{
-    NWDP_TM(path, val, secx, secy, len1, len2, gap_open, j2i.data());
-}
-
-inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, double d02, double gap_open, std::vector<int>& j2i,
-    const int hinge)
-{
-    NWDP_SE(path, val, x, y, len1, len2, d02, gap_open, j2i.data(), hinge);
 }
