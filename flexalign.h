@@ -1310,8 +1310,8 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     int i;
     int j;
     int r;
-    int* invmap=new int[ylen+1];
-    for (j=0;j<ylen+1;j++) invmap[j]=-1;
+std::vector<int> invmap(ylen+1);
+
     CoordArray xt;
     xt.resize(xlen);
     do_rotation(xa, xt, xlen, t0, u0);
@@ -1325,7 +1325,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
         xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
+        a_opt, u_opt, d_opt, mol_type, 0, invmap.data(), 1);
     if (round2)
     {
         // aligned structure A vs unaligned structure B
@@ -1398,8 +1398,8 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         do_rotation(xa, xt, xlen, t0, u0);
         t_u2tu(t0,u0,tu_vec[0]);
         
-        int* invmap_h=new int[ylen+1];
-        for (j=0;j<ylen+1;j++) invmap_h[j]=-1;
+std::vector<int> invmap_h(ylen+1);
+
         TM1_h= TM2_h= TM3_h= TM4_h= TM5_h=rmsd0_h=0;
         seqM_h="";
         seqxA_h="";
@@ -1409,7 +1409,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
             TM_0, d0A, d0B, d0u, d0a, d0_out, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali, Liden, TM_ali, rmsd_ali, n_ali_h, n_ali8_h,
             xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, invmap_h, 1);
+            a_opt, u_opt, d_opt, mol_type, 0, invmap_h.data(), 1);
         
         // unaligned structure A vs aligned structure B
         xlen_h=xlen - n_ali8;
@@ -1460,7 +1460,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         
         do_rotation(xa, xt, xlen, t0, u0);
         
-        for (j=0;j<ylen+1;j++) invmap[j]=-1;
+
         TM1= TM2= TM3= TM4= TM5=rmsd0=0;
         seqM="";
         seqxA="";
@@ -1470,7 +1470,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
             TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
             xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
+            a_opt, u_opt, d_opt, mol_type, 0, invmap.data(), 1);
 
         double TM_h=(TM1_h>TM2_h)?TM1_h:TM2_h;
         double TM  =(TM1  >TM2  )?TM1  :TM2  ;
@@ -1492,7 +1492,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         else t_u2tu(t0,u0,tu_vec[0]);
         
         // clean up
-        delete [] invmap_h;
+
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
@@ -1587,13 +1587,13 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         rmsd0_h=rmsd0;
         n_ali_h=n_ali;
         n_ali8_h=n_ali8;
-        int* invmap_h=new int[ylen+1];
+std::vector<int> invmap_h(ylen+1);
         for (j=0;j<ylen+1;j++) invmap_h[j]=invmap[j];
         se_main(xt, ya, seqx, seqy, TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0, TM_0,
             d0A, d0B, d0u, d0a, d0_out, seqM_h, seqxA_h, seqyA_h, do_vec,
             rmsd0_h, L_ali, Liden, TM_ali, rmsd_ali, n_ali_h, n_ali8_h,
             xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, invmap_h, hinge+1);
+            a_opt, u_opt, d_opt, mol_type, 0, invmap_h.data(), hinge+1);
         int new_ali=0;
         for (r=0;r<seqM_h.size();r++) new_ali+=(seqM_h[r]==hinge+'1');
         if (n_ali8_h - n_ali8<5) new_ali=0;
@@ -1617,7 +1617,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         }
         
         // clean up
-        delete [] invmap_h;
+
         r1toi.clear();
         r2toj.clear();
         seqM_h.clear();
@@ -1629,7 +1629,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     if (tu_vec.size()<=1)
     {
         // xt auto-destruct (CoordArray)
-        delete[] invmap;
+
         return tu_vec.size();
     }
     
@@ -1830,7 +1830,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     seqM_char.clear();
     di_vec.clear();
     // xt auto-destruct (CoordArray)
-    delete[] invmap;
+
     return tu_vec.size();
 
 }
