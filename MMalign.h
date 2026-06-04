@@ -1982,6 +1982,13 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
     }
 }
 
+// vector<int>& overload
+inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
+    const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
+{
+    NWDP_TM_dimer(path, val, secx, secy, len1, len2, mask, gap_open, j2i.data());
+}
+
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
@@ -2066,7 +2073,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
 
 
 inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
-    const char *secy, int xlen, int ylen, CharMatrix& mask, int *y2x)
+    const char *secy, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x)
 {
     double gap_open=-1.0;
     NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
@@ -2328,7 +2335,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure
         /************************************************************/
-        get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap.data());
+        get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
