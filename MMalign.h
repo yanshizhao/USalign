@@ -167,11 +167,7 @@ bool adjust_dimer_assignment(
         L_ali++;
     }
 
-    {
-        std::vector<double*> _v1(L_ali), _v2(L_ali);
-        for(int _k=0;_k<L_ali;_k++){ _v1[_k]=xa[_k].data(); _v2[_k]=ya[_k].data(); }
-        Kabsch(_v1.data(), _v2.data(), L_ali, 1, &RMSD, t, u);
-    }
+    Kabsch(xa, ya, L_ali, 1, &RMSD, t, u);
     do_rotation(xa, xt, L_ali, t, u);
 
     double total_score2=0;
