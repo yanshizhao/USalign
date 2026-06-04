@@ -1329,7 +1329,7 @@ double MMalign_search(
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence_tmp, Lnorm_ass, d0_scale,
-                byresi_opt, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
+                byresi_opt, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
             // print result
             seqxA_mat[i][j]=seqxA;

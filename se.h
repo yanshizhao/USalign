@@ -1,8 +1,53 @@
 #pragma once
 #include "TMalign.h"
 
+// Forward declaration for vector<int>& implementation
+int se_main(
+    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen, const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, std::vector<int>& invmap, const int hinge);
+
+// int* bridge — delegates to vector<int>& implementation
+inline int se_main(
+    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen, const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, int *invmap, const int hinge=0)
+{
+    std::vector<int> invmap_v(ylen+1);
+    for (int _k = 0; _k <= ylen; _k++) invmap_v[_k] = invmap[_k];
+    int result = se_main(xa, ya, seqx, seqy,
+        TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence,
+        Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type,
+        outfmt_opt, invmap_v, hinge);
+    for (int _k = 0; _k <= ylen; _k++) invmap[_k] = invmap_v[_k];
+    return result;
+}
+
 /* entry function for se
- * outfmt_opt>=2 should not parse sequence alignment 
+ * outfmt_opt>=2 should not parse sequence alignment
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
@@ -17,7 +62,7 @@ int se_main(
     const int xlen, const int ylen, const vector<string> &sequence,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, int *invmap, const int hinge=0)
+    const int outfmt_opt, std::vector<int>& invmap, const int hinge=0)
 {
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
