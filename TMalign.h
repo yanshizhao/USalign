@@ -160,15 +160,11 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
             
             //extract rotation matrix based on the fragment
-            {
-                std::vector<double*> r1_v(L_frag), r2_v(L_frag);
-                for(int _k=0;_k<L_frag;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-                Kabsch(r1_v.data(), r2_v.data(), L_frag, 1, &rmsd, t, u);
-            }
+            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
-            
+
             //get subsegment of this fragment
             d = local_d0_search - 1;
             n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score, 
