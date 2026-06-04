@@ -13,11 +13,23 @@
  * values) caused by the NWPD_TM implement.
  */
 
+// Forward declaration for vector<int>& overload
+inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i);
+
 /* Input: score[1:len1, 1:len2], and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
+inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, int len1, int len2, double gap_open, int j2i[])
+{
+    std::vector<int> j2i_v(len2+1);
+    NWDP_TM(score, path, val, len1, len2, gap_open, j2i_v);
+    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
+}
+
+inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i)
 {
     int i,j; double h,v,d;
     for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
@@ -52,12 +64,6 @@ void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
             else i--;
         }
     }
-}
-
-inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
-    DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i)
-{
-    NWDP_TM(score, path, val, len1, len2, gap_open, j2i.data());
 }
 
 
