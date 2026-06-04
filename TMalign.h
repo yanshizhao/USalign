@@ -820,8 +820,6 @@ void make_sec(const char *seq, const CoordArray& x, int len, char *sec,const str
 
 // get_initial5 in TMalign fortran, get_initial_local in TMalign c by yangji
 //get initial alignment of local structure superposition
-
-// CharMatrix/DoubleMatrix + const CoordArray& overload
 bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CharMatrix& path, DoubleMatrix& val,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen, int *y2x,
