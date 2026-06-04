@@ -2629,7 +2629,7 @@ std::vector<int> invmap(ylen+1);
                             xlen, ylen, Lnorm_ass, d0_scale,
                             i_opt, a_opt, u_opt, d_opt,
                             mol_vec1[chain_i]+mol_vec2[chain_j],
-                            outfmt_opt, invmap.data(), dist_list,
+                            outfmt_opt, invmap, dist_list,
                             secx_bond, secy_bond, mm_opt);
                         if (outfmt_opt>=2) 
                         {
@@ -2651,7 +2651,7 @@ std::vector<int> invmap(ylen+1);
                         seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, invmap.data(),
+                        seqM, seqxA, seqyA, invmap,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
                         i_opt, a_opt, u_opt, d_opt, force_fast_opt,

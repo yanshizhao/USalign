@@ -178,7 +178,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
     const int xlen, const int ylen,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt,
-    const int mol_type, const int outfmt_opt, int *invmap,
+    const int mol_type, const int outfmt_opt, std::vector<int>& invmap,
     double *dist_list, IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
@@ -193,7 +193,7 @@ inline int soi_se_main(
     const int xlen, const int ylen,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, int *invmap, double *dist_list,
+    const int outfmt_opt, std::vector<int>& invmap, double *dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
 
@@ -205,15 +205,15 @@ inline int soi_se_main(
     CharMatrix  path;        // for dynamic programming
     DoubleMatrix val;         // for dynamic programming
 
-    int *m1=nullptr;
-    int *m2=nullptr;
+    std::vector<int> m1;
+    std::vector<int> m2;
     int i;
     int j;
     double d;
     if (outfmt_opt<2)
     {
-        std::vector<int> m1(xlen); //alignd index in x
-        std::vector<int> m2(ylen); //alignd index in y
+        m1.resize(xlen);
+        m2.resize(ylen);
     }
 
     /***********************/
@@ -261,8 +261,8 @@ inline int soi_se_main(
     }
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
 
-    { std::vector<int> _invmap_v(invmap, invmap + ylen);
-    soi_egs(score, xlen, ylen, _invmap_v, secx_bond, secy_bond, mm_opt); }
+    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+
 
     rmsd0=TM1=TM2=TM3=TM4=TM5=0;
     int k=0;
@@ -369,7 +369,7 @@ inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const in
 
 double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, CoordArray& xa, CoordArray& ya,
-    int xlen, int ylen, double t[3], double u[3][3], int *invmap0,
+    int xlen, int ylen, double t[3], double u[3][3], std::vector<int>& invmap0,
     int iteration_max, double local_d0_search,
     double Lnorm, double d0, double score_d8,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
@@ -439,7 +439,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
 
 void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt,
     DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
-    double t[3], double u[3][3], int invmap[],
+    double t[3], double u[3][3], std::vector<int>& invmap,
     double local_d0_search, double d0, double score_d8,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
@@ -487,13 +487,13 @@ void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt
     for (j=0;j<ylen;j++) invmap[j]=-1;
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
     for (j=0; j<ylen;j++) i=invmap[j];
-    { std::vector<int> _invmap_v(invmap, invmap + ylen);
-    soi_egs(score, xlen, ylen, _invmap_v, secx_bond, secy_bond, mm_opt); }
+    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+
 }
 
 void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CoordArray& xa, CoordArray& ya,
-    const int xlen, const int ylen, double t[3], double u[3][3], int invmap[],
+    const int xlen, const int ylen, double t[3], double u[3][3], std::vector<int>& invmap,
     double local_d0_search, double Lnorm, double d0, double score_d8)
 {
     int i;
@@ -535,7 +535,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
     string &seqM, string &seqxA, string &seqyA,
-    int *invmap, double &rmsd0, int &L_ali, double &Liden,
+    std::vector<int>& invmap, double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
     const vector<string> sequence, const double Lnorm_ass,
@@ -638,10 +638,10 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     SOI_super2score(xt, ya_c, xlen, ylen, score, d0, score_d8);
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
     TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
-        xlen, ylen, t0, u0, invmap0.data(), iteration_max,
+        xlen, ylen, t0, u0, invmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, true);
     TM   =SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c,
-        ylen, xlen, t0, u0, fwdmap0.data(), iteration_max,
+        ylen, xlen, t0, u0, fwdmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, true);
     if (TM>TMmax)
     {
@@ -679,9 +679,9 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0.data());
         soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
-            ylen, xlen, t, u, fwdmap0.data(), local_d0_search, Lnorm, d0, score_d8);
+            ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c, ylen, xlen, t, u,
-            fwdmap0.data(), iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
+            fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
         if (TM>TMmax)
         {
             TMmax = TM;
