@@ -1316,7 +1316,7 @@ double MMalign_search(
             seqyA.clear();
             rmsd0 = 0.0;
             Liden=0;
-            int *invmap = new int[ylen+1];
+            std::vector<int> invmap(ylen+1);
 
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
@@ -1332,7 +1332,7 @@ double MMalign_search(
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence_tmp, Lnorm_ass, d0_scale,
-                byresi_opt, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
+                byresi_opt, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
 
             // print result
             seqxA_mat[i][j]=seqxA;
@@ -1347,7 +1347,6 @@ double MMalign_search(
             seqyA.clear();
             vector<string>().swap(sequence_tmp);
 
-            delete[]invmap;
             do_vec.clear();
         }
     }
@@ -1547,7 +1546,7 @@ void MMalign_final(
             d0_out=5.0;
             rmsd0 = 0.0;
             Liden=0;
-            int *invmap = new int[ylen+1];
+            std::vector<int> invmap(ylen+1);
             seqM="";
             seqxA="";
             seqyA="";
@@ -1561,7 +1560,7 @@ void MMalign_final(
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap);
+                1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
 
             TMave_mat[i][j]=TM4*Lnorm_ass;
 
@@ -1581,7 +1580,7 @@ void MMalign_final(
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-            delete[]invmap;
+
             do_vec.clear();
         }
     }
@@ -1661,7 +1660,7 @@ void MMalign_se_final(
     u0[1][0]=         u0[1][2]=
     u0[2][0]=         u0[2][1]=
     t0[0]   =t0[1]   =t0[2]   =0;
-    int *invmap = new int[ylen+1];
+    std::vector<int> invmap(ylen+1);
 
     // entry function for structure alignment
     se_main(xa, ya, seqx, seqy,
@@ -1669,8 +1668,8 @@ void MMalign_se_final(
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
         xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        3, a_opt, false, d_opt, fast_opt, mol_type, invmap);
-    delete [] invmap;
+        3, a_opt, false, d_opt, fast_opt, mol_type, invmap.data());
+
 
     // prepare full complex alignment
     string chainID1="";
@@ -1774,7 +1773,7 @@ void MMalign_se_final(
             d0_out=5.0;
             rmsd0 = 0.0;
             Liden=0;
-            int *invmap = new int[ylen+1];
+            std::vector<int> invmap(ylen+1);
             seqM="";
             seqxA="";
             seqyA="";
@@ -1788,7 +1787,7 @@ void MMalign_se_final(
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap);
+                1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
 
             //TM2=TM4*Lnorm_ass/xlen;
             //TM1=TM4*Lnorm_ass/ylen;
@@ -1812,7 +1811,7 @@ void MMalign_se_final(
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-            delete[]invmap;
+
             do_vec.clear();
         }
     }
@@ -1949,6 +1948,13 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, Co
     }
 }
 
+// vector<int>& overload
+inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+    int len1, int len2, CharMatrix& mask, double t[3], double u[3][3],
+    double d02, double gap_open, std::vector<int>& j2i)
+{
+    NWDP_TM_dimer(path, val, x, y, len1, len2, mask, t, u, d02, gap_open, j2i.data());
+}
 
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
@@ -1980,7 +1986,7 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
-//output: best alignment that maximizes the TMscore, will be stored in invmap
+//output: best alignment that maximizes the TMscore, will be stored in invmap.data()
 
 double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
@@ -1990,7 +1996,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
 {
     double gap_open[2]={-0.6, 0};
     double rmsd; 
-    int *invmap=new int[ylen+1];
+    std::vector<int> invmap(ylen+1);
     
     int iteration;
     int i;
@@ -2051,7 +2057,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
         
     }//for gapopen
     
-    delete []invmap;
+
     return tmscore_max;
 }
 
@@ -2083,7 +2089,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
 
     double GLmax = 0;
     int aL = getmin(xlen, ylen);
-    int *invmap = new int[ylen + 1];
+    std::vector<int> invmap(ylen + 1);
 
     int n_jump1 = 0;
     if (xlen > 250) n_jump1 = 45;
@@ -2131,7 +2137,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                 NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
                     t, u, d02, gap_open, invmap);
                 GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
-                    invmap, d0, d0_search, t, u);
+                    invmap.data(), d0, d0_search, t, u);
                 if (GL > GLmax)
                 {
                     GLmax = GL;
@@ -2142,7 +2148,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
         }
     }
 
-    delete[] invmap;
+
     return flag;
 }
 
@@ -2931,7 +2937,7 @@ void MMalign_dimer(double & total_score,
             seqyA.clear();
             rmsd0 = 0.0;
             Liden=0;
-            int *invmap = new int[ylen+1];
+            std::vector<int> invmap(ylen+1);
             vector<double> do_vec;
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
@@ -2941,7 +2947,7 @@ void MMalign_dimer(double & total_score,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
+                0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
 
             // print result
             seqxA_mat[i][j]=seqxA;
@@ -2959,7 +2965,7 @@ void MMalign_dimer(double & total_score,
             seqxA.clear();
             seqyA.clear();
 
-            delete[]invmap;
+
             do_vec.clear();
         }
     }
