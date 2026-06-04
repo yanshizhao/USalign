@@ -42,7 +42,7 @@ int se_main(
     /***********************/
     path.assign(xlen+1, vector<char>(ylen+1));
     val.assign(xlen+1, vector<double>(ylen+1));
-    int *invmap0          = new int[ylen+1];
+    std::vector<int> invmap0(ylen+1);
     int i;
     int j;
     if (hinge==0) for (j=0;j<=ylen;j++) invmap0[j]=-1;
@@ -152,7 +152,7 @@ int se_main(
     if (outfmt_opt>=2)
     {
         if (hinge) seqM_char.clear();    
-        delete []invmap0;
+
         // path/val auto-destruct (CharMatrix/DoubleMatrix)
         return 0;
     }
@@ -233,7 +233,7 @@ int se_main(
     }
 
     // free memory
-    delete [] invmap0;
+
     delete [] m1;
     delete [] m2;
     // path/val auto-destruct (CharMatrix/DoubleMatrix)

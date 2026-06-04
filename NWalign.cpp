@@ -350,13 +350,13 @@ int main(int argc, char *argv[])
                     int L_ali;                // Aligned length
                     double Liden=0;
                     string seqM, seqxA, seqyA;// for output alignment
-                    int *invmap = new int[ylen+1];
+                    std::vector<int> invmap(ylen+1);
                     
                     int aln_score=NWalign_main(seqx, seqy, xlen, ylen,
                         seqxA, seqyA, mol_vec1[chain_i]+mol_vec2[chain_j],
-                        invmap, (outfmt_opt>=2)?1:0, glocal);
+                        invmap.data(), (outfmt_opt>=2)?1:0, glocal);
                     
-                    if (outfmt_opt>=2) get_seqID(invmap, seqx.c_str(), seqy.c_str(),
+                    if (outfmt_opt>=2) get_seqID(invmap.data(), seqx.c_str(), seqy.c_str(),
                         ylen, Liden, L_ali);
                     else get_seqID(seqxA, seqyA, seqM, Liden, L_ali);
 
@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
-                    delete [] invmap;
+
                 } // chain_j
                 if (chain2_list.size()>1)
                 {

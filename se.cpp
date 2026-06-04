@@ -432,7 +432,7 @@ int main(int argc, char *argv[])
                     double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
                     int n_ali=0;
                     int n_ali8=0;
-                    int *invmap = new int[ylen+1];
+                    std::vector<int> invmap(ylen+1);
                     vector<double> do_vec;
 
                     // entry function for structure alignment
@@ -444,10 +444,10 @@ int main(int argc, char *argv[])
                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
                         i_opt, a_opt, u_opt, d_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j], 
-                        outfmt_opt, invmap);
+                        outfmt_opt, invmap.data());
 
                     if (outfmt_opt>=2)
-                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);
+                        get_seqID(invmap.data(), seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);
 
                     // print result
                     output_results(
@@ -494,7 +494,7 @@ int main(int argc, char *argv[])
                     }
 
                     // Done! Free memory
-                    delete [] invmap;
+
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();

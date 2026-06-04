@@ -551,7 +551,7 @@ int main(int argc, char *argv[])
             double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
             int n_ali=0;
             int n_ali8=0;
-            int *invmap = new int[ylen+1];
+            std::vector<int> invmap(ylen+1);
 
             // entry function for structure alignment
             HwRMSD_main(
@@ -565,7 +565,7 @@ int main(int argc, char *argv[])
                 sequence, Lnorm_ass,
                 d0_scale, i_opt,
                 a_opt, u_opt, d_opt, mol_vec[chain_i]+mol_vec[chain_j],
-                invmap, glocal, iter_opt);
+                invmap.data(), glocal, iter_opt);
 
             TM=TM3; // average length
             if      (s_opt==1) TM=TM2; // shorter length
@@ -592,7 +592,7 @@ int main(int argc, char *argv[])
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
-            delete [] invmap;
+
 
             // if a good hit is guaranteed to be found, stop the loop
             if (TM>=ub_HwRMSD) break;
