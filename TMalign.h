@@ -2908,7 +2908,7 @@ void copy_t_u(double t[3], double u[3][3], double t0[3], double u0[3][3])
 
 double approx_TM(const int xlen, const int ylen, const int a_opt,
     const CoordArray& xa, const CoordArray& ya, double t[3], double u[3][3],
-    const int invmap0[], const int mol_type)
+    const std::vector<int>& invmap0, const int mol_type)
 {
     double Lnorm_0=ylen; // normalized by the second protein
     if (a_opt==-2 && xlen>ylen) Lnorm_0=xlen;      // longer
@@ -3142,7 +3142,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
@@ -3183,7 +3183,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
@@ -3230,7 +3230,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
@@ -3273,7 +3273,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
@@ -3316,7 +3316,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
@@ -3411,7 +3411,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+            xa_c, ya_c, t0, u0, invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {

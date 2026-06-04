@@ -2320,7 +2320,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
@@ -2361,7 +2361,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
@@ -2408,7 +2408,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
@@ -2451,7 +2451,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
@@ -2494,7 +2494,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
@@ -2589,7 +2589,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
+            xa_c, ya_c, t0, u0, invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
