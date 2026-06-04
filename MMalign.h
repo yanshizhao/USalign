@@ -2081,7 +2081,7 @@ inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char
 
 inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CharMatrix& path, DoubleMatrix& val,
-    CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, int *y2x,
+    CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x,
     double d0, double d0_search, const bool fast_opt, const double D0_MIN)
 {
     double GL;
@@ -2378,7 +2378,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /************************************************************/
         //=initial5 in original TM-align
         if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa_c, ya_c,
-            xlen, ylen, mask, invmap.data(), d0, d0_search, fast_opt, D0_MIN))
+            xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
                 invmap.data(), t, u, simplify_step, score_sum_method,
