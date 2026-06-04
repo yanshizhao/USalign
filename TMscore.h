@@ -902,8 +902,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     seqxA.assign(ali_len,'-');
     seqM.assign( ali_len,' ');
     seqyA.assign(ali_len,'-');
-    
-    //do_rotation(xa, xt, xlen, t, u);
+
     do_rotation(xa, xt, xlen, t0, u0);
 
     int kk=0;

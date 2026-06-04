@@ -181,7 +181,6 @@ bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double *r
                     }
 
 
-                    //if( d > 0.0 ) d = 1.0 / sqrt(d);
                     if (d > epsilon) d = 1.0 / sqrt(d);
                     else d = 0.0;
                     for (i = 0; i<3; i++) a[i][l] = a[i][l] * d;
@@ -251,7 +250,6 @@ bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double *r
                               r[i][1] * a[1][l] + r[i][2] * a[2][l];
                     d = d + b[i][l] * b[i][l];
                 }
-                //if( d > 0 ) d = 1.0 / sqrt(d);
                 if (d > epsilon) d = 1.0 / sqrt(d);
                 else d = 0.0;
                 for (i = 0; i<3; i++) b[i][l] = b[i][l] * d;

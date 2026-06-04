@@ -3588,7 +3588,6 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     do_vec.clear();
     do_vec.assign(ali_len,0);
     
-    //do_rotation(xa_c, xt, xlen, t, u);
     do_rotation(xa_c, xt, xlen, t0, u0);
 
     int kk=0;

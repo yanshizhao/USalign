@@ -2764,7 +2764,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     seqM.assign( ali_len,' ');
     seqyA.assign(ali_len,'-');
 
-    //do_rotation(xa, xt, xlen, t, u);
     do_rotation(xa_c, xt, xlen, t0, u0);
 
     int kk=0;
