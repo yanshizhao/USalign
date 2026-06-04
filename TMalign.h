@@ -561,7 +561,7 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
 //perform gapless threading to find the best initial alignment
 double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    const CoordArray& x, const CoordArray& y, int xlen, int ylen, int *y2x,
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& y2x,
     double d0, double d0_search, const bool fast_opt,
     double t[3], double u[3][3])
 {
@@ -578,9 +578,8 @@ double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
             i=j+k;
             if(i>=0 && i<xlen) y2x[j]=i; else y2x[j]=-1;
         }
-        { std::vector<int> y2x_v(y2x, y2x + ylen);
         tmscore=get_score_fast(r1, r2, xtm, ytm,
-            x, y, xlen, ylen, y2x_v, d0,d0_search, t, u); }
+            x, y, xlen, ylen, y2x, d0,d0_search, t, u);
         if(tmscore>=tmscore_max) { tmscore_max=tmscore; k_best=k; }
     }
     k=k_best;
@@ -3122,7 +3121,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     /******************************************************/
     if (i_opt<=1)
     {
-        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0.data(), d0,
+        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
             d0_search, fast_opt, t, u);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,

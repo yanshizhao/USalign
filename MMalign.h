@@ -2299,7 +2299,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     /******************************************************/
     if (!bAlignStick)
     {
-        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0.data(), d0,
+        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
             d0_search, fast_opt, t, u);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
