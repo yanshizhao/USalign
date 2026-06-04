@@ -78,7 +78,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
 {
     int i;
     int j;
-    int *fwdmap=new int[xlen]; // j=fwdmap[i];
+    std::vector<int> fwdmap(xlen, -1); // j=fwdmap[i];
     for (i=0; i<xlen; i++) fwdmap[i]=-1;
     for (j=0; j<ylen; j++)
     {
@@ -101,7 +101,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
             {
                 if (invmap[j]>=0 || score[i+1][j+1]<=max_score) continue;
                 if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,
-                    fwdmap,invmap)) continue;
+                    fwdmap.data(),invmap)) continue;
                 maxi=i;
                 maxj=j;
                 max_score=score[i+1][j+1];
@@ -135,8 +135,8 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
             {
                 oldi=invmap[j];
                 if (score[i+1][j+1]<=0 || oldi==i) continue;
-                if (mm_opt==6 && (!sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap) ||
-                            !sec2sq(oldi,oldj,secx_bond,secy_bond,fwdmap,invmap)))
+                if (mm_opt==6 && (!sec2sq(i,j,secx_bond,secy_bond,fwdmap.data(),invmap) ||
+                            !sec2sq(oldi,oldj,secx_bond,secy_bond,fwdmap.data(),invmap)))
                     continue;
                 delta_score=score[i+1][j+1];
                 if (oldi>=0 && oldj>=0) delta_score+=score[oldi+1][oldj+1];
@@ -158,7 +158,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
     }
 
     // clean up
-    delete[]fwdmap;
+
 }
 
 
@@ -212,8 +212,8 @@ inline int soi_se_main(
     double d;
     if (outfmt_opt<2)
     {
-        m1=new int[xlen]; //alignd index in x
-        m2=new int[ylen]; //alignd index in y
+        std::vector<int> m1(xlen); //alignd index in x
+        std::vector<int> m2(ylen); //alignd index in y
     }
 
     /***********************/
@@ -222,7 +222,7 @@ inline int soi_se_main(
     score.assign(xlen+1, std::vector<double>(ylen+1));
     path.assign( xlen+1, std::vector<char>(ylen+1));
     val.assign(  xlen+1, std::vector<double>(ylen+1));
-    //int *invmap          = new int[ylen+1];
+
 
     // set d0
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
@@ -337,9 +337,9 @@ inline int soi_se_main(
     }
 
     // free memory
-    delete [] fwdmap;
-    delete [] m1;
-    delete [] m2;
+
+
+
     // score/path/val auto-destruct (DoubleMatrix/CharMatrix)
     return 0; // zero for no exception
 }
@@ -587,13 +587,13 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
     int i;
     int j;
-    int *fwdmap0         = new int[xlen+1];
-    int *invmap0         = new int[ylen+1];
+    std::vector<int> fwdmap0(xlen+1);
+    std::vector<int> invmap0(ylen+1);
     
     double TMmax=-1;
     double TM=-1;
-    for(i=0; i<xlen; i++) fwdmap0[i]=-1;
-    for(j=0; j<ylen; j++) invmap0[j]=-1;
+    fwdmap0.assign(xlen+1, -1);
+    invmap0.assign(ylen+1, -1);
     double local_d0_search = d0_search;
     int iteration_max=(fast_opt)?2:30;
     //if (mm_opt==6) iteration_max=1;
@@ -640,10 +640,10 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     SOI_super2score(xt, ya_c, xlen, ylen, score, d0, score_d8);
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
     TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
-        xlen, ylen, t0, u0, invmap0, iteration_max,
+        xlen, ylen, t0, u0, invmap0.data(), iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, true);
     TM   =SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c,
-        ylen, xlen, t0, u0, fwdmap0, iteration_max,
+        ylen, xlen, t0, u0, fwdmap0.data(), iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, true);
     if (TM>TMmax)
     {
@@ -678,12 +678,12 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
 
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
-        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0);
-        soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
+        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0.data());
+        soi_egs(scoret, ylen, xlen, fwdmap0.data(), secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
-            ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
+            ylen, xlen, t, u, fwdmap0.data(), local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c, ylen, xlen, t, u,
-            fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
+            fwdmap0.data(), iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
         if (TM>TMmax)
         {
             TMmax = TM;
@@ -730,7 +730,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
     
     double rmsd;
@@ -740,11 +740,9 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    int *m1;
-    int *m2;
     double d;
-    m1=new int[xlen]; //alignd index in x
-    m2=new int[ylen]; //alignd index in y
+    std::vector<int> m1(xlen); //alignd index in x
+    std::vector<int> m2(ylen); //alignd index in y
     copy_t_u(t, u, t0, u0);
     
     //****************************************//
@@ -929,10 +927,10 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     // score/scoret/val auto-destruct (DoubleMatrix)
     // path auto-destruct (CharMatrix)
     // xtm/ytm/xt/yt/r1/r2 auto-destruct (CoordArray)
-    delete[]invmap0;
-    delete[]fwdmap0;
-    delete[]m1;
-    delete[]m2;
+
+
+
+
     return 0;
 }
 #endif
