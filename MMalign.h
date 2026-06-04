@@ -1948,7 +1948,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, Co
     }
 }
 
-// vector<int>& overload
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int len1, int len2, CharMatrix& mask, double t[3], double u[3][3],
     double d02, double gap_open, std::vector<int>& j2i)
@@ -2784,9 +2783,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     seqxA=seqxA.substr(0,kk);
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
-
-    // free memory
-
 
     // score/val auto-destruct (DoubleMatrix)
     return 0; // zero for no exception

@@ -336,10 +336,6 @@ inline int soi_se_main(
         k++;
     }
 
-    // free memory
-
-
-
     // score/path/val auto-destruct (DoubleMatrix/CharMatrix)
     return 0; // zero for no exception
 }

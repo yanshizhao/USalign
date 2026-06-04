@@ -3623,9 +3623,6 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
 
-    // free memory
-
-
     // score auto-destruct (DoubleMatrix)
     return 0; // zero for no exception
 }

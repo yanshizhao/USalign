@@ -1152,9 +1152,6 @@ std::vector<int> assign2_init(chain2_num);
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
         a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
 
-    // clean up everything
-
-
     // TMave_mat auto-destruct (DoubleMatrix)
     // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
