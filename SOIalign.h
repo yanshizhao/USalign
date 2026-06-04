@@ -378,7 +378,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
 {
     double rmsd;
-    int *invmap=new int[ylen+1];
+    std::vector<int> invmap(ylen+1);
 
     int iteration;
     int i;
@@ -402,7 +402,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
             for (j=0; j<ylen; j++) invmap[j]=-1;
             if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
         }
-        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+        soi_egs(score, xlen, ylen, invmap.data(), secx_bond, secy_bond, mm_opt);
 
         k=0;
         for (j=0; j<ylen; j++)
@@ -435,7 +435,6 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
         SOI_super2score(xt, ya, xlen, ylen, score, d0, score_d8);
     }
 
-    delete []invmap;
     return tmscore_max;
 }
 
