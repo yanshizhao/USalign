@@ -907,17 +907,8 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
                     r2[k][2] = y[k + j][2];
                 }
 
-                // superpose and rotate
-                {
-                    int _nf = n_frag[i_frag];
-                    std::vector<double*> _rv1(_nf), _rv2(_nf);
-                    for (int _k = 0; _k < _nf; _k++)
-                    {
-                        _rv1[_k] = r1[_k].data();
-                        _rv2[_k] = r2[_k].data();
-                    }
-                    Kabsch(_rv1.data(), _rv2.data(), _nf, 1, &rmsd, t, u);
-                }
+                // superpose the two structures and rotate it
+                Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
 
                 double gap_open = 0.0;
                 NWDP_TM(path, val, x, y, xlen, ylen,
