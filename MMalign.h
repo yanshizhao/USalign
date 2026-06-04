@@ -2171,16 +2171,8 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                     r2[k][2] = y[k + j][2];
                 }
 
-                // Build double** views for Kabsch (SVD sensitive)
-                {
-                    int _nf = n_frag[i_frag];
-                    vector<double*> _r1v(_nf), _r2v(_nf);
-                    for (int _k = 0; _k < _nf; _k++) {
-                        _r1v[_k] = (double*)r1[_k].data();
-                        _r2v[_k] = (double*)r2[_k].data();
-                    }
-                    Kabsch(_r1v.data(), _r2v.data(), _nf, 1, &rmsd, t, u);
-                }
+                // Direct Kabsch call with CoordArray
+                Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
 
                 double gap_open = 0.0;
                 NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
