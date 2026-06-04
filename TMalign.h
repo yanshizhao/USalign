@@ -446,7 +446,7 @@ double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
 double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
+    int xlen, int ylen, std::vector<int>& invmap0, double t[3], double u[3][3],
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0)
 {
@@ -3108,7 +3108,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         Lnorm = prevLnorm;
         d0 = prevd0;
         TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
+            invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
         if (TM > TMmax)
         {
             TMmax = TM;
@@ -3366,7 +3366,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         d0 = prevd0;
 
         TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-            xlen, ylen, invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm,
+            xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
             score_d8, d0);
         if (TM > TMmax)
         {
@@ -3432,7 +3432,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
     //select pairs with dis<d8 for final TMscore computation and output alignment

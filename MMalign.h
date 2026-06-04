@@ -2285,7 +2285,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         Lnorm = prevLnorm;
         d0 = prevd0;
         TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
+            invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
         if (TM > TMmax)
         {
             TMmax = TM;
@@ -2543,7 +2543,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             d0 = prevd0;
 
             TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm,
+                xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
                 score_d8, d0);
             if (TM > TMmax)
             {
@@ -2610,7 +2610,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
     //select pairs with dis<d8 for final TMscore computation and output alignment

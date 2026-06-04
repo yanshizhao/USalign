@@ -728,7 +728,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
     
     double rmsd;

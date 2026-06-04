@@ -485,7 +485,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 
 double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, int invmap0[], double t[3], double u[3][3],
+    int xlen, int ylen, std::vector<int>& invmap0, double t[3], double u[3][3],
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0,
     double GDT_list[5], double &maxsub)
@@ -734,7 +734,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     Lnorm = prevLnorm;
     d0 = prevd0;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
-        invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
+        invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
     if (TM > TMmax)
     {
         TMmax = TM;
@@ -765,7 +765,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa, ya, t0, u0, invmap0.data(), mol_type);
+            xa, ya, t0, u0, invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
@@ -783,7 +783,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
-        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0,
         GDT_list, maxsub);
 
