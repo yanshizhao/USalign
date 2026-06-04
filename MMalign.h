@@ -388,11 +388,7 @@ double calMMscore(const DoubleMatrix& TMave_mat,int *assign1_list,
     if (Nali>=3)
     {
         // Kabsch superposition
-        {
-            std::vector<double*> _v1(Nali), _v2(Nali);
-            for(int _k=0;_k<Nali;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
-            Kabsch(_v1.data(), _v2.data(), Nali, 1, &RMSD, t, u);
-        }
+        Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
         do_rotation(r1, xt, Nali, t, u);
 
         // calculate pseudo-TMscore
