@@ -2279,7 +2279,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
@@ -2536,7 +2536,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             int prevLnorm = Lnorm;
             double prevd0 = d0;
             TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
+                xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
                 d0_search, score_d8, t, u, mol_type);
             D0_MIN = prevD0_MIN;
             Lnorm = prevLnorm;

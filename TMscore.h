@@ -728,7 +728,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     int prevLnorm = Lnorm;
     double prevd0 = d0;
     TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
-        invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+        invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
         t, u, mol_type);
     D0_MIN = prevD0_MIN;
     Lnorm = prevLnorm;

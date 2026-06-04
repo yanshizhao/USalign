@@ -2851,7 +2851,7 @@ void output_mTMalign_results(const string xname, const string yname,
 
 
 double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, int invmap[],
+    CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
     double d0_search, double score_d8, double t[3], double u[3][3],
     const int mol_type)
@@ -3102,7 +3102,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
@@ -3359,7 +3359,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-            xlen, ylen, invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
+            xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
             d0_search, score_d8, t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
