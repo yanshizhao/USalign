@@ -962,10 +962,7 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
             k++;
         }
     }
-
-    {
-        Kabsch(r1, r2, k, 1, &rmsd, t, u);
-    }
+    Kabsch(r1, r2, k, 1, &rmsd, t, u);
 
     for (int ii = 0; ii < xlen; ii++)
     {
@@ -2906,9 +2903,7 @@ double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordAr
     }
     L_ali=n_al;
     {
-        std::vector<double*> r1_v(n_al), r2_v(n_al);
-        for(int _k=0;_k<n_al;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-        Kabsch(r1_v.data(), r2_v.data(), n_al,0,&RMSD,t,u);
+        Kabsch(r1, r2, n_al,0,&RMSD,t,u);
     }
     RMSD=sqrt(RMSD/(1.0*n_al));
     int temp_simplify_step=1, temp_score_sum_method=0;
