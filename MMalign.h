@@ -38,7 +38,7 @@ bool adjust_dimer_assignment(
     const vector<vector<vector<double> > >&ya_vec,
     const vector<int>&xlen_vec, const vector<int>&ylen_vec,
     const vector<int>&mol_vec1, const vector<int>&mol_vec2,
-    int *assign1_list, int *assign2_list,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list,
     const vector<vector<string> >&seqxA_mat,
     const vector<vector<string> >&seqyA_mat)
 {

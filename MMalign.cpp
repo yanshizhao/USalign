@@ -637,7 +637,7 @@ std::vector<int> assign2_list(chain2_num);
                     na_chain_num1==2 && na_chain_num2==2))
         {
             adjust_dimer_assignment(xa_vec,ya_vec,xlen_vec,ylen_vec,mol_vec1,
-                mol_vec2,assign1_list.data(),assign2_list.data(),seqxA_mat,seqyA_mat);
+                mol_vec2,assign1_list,assign2_list,seqxA_mat,seqyA_mat);
             is_oligomer=false; // cannot refiner further
         }
         else is_oligomer=true; /* align oligomers to dimer */
@@ -655,11 +655,11 @@ std::vector<int> assign2_list(chain2_num);
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
-        hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        hetero_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
         // xcentroids, ycentroids auto-destruct (CoordArray)
@@ -716,12 +716,12 @@ std::vector<int> assign2_init(chain2_num);
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
 
-        hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
-            assign2_list.data(), chain1_num, chain2_num, xcentroids,
+        hetero_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
         // xcentroids, ycentroids auto-destruct (CoordArray)
