@@ -983,9 +983,9 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
 
 void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, int *y2x0, int *y2x, const double D0_MIN, double d0)
+    int xlen, int ylen, std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0.data(), D0_MIN,d0);
     double gap_open=-1.0;
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
@@ -3247,7 +3247,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         /********************************************************************/
         //=initial3 in original TM-align
         get_initial_ssplus(r1, r2, score, path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
-            xlen, ylen, invmap0.data(), invmap.data(), D0_MIN, d0);
+            xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
