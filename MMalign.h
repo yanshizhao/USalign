@@ -1665,7 +1665,7 @@ void MMalign_se_final(
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
         xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        3, a_opt, false, d_opt, fast_opt, mol_type, invmap.data());
+        3, a_opt, false, d_opt, fast_opt, mol_type, invmap);
 
 
     // prepare full complex alignment
