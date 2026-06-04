@@ -421,7 +421,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 
 double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
-    int invmap0[], double t[3], double u[3][3], int simplify_step,
+    std::vector<int>& invmap0, double t[3], double u[3][3], int simplify_step,
     int score_sum_method, double local_d0_search, double Lnorm,
     double score_d8, double d0)
 {
@@ -3123,7 +3123,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     {
         get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
             d0_search, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax) TMmax = TM;
@@ -3158,7 +3158,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         //    get initial alignment based on secondary structure   
         /************************************************************/
         get_initial_ss(path, val, secx.c_str(), secy.c_str(), xlen, ylen, invmap.data());
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -3203,7 +3203,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
             xlen, ylen, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-                invmap.data(), t, u, simplify_step, score_sum_method,
+                invmap, t, u, simplify_step, score_sum_method,
                 local_d0_search, Lnorm, score_d8, d0);
             if (TM>TMmax)
             {
@@ -3248,7 +3248,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         //=initial3 in original TM-align
         get_initial_ssplus(r1, r2, score, path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
         if (TM>TMmax)
@@ -3291,7 +3291,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
             invmap, d0, d0_search, dcu0, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)

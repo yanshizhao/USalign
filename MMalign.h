@@ -2301,7 +2301,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     {
         get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
             d0_search, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax) TMmax = TM;
@@ -2336,7 +2336,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //    get initial alignment based on secondary structure
         /************************************************************/
         get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2381,7 +2381,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-                invmap.data(), t, u, simplify_step, score_sum_method,
+                invmap, t, u, simplify_step, score_sum_method,
                 local_d0_search, Lnorm, score_d8, d0);
             if (TM>TMmax)
             {
@@ -2426,7 +2426,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //=initial3 in original TM-align
         get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
             xlen, ylen, invmap0.data(), invmap.data(), D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
         if (TM>TMmax)
@@ -2469,7 +2469,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
             invmap, d0, d0_search, dcu0, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
