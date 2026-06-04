@@ -2693,11 +2693,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     n_ali8=k;
 
-    {
-        std::vector<double*> r1_v(n_ali8), r2_v(n_ali8);
-        for(int _k=0;_k<n_ali8;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-        Kabsch(r1_v.data(), r2_v.data(), n_ali8, 0, &rmsd0, t, u);
-    }// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
 
 
