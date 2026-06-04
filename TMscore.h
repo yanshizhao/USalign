@@ -692,11 +692,10 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
 
     int i;
-    int *invmap0         = new int[ylen+1];
-    int *invmap          = new int[ylen+1];
+    std::vector<int> invmap0(ylen+1, -1);
+    std::vector<int> invmap(ylen+1);
     double TM;
     double TMmax=-1;
-    for(i=0; i<ylen; i++) invmap0[i]=-1;
 
     double ddcc=0.4;
     if (Lnorm <= 40) ddcc=0.1;   //Lnorm was setted in parameter_set4search
@@ -729,13 +728,13 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     int prevLnorm = Lnorm;
     double prevd0 = d0;
     TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
-        invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+        invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
         t, u, mol_type);
     D0_MIN = prevD0_MIN;
     Lnorm = prevLnorm;
     d0 = prevd0;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
-        invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
+        invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
     if (TM > TMmax)
     {
         TMmax = TM;
@@ -766,13 +765,11 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa, ya, t0, u0, invmap0, mol_type);
+            xa, ya, t0, u0, invmap0.data(), mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
             TM1=TM2=TM3=TM4=TM5=TMtmp;
-            clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-                xtm, ytm, xt, r1, r2, xlen);
             return 7;
         }
     }
@@ -786,17 +783,15 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
-        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0,
         GDT_list, maxsub);
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    int *m1;
-    int *m2;
     double d;
-    m1=new int[xlen]; //alignd index in x
-    m2=new int[ylen]; //alignd index in y
+    std::vector<int> m1(xlen); //alignd index in x
+    std::vector<int> m2(ylen); //alignd index in y
     do_rotation(xa, xt, xlen, t, u);
     k=0;
     for(int j=0; j<ylen; j++)
@@ -962,10 +957,5 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
 
-    // free memory
-    clean_up_after_approx_TM(invmap0, invmap, score, path, val,
-        xtm, ytm, xt, r1, r2, xlen);
-    delete [] m1;
-    delete [] m2;
     return 0; // zero for no exception
 }

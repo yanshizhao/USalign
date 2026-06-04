@@ -2939,16 +2939,6 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
 }
 
 
-void clean_up_after_approx_TM(int *invmap0, int *invmap,
-    DoubleMatrix& /*score*/, CharMatrix& /*path*/, DoubleMatrix& /*val*/, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CoordArray& r1, CoordArray& r2, const int xlen, const int /*minlen*/ = 0)
-{
-
-
-    // score/path/val are DoubleMatrix/CharMatrix containers — auto-destruct on return
-    return;
-}
-
 #endif
 
 
