@@ -1050,11 +1050,9 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
     int Lx = xend-xstart+1;
     int Ly = yend-ystart+1;
-    int *ifr;
-    int *y2x_;
     int L_fr=getmin(Lx, Ly);
-    ifr= new int[L_fr];
-    y2x_= new int[ylen+1];
+    std::vector<int> ifr(L_fr);
+    std::vector<int> y2x_(ylen+1);
 
     //select what piece will be used. The original implement may cause 
     //asymetry, but only when xlen==ylen and Lx==Ly
@@ -1116,7 +1114,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
 
             //evaluate the map quickly in three iterations
-            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_.data(),
                 d0, d0_search, t, u);
 
             if(tmscore>=tmscore_max)
@@ -1164,7 +1162,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         
             //evaluate the map quickly in three iterations
             tmscore=get_score_fast(r1, r2, xtm, ytm,
-                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
+                x, y, xlen, ylen, y2x_.data(), d0,d0_search, t, u);
             if(tmscore>=tmscore_max)
             {
                 tmscore_max=tmscore;
@@ -1172,12 +1170,9 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
         }
 
-        delete [] ifr;
-        delete [] y2x_;
         return tmscore_max;
     }
 
-    
     int L0=getmin(xlen, ylen); //non-redundant to get_initial1
     if(L_fr==L0)
     {
@@ -1223,7 +1218,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
 
             //evaluate the map quickly in three iterations
-            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_.data(),
                 d0, d0_search, t, u);
 
             if(tmscore>=tmscore_max)
@@ -1261,7 +1256,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         
             //evaluate the map quickly in three iterations
             tmscore=get_score_fast(r1, r2, xtm, ytm,
-                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
+                x, y, xlen, ylen, y2x_.data(), d0,d0_search, t, u);
             if(tmscore>=tmscore_max)
             {
                 tmscore_max=tmscore;
@@ -1271,8 +1266,6 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     }    
 
 
-    delete [] ifr;
-    delete [] y2x_;
     return tmscore_max;
 }
 
