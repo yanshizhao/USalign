@@ -225,9 +225,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
             //extract rotation matrix based on the fragment
             {
-                std::vector<double*> _v1(L_frag), _v2(L_frag);
-                for(int _k=0;_k<L_frag;_k++){ _v1[_k]=r1[_k].data(); _v2[_k]=r2[_k].data(); }
-                Kabsch(_v1.data(), _v2.data(), L_frag, 1, &rmsd, t, u);
+                Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
             }
             if (simplify_step != 1)
                 *Rcomm = 0;
