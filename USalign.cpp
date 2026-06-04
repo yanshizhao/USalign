@@ -407,7 +407,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                         mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
                     else if (se_opt)
                     {
-                        int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                         u0[0][0]=u0[1][1]=u0[2][2]=1;
                         u0[0][1]=         u0[0][2]=
                         u0[1][0]=         u0[1][2]=
@@ -420,7 +420,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                             xlen, ylen, sequence, Lnorm_ass, d0_scale,
                             i_opt, a_opt, u_opt, d_opt,
                             mol_vec1[chain_i]+mol_vec2[chain_j], 
-                            outfmt_opt, invmap);
+                            outfmt_opt, invmap.data());
                         if (outfmt_opt>=2) 
                         {
                             Liden=L_ali=0;
@@ -434,7 +434,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                                 Liden+=(seqx[r1]==seqy[r2]);
                             }
                         }
-                        delete [] invmap;
+
                     }
                     else TMalign_main(
                         xa, ya, seqx, seqy, secx, secy,
@@ -696,7 +696,7 @@ int MMalign(const string &xname, const string &yname,
         // entry function for structure alignment
         if (se_opt)
         {
-            int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
             u0[0][0]=u0[1][1]=u0[2][2]=1;
             u0[0][1]=         u0[0][2]=
             u0[1][0]=         u0[1][2]=
@@ -708,7 +708,7 @@ int MMalign(const string &xname, const string &yname,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, 0, d0_scale,
                 i_opt, a_opt, false, d_opt,
-                mol_vec1[0]+mol_vec2[0], outfmt_opt, invmap);
+                mol_vec1[0]+mol_vec2[0], outfmt_opt, invmap.data());
             if (outfmt_opt>=2) 
             {
                 Liden=L_ali=0;
@@ -722,7 +722,7 @@ int MMalign(const string &xname, const string &yname,
                     Liden+=(seqx[r1]==seqy[r2]);
                 }
             }
-            delete [] invmap;
+
         }
         else TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5,
@@ -883,7 +883,7 @@ int MMalign(const string &xname, const string &yname,
             // entry function for structure alignment
             if (se_opt)
             {
-                int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                 u0[0][0]=u0[1][1]=u0[2][2]=1;
                 u0[0][1]=         u0[0][2]=
                 u0[1][0]=         u0[1][2]=
@@ -895,7 +895,7 @@ int MMalign(const string &xname, const string &yname,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
                     i_opt, false, true, false,
-                    mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
+                    mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap.data());
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -909,7 +909,7 @@ int MMalign(const string &xname, const string &yname,
                         Liden+=(seqx[r1]==seqy[r2]);
                     }
                 }
-                delete [] invmap;
+
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
@@ -947,16 +947,16 @@ int MMalign(const string &xname, const string &yname,
     }
 
     // calculate initial chain-chain assignment
-    int *assign1_list; // value is index of assigned chain2
-    int *assign2_list; // value is index of assigned chain1
-    assign1_list=new int[chain1_num];
-    assign2_list=new int[chain2_num];
-    double total_score=enhanced_greedy_search(TMave_mat, assign1_list,
-        assign2_list, chain1_num, chain2_num);
+
+
+std::vector<int> assign1_list(chain1_num);
+std::vector<int> assign2_list(chain2_num);
+    double total_score=enhanced_greedy_search(TMave_mat, assign1_list.data(),
+        assign2_list.data(), chain1_num, chain2_num);
     if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
 
     // refine alignment for large oligomers
-    int aln_chain_num=count_assign_pair(assign1_list,chain1_num);
+    int aln_chain_num=count_assign_pair(assign1_list.data(),chain1_num);
     bool is_oligomer=(aln_chain_num>=3);
     if (aln_chain_num==2 && chainmap.size()==0 && !se_opt) // dimer alignment
     {
@@ -977,7 +977,7 @@ int MMalign(const string &xname, const string &yname,
                     na_chain_num1==2 && na_chain_num2==2))
         {
             adjust_dimer_assignment(xa_vec,ya_vec,xlen_vec,ylen_vec,mol_vec1,
-                mol_vec2,assign1_list,assign2_list,seqxA_mat,seqyA_mat);
+                mol_vec2,assign1_list.data(),assign2_list.data(),seqxA_mat,seqyA_mat);
             is_oligomer=false; // cannot refiner further
         }
         else is_oligomer=true; /* align oligomers to dimer */
@@ -995,20 +995,20 @@ int MMalign(const string &xname, const string &yname,
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
 
         if (chain1_num<=chain2_num)
         {
-            hetero_refined_greedy_search(TMave_mat, assign1_list,
-                assign2_list, chain1_num, chain2_num, xcentroids,
+            hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
+                assign2_list.data(), chain1_num, chain2_num, xcentroids,
                 ycentroids, d0MM, len_aa+len_na);
         }
         else
         {
-            hetero_refined_greedy_search(TMave_mat, assign2_list,
-                assign1_list, chain2_num, chain1_num, ycentroids,
+            hetero_refined_greedy_search(TMave_mat, assign2_list.data(),
+                assign1_list.data(), chain2_num, chain1_num, ycentroids,
                 xcentroids, d0MM, len_aa+len_na);
         }
 
@@ -1016,19 +1016,19 @@ int MMalign(const string &xname, const string &yname,
     }
 
     // store initial assignment
-    int init_pair_num=count_assign_pair(assign1_list,chain1_num);
-    int *assign1_init;
-    int *assign2_init;
-    assign1_init=new int[chain1_num];
-    assign2_init=new int[chain2_num];
+    int init_pair_num=count_assign_pair(assign1_list.data(),chain1_num);
+
+
+std::vector<int> assign1_init(chain1_num);
+std::vector<int> assign2_init(chain2_num);
     DoubleMatrix TMave_init;
     TMave_init.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
     vector<string> sequence_init;
     copy_chain_assign_data(chain1_num, chain2_num, sequence_init,
-        seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat,
-        seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init);
+        seqxA_mat,  seqyA_mat,  assign1_list.data(), assign2_list.data(), TMave_mat,
+        seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), TMave_init);
 
     // perform iterative alignment
     double max_total_score=0; // ignore old total_score because previous
@@ -1042,7 +1042,7 @@ int MMalign(const string &xname, const string &yname,
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
         ylen_vec, nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num,
-        chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
+        chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(),
         sequence, d0_scale, fast_opt, chainmap, byresi_opt);
 
     if (byresi_opt && aln_chain_num>=4 && is_oligomer && chainmap.size()==0 && !se_opt) // oligomer alignment
@@ -1054,7 +1054,7 @@ int MMalign(const string &xname, const string &yname,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
-            seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+            seqxA_mat, seqM_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
             0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
 
@@ -1068,12 +1068,12 @@ int MMalign(const string &xname, const string &yname,
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
 
-        hetero_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
         // xcentroids, ycentroids auto-destruct (CoordArray)
@@ -1083,8 +1083,8 @@ int MMalign(const string &xname, const string &yname,
     if (byresi_opt==0 && max_total_score<maxTMmono)
     {
         copy_chain_assign_data(chain1_num, chain2_num, sequence,
-            seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
-            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
+            seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), TMave_init,
+            seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), TMave_mat);
         for (i=0;i<chain1_num;i++)
         {
             if (i!=maxTMmono_i) assign1_list[i]=-1;
@@ -1101,31 +1101,31 @@ int MMalign(const string &xname, const string &yname,
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
-            TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+            TMave_mat, seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
             d0_scale, fast_opt, chainmap);
     }
 
     /* perform cross chain alignment
      * in some cases, this leads to dramatic improvement, esp for homodimer */
-    int iter_pair_num=count_assign_pair(assign1_list,chain1_num);
+    int iter_pair_num=count_assign_pair(assign1_list.data(),chain1_num);
     if (iter_pair_num>=init_pair_num) copy_chain_assign_data(
         chain1_num, chain2_num, sequence_init,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_init, seqyA_init, assign1_init,  assign2_init,  TMave_init);
+        seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), TMave_mat,
+        seqxA_init, seqyA_init, assign1_init.data(),  assign2_init.data(),  TMave_init);
     double max_total_score_cross=max_total_score;
     if (byresi_opt==0 && len_aa+len_na<10000)
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
-            TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
+            TMave_init, seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(),
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
         {
             max_total_score=max_total_score_cross;
             copy_chain_assign_data(chain1_num, chain2_num, sequence,
-                seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
-                seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat);
+                seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), TMave_init,
+                seqxA_mat,  seqyA_mat,  assign1_list.data(), assign2_list.data(), TMave_mat);
         }
     } 
 
@@ -1138,7 +1138,7 @@ int MMalign(const string &xname, const string &yname,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+        seqxA_mat, seqM_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
         a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
     else MMalign_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
@@ -1148,13 +1148,13 @@ int MMalign(const string &xname, const string &yname,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+        seqxA_mat, seqM_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
         a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
 
     // clean up everything
-    delete [] assign1_list;
-    delete [] assign2_list;
+
+
     // TMave_mat auto-destruct (DoubleMatrix)
     // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
@@ -1162,8 +1162,8 @@ int MMalign(const string &xname, const string &yname,
     vector<vector<string> >().swap(seqyA_mat);
     vector<string>().swap(tmp_str_vec);
 
-    delete [] assign1_init;
-    delete [] assign2_init;
+
+
     // TMave_init auto-destruct (DoubleMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
@@ -1448,13 +1448,13 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
                 xt.resize(xlen);
                 do_rotation(xa, xt, xlen, t0, u0);
-                int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                 se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
-                delete[]invmap;
+                    0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
+
 
                 if (sequence.size()<2) sequence.push_back("");
                 if (sequence.size()<2) sequence.push_back("");
@@ -1505,12 +1505,12 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<int> ().swap(ylen_trim_vec);
 
     // calculate initial chain-chain assignment
-    int *assign1_list; // value is index of assigned chain2
-    int *assign2_list; // value is index of assigned chain1
-    assign1_list=new int[chain1_num];
-    assign2_list=new int[chain2_num];
-    enhanced_greedy_search(TMave_mat, assign1_list,
-        assign2_list, chain1_num, chain2_num);
+
+
+std::vector<int> assign1_list(chain1_num);
+std::vector<int> assign2_list(chain2_num);
+    enhanced_greedy_search(TMave_mat, assign1_list.data(),
+        assign2_list.data(), chain1_num, chain2_num);
 
     // final alignment
     if (outfmt_opt==0) print_version();
@@ -1639,7 +1639,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     }
 
     if (m_opt) output_dock_rotation_matrix(fname_matrix,
-        xname_vec,yname_vec, ut_mat, assign1_list);
+        xname_vec,yname_vec, ut_mat, assign1_list.data());
 
     if (o_opt) output_dock(chain1_list, ter_opt, split_opt, infmt1_opt,
         atom_opt, mirror_opt, ut_mat, fname_super);
@@ -1648,8 +1648,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<double>().swap(TM_vec);
     vector<string>().swap(xname_vec);
     vector<string>().swap(yname_vec);
-    delete [] assign1_list;
-    delete [] assign2_list;
+
+
     // TMave_mat auto-destruct (DoubleMatrix)
     // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
@@ -1775,7 +1775,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             // entry function for structure alignment
             if (se_opt)
             {
-                int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                 u0[0][0]=u0[1][1]=u0[2][2]=1;
                 u0[0][1]=         u0[0][2]=
                 u0[1][0]=         u0[1][2]=
@@ -1786,7 +1786,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    0, false, u_opt, false, mol_type, outfmt_opt, invmap);
+                    0, false, u_opt, false, mol_type, outfmt_opt, invmap.data());
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -1800,7 +1800,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                         Liden+=(seqx[r1]==seqy[r2]);
                     }
                 }
-                delete [] invmap;
+
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
@@ -1846,8 +1846,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<string>yname_vec;
     double *TMave_list;
     TMave_list = new double[chain_num];
-    int *assign_list;
-    assign_list=new int[chain_num];
+
+std::vector<int> assign_list(chain_num);
     vector<string> msa(ylen,""); // row is position along msa; column is sequence
 
     int compare_num;
@@ -1978,7 +1978,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             // entry function for structure alignment
             if (se_opt)
             {
-                int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                 u0[0][0]=u0[1][1]=u0[2][2]=1;
                 u0[0][1]=         u0[0][2]=
                 u0[1][0]=         u0[1][2]=
@@ -1989,7 +1989,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    2, a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap);
+                    2, a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap.data());
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -2003,7 +2003,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                         Liden+=(seqx[r1]==seqy[r2]);
                     }
                 }
-                delete [] invmap;
+
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 t0, u0, TM1, TM2, TM3, TM4, TM5,
@@ -2094,14 +2094,14 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
             int n_ali=0;
             int n_ali8=0;
-            int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
             vector<double> do_vec;
 
             se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                0, a_opt, u_opt, d_opt, mol_type, 1, invmap);
+                0, a_opt, u_opt, d_opt, mol_type, 1, invmap.data());
 
             int rx=0;
             int ry=0;
@@ -2159,7 +2159,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             // clean up
             tmp_gap.clear();
-            delete[]invmap;
+
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
@@ -2253,14 +2253,14 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
                 int n_ali=0;
                 int n_ali8=0;
-                int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                 vector<double> do_vec;
 
                 se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    true, a_opt, u_opt, d_opt, mol_type, 1, invmap);
+                    true, a_opt, u_opt, d_opt, mol_type, 1, invmap.data());
 
                 if (xlen<=ylen)
                 {
@@ -2303,7 +2303,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 n_ali8_total+=n_ali8;
 
                 // clean up
-                delete[]invmap;
+
                 seqM.clear();
                 seqxA.clear();
                 seqyA.clear();
@@ -2418,7 +2418,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             assign_list[repr_idx]=-1;
             output_dock_rotation_matrix(fname_matrix,
-                xname_vec,yname_vec, ut_mat, assign_list);
+                xname_vec,yname_vec, ut_mat, assign_list.data());
         }
 
         //if (o_opt) output_dock(chain_list, ter_opt, split_opt,
@@ -2614,7 +2614,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     int n_ali=0;
                     int n_ali8=0;
                     bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:fast_opt;
-                    int *invmap = new int[ylen+1];
+std::vector<int> invmap(ylen+1);
                     double *dist_list = new double[ylen+1];
 
                     // entry function for structure alignment
@@ -2632,7 +2632,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                             xlen, ylen, Lnorm_ass, d0_scale,
                             i_opt, a_opt, u_opt, d_opt,
                             mol_vec1[chain_i]+mol_vec2[chain_j],
-                            outfmt_opt, invmap, dist_list,
+                            outfmt_opt, invmap.data(), dist_list,
                             secx_bond, secy_bond, mm_opt);
                         if (outfmt_opt>=2) 
                         {
@@ -2654,7 +2654,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, invmap,
+                        seqM, seqxA, seqyA, invmap.data(),
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
                         i_opt, a_opt, u_opt, d_opt, force_fast_opt,
@@ -2696,7 +2696,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     }
 
                     // Done! Free memory
-                    delete [] invmap;
+
                     delete [] dist_list;
                     seqM.clear();
                     seqxA.clear();

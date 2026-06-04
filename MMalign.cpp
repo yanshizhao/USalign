@@ -609,16 +609,14 @@ int main(int argc, char *argv[])
     }
 
     // calculate initial chain-chain assignment
-    int *assign1_list; // value is index of assigned chain2
-    int *assign2_list; // value is index of assigned chain1
-    assign1_list=new int[chain1_num];
-    assign2_list=new int[chain2_num];
-    double total_score=enhanced_greedy_search(TMave_mat, assign1_list,
-        assign2_list, chain1_num, chain2_num);
+std::vector<int> assign1_list(chain1_num);
+std::vector<int> assign2_list(chain2_num);
+    double total_score=enhanced_greedy_search(TMave_mat, assign1_list.data(),
+        assign2_list.data(), chain1_num, chain2_num);
     if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
 
     // refine alignment for large oligomers
-    int aln_chain_num=count_assign_pair(assign1_list,chain1_num);
+    int aln_chain_num=count_assign_pair(assign1_list.data(),chain1_num);
     bool is_oligomer=(aln_chain_num>=3);
     if (aln_chain_num==2) // dimer alignment
     {
@@ -639,7 +637,7 @@ int main(int argc, char *argv[])
                     na_chain_num1==2 && na_chain_num2==2))
         {
             adjust_dimer_assignment(xa_vec,ya_vec,xlen_vec,ylen_vec,mol_vec1,
-                mol_vec2,assign1_list,assign2_list,seqxA_mat,seqyA_mat);
+                mol_vec2,assign1_list.data(),assign2_list.data(),seqxA_mat,seqyA_mat);
             is_oligomer=false; // cannot refiner further
         }
         else is_oligomer=true; /* align oligomers to dimer */
@@ -657,30 +655,30 @@ int main(int argc, char *argv[])
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
-        hetero_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
         // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // store initial assignment
-    int init_pair_num=count_assign_pair(assign1_list,chain1_num);
-    int *assign1_init;
-    int *assign2_init;
-    assign1_init=new int[chain1_num];
-    assign2_init=new int[chain2_num];
+    int init_pair_num=count_assign_pair(assign1_list.data(),chain1_num);
+
+
+std::vector<int> assign1_init(chain1_num);
+std::vector<int> assign2_init(chain2_num);
     DoubleMatrix TMave_init;
     TMave_init.assign(chain1_num,vector<double>(chain2_num));
     vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
     vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
     vector<string> sequence_init;
     copy_chain_assign_data(chain1_num, chain2_num, sequence_init,
-        seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat,
-        seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init);
+        seqxA_mat,  seqyA_mat,  assign1_list.data(), assign2_list.data(), TMave_mat,
+        seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), TMave_init);
 
     // perform iterative alignment
     double max_total_score=0; // ignore old total_score because previous
@@ -692,7 +690,7 @@ int main(int argc, char *argv[])
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
         ylen_vec, nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num,
-        chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
+        chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(),
         sequence, d0_scale, fast_opt, chainmap);
 
     if (aln_chain_num>=4 && is_oligomer && chainmap.size()==0) // oligomer alignment
@@ -704,7 +702,7 @@ int main(int argc, char *argv[])
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
-            seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+            seqxA_mat, seqM_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
             0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
 
@@ -718,12 +716,12 @@ int main(int argc, char *argv[])
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        homo_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
 
-        hetero_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
+        hetero_refined_greedy_search(TMave_mat, assign1_list.data(),
+            assign2_list.data(), chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
         // xcentroids, ycentroids auto-destruct (CoordArray)
@@ -733,8 +731,8 @@ int main(int argc, char *argv[])
     if (max_total_score<maxTMmono)
     {
         copy_chain_assign_data(chain1_num, chain2_num, sequence,
-            seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
-            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
+            seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), TMave_init,
+            seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), TMave_mat);
         for (int i=0;i<chain1_num;i++)
         {
             if (i!=maxTMmono_i) assign1_list[i]=-1;
@@ -751,37 +749,37 @@ int main(int argc, char *argv[])
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
-            TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+            TMave_mat, seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
             d0_scale, fast_opt, chainmap);
     }
 
     /* perform cross chain alignment
      * in some cases, this leads to dramatic improvement, esp for homodimer */
-    int iter_pair_num=count_assign_pair(assign1_list,chain1_num);
+    int iter_pair_num=count_assign_pair(assign1_list.data(),chain1_num);
     if (iter_pair_num>=init_pair_num) copy_chain_assign_data(
         chain1_num, chain2_num, sequence_init,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_init, seqyA_init, assign1_init,  assign2_init,  TMave_init);
+        seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), TMave_mat,
+        seqxA_init, seqyA_init, assign1_init.data(),  assign2_init.data(),  TMave_init);
     double max_total_score_cross=max_total_score;
 
         //max_total_score_cross, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
         //secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         //xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
-        //TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init, sequence_init,
+        //TMave_init, seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), sequence_init,
         //d0_scale, true);
     if (len_aa+len_na<10000)
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
-            TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
+            TMave_init, seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(),
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
         {
             max_total_score=max_total_score_cross;
             copy_chain_assign_data(chain1_num, chain2_num, sequence,
-                seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
-                seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat);
+                seqxA_init, seqyA_init, assign1_init.data(), assign2_init.data(), TMave_init,
+                seqxA_mat,  seqyA_mat,  assign1_list.data(), assign2_list.data(), TMave_mat);
         }
     } 
 
@@ -794,13 +792,13 @@ int main(int argc, char *argv[])
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
+        seqxA_mat, seqM_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
         a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
 
     // clean up everything
-    delete [] assign1_list;
-    delete [] assign2_list;
+
+
     // TMave_mat auto-destruct (DoubleMatrix)
     // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
@@ -808,8 +806,8 @@ int main(int argc, char *argv[])
     vector<vector<string> >().swap(seqyA_mat);
     vector<string>().swap(tmp_str_vec);
 
-    delete [] assign1_init;
-    delete [] assign2_init;
+
+
     // TMave_init auto-destruct (DoubleMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
