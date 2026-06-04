@@ -2924,7 +2924,6 @@ void copy_t_u(double t[3], double u[3][3], double t0[3], double u0[3][3])
 // calculate approximate TM-score given rotation matrix
 
 
-// CoordArray& overload — const_cast safe: transform/dist only read, never write
 double approx_TM(const int xlen, const int ylen, const int a_opt,
     const CoordArray& xa, const CoordArray& ya, double t[3], double u[3][3],
     const int invmap0[], const int mol_type)

@@ -2202,8 +2202,6 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
 
 
 
-// const CoordArray& x/y overload — for TMalign_dimer_main flip
-
 /* Entry function for TM-align. Return TM-score calculation status:
  * 0   - full TM-score calculation
  * 1   - terminated due to exception
