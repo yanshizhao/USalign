@@ -479,11 +479,9 @@ void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt
                 yfrag[k][1]=yk[j*closeK_opt+k][1];
                 yfrag[k][2]=yk[j*closeK_opt+k][2];
             }
-            {
-                std::vector<double*> xv(closeK_opt), yv(closeK_opt);
-                for(int _k=0;_k<closeK_opt;_k++){ xv[_k]=xfrag[_k].data(); yv[_k]=yfrag[_k].data(); }
-                Kabsch(xv.data(), yv.data(), closeK_opt, 1, &rmsd, t, u);
-            }
+
+            Kabsch(xfrag, yfrag, closeK_opt, 1, &rmsd, t, u);
+ 
             do_rotation(xfrag, xtran, closeK_opt, t, u);
 
             k=closeK_opt-1;
@@ -795,13 +793,9 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     n_ali8=k;
 
-    {
-        std::vector<double*> r1_v(n_ali8), r2_v(n_ali8);
-        for(int _k=0;_k<n_ali8;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-        Kabsch(r1_v.data(), r2_v.data(), n_ali8, 0, &rmsd0, t, u);
-    }// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
-    
+
     //normalized by length of structure A
     parameter_set4final(xlen+0.0, D0_MIN, Lnorm, d0, d0_search, mol_type);
     d0B=d0;
