@@ -521,9 +521,7 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     }
     if(n_ali!=j) {
         {
-            std::vector<double*> r1_v(j), r2_v(j);
-            for(int _k=0;_k<j;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-            Kabsch(r1_v.data(), r2_v.data(), j, 1, &rms, t, u);
+            Kabsch(r1, r2, j, 1, &rms, t, u);
         }
         tmscore1=0;
         for(k=0; k<n_ali; k++) {
@@ -548,9 +546,7 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             if(j<3 && n_ali>3) d002t += 0.5; else break;
         }
         {
-            std::vector<double*> r1_v(j), r2_v(j);
-            for(int _k=0;_k<j;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-            Kabsch(r1_v.data(), r2_v.data(), j, 1, &rms, t, u);
+            Kabsch(r1, r2, j, 1, &rms, t, u);
         }
         tmscore2=0;
         for(k=0; k<n_ali; k++) {
