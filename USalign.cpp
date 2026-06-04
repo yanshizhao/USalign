@@ -2428,11 +2428,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 ya[r][1]= a_vec[i][r][1];
                 ya[r][2]= a_vec[i][r][2];
             }
-            {
-                std::vector<double*> _v1(xlen), _v2(xlen);
-                for(int _k=0;_k<xlen;_k++){ _v1[_k]=xa[_k].data(); _v2[_k]=ya[_k].data(); }
-                Kabsch(_v1.data(), _v2.data(), xlen, 1, &rmsd, t, u);
-            }
+            Kabsch(xa, ya, xlen, 1, &rmsd, t, u);
             for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=u[ui][uj];
             for (uj=0;uj<3;uj++) ut_mat[i][9+uj]=t[uj];
         }
