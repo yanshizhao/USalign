@@ -964,13 +964,7 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     }
 
     {
-        std::vector<double*> rv1(k), rv2(k);
-        for (int _k = 0; _k < k; _k++)
-        {
-            rv1[_k] = r1[_k].data();
-            rv2[_k] = r2[_k].data();
-        }
-        Kabsch(rv1.data(), rv2.data(), k, 1, &rmsd, t, u);
+        Kabsch(r1, r2, k, 1, &rmsd, t, u);
     }
 
     for (int ii = 0; ii < xlen; ii++)
