@@ -2610,11 +2610,9 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    int *m1;
-    int *m2;
     double d;
-    m1=new int[xlen]; //alignd index in x
-    m2=new int[ylen]; //alignd index in y
+    std::vector<int> m1(xlen); //alignd index in x
+    std::vector<int> m2(ylen); //alignd index in y
     do_rotation(xa_c, xt, xlen, t, u);
     k=0;
     for(int j=0; j<ylen; j++)
@@ -2792,8 +2790,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     delete [] invmap0;
     delete [] invmap;
     // score/val auto-destruct (DoubleMatrix)
-    delete [] m1;
-    delete [] m2;
     return 0; // zero for no exception
 }
 
