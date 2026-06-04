@@ -1557,7 +1557,7 @@ void MMalign_final(
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
+                1, a_opt, 2, d_opt, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
             TMave_mat[i][j]=TM4*Lnorm_ass;
 
