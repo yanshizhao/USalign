@@ -370,9 +370,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                 }
                 //extract rotation matrix based on the fragment                
                 {
-                    std::vector<double*> r1_v(n_cut), r2_v(n_cut);
-                    for(int _k=0;_k<n_cut;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-                    Kabsch(r1_v.data(), r2_v.data(), n_cut, 1, &rmsd, t, u);
+                    Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
                 }
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
@@ -493,9 +491,7 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         else if(i!=-1) PrintErrorAndQuit("Wrong map!\n");
     }
     {
-        std::vector<double*> r1_v(k), r2_v(k);
-        for(int _k=0;_k<k;_k++){ r1_v[_k]=r1[_k].data(); r2_v[_k]=r2[_k].data(); }
-        Kabsch(r1_v.data(), r2_v.data(), k, 1, &rms, t, u);
+        Kabsch(r1, r2, k, 1, &rms, t, u);
     }
     double di; const int len=k;
     std::vector<double> dis(len);
