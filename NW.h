@@ -1,3 +1,5 @@
+#include <vector>
+
 /* Partial implementation of Needleman-Wunsch (NW) dynamic programming for
  * global alignment. The three NWDP_TM functions below are not complete
  * implementation of NW algorithm because gap jumping in the standard Gotoh
@@ -52,6 +54,13 @@ void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     }
 }
 
+// std::vector<int>& overload (thin wrapper)
+inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i)
+{
+    NWDP_TM(score, path, val, len1, len2, gap_open, j2i.data());
+}
+
 
 
 
@@ -98,6 +107,14 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
             else i--;
         }
     }
+}
+
+// std::vector<int>& overload
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
+    int len1, int len2, double t[3], double u[3][3],
+    double d02, double gap_open, std::vector<int>& j2i)
+{
+    NWDP_TM(path, val, x, y, len1, len2, t, u, d02, gap_open, j2i.data());
 }
 
 /* This is the same as the previous NWDP_TM, except for the lack of rotation
@@ -241,4 +258,18 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const
             else i--;
         }
     }
+}
+
+// std::vector<int>& overloads
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
+    const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
+{
+    NWDP_TM(path, val, secx, secy, len1, len2, gap_open, j2i.data());
+}
+
+inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+    int len1, int len2, double d02, double gap_open, std::vector<int>& j2i,
+    const int hinge)
+{
+    NWDP_SE(path, val, x, y, len1, len2, d02, gap_open, j2i.data(), hinge);
 }
