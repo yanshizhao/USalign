@@ -1149,7 +1149,7 @@ int copy_chain_pair_data(
     CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
     int chain1_num, int chain2_num,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence)
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence)
 {
     int i;
     int j;
@@ -1202,7 +1202,7 @@ double MMalign_search(
     CoordArray* /*_xa*/, CoordArray* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
 {
     double total_score=0;
@@ -1379,7 +1379,7 @@ void MMalign_final(
     int len_aa, int len_na, int chain1_num, int chain2_num,
     DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
-    vector<vector<string> >&seqyA_mat, int *assign1_list, int *assign2_list,
+    vector<vector<string> >&seqyA_mat, std::vector<int>& assign1_list, std::vector<int>& assign2_list,
     vector<string>&sequence, const double d0_scale, const bool m_opt,
     const int o_opt, const int outfmt_opt, const int ter_opt,
     const int split_opt, const bool a_opt, const bool d_opt,
@@ -1600,7 +1600,7 @@ void MMalign_se_final(
     int len_aa, int len_na, int chain1_num, int chain2_num,
     DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
-    vector<vector<string> >&seqyA_mat, int *assign1_list, int *assign2_list,
+    vector<vector<string> >&seqyA_mat, std::vector<int>& assign1_list, std::vector<int>& assign2_list,
     vector<string>&sequence, const double d0_scale, const bool m_opt,
     const int o_opt, const int outfmt_opt, const int ter_opt,
     const int split_opt, const bool a_opt, const bool d_opt,
@@ -1820,9 +1820,9 @@ void MMalign_se_final(
 void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<string> &sequence,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, DoubleMatrix& TMave_mat,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
-    int *assign1_tmp,  int *assign2_tmp,  DoubleMatrix& TMave_tmp)
+    std::vector<int>& assign1_tmp,  std::vector<int>& assign2_tmp,  DoubleMatrix& TMave_tmp)
 {
     int i;
     int j;
@@ -1859,7 +1859,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     CoordArray* xa, CoordArray* ya, char *seqx, char *seqy, char *secx, char *secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap,
     const int byresi_opt=0)
 {
@@ -1875,7 +1875,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     vector<string> sequence_tmp;
     copy_chain_assign_data(chain1_num, chain2_num, sequence_tmp,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_tmp, seqyA_tmp, assign1_tmp.data(),  assign2_tmp.data(),  TMave_tmp);
+        seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp);
 
     for (int iter=0;iter<max_iter;iter++)
     {
@@ -1883,7 +1883,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
             xa, ya, seqx, seqy, secx, secy, len_aa, len_na,
             chain1_num, chain2_num,
-            TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp.data(), assign2_tmp.data(),
+            TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
             sequence, d0_scale, fast_opt, 3, byresi_opt);
         if (chainmap.size())
         {
@@ -1900,10 +1900,10 @@ void MMalign_iter(double & max_total_score, const int max_iter,
         if (chainmap.size())
             copy_chain_assign_data(chain1_num, chain2_num, sequence,
                 seqxA_tmp, seqyA_tmp, assign1_list, assign2_list, TMave_tmp,
-                seqxA_mat, seqyA_mat, assign1_tmp.data(),  assign2_tmp.data(),  TMave_mat);
+                seqxA_mat, seqyA_mat, assign1_tmp,  assign2_tmp,  TMave_mat);
         else
             copy_chain_assign_data(chain1_num, chain2_num, sequence,
-                seqxA_tmp, seqyA_tmp, assign1_tmp.data(),  assign2_tmp.data(),  TMave_tmp,
+                seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
                 seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
     }
     vector<string>().swap(tmp_str_vec);
@@ -2803,7 +2803,7 @@ void MMalign_dimer(double & total_score,
     CoordArray* /*_xa*/, CoordArray* /*_ya*/, const char *seqx_arg, const char *seqy_arg, const char * /*secx*/, const char * /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt)
 {
     int i;
@@ -2983,7 +2983,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     CoordArray* xa, CoordArray* ya, char *seqx, char *seqy, char *secx, char *secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    int *assign1_list, int *assign2_list, vector<string>&sequence,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, map<int,int> &chainmap)
 {
     // tmp assignment
@@ -2997,17 +2997,17 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     vector<string> sequence_tmp;
     copy_chain_assign_data(chain1_num, chain2_num, sequence_tmp,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_tmp, seqyA_tmp, assign1_tmp.data(),  assign2_tmp.data(),  TMave_tmp);
+        seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp);
 
     double total_score=MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
-        TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp.data(), assign2_tmp.data(), sequence_tmp,
+        TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, sequence_tmp,
         d0_scale, fast_opt, 1);
     if (total_score>max_total_score)
     {
         copy_chain_assign_data(chain1_num, chain2_num, sequence,
-            seqxA_tmp, seqyA_tmp, assign1_tmp.data(),  assign2_tmp.data(),  TMave_tmp,
+            seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
             seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
         max_total_score=total_score;
     }
