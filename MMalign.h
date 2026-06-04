@@ -192,7 +192,7 @@ bool adjust_dimer_assignment(
 }
 
 // count how many chains are paired
-int count_assign_pair(int *assign1_list,const int chain1_num)
+int count_assign_pair(const std::vector<int>& assign1_list,const int chain1_num)
 {
     int pair_num=0;
     int i;
@@ -202,8 +202,8 @@ int count_assign_pair(int *assign1_list,const int chain1_num)
 
 
 // assign chain-chain correspondence
-double enhanced_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
-    int *assign2_list, const int chain1_num, const int chain2_num)
+double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num)
 {
     double total_score=0;
     double tmp_score=0;
@@ -1895,8 +1895,8 @@ void MMalign_iter(double & max_total_score, const int max_iter,
             for (i=0;i<chain1_num;i++) for (j=0;j<chain2_num;j++)
                 if (!chainmap.count(i) || chainmap[i]!=j) TMave_tmp[i][j]=-1;
         }
-        total_score=enhanced_greedy_search(TMave_tmp, assign1_tmp.data(),
-            assign2_tmp.data(), chain1_num, chain2_num);
+        total_score=enhanced_greedy_search(TMave_tmp, assign1_tmp,
+            assign2_tmp, chain1_num, chain2_num);
         //if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
         if (total_score<=max_total_score) break;
         max_total_score=total_score;

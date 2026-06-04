@@ -611,12 +611,12 @@ int main(int argc, char *argv[])
     // calculate initial chain-chain assignment
 std::vector<int> assign1_list(chain1_num);
 std::vector<int> assign2_list(chain2_num);
-    double total_score=enhanced_greedy_search(TMave_mat, assign1_list.data(),
-        assign2_list.data(), chain1_num, chain2_num);
+    double total_score=enhanced_greedy_search(TMave_mat, assign1_list,
+        assign2_list, chain1_num, chain2_num);
     if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
 
     // refine alignment for large oligomers
-    int aln_chain_num=count_assign_pair(assign1_list.data(),chain1_num);
+    int aln_chain_num=count_assign_pair(assign1_list,chain1_num);
     bool is_oligomer=(aln_chain_num>=3);
     if (aln_chain_num==2) // dimer alignment
     {
@@ -666,7 +666,7 @@ std::vector<int> assign2_list(chain2_num);
     }
 
     // store initial assignment
-    int init_pair_num=count_assign_pair(assign1_list.data(),chain1_num);
+    int init_pair_num=count_assign_pair(assign1_list,chain1_num);
 
 
 std::vector<int> assign1_init(chain1_num);
@@ -755,7 +755,7 @@ std::vector<int> assign2_init(chain2_num);
 
     /* perform cross chain alignment
      * in some cases, this leads to dramatic improvement, esp for homodimer */
-    int iter_pair_num=count_assign_pair(assign1_list.data(),chain1_num);
+    int iter_pair_num=count_assign_pair(assign1_list,chain1_num);
     if (iter_pair_num>=init_pair_num) copy_chain_assign_data(
         chain1_num, chain2_num, sequence_init,
         seqxA_mat, seqyA_mat, assign1_list.data(), assign2_list.data(), TMave_mat,
