@@ -239,6 +239,3 @@ int se_main(
     // path/val auto-destruct (CharMatrix/DoubleMatrix)
     return 0; // zero for no exception
 }
-
-// double** wrapper — constructs temp CoordArray from double** and delegates to CoordArray& impl
-// mixed overload: CoordArray& xa + double** ya — converts ya to CoordArray, delegates to CoordArray& impl

@@ -1037,8 +1037,7 @@ int MMalign(const string &xname, const string &yname,
     int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
     //if (byresi_opt==0)
-    // MMalign_iter/MMalign_final internally overwrite all work buffers with
-    // new[]/NewArray — pass nullptr placeholders (delete[] nullptr is safe)
+    // MMalign_iter/MMalign_final internally overwrite all work buffers
     char *sx=nullptr, *sy=nullptr, *scx=nullptr, *scy=nullptr;
     if (!se_opt)
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
@@ -1916,10 +1915,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         for (i=0; i<chain_num; i++) assign_list[i]=-1;
         assign_list[repr_idx]=repr_idx;
         //ylen = len_vec[repr_idx];
-        //seqy = new char[ylen + 1];
-        //secy = new char[ylen+1];
-        //NewArray(&ya, ylen, 3);
-        //copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,&secy[0]);
         for (r=0;r<sequence.size();r++) sequence[r].clear(); sequence.clear();
         sequence.push_back("");
         sequence.push_back("");

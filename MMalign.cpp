@@ -688,8 +688,7 @@ int main(int argc, char *argv[])
                               // score was from monomeric chain superpositions
     int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
-    // MMalign_iter/MMalign_final/MMalign_dimer internally overwrite work
-    // buffers with new[]/NewArray — pass nullptr placeholders
+    // MMalign_iter/MMalign_final/MMalign_dimer internally overwrite work buffers
     char *sx=nullptr, *sy=nullptr, *scx=nullptr, *scy=nullptr;
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,

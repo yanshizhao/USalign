@@ -30,8 +30,6 @@ inline void assign_sec_bond(IntPairArray& secx_bond, const char *secx, const int
     for (i=0;i<xlen;i++) if (secx_bond[i][1]-secx_bond[i][0]==1) secx_bond[i][0]=secx_bond[i][1]=-1;
 }
 
-// CoordArray& real implementation (flipped from double** version)
-// CoordArray& xk overload
 inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt, CoordArray& xk)
 {
     vector<vector<double>> score;

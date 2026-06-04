@@ -161,6 +161,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             
             //extract rotation matrix based on the fragment
             Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -203,9 +204,8 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
                     ka++;
                 } 
                 //extract rotation matrix based on the fragment                
-                {
-                    Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
-                }
+                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score, 
                     score_sum_method, Lnorm, score_d8, d0);
@@ -323,9 +323,8 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                 ka++;
             }
             //extract rotation matrix based on the fragment
-            {
-                Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
-            }
+            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+            
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -368,10 +367,10 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                     k_ali[ka] = m;
                     ka++;
                 }
-                //extract rotation matrix based on the fragment                
-                {
-                    Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
-                }
+
+                //extract rotation matrix based on the fragment                                
+                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+                
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, score_d8, d0);
@@ -490,9 +489,9 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         }
         else if(i!=-1) PrintErrorAndQuit("Wrong map!\n");
     }
-    {
-        Kabsch(r1, r2, k, 1, &rms, t, u);
-    }
+
+    Kabsch(r1, r2, k, 1, &rms, t, u);
+    
     double di; const int len=k;
     std::vector<double> dis(len);
     double d00=d0_search,d002=d00*d00,d02=d0*d0;
@@ -520,9 +519,9 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         if(j<3 && n_ali>3) d002t += 0.5; else break;
     }
     if(n_ali!=j) {
-        {
-            Kabsch(r1, r2, j, 1, &rms, t, u);
-        }
+    
+        Kabsch(r1, r2, j, 1, &rms, t, u);
+    
         tmscore1=0;
         for(k=0; k<n_ali; k++) {
             transform(t, u, &xtm[k][0], xrot);
@@ -545,9 +544,9 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
             if(j<3 && n_ali>3) d002t += 0.5; else break;
         }
-        {
-            Kabsch(r1, r2, j, 1, &rms, t, u);
-        }
+        
+        Kabsch(r1, r2, j, 1, &rms, t, u);
+        
         tmscore2=0;
         for(k=0; k<n_ali; k++) {
             transform(t, u, &xtm[k][0], xrot);
@@ -1284,9 +1283,6 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
-
-
-// CharMatrix& path overload - creates bool** view, delegates to bool** version
 double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, double t[3], double u[3][3], int invmap0[],
@@ -1301,8 +1297,7 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     int score_sum_method=8, simplify_step=40;
     tmscore_max=-1;
 
-    // Build temp double** views for NWDP_TM
-        double d02=d0*d0;
+    double d02=d0*d0;
     for(int g=g1; g<g2; g++)
     {
         for(iteration=0; iteration<iteration_max; iteration++)
@@ -2902,9 +2897,9 @@ double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordAr
         else if(ii!=-1) PrintErrorAndQuit("Wrong map!");
     }
     L_ali=n_al;
-    {
-        Kabsch(r1, r2, n_al,0,&RMSD,t,u);
-    }
+    
+    Kabsch(r1, r2, n_al,0,&RMSD,t,u);
+    
     RMSD=sqrt(RMSD/(1.0*n_al));
     int temp_simplify_step=1, temp_score_sum_method=0;
     d0_search=d0_input; double rms=0.0;

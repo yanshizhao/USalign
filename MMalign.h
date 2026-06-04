@@ -306,7 +306,6 @@ double enhanced_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
 }
 
 
-// [CoordArray& overload]
 double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
     const int chain_num, CoordArray& centroids)
 {
@@ -387,7 +386,6 @@ double calMMscore(const DoubleMatrix& TMave_mat,int *assign1_list,
     double TMscore=0;
     if (Nali>=3)
     {
-        // Kabsch superposition
         Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
         do_rotation(r1, xt, Nali, t, u);
 
@@ -999,7 +997,6 @@ size_t get_full_PDB_lines(const string filename,
     return PDB_lines.size();
 }
 
-// [RotArray overload]
 void output_dock(const vector<string>&chain_list, const int ter_opt,
     const int split_opt, const int infmt_opt, const string atom_opt,
     const int mirror_opt, const RotArray& ut_mat, const string&fname_super)
@@ -1089,7 +1086,6 @@ void parse_chain_list(const vector<string>&chain_list,
     vector<vector<double> > tmp_chain_array;
     vector<char>tmp_seq_array;
     vector<char>tmp_sec_array;
-    //vector<string> resi_vec;
     int read_resi=2;
 
     for (i=0;i<chain_list.size();i++)
@@ -1179,8 +1175,6 @@ void parse_chain_list(const vector<string>&chain_list,
         else              len_aa+=len_vec[i];
     }
 }
-
-// C++ string overload (real implementation)
 
 int copy_chain_pair_data(
     const vector<vector<vector<double> > >&xa_vec,
@@ -2171,7 +2165,6 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                     r2[k][2] = y[k + j][2];
                 }
 
-                // Direct Kabsch call with CoordArray
                 Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
 
                 double gap_open = 0.0;

@@ -272,9 +272,8 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
                     ka++;
                 }
                 //extract rotation matrix based on the fragment
-                {
-                    Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
-                }
+                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, Lnorm, score_d8, d0);
@@ -395,9 +394,9 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                 k_ali[ka] = kk;
                 ka++;
             }
-            {
-                Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
-            }
+
+            Kabsch(r1, r2, L_frag, 1, &rmsd, t, u);
+
             if (simplify_step != 1)
                 *Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
@@ -440,9 +439,9 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                     k_ali[ka] = m;
                     ka++;
                 }
-                {
-                    Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
-                }
+
+                Kabsch(r1, r2, n_cut, 1, &rmsd, t, u);
+
                 do_rotation(xtm, xt, Lali, t, u);
                 n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
                     score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);

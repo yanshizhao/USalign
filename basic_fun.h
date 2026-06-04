@@ -790,7 +790,6 @@ size_t get_FASTA_lines(const std::string filename,
     return FASTA_lines.size();
 }
 
-// C++ string overload (real implementation)
 int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& a, std::string &seq,
     std::vector<std::string> &resi_vec, const int read_resi)
 {
