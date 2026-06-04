@@ -836,7 +836,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
 
     double GLmax = 0;
     int aL = getmin(xlen, ylen);
-    int *invmap = new int[ylen + 1];
+    std::vector<int> invmap(ylen + 1);
 
     // jump on sequence1
     int n_jump1 = 0;
@@ -911,7 +911,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
                 NWDP_TM(path, val, x, y, xlen, ylen,
                     t, u, d02, gap_open, invmap);
                 GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
-                    invmap, d0, d0_search, t, u);
+                    invmap.data(), d0, d0_search, t, u);
                 if (GL > GLmax)
                 {
                     GLmax = GL;
@@ -922,7 +922,6 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
         }
     }
 
-    delete[] invmap;
     return flag;
 }
 
