@@ -13,9 +13,17 @@
  * values) caused by the NWPD_TM implement.
  */
 
-// Forward declaration for vector<int>& overload
+// Forward declarations for vector<int>& overloads
 inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i);
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
+    int len1, int len2, double t[3], double u[3][3],
+    double d02, double gap_open, std::vector<int>& j2i);
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
+    const int len1, const int len2, const double gap_open, std::vector<int>& j2i);
+inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+    int len1, int len2, double d02, double gap_open, std::vector<int>& j2i,
+    const int hinge);
 
 /* Input: score[1:len1, 1:len2], and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
@@ -76,6 +84,15 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
     int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, int j2i[])
 {
+    std::vector<int> j2i_v(len2+1);
+    NWDP_TM(path, val, x, y, len1, len2, t, u, d02, gap_open, j2i_v);
+    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
+}
+
+inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
+    int len1, int len2, double t[3], double u[3][3],
+    double d02, double gap_open, std::vector<int>& j2i)
+{
     int i,j; double h,v,d;
     for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=false; }
     for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=false; j2i[j]=-1; }
@@ -112,13 +129,6 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
             else i--;
         }
     }
-}
-
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
-    int len1, int len2, double t[3], double u[3][3],
-    double d02, double gap_open, std::vector<int>& j2i)
-{
-    NWDP_TM(path, val, x, y, len1, len2, t, u, d02, gap_open, j2i.data());
 }
 
 /* This is the same as the previous NWDP_TM, except for the lack of rotation
