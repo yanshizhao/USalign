@@ -2231,11 +2231,10 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
 
     int i;
-    int *invmap0         = new int[ylen+1];
-    int *invmap          = new int[ylen+1];
+    std::vector<int> invmap0(ylen+1, -1);
+    std::vector<int> invmap(ylen+1);
     double TM;
     double TMmax=-1;
-    for(i=0; i<ylen; i++) invmap0[i]=-1;
 
     double ddcc=0.4;
     if (Lnorm <= 40) ddcc=0.1;   //Lnorm was setted in parameter_set4search
@@ -2274,13 +2273,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+            invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
         d0 = prevd0;
         TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
+            invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
         if (TM > TMmax)
         {
             TMmax = TM;
@@ -2294,16 +2293,16 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     /******************************************************/
     if (!bAlignStick)
     {
-        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
+        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0.data(), d0,
             d0_search, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax) TMmax = TM;
         if (TMcut>0) copy_t_u(t, u, t0, u0);
         //run dynamic programing iteratively to find the best alignment
         TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
-             mask, t, u, invmap, 0, 2, (fast_opt)?2:30,
+             mask, t, u, invmap.data(), 0, 2, (fast_opt)?2:30,
              local_d0_search, D0_MIN, Lnorm, d0, score_d8);
         if (TM>TMmax)
         {
@@ -2315,13 +2314,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                delete [] invmap0;
-                delete [] invmap;
+
+
                 // score/val auto-destruct (DoubleMatrix)
                 return 2;
             }
@@ -2330,8 +2329,8 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure
         /************************************************************/
-        get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+        get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap.data());
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2343,7 +2342,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TM > TMmax*0.2)
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
+                xlen, ylen, mask, t, u, invmap.data(), 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -2356,13 +2355,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                delete [] invmap0;
-                delete [] invmap;
+
+
                 // score/val auto-destruct (DoubleMatrix)
                 return 3;
             }
@@ -2373,10 +2372,10 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /************************************************************/
         //=initial5 in original TM-align
         if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa_c, ya_c,
-            xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
+            xlen, ylen, mask, invmap.data(), d0, d0_search, fast_opt, D0_MIN))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-                invmap, t, u, simplify_step, score_sum_method,
+                invmap.data(), t, u, simplify_step, score_sum_method,
                 local_d0_search, Lnorm, score_d8, d0);
             if (TM>TMmax)
             {
@@ -2387,7 +2386,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             if (TM > TMmax*ddcc)
             {
                 TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                    xlen, ylen, mask, t, u, invmap, 0, 2, 2,
+                    xlen, ylen, mask, t, u, invmap.data(), 0, 2, 2,
                     local_d0_search, D0_MIN, Lnorm, d0, score_d8);
                 if (TM>TMmax)
                 {
@@ -2403,13 +2402,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                delete [] invmap0;
-                delete [] invmap;
+
+
                 // score/val auto-destruct (DoubleMatrix)
                 return 4;
             }
@@ -2420,8 +2419,8 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /********************************************************************/
         //=initial3 in original TM-align
         get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
-            xlen, ylen, invmap0, invmap, D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+            xlen, ylen, invmap0.data(), invmap.data(), D0_MIN, d0);
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
         if (TM>TMmax)
@@ -2433,7 +2432,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TM > TMmax*ddcc)
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
+                xlen, ylen, mask, t, u, invmap.data(), 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -2446,13 +2445,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                delete [] invmap0;
-                delete [] invmap;
+
+
                 // score/val auto-destruct (DoubleMatrix)
                 return 5;
             }
@@ -2463,8 +2462,8 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /*******************************************************************/
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
-            invmap, d0, d0_search, dcu0, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+            invmap.data(), d0, d0_search, dcu0, fast_opt, t, u);
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2476,7 +2475,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TM > TMmax*ddcc)
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 1, 2, 2,
+                xlen, ylen, mask, t, u, invmap.data(), 1, 2, 2,
                 local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -2489,13 +2488,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
-                delete [] invmap0;
-                delete [] invmap;
+
+
                 // score/val auto-destruct (DoubleMatrix)
                 return 6;
             }
@@ -2531,14 +2530,14 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             int prevLnorm = Lnorm;
             double prevd0 = d0;
             TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
+                xlen, ylen, invmap.data(), L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
                 d0_search, score_d8, t, u, mol_type);
             D0_MIN = prevD0_MIN;
             Lnorm = prevLnorm;
             d0 = prevd0;
 
             TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
+                xlen, ylen, invmap.data(), t, u, 40, 8, local_d0_search, true, Lnorm,
                 score_d8, d0);
             if (TM > TMmax)
             {
@@ -2547,7 +2546,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             }
             // Different from get_initial, get_initial_ss and get_initial_ssplus
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
+                xlen, ylen, mask, t, u, invmap.data(), 0, 2,
                 (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
@@ -2584,13 +2583,13 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0, mol_type);
+            xa_c, ya_c, t0, u0, invmap0.data(), mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
             TM1=TM2=TM3=TM4=TM5=TMtmp;
-            delete [] invmap0;
-            delete [] invmap;
+
+
             // score/val auto-destruct (DoubleMatrix)
             return 7;
         }
@@ -2605,7 +2604,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
     TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
+        invmap0.data(), t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
@@ -2787,8 +2786,8 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     seqM =seqM.substr(0,kk);
 
     // free memory
-    delete [] invmap0;
-    delete [] invmap;
+
+
     // score/val auto-destruct (DoubleMatrix)
     return 0; // zero for no exception
 }
