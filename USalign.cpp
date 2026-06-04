@@ -995,7 +995,6 @@ int MMalign(const string &xname, const string &yname,
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        //double het_deg=check_heterooligomer(TMave_mat, chain1_num, chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
@@ -1069,7 +1068,6 @@ int MMalign(const string &xname, const string &yname,
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        //double het_deg=check_heterooligomer(TMave_mat, chain1_num, chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
@@ -1817,7 +1815,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             TMave_mat[i][j]=TMave_mat[j][i]=TM4;
             seqxA_mat[i][j]=seqyA_mat[j][i]=seqxA;
             seqyA_mat[i][j]=seqxA_mat[j][i]=seqyA;
-            //cout<<chain_list[i]<<':'<<chainID_list[i]
                 //<<chain_list[j]<<':'<<chainID_list[j]<<"\tTM4="<<TM4<<endl;
             if (full_opt) output_results(
                 chain_list[i],chain_list[j], chainID_list[i], chainID_list[j],
@@ -1891,21 +1888,17 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         {
             for (j=0; j<chain_num; j++)
             {
-                //cout<<'\t'<<setprecision(4)<<TMave_mat[i][j];
                 TMave_list[j]+=TMave_mat[i][j];
             }
-            //cout<<'\t'<<chain_list[i]<<':'<<chainID_list[i]<<endl;
         }
         repr_idx=0;
         double repr_TM=0;
         for (j=0; j<chain_num; j++)
         {
-            //cout<<chain_list[j]<<'\t'<<len_vec[j]<<'\t'<<TMave_list[j]<<endl;
             if (TMave_list[j]<repr_TM) continue;
             repr_TM=TMave_list[j];
             repr_idx=j;
         }
-        //cout<<"repr="<<repr_idx<<"; "<<chain_list[repr_idx]<<"; TM="<<repr_TM<<endl;
 
         // superpose
         yname=chain_list[repr_idx].substr(dir_opt.size())+chainID_list[repr_idx];
@@ -1959,8 +1952,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 
             sequence[0]=seqxA_mat[i][j];
             sequence[1]=seqyA_mat[i][j];
-            //cout<<"tm_idx="<<tm_idx<<"\ti="<<i<<"\tj="<<j<<endl;
-            //cout<<"superpose "<<xname_vec[i]<<" to "<<xname_vec[j]<<endl;
 
             // declare variable specific to this pair of TMalign
             double t0[3];
@@ -2072,8 +2063,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         msa.assign(ylen,""); // row is position along msa; column is sequence
         vector<string> msa_ext;      // row is position along msa; column is sequence
         for (r=0;r<ylen;r++) msa[r]=seqy[r];
-        //for (r=0;r<msa.size();r++) cout<<"["<<r<<"]\t"<<msa[r]<<endl;
-        //cout<<"start recover"<<endl;
         assign_list[repr_idx]=0;
         for (tm_idx=0; tm_idx<TM_pair_vec.size(); tm_idx++)
         {
@@ -2123,8 +2112,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             string tmp_gap="";
             for (r=0;r<msa[0].size();r++) tmp_gap+='-';
             for (r=msa_ext.size();r<ylen_ext;r++) msa_ext.push_back("");
-            //cout<<"x:"<<xname_vec[i]<<'\n'<<seqxA<<endl;
-            //cout<<"y:"<<xname_vec[repr_idx]<<'\n'<<seqyA<<endl;
             for (r=0;r<ylen_ext;r++)
             {
                 if (seqyA[r]=='-')
@@ -2168,7 +2155,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 if (r<msa.size()) msa[r]=msa_ext[r];
                 else msa.push_back(msa_ext[r]);
             }
-            //for (r=0;r<ylen_ext;r++) cout<<"["<<r<<"]\t"<<msa_ext[r]<<'\t'<<seqy[r]<<'\t'
                     //<<ya[r][0]<<'\t'<<ya[r][1]<<'\t'<<ya[r][2]<<'\t'<<secy[r]<<endl;
 
             // clean up
@@ -2192,7 +2178,6 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             seqyA_mat[i][i]="";
             for (r=0 ;r<ylen ; r++) seqyA_mat[i][i]+=msa[r][tm_idx];
             seqxA_mat[i][i]=seqyA_mat[i][i];
-            //cout<<xname_vec[i]<<'\t'<<seqxA_mat[i][i]<<endl;
         }
         for (i=0;i<chain_num; i++)
         {

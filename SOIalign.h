@@ -126,7 +126,6 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, int *invmap,
     double delta_score;
     for (iter=0; iter<getmin(xlen,ylen)*5; iter++)
     {
-        //cout<<"total_score="<<total_score<<".iter="<<iter<<endl;
         //print_invmap(invmap,ylen);
         delta_score=-1;
         for (i=0;i<xlen;i++)
@@ -647,7 +646,6 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     TM   =SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c,
         ylen, xlen, t0, u0, fwdmap0, iteration_max,
         local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, true);
-    //cout<<"TM2="<<TM2<<"\tTM1="<<TM1<<"\tTMmax="<<TMmax<<"\tTM="<<TM<<endl;
     if (TM>TMmax)
     {
         TMmax = TM;
@@ -924,7 +922,6 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         seqxA[ylen+k]=seqx[i];
         k++;
     }
-    //cout<<n_ali8<<'\t'
         //<<rmsd0<<'\t'
         //<<100.*SO<<endl;
 

@@ -109,7 +109,6 @@ void output_flexalign_rasmol(const string xname, const string yname,
     stringstream buf_atm;
     stringstream buf_all_atm;
     stringstream buf_all_atm_lig;
-    //stringstream buf_pdb;
     stringstream buf_tm;
     string line;
     double x[3];  // before transform
@@ -253,7 +252,6 @@ void output_flexalign_rasmol(const string xname, const string yname,
             transform(t, u, x, x1);
             //buf_pdb<<line.substr(0,30)<<setiosflags(ios::fixed)
                 //<<setprecision(3)
-                //<<setw(8)<<x1[0] <<setw(8)<<x1[1] <<setw(8)<<x1[2]
                 //<<line.substr(54)<<'\n';
 
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
@@ -416,13 +414,9 @@ void output_flexalign_rasmol(const string xname, const string yname,
                     }
                     //buf_pdb<<left<<setw(6)
                         //<<line_vec[_atom_site["group_PDB"]]<<right
-                        //<<setw(5)<<lig_idx1%100000<<' '<<atom<<' '
                         //<<AA<<" "<<asym_id[asym_id.size()-1]
                         //<<resi<<inscode<<"   "
                         //<<setiosflags(ios::fixed)<<setprecision(3)
-                        //<<setw(8)<<x1[0]
-                        //<<setw(8)<<x1[1]
-                        //<<setw(8)<<x1[2]<<'\n';
 
                     if (after_ter==false ||
                         line_vec[_atom_site["group_pdb"]]=="HETATM")
@@ -1086,7 +1080,6 @@ void output_flexalign_pymol(const string xname, const string yname,
             }
             prev_resi1=curr_resi1;
             prev_resi2=curr_resi2;
-            //if (seqM[i]!=':') continue;
         }
         if (resi1_sele.size()) resi1_sele=" and ( "+resi1_sele+")";
         if (resi2_sele.size()) resi2_sele=" and ( "+resi2_sele+")";
@@ -1620,10 +1613,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
             t_u2tu(t0,u0,tu_tmp);
             tu_vec.push_back(tu_tmp);
             for (j=0;j<ylen+1;j++) invmap[j]=invmap_h[j];
-            //cout<<">hinge="<<hinge<<'\n'
                 //<<seqxA<<'\n'<<seqM<<'\n'<<seqyA<<endl;
-            //for (j=0;j<ylen;j++) if ((i=invmap[j])>=0) cout<<"("<<i<<","<<j<<")";
-            //cout<<endl;
         }
         
         // clean up

@@ -241,10 +241,6 @@ double enhanced_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_list,
         total_score+=tmp_score;
     }
     if (total_score<=0) return total_score; // error: no assignable chain
-    //cout<<"assign1_list={";
-    //for (i=0;i<chain1_num;i++) cout<<assign1_list[i]<<","; cout<<"}"<<endl;
-    //cout<<"assign2_list={";
-    //for (j=0;j<chain2_num;j++) cout<<assign2_list[j]<<","; cout<<"}"<<endl;
 
     // iterative refinemnt
     double delta_score;
@@ -429,8 +425,6 @@ double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
         }
     }
     het_deg=(max_TM-min_TM)/max_TM;
-    //cout<<"min_TM="<<min_TM<<endl;
-    //cout<<"max_TM="<<max_TM<<endl;
     return het_deg;
 }
 
@@ -498,10 +492,8 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_lis
                     ut_tmc_mat[ut_idx]=1/(1+dd/(d0MM*d0MM));
                     ut_tm_vec[ut_idx].first=
                         ut_tmc_mat[ut_idx]*TMave_mat[i][j];
-                    //cout<<"TM["<<ut_idx<<"]="<<ut_tm_vec[ut_idx].first<<endl;
                 }
             }
-            //cout<<"sorting "<<total_pair<<" chain pairs"<<endl;
 
             // initial assignment
             assign1_tmp[c1]=c2;
@@ -521,7 +513,6 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_lis
                 assign2_tmp[j]=i;
                 TMsum+=TMave_mat[i][j];
                 TMscore+=ut_tmc_mat[i*chain2_num+j];
-                //cout<<"ut_idx="<<ut_tm_vec[ut_idx].second
                     //<<"\ti="<<i<<"\tj="<<j<<"\ttm="<<ut_tm_vec[ut_idx].first<<endl;
             }
 
@@ -534,15 +525,8 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_lis
                 MMscore_max=MMscore;
                 for (i=0;i<chain1_num;i++) assign1_list[i]=assign1_tmp[i];
                 for (j=0;j<chain2_num;j++) assign2_list[j]=assign2_tmp[j];
-                //cout<<"TMsum/L="<<TMsum/L<<endl;
-                //cout<<"TMscore/chain_num="<<TMscore/chain_num<<endl;
-                //cout<<"MMscore="<<MMscore<<endl;
-                //cout<<"assign1_list={";
                 //for (i=0;i<chain1_num;i++) 
-                    //cout<<assign1_list[i]<<","; cout<<"}"<<endl;
-                //cout<<"assign2_list={";
                 //for (j=0;j<chain2_num;j++)
-                    //cout<<assign2_list[j]<<","; cout<<"}"<<endl;
             }
         }
     }
@@ -577,16 +561,10 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
     // calculate MMscore
     MMscore=MMscore_old=calMMscore(TMave_mat, assign1_list, chain1_num,
         chain2_num, xcentroids, ycentroids, d0MM, r1, r2, xt, t, u, L);
-    //cout<<"MMscore="<<MMscore<<endl;
-    //cout<<"TMave_mat="<<endl;
     //for (i=0;i<chain1_num;i++)
-    //{
         //for (j=0; j<chain2_num; j++)
-        //{
             //if (j<chain2_num-1) cout<<TMave_mat[i][j]<<'\t';
             //else                cout<<TMave_mat[i][j]<<endl;
-        //}
-    //}
 
     /* iteratively refine chain assignment. in each iteration, attempt
      * to swap (i,old_j=assign1_list[i]) with (i,j) */
@@ -598,10 +576,6 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
     int old_i=-1;
     int old_j=-1;
 
-    //cout<<"assign1_list={";
-    //for (i=0;i<chain1_num;i++) cout<<assign1_list[i]<<","; cout<<"}"<<endl;
-    //cout<<"assign2_list={";
-    //for (j=0;j<chain2_num;j++) cout<<assign2_list[j]<<","; cout<<"}"<<endl;
 
     for (int iter=0;iter<chain1_num*chain2_num;iter++)
     {
@@ -623,7 +597,6 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
                     chain2_num, xcentroids, ycentroids, d0MM,
                     r1, r2, xt, t, u, L);
 
-                //cout<<"(i,j,old_i,old_j,MMscore)=("<<i<<","<<j<<","
                     //<<old_i<<","<<old_j<<","<<MMscore<<")"<<endl;
 
                 if (MMscore>MMscore_old) // successful swap
@@ -634,7 +607,6 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
                     if (old_j>=0) assign2_list[old_j]=old_i;
                     delta_score=(MMscore-MMscore_old);
                     MMscore_old=MMscore;
-                    //cout<<"MMscore="<<MMscore<<endl;
                     break;
                 }
                 else
@@ -646,15 +618,9 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,int *assign1_l
                 }
             }
         }
-        //cout<<"iter="<<iter<<endl;
-        //cout<<"assign1_list={";
-        //for (i=0;i<chain1_num;i++) cout<<assign1_list[i]<<","; cout<<"}"<<endl;
-        //cout<<"assign2_list={";
-        //for (j=0;j<chain2_num;j++) cout<<assign2_list[j]<<","; cout<<"}"<<endl;
         if (delta_score<=0) break; // cannot swap any chain pair
     }
     MMscore=MMscore_old;
-    //cout<<"MMscore="<<MMscore<<endl;
 
     // clean up
     delete[]assign1_tmp;

@@ -157,7 +157,6 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
 
         if (n_ali8_tmp==0)
         {
-            //cerr<<"WARNING! zero aligned residue in iteration "<<iter<<endl;
             if (xlen>=ylen) seqxA_tmp = seqx;
             if (xlen<=ylen) seqyA_tmp = seqy;
             if (xlen<ylen)

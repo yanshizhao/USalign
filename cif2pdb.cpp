@@ -366,9 +366,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
         else if (group_PDB!="ATOM  ") continue;
             
         //alt_id=".";
-        //if (_atom_site.count("label_alt_id")) // in 39.4 % of entries
             //alt_id=line_vec[_atom_site["label_alt_id"]];
-        //if (alt_id!="." && alt_id!="A") continue;
 
         if (resn.size()==1)
         {
@@ -431,7 +429,6 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
                     alt_id_dict[resi_chain]=alt_id;
                 else if (alt_id_dict.count(resi_chain) &&
                        alt_id!=alt_id_dict[resi_chain]) continue;
-                //if (alt_id!="." && alt_id!="A") continue;
             }
         }
 

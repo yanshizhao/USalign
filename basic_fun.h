@@ -634,7 +634,6 @@ size_t get_PDB_lines(const std::string filename,
                         chainID_list.push_back(':'+model_index+','+asym_id);
                     else //if (split_opt==2 && ter_opt==1)
                         chainID_list.push_back(':'+asym_id);
-                    //else
                         //chainID_list.push_back("");
                 }
                 std::map<std::string, std::string>().swap(alt_id_dict);
@@ -656,7 +655,6 @@ size_t get_PDB_lines(const std::string filename,
                     alt_id_dict[resi_chain]=alt_id;
                 else if (alt_id_dict.count(resi_chain) && alt_id!=alt_id_dict[resi_chain])
                     continue;
-                //if (alt_id!="." && alt_id!="A") continue;
             }
 
             if (prev_asym_id!=asym_id)
@@ -673,7 +671,6 @@ size_t get_PDB_lines(const std::string filename,
                         chainID_list.push_back(':'+model_index+','+asym_id);
                     else //if (split_opt==2 && ter_opt==1)
                         chainID_list.push_back(':'+asym_id);
-                    //else
                         //chainID_list.push_back("");
                 }
             }

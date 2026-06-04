@@ -1593,7 +1593,6 @@ void output_pymol(const string xname, const string yname,
             }
             prev_resi1=curr_resi1;
             prev_resi2=curr_resi2;
-            //if (seqM[i]!=':') continue;
         }
         if (o_opt==1)
         {
@@ -2017,7 +2016,6 @@ void output_rasmol(const string xname, const string yname,
     stringstream buf_atm;
     stringstream buf_all_atm;
     stringstream buf_all_atm_lig;
-    //stringstream buf_pdb;
     stringstream buf_tm;
     string line;
     double x[3];  // before transform
@@ -2129,7 +2127,6 @@ void output_rasmol(const string xname, const string yname,
             transform(t, u, x, x1);
             //buf_pdb<<line.substr(0,30)<<setiosflags(ios::fixed)
                 //<<setprecision(3)
-                //<<setw(8)<<x1[0] <<setw(8)<<x1[1] <<setw(8)<<x1[2]
                 //<<line.substr(54)<<'\n';
 
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
@@ -2272,13 +2269,9 @@ void output_rasmol(const string xname, const string yname,
                     }
                     //buf_pdb<<left<<setw(6)
                         //<<line_vec[_atom_site["group_PDB"]]<<right
-                        //<<setw(5)<<lig_idx1%100000<<' '<<atom<<' '
                         //<<AA<<" "<<asym_id[asym_id.size()-1]
                         //<<resi<<inscode<<"   "
                         //<<setiosflags(ios::fixed)<<setprecision(3)
-                        //<<setw(8)<<x1[0]
-                        //<<setw(8)<<x1[1]
-                        //<<setw(8)<<x1[2]<<'\n';
 
                     if (after_ter==false ||
                         line_vec[_atom_site["group_pdb"]]=="HETATM")
@@ -3629,7 +3622,6 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         j_old=m2[k]+1;
     }
     //SO/=getmin(xlen,ylen);
-    //cout<<n_ali8<<'\t'
         //<<rmsd0<<'\t'
         //<<100.*SO<<endl;
 

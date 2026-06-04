@@ -521,7 +521,6 @@ int main(int argc, char *argv[])
             if (s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast, 
                 TMcut, s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
             
-            //cout<<chainID_list[chain_i]<<" => "<<chainID_list[chain_j]<<endl;
             
             ya.clear();
             ya.reserve(ylen);

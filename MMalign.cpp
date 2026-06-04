@@ -657,7 +657,6 @@ int main(int argc, char *argv[])
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        //double het_deg=check_heterooligomer(TMave_mat, chain1_num, chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
@@ -719,7 +718,6 @@ int main(int argc, char *argv[])
             calculate_centroids(ya_vec, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
-        //double het_deg=check_heterooligomer(TMave_mat, chain1_num, chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
@@ -766,13 +764,11 @@ int main(int argc, char *argv[])
         seqxA_init, seqyA_init, assign1_init,  assign2_init,  TMave_init);
     double max_total_score_cross=max_total_score;
 
-    //if (init_pair_num!=2 && is_oligomer==false) MMalign_cross(
         //max_total_score_cross, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
         //secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         //xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
         //TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init, sequence_init,
         //d0_scale, true);
-    //else 
     if (len_aa+len_na<10000)
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
