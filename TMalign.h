@@ -930,7 +930,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
 
 void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, int *y2x, const double D0_MIN, double d0)
+    int xlen, int ylen, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
     double t[3];
     double u[3][3];
@@ -985,7 +985,7 @@ void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, Cha
     DoubleMatrix& val, const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0.data(), D0_MIN,d0);
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
     double gap_open=-1.0;
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
