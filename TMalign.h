@@ -736,7 +736,7 @@ void sec_str(int len,const char *seq, const vector<vector<bool> >&bp,
 //the jth element in y is aligned to a gap in x if i==-1
 
 void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
-    const char *secx, const char *secy, int xlen, int ylen, int *y2x)
+    const char *secx, const char *secy, int xlen, int ylen, std::vector<int>& y2x)
 {
     double gap_open=-1.0;
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
@@ -3157,7 +3157,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         /************************************************************/
         //    get initial alignment based on secondary structure   
         /************************************************************/
-        get_initial_ss(path, val, secx.c_str(), secy.c_str(), xlen, ylen, invmap.data());
+        get_initial_ss(path, val, secx.c_str(), secy.c_str(), xlen, ylen, invmap);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
