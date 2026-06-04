@@ -2461,7 +2461,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         /*******************************************************************/
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
-            invmap.data(), d0, d0_search, dcu0, fast_opt, t, u);
+            invmap, d0, d0_search, dcu0, fast_opt, t, u);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);

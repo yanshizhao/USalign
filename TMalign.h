@@ -1032,7 +1032,7 @@ void find_max_frag(const CoordArray& x, int len, int *start_max,
 //the jth element in y is aligned to a gap in x if i==-1
 double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen,
-    int *y2x, double d0, double d0_search,
+    std::vector<int>& y2x, double d0, double d0_search,
     double dcu0, const bool fast_opt, double t[3], double u[3][3])
 {
     int fra_min=4;           //minimum fragment for search
@@ -3290,7 +3290,7 @@ int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         /*******************************************************************/
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
-            invmap.data(), d0, d0_search, dcu0, fast_opt, t, u);
+            invmap, d0, d0_search, dcu0, fast_opt, t, u);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap.data(),
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
