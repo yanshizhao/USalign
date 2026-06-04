@@ -420,7 +420,7 @@ std::vector<int> invmap(ylen+1);
                             xlen, ylen, sequence, Lnorm_ass, d0_scale,
                             i_opt, a_opt, u_opt, d_opt,
                             mol_vec1[chain_i]+mol_vec2[chain_j], 
-                            outfmt_opt, invmap.data());
+                            outfmt_opt, invmap);
                         if (outfmt_opt>=2) 
                         {
                             Liden=L_ali=0;
@@ -708,7 +708,7 @@ std::vector<int> invmap(ylen+1);
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, 0, d0_scale,
                 i_opt, a_opt, false, d_opt,
-                mol_vec1[0]+mol_vec2[0], outfmt_opt, invmap.data());
+                mol_vec1[0]+mol_vec2[0], outfmt_opt, invmap);
             if (outfmt_opt>=2) 
             {
                 Liden=L_ali=0;
@@ -895,7 +895,7 @@ std::vector<int> invmap(ylen+1);
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
                     i_opt, false, true, false,
-                    mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap.data());
+                    mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -1450,7 +1450,7 @@ std::vector<int> invmap(ylen+1);
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
+                    0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
 
                 if (sequence.size()<2) sequence.push_back("");
@@ -1783,7 +1783,7 @@ std::vector<int> invmap(ylen+1);
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    0, false, u_opt, false, mol_type, outfmt_opt, invmap.data());
+                    0, false, u_opt, false, mol_type, outfmt_opt, invmap);
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -1986,7 +1986,7 @@ std::vector<int> invmap(ylen+1);
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    2, a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap.data());
+                    2, a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap);
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -2098,7 +2098,7 @@ std::vector<int> invmap(ylen+1);
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                0, a_opt, u_opt, d_opt, mol_type, 1, invmap.data());
+                0, a_opt, u_opt, d_opt, mol_type, 1, invmap);
 
             int rx=0;
             int ry=0;
@@ -2257,7 +2257,7 @@ std::vector<int> invmap(ylen+1);
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    true, a_opt, u_opt, d_opt, mol_type, 1, invmap.data());
+                    true, a_opt, u_opt, d_opt, mol_type, 1, invmap);
 
                 if (xlen<=ylen)
                 {
