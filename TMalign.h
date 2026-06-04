@@ -1288,7 +1288,7 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
 {
     double gap_open[2]={-0.6, 0};
     double rmsd;
-    int *invmap=new int[ylen+1];
+    std::vector<int> invmap(ylen+1);
     int iteration, i, j, k;
     double tmscore, tmscore_max, tmscore_old=0;
     int score_sum_method=8, simplify_step=40;
@@ -1330,7 +1330,6 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
         }
     }
 
-    delete []invmap;
     return tmscore_max;
 }
 
