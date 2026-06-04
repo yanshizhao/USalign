@@ -2143,7 +2143,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                 NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
                     t, u, d02, gap_open, invmap);
                 GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
-                    invmap.data(), d0, d0_search, t, u);
+                    invmap, d0, d0_search, t, u);
                 if (GL > GLmax)
                 {
                     GLmax = GL;

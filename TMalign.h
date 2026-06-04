@@ -472,7 +472,7 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 
 //compute the score quickly in three iterations
 double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    const CoordArray& x, const CoordArray& y, int xlen, int ylen, int invmap[],
+    const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
     double d0, double d0_search, double t[3], double u[3][3])
 {
     double rms,tmscore,tmscore1,tmscore2;
@@ -578,8 +578,9 @@ double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
             i=j+k;
             if(i>=0 && i<xlen) y2x[j]=i; else y2x[j]=-1;
         }
+        { std::vector<int> y2x_v(y2x, y2x + ylen);
         tmscore=get_score_fast(r1, r2, xtm, ytm,
-            x, y, xlen, ylen, y2x, d0,d0_search, t, u);
+            x, y, xlen, ylen, y2x_v, d0,d0_search, t, u); }
         if(tmscore>=tmscore_max) { tmscore_max=tmscore; k_best=k; }
     }
     k=k_best;
@@ -911,7 +912,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
                 NWDP_TM(path, val, x, y, xlen, ylen,
                     t, u, d02, gap_open, invmap);
                 GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
-                    invmap.data(), d0, d0_search, t, u);
+                    invmap, d0, d0_search, t, u);
                 if (GL > GLmax)
                 {
                     GLmax = GL;
@@ -1114,7 +1115,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
 
             //evaluate the map quickly in three iterations
-            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_.data(),
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
                 d0, d0_search, t, u);
 
             if(tmscore>=tmscore_max)
@@ -1162,7 +1163,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         
             //evaluate the map quickly in three iterations
             tmscore=get_score_fast(r1, r2, xtm, ytm,
-                x, y, xlen, ylen, y2x_.data(), d0,d0_search, t, u);
+                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
             if(tmscore>=tmscore_max)
             {
                 tmscore_max=tmscore;
@@ -1218,7 +1219,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             }
 
             //evaluate the map quickly in three iterations
-            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_.data(),
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
                 d0, d0_search, t, u);
 
             if(tmscore>=tmscore_max)
@@ -1256,7 +1257,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         
             //evaluate the map quickly in three iterations
             tmscore=get_score_fast(r1, r2, xtm, ytm,
-                x, y, xlen, ylen, y2x_.data(), d0,d0_search, t, u);
+                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
             if(tmscore>=tmscore_max)
             {
                 tmscore_max=tmscore;
