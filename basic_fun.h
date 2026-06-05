@@ -852,13 +852,12 @@ void transform(const Vec3& t, const RotMat& u, const Vec3& x, Vec3& x1)
     x1[2]=t[2]+dot(u[2], x);
 }
 
-// backward-compatible overload for legacy double[3] callers
+// backward-compatible overload with same body (operator[] syntax identical)
 inline void transform(const double t[3], const double u[3][3], const double *x, double *x1)
 {
-    transform(reinterpret_cast<const Vec3&>(*t),
-              reinterpret_cast<const RotMat&>(*u),
-              reinterpret_cast<const Vec3&>(*x),
-              reinterpret_cast<Vec3&>(*x1));
+    x1[0]=t[0] + u[0][0]*x[0] + u[0][1]*x[1] + u[0][2]*x[2];
+    x1[1]=t[1] + u[1][0]*x[0] + u[1][1]*x[1] + u[1][2]*x[2];
+    x1[2]=t[2] + u[2][0]*x[0] + u[2][1]*x[1] + u[2][2]*x[2];
 }
 
 void do_rotation(CoordArray& x, CoordArray& x1, int len, const Vec3& t, const RotMat& u)
@@ -869,12 +868,13 @@ void do_rotation(CoordArray& x, CoordArray& x1, int len, const Vec3& t, const Ro
     }
 }
 
-// backward-compatible overload for legacy double[3] callers
+// backward-compatible overload with same body (operator[] syntax identical)
 inline void do_rotation(CoordArray& x, CoordArray& x1, int len, const double t[3], const double u[3][3])
 {
-    do_rotation(x, x1, len,
-                reinterpret_cast<const Vec3&>(*t),
-                reinterpret_cast<const RotMat&>(*u));
+    for(int i=0; i<len; i++)
+    {
+        transform(t, u, &x[i][0], &x1[i][0]);
+    }
 }
 
 /* read user specified pairwise alignment from 'fname_lign' to 'sequence'.
