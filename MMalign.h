@@ -398,6 +398,60 @@ double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     }
     else TMscore=1; // only one aligned chain.
     TMscore/=getmin(chain1_num,chain2_num);
+
+    MMscore*=TMscore;
+    return MMscore;
+}
+
+// Vec3/RotMat overload (same body)
+inline double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    const int chain1_num, const int chain2_num, const CoordArray& xcentroids,
+    const CoordArray& ycentroids, const double d0MM, CoordArray& r1, CoordArray& r2,
+    CoordArray& xt, Vec3& t, RotMat& u, const int L)
+{
+    int Nali=0;
+    int i;
+    int j;
+    double MMscore=0;
+    for (i=0;i<chain1_num;i++)
+    {
+        j=assign1_list[i];
+        if (j<0) continue;
+
+        r1[Nali][0]=xcentroids[i][0];
+        r1[Nali][1]=xcentroids[i][1];
+        r1[Nali][2]=xcentroids[i][2];
+
+        r2[Nali][0]=ycentroids[j][0];
+        r2[Nali][1]=ycentroids[j][1];
+        r2[Nali][2]=ycentroids[j][2];
+
+        Nali++;
+        MMscore+=TMave_mat[i][j];
+    }
+    MMscore/=L;
+
+    double RMSD = 0;
+    double TMscore=0;
+    if (Nali>=3)
+    {
+        Kabsch(r1, r2, Nali, 1, RMSD, t, u);
+        do_rotation(r1, xt, Nali, t, u);
+
+        double dd=0;
+        for (i=0;i<Nali;i++)
+        {
+            dd=dist(xt[i], r2[i]);
+            TMscore+=1/(1+dd/(d0MM*d0MM));
+        }
+    }
+    else if (Nali==2)
+    {
+        double dd=dist(r1[0],r2[0]);
+        TMscore=1/(1+dd/(d0MM*d0MM));
+    }
+    else TMscore=1;
+    TMscore/=getmin(chain1_num,chain2_num);
     MMscore*=TMscore;
     return MMscore;
 }
@@ -548,8 +602,8 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<in
     r1.resize(chain_num);
     r2.resize(chain_num);
     xt.resize(chain_num);
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
 
     // calculate MMscore
     MMscore=MMscore_old=calMMscore(TMave_mat, assign1_list, chain1_num,
