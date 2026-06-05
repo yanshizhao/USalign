@@ -838,6 +838,11 @@ double dot(const double *a, const double *b)
     return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
 }
 
+inline double dot(const std::array<double,3>& a, const std::array<double,3>& b)
+{
+    return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+}
+
 void transform(double t[3], double u[3][3], double *x, double *x1)
 {
     x1[0]=t[0]+dot(&u[0][0], x);
