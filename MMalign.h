@@ -2022,7 +2022,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
             }
 
             tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
-                simplify_step, score_sum_method, &rmsd, local_d0_search,
+                simplify_step, score_sum_method, rmsd, local_d0_search,
                 Lnorm, score_d8, d0);
 
            
@@ -2651,7 +2651,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     d0_0=d0A;
     local_d0_search = d0_search;
     TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
-        score_sum_method, &rmsd, local_d0_search, Lnorm, score_d8, d0);
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
     TM_0 = TM1;
 
     //normalized by length of structure B
@@ -2659,7 +2659,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     d0B=d0;
     local_d0_search = d0_search;
     TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
-        score_sum_method, &rmsd, local_d0_search, Lnorm, score_d8, d0);
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
 
     double Lnorm_d0;
     if (a_opt>0)
@@ -2672,7 +2672,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         local_d0_search = d0_search;
 
         TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, &rmsd, local_d0_search, Lnorm,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM3;
     }
@@ -2686,7 +2686,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         Lnorm_0=Lnorm_ass;
         local_d0_search = d0_search;
         TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, &rmsd, local_d0_search, Lnorm,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM4;
     }
@@ -2700,7 +2700,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
         TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, &rmsd, local_d0_search, Lnorm,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM5;
     }

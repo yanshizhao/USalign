@@ -147,7 +147,7 @@ int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, d
 
 double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
-    int score_sum_method, double *Rcomm, double local_d0_search, double Lnorm,
+    int score_sum_method, double &Rcomm, double local_d0_search, double Lnorm,
     double score_d8, double d0, double GDT_list[5], double &maxsub)
 {
     double GDT_list_tmp[5]={0,0,0,0,0};
@@ -226,7 +226,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             //extract rotation matrix based on the fragment
             Kabsch(r1, r2, L_frag, 1, rmsd, t, u);
             if (simplify_step != 1)
-                *Rcomm = 0;
+                Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
 
             //get subsegment of this fragment
@@ -322,7 +322,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, int Lali,
     double t0[3], double u0[3][3], int simplify_step, int score_sum_method,
-    double *Rcomm, double local_d0_search, double score_d8, double d0,
+    double &Rcomm, double local_d0_search, double score_d8, double d0,
     double GDT_list[5], double &maxsub)
 {
     double GDT_list_tmp[5]={0,0,0,0,0};
@@ -398,7 +398,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
             Kabsch(r1, r2, L_frag, 1, rmsd, t, u);
 
             if (simplify_step != 1)
-                *Rcomm = 0;
+                Rcomm = 0;
             do_rotation(xtm, xt, Lali, t, u);
 
             d = local_d0_search - 1;
@@ -515,7 +515,7 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 
     //detailed search 40-->1
     tmscore = TMscore8_search_standard( r1, r2, xtm, ytm, xt, k, t, u,
-        simplify_step, score_sum_method, &rmsd, local_d0_search, score_d8, d0,
+        simplify_step, score_sum_method, rmsd, local_d0_search, score_d8, d0,
         GDT_list, maxsub);
     if (bNormalize)
         tmscore = tmscore * k / Lnorm;
@@ -844,7 +844,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     d0_0=d0A;
     local_d0_search = d0_search;
     TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
-        score_sum_method, &rmsd, local_d0_search, Lnorm, score_d8, d0,
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0,
         GDT_list, maxsub);
     TM_0 = TM1;
 
@@ -859,7 +859,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         local_d0_search = d0_search;
 
         TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, &rmsd, local_d0_search, Lnorm,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM3;
     }
@@ -873,7 +873,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         Lnorm_0=Lnorm_ass;
         local_d0_search = d0_search;
         TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, &rmsd, local_d0_search, Lnorm,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM4;
     }
@@ -887,7 +887,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
         TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, &rmsd, local_d0_search, Lnorm,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM5;
     }
