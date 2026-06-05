@@ -590,7 +590,7 @@ double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
     return tmscore_max;
 }
 
-void smooth(int *sec, int len)
+void smooth(std::vector<int>& sec, int len)
 {
     int i;
     int j;

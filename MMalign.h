@@ -2,7 +2,7 @@
 #include <cfloat>
 #include "se.h"
 
-void print_assign_list(int *assign1_list, const int chain1_num,
+void print_assign_list(const std::vector<int>& assign1_list, const int chain1_num,
     const vector<string> &chainID_list1,
     const vector<string> &chainID_list2)
 {
@@ -244,8 +244,8 @@ double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& as
 
     // iterative refinemnt
     double delta_score;
-    int *assign1_tmp=new int [chain1_num];
-    int *assign2_tmp=new int [chain2_num];
+    std::vector<int> assign1_tmp(chain1_num);
+    std::vector<int> assign2_tmp(chain2_num);
     for (i=0;i<chain1_num;i++) assign1_tmp[i]=assign1_list[i];
     for (j=0;j<chain2_num;j++) assign2_tmp[j]=assign2_list[j];
     int old_i=-1;
@@ -295,9 +295,7 @@ double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& as
         if (delta_score<=0) break; // cannot swap any chain pair
     }
 
-    // clean up
-    delete[]assign1_tmp;
-    delete[]assign2_tmp;
+    // assign1_tmp/assign2_tmp auto-destruct (std::vector)
     return total_score;
 }
 
@@ -444,8 +442,8 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     int max_j=-1;
 
     int chain_num=getmin(chain1_num,chain2_num);
-    int *assign1_tmp=new int [chain1_num];
-    int *assign2_tmp=new int [chain2_num];
+    std::vector<int> assign1_tmp(chain1_num);
+    std::vector<int> assign2_tmp(chain2_num);
     CoordArray xt;
     xt.resize(chain1_num);
     double t[3];
@@ -532,8 +530,7 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     }
 
     // clean up
-    delete[]assign1_tmp;
-    delete[]assign2_tmp;
+    // assign1_tmp/assign2_tmp auto-destruct (std::vector)
     delete[]ut_tmc_mat;
     ut_tm_vec.clear();
     // xt auto-destruct (CoordArray)
@@ -1916,8 +1913,8 @@ void MMalign_iter(double & max_total_score, const int max_iter,
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, CharMatrix& mask,
-    double t[3], double u[3][3], double d02, double gap_open, int j2i[])
+    int len1, int len2, CharMatrix& mask, double t[3], double u[3][3],
+    double d02, double gap_open, std::vector<int>& j2i)
 {
     int i,j; double h,v,d;
     for(i=0; i<=len1; i++) { val[i][0]=i*gap_open; path[i][0]=0; }
@@ -1946,14 +1943,16 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, Co
 }
 
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, CharMatrix& mask, double t[3], double u[3][3],
-    double d02, double gap_open, std::vector<int>& j2i)
+    int len1, int len2, CharMatrix& mask,
+    double t[3], double u[3][3], double d02, double gap_open, int j2i[])
 {
-    NWDP_TM_dimer(path, val, x, y, len1, len2, mask, t, u, d02, gap_open, j2i.data());
+    std::vector<int> j2i_v(len2 + 1);
+    NWDP_TM_dimer(path, val, x, y, len1, len2, mask, t, u, d02, gap_open, j2i_v);
+    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
 }
 
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
+    const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
 {
     int i,j; double h,v,d;
     for(i=0; i<=len1; i++) { val[i][0]=i*gap_open; path[i][0]=0; }
@@ -1979,11 +1978,12 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
     }
 }
 
-// vector<int>& overload
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
+    const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
 {
-    NWDP_TM_dimer(path, val, secx, secy, len1, len2, mask, gap_open, j2i.data());
+    std::vector<int> j2i_v(len2 + 1);
+    NWDP_TM_dimer(path, val, secx, secy, len1, len2, mask, gap_open, j2i_v);
+    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
 }
 
 //heuristic run of dynamic programing iteratively to find the best alignment
@@ -2947,7 +2947,7 @@ void MMalign_dimer(double & total_score,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap.data());
+                0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
             // print result
             seqxA_mat[i][j]=seqxA;
@@ -3157,7 +3157,7 @@ void writeTrimComplex(vector<vector<vector<double> > >&a_trim_vec,
 
 void output_dock_rotation_matrix(const std::string& fname_matrix,
     const vector<string>&xname_vec, const vector<string>&yname_vec,
-    const RotArray& ut_mat, int *assign1_list)
+    const RotArray& ut_mat, const std::vector<int>& assign1_list)
 {
     stringstream ss;
     int i;

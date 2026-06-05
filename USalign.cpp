@@ -1636,7 +1636,7 @@ std::vector<int> assign2_list(chain2_num);
     }
 
     if (m_opt) output_dock_rotation_matrix(fname_matrix,
-        xname_vec,yname_vec, ut_mat, assign1_list.data());
+        xname_vec,yname_vec, ut_mat, assign1_list);
 
     if (o_opt) output_dock(chain1_list, ter_opt, split_opt, infmt1_opt,
         atom_opt, mirror_opt, ut_mat, fname_super);
@@ -2415,7 +2415,7 @@ std::vector<int> invmap(ylen+1);
         {
             assign_list[repr_idx]=-1;
             output_dock_rotation_matrix(fname_matrix,
-                xname_vec,yname_vec, ut_mat, assign_list.data());
+                xname_vec,yname_vec, ut_mat, assign_list);
         }
 
         //if (o_opt) output_dock(chain_list, ter_opt, split_opt,

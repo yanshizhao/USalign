@@ -28,13 +28,13 @@ int se_main(
     CharMatrix path;          // for dynamic programming (char: 1/0)
     DoubleMatrix val;          // for dynamic programming
 
-    int *m1=nullptr;
-    int *m2=nullptr;
+    std::vector<int> m1;
+    std::vector<int> m2;
     double d;
     if (outfmt_opt<2)
     {
-        m1=new int[xlen]; //alignd index in x
-        m2=new int[ylen]; //alignd index in y
+        m1.resize(xlen); //alignd index in x
+        m2.resize(ylen); //alignd index in y
     }
 
     /***********************/
@@ -232,10 +232,7 @@ int se_main(
         }
     }
 
-    // free memory
-
-    delete [] m1;
-    delete [] m2;
+    // m1/m2 auto-destruct (std::vector)
     // path/val auto-destruct (CharMatrix/DoubleMatrix)
     return 0; // zero for no exception
 }

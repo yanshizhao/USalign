@@ -4,7 +4,7 @@
 
 #include "TMalign.h"
 
-void print_invmap(int *invmap, const int ylen)
+void print_invmap(const std::vector<int>& invmap, const int ylen)
 {
     int i;
     int j;
@@ -56,7 +56,7 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
 
 
 inline bool sec2sq(const int i, const int j,
-    const IntPairArray& secx_bond, const IntPairArray& secy_bond, int *fwdmap, int *invmap)
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const std::vector<int>& fwdmap, const std::vector<int>& invmap)
 {
     if (i<0 || j<0) return true;
     int ii,jj;
@@ -101,7 +101,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
             {
                 if (invmap[j]>=0 || score[i+1][j+1]<=max_score) continue;
                 if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,
-                    fwdmap.data(),invmap.data())) continue;
+                    fwdmap,invmap)) continue;
                 maxi=i;
                 maxj=j;
                 max_score=score[i+1][j+1];
@@ -135,8 +135,8 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
             {
                 oldi=invmap[j];
                 if (score[i+1][j+1]<=0 || oldi==i) continue;
-                if (mm_opt==6 && (!sec2sq(i,j,secx_bond,secy_bond,fwdmap.data(),invmap.data()) ||
-                            !sec2sq(oldi,oldj,secx_bond,secy_bond,fwdmap.data(),invmap.data())))
+                if (mm_opt==6 && (!sec2sq(i,j,secx_bond,secy_bond,fwdmap,invmap) ||
+                            !sec2sq(oldi,oldj,secx_bond,secy_bond,fwdmap,invmap)))
                     continue;
                 delta_score=score[i+1][j+1];
                 if (oldi>=0 && oldj>=0) delta_score+=score[oldi+1][oldj+1];
@@ -314,8 +314,7 @@ inline int soi_se_main(
     seqM.assign( ali_len,' ');
     seqyA.assign(ali_len,'-');
 
-    int *fwdmap = new int [xlen+1];
-    for (i=0;i<xlen;i++) fwdmap[i]=-1;
+    std::vector<int> fwdmap(xlen+1, -1);
     for (j=0;j<ylen;j++)
     {
         seqyA[j]=seqy[j];
@@ -676,7 +675,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
 
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
-        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0.data());
+        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0);
         soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);

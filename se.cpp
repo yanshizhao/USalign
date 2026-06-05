@@ -444,7 +444,7 @@ int main(int argc, char *argv[])
                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
                         i_opt, a_opt, u_opt, d_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j], 
-                        outfmt_opt, invmap.data());
+                        outfmt_opt, invmap);
 
                     if (outfmt_opt>=2)
                         get_seqID(invmap.data(), seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);

@@ -34,7 +34,7 @@ void tu2t_u(vector<double> tu_tmp, double t0[3],double u0[3][3])
     }
 }
 
-void aln2invmap(const string &seqxA, const string &seqyA, int *invmap)
+void aln2invmap(const string &seqxA, const string &seqyA, std::vector<int>& invmap)
 {
     int i;
     int j;
