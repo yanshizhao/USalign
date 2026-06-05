@@ -179,7 +179,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt,
     const int mol_type, const int outfmt_opt, std::vector<int>& invmap,
-    double *dist_list, IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
+    std::vector<double>& dist_list, IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
 inline int soi_se_main(
@@ -193,7 +193,7 @@ inline int soi_se_main(
     const int xlen, const int ylen,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, std::vector<int>& invmap, double *dist_list,
+    const int outfmt_opt, std::vector<int>& invmap, std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
 
@@ -540,7 +540,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const vector<string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, double *dist_list,
+    const int mol_type, std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     double D0_MIN;        //for d0
