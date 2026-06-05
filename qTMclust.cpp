@@ -330,13 +330,13 @@ int main(int argc, char *argv[])
     vector<string> resi_vec;    // residue index for chain, dummy variable
     vector<pair<int,size_t> >chainLen_list; // vector of (length,index) pair
     vector<vector<char> > seq_vec;
-    vector<vector<char> > sec_vec;
+    vector<string> sec_vec;
     vector<vector<vector<float> > >xyz_vec;
 
     // parse files
     string chain_name;
     vector<char>  seq_tmp;
-    vector<char>  sec_tmp;
+    string  sec_tmp;
     vector<float> flt_tmp(3,0);
     vector<vector<float> >xyz_tmp;
     size_t newchainnum;
@@ -395,8 +395,8 @@ int main(int argc, char *argv[])
             read_PDB(PDB_lines[j], xa, seq_str, resi_vec, byresi_opt);
             seq_tmp.assign(seq_str.begin(), seq_str.end());
 
-            if (mol_vec[j]<=0) make_sec(xa, xlen, &sec_tmp[0]);
-            else make_sec(&seq_tmp[0],xa,xlen,&sec_tmp[0],atom_opt);
+            if (mol_vec[j]<=0) make_sec(xa, xlen, sec_tmp);
+            else make_sec(&seq_tmp[0],xa,xlen,sec_tmp,atom_opt);
 
             xyz_tmp.assign(xlen,flt_tmp);
             for (int r=0;r<xlen;r++)
@@ -760,7 +760,7 @@ int main(int argc, char *argv[])
         else // member structures are not used further
         {
             vector<char> ().swap(seq_vec[chain_i]);
-            vector<char> ().swap(sec_vec[chain_i]);
+            string().swap(sec_vec[chain_i]);
             vector<vector<float> > ().swap(xyz_vec[chain_i]);
         }
     }
