@@ -210,8 +210,8 @@ int main(int argc, char *argv[])
             string secx;
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines[chain_i], xa, seqx, resi_vec, 0);
-            if (mol_vec[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, &secx[0],atom_opt);
-            else make_sec(xa, xlen, &secx[0]); // protein
+            if (mol_vec[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, secx,atom_opt);
+            else make_sec(xa, xlen, secx); // protein
             
             cout<<'>'<<xname.substr(dir_opt.size(),
                 xname.size()-dir_opt.size()-suffix_opt.size())

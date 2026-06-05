@@ -665,7 +665,7 @@ char sec_str(double dis13, double dis14, double dis15,
 
 /* secondary structure assignment for protein:
  * 1->coil, 2->helix, 3->turn, 4->strand */
-void make_sec(const CoordArray& x, int len, char *sec)
+void make_sec(const CoordArray& x, int len, std::string& sec)
 {
     int j1;
     int j2;
@@ -678,9 +678,9 @@ void make_sec(const CoordArray& x, int len, char *sec)
     double d24;
     double d25;
     double d35;
+    sec.assign(len, 'C');
     for(int i=0; i<len; i++)
     {
-        sec[i]='C';
         j1=i-2;
         j2=i-1;
         j3=i;
@@ -698,7 +698,6 @@ void make_sec(const CoordArray& x, int len, char *sec)
             sec[i]=sec_str(d13, d14, d15, d24, d25, d35);
         }
     }
-    sec[len]=0;
 }
 
 // a c d b: a paired to b, c paired to d
@@ -742,7 +741,7 @@ void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
-void make_sec(const char *seq, const CoordArray& x, int len, char *sec,const string atom_opt)
+void make_sec(const char *seq, const CoordArray& x, int len, std::string& sec, const string atom_opt)
 {
     int ii;
     int jj;
@@ -761,9 +760,9 @@ void make_sec(const char *seq, const CoordArray& x, int len, char *sec,const str
     vector<bool> bp_tmp(len,false);
     vector<vector<bool> > bp(len,bp_tmp);
     bp_tmp.clear();
+    sec.assign(len, '.');
     for (i=0; i<len; i++)
     {
-        sec[i]='.';
         for (j=i+1; j<len; j++)
         {
             if (((seq[i]=='u'||seq[i]=='t')&&(seq[j]=='a'             ))||
@@ -807,8 +806,6 @@ void make_sec(const char *seq, const CoordArray& x, int len, char *sec,const str
             sec[D0_var[i]+j]='>';
         }
     }
-    sec[len]=0;
-
     // clean up
     A0_var.clear();
     B0_var.clear();

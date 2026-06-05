@@ -1076,8 +1076,8 @@ void parse_chain_list(const vector<string>&chain_list,
             len = read_PDB(PDB_lines[chain_i], xa, seq, resi_vec, read_resi);
             if (mirror_opt) for (r=0;r<len;r++) xa[r][2]=-xa[r][2];
             if (mol_vec[chain_i]>0 || mol_opt=="RNA")
-                make_sec(seq.c_str(), xa, len, &sec[0], atom_opt);
-            else make_sec(xa, len, &sec[0]); // secondary structure assignment
+                make_sec(seq.c_str(), xa, len, sec, atom_opt);
+            else make_sec(xa, len, sec); // secondary structure assignment
             
             // store in vector
             tmp_chain_array.assign(len,tmp_atom_array);

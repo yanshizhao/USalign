@@ -509,8 +509,8 @@ int main(int argc, char *argv[])
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, read_resi);
             if (mirror_opt) for (int r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, &secx[0],atom_opt);
-            else make_sec(xa, xlen, &secx[0]); // secondary structure assignment
+            if (mol_vec1[chain_i]>0) make_sec(seqx.c_str(),xa, xlen, secx,atom_opt);
+            else make_sec(xa, xlen, secx); // secondary structure assignment
 
             for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
@@ -550,8 +550,8 @@ int main(int argc, char *argv[])
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, read_resi);
                     if (mol_vec2[chain_j]>0)
-                         make_sec(seqy.c_str(), ya, ylen, &secy[0], atom_opt);
-                    else make_sec(ya, ylen, &secy[0]);
+                         make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
+                    else make_sec(ya, ylen, secy);
 
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
