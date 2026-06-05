@@ -26,6 +26,8 @@ using CharMatrix    = std::vector<std::vector<char>>;       // 2D matrix of char
 using IntMatrix     = std::vector<std::vector<int>>;        // 2D matrix of ints
 using RotArray      = std::vector<std::array<double, 12>>;  // Array of rotation matrices (3x3 + translation)
 using IntPairArray  = std::vector<std::array<int, 2>>;      // Array of int pairs [start, end]
+using Vec3          = std::array<double, 3>;                // 3D vector (translation)
+using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation matrix
 
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
@@ -843,19 +845,36 @@ inline double dot(const std::array<double,3>& a, const std::array<double,3>& b)
     return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
 }
 
-void transform(double t[3], double u[3][3], double *x, double *x1)
+void transform(const Vec3& t, const RotMat& u, const Vec3& x, Vec3& x1)
 {
-    x1[0]=t[0]+dot(&u[0][0], x);
-    x1[1]=t[1]+dot(&u[1][0], x);
-    x1[2]=t[2]+dot(&u[2][0], x);
+    x1[0]=t[0]+dot(u[0], x);
+    x1[1]=t[1]+dot(u[1], x);
+    x1[2]=t[2]+dot(u[2], x);
 }
 
-void do_rotation(CoordArray& x, CoordArray& x1, int len, double t[3], double u[3][3])
+// backward-compatible overload for legacy double[3] callers
+inline void transform(const double t[3], const double u[3][3], const double *x, double *x1)
+{
+    transform(reinterpret_cast<const Vec3&>(*t),
+              reinterpret_cast<const RotMat&>(*u),
+              reinterpret_cast<const Vec3&>(*x),
+              reinterpret_cast<Vec3&>(*x1));
+}
+
+void do_rotation(CoordArray& x, CoordArray& x1, int len, const Vec3& t, const RotMat& u)
 {
     for(int i=0; i<len; i++)
     {
-        transform(t, u, x[i].data(), x1[i].data());
+        transform(t, u, x[i], x1[i]);
     }
+}
+
+// backward-compatible overload for legacy double[3] callers
+inline void do_rotation(CoordArray& x, CoordArray& x1, int len, const double t[3], const double u[3][3])
+{
+    do_rotation(x, x1, len,
+                reinterpret_cast<const Vec3&>(*t),
+                reinterpret_cast<const RotMat&>(*u));
 }
 
 /* read user specified pairwise alignment from 'fname_lign' to 'sequence'.
