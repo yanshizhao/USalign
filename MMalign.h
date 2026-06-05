@@ -446,8 +446,8 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     std::vector<int> assign2_tmp(chain2_num);
     CoordArray xt;
     xt.resize(chain1_num);
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     int ui;
     int uj;
     int ut_idx;
