@@ -458,7 +458,7 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     double dd=0;
 
     size_t  total_pair=chain1_num*chain2_num; // total pair
-    double *ut_tmc_mat=new double [total_pair]; // chain level TM-score
+    std::vector<double> ut_tmc_mat(total_pair, 0.0); // chain level TM-score
     vector<pair<double,int> > ut_tm_vec(total_pair,make_pair(0.0,0)); // product of both
 
     for (c1=0;c1<chain1_num;c1++)
@@ -529,11 +529,7 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
         }
     }
 
-    // clean up
-    // assign1_tmp/assign2_tmp auto-destruct (std::vector)
-    delete[]ut_tmc_mat;
-    ut_tm_vec.clear();
-    // xt auto-destruct (CoordArray)
+    // ut_tm_vec/xt auto-destruct (std::vector/CoordArray)
     return MMscore;
 }
 

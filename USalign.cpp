@@ -1841,8 +1841,7 @@ std::vector<int> invmap(ylen+1);
     for (i=0;i<chain_num;i++) xname_vec.push_back(
         chain_list[i].substr(dir_opt.size())+chainID_list[i]);
     vector<string>yname_vec;
-    double *TMave_list;
-    TMave_list = new double[chain_num];
+    std::vector<double> TMave_list(chain_num);
 
 std::vector<int> assign_list(chain_num);
     vector<string> msa(ylen,""); // row is position along msa; column is sequence
@@ -2433,7 +2432,6 @@ std::vector<int> invmap(ylen+1);
     vector<vector<string> >().swap(seqyA_mat);
     vector<string>().swap(xname_vec);
     vector<string>().swap(yname_vec);
-    delete[]TMave_list;
     // TMave_mat auto-destruct (DoubleMatrix)
     vector<vector<vector<double> > >().swap(a_vec); // structure of complex
     vector<vector<char> >().swap(seq_vec); // sequence of complex
@@ -2612,7 +2610,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     int n_ali8=0;
                     bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:fast_opt;
 std::vector<int> invmap(ylen+1);
-                    double *dist_list = new double[ylen+1];
+                    std::vector<double> dist_list(ylen+1);
 
                     // entry function for structure alignment
                     if (se_opt) 
@@ -2629,7 +2627,7 @@ std::vector<int> invmap(ylen+1);
                             xlen, ylen, Lnorm_ass, d0_scale,
                             i_opt, a_opt, u_opt, d_opt,
                             mol_vec1[chain_i]+mol_vec2[chain_j],
-                            outfmt_opt, invmap, dist_list,
+                            outfmt_opt, invmap, dist_list.data(),
                             secx_bond, secy_bond, mm_opt);
                         if (outfmt_opt>=2) 
                         {
@@ -2655,7 +2653,7 @@ std::vector<int> invmap(ylen+1);
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                         xlen, ylen, sequence, Lnorm_ass, d0_scale,
                         i_opt, a_opt, u_opt, d_opt, force_fast_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j], dist_list,
+                        mol_vec1[chain_i]+mol_vec2[chain_j], dist_list.data(),
                         secx_bond, secy_bond, mm_opt);
                     }
 
@@ -2693,8 +2691,6 @@ std::vector<int> invmap(ylen+1);
                     }
 
                     // Done! Free memory
-
-                    delete [] dist_list;
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
