@@ -89,8 +89,8 @@ bool adjust_dimer_assignment(
 
     double RMSD = 0;
     double dd   = 0;
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     size_t L_ali=0; // index of residue in aligned region
     size_t r=0;     // index of residue in full alignment
 
