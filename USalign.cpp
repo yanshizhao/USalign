@@ -1037,7 +1037,7 @@ std::vector<int> assign2_init(chain2_num);
     if (max_iter<2) max_iter=2;
     //if (byresi_opt==0)
     // MMalign_iter/MMalign_final internally overwrite all work buffers
-    char *sx=nullptr, *sy=nullptr, *scx=nullptr, *scy=nullptr;
+    std::string sx, sy, scx, scy;
     if (!se_opt)
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,

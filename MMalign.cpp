@@ -686,7 +686,7 @@ std::vector<int> assign2_init(chain2_num);
     int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
     // MMalign_iter/MMalign_final/MMalign_dimer internally overwrite work buffers
-    char *sx=nullptr, *sy=nullptr, *scx=nullptr, *scy=nullptr;
+    std::string sx, sy, scx, scy;
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
         ylen_vec, nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num,
@@ -746,9 +746,10 @@ std::vector<int> assign2_init(chain2_num);
         sequence[0]=seqxA_mat[maxTMmono_i][maxTMmono_j];
         sequence[1]=seqyA_mat[maxTMmono_i][maxTMmono_j];
         max_total_score=maxTMmono;
+        std::string sx, sy, scx, scy;
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
+            nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
