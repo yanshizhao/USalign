@@ -408,8 +408,8 @@ int main(int argc, char *argv[])
         xa.reserve(xlen);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
+        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
+        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
         
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -519,7 +519,7 @@ int main(int argc, char *argv[])
         xa.clear();
         xa.reserve(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         for (int j=0;j<chain2_num;j++)
         {
@@ -546,7 +546,7 @@ int main(int argc, char *argv[])
             ya.clear();
             ya.reserve(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             double t0[3];

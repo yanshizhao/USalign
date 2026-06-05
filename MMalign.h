@@ -620,11 +620,12 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<in
 
 void copy_chain_data(const vector<vector<double> >&a_vec_i,
     const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
-    const int len,CoordArray& a,std::string &seq,char *sec)
+    const int len,CoordArray& a,std::string &seq,std::string &sec)
 {
     int r;
     seq.clear();
     seq.reserve(len);
+    sec.assign(len, '\0');
     a.resize(len);
     for (r=0;r<len;r++)
     {
@@ -634,7 +635,6 @@ void copy_chain_data(const vector<vector<double> >&a_vec_i,
         seq += seq_vec_i[r];
         sec[r]=sec_vec_i[r];
     }
-    sec[len]=0;
 }
 
 // clear chains with L<3
@@ -1139,7 +1139,7 @@ int copy_chain_pair_data(
     const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, char *secx, char *secy,
+    CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int chain1_num, int chain2_num,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence)
@@ -1180,8 +1180,8 @@ int copy_chain_pair_data(
         sequence[1]+=seqyA_mat[i][j];
         mol_type+=mol_vec1[i]+mol_vec2[j];
     }
-    secx[xlen]=0;
-    secy[ylen]=0;
+    secx[xlen]='\0';
+    secy[ylen]='\0';
     return mol_type;
 }
 
@@ -1224,7 +1224,7 @@ double MMalign_search(
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, &secx[0], &secy[0], chain1_num, chain2_num,
+        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
@@ -1274,7 +1274,7 @@ double MMalign_search(
         secx.resize(xlen+1);
     xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         CoordArray xt;
         xt.resize(xlen);
@@ -1297,7 +1297,7 @@ double MMalign_search(
             secy.resize(ylen+1);
     ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             d0_out=5.0;
@@ -1400,7 +1400,7 @@ void MMalign_final(
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, &secx[0], &secy[0], chain1_num, chain2_num,
+        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
@@ -1513,7 +1513,7 @@ void MMalign_final(
         secx.resize(xlen+1);
     xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         CoordArray xt;
         xt.resize(xlen);
@@ -1530,7 +1530,7 @@ void MMalign_final(
             secy.resize(ylen+1);
     ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             d0_out=5.0;
@@ -1620,7 +1620,7 @@ void MMalign_se_final(
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, &secx[0], &secy[0], chain1_num, chain2_num,
+        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
@@ -1740,7 +1740,7 @@ void MMalign_se_final(
         secx.resize(xlen+1);
     xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         CoordArray xt;
         xt.resize(xlen);
@@ -1757,7 +1757,7 @@ void MMalign_se_final(
             secy.resize(ylen+1);
     ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             d0_out=5.0;
@@ -2837,7 +2837,7 @@ void MMalign_dimer(double & total_score,
 
     int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, &secx[0], &secy[0], chain1_num, chain2_num,
+        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
@@ -2886,7 +2886,7 @@ void MMalign_dimer(double & total_score,
         secx.resize(xlen+1);
     xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         CoordArray xt;
         xt.resize(xlen);
@@ -2909,7 +2909,7 @@ void MMalign_dimer(double & total_score,
             secy.resize(ylen+1);
     ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             d0_out=5.0;

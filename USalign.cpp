@@ -666,8 +666,8 @@ int MMalign(const string &xname, const string &yname,
         secy.resize(ylen+1);
         xa.resize(xlen);
         ya.resize(ylen);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
+        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
+        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
 
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -801,7 +801,7 @@ std::vector<int> invmap(ylen+1);
         secx.resize(xlen+1);
         xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         for (j=0;j<chain2_num;j++)
         {
@@ -832,7 +832,7 @@ std::vector<int> invmap(ylen+1);
             secy.resize(ylen+1);
             ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             double t0[3];
@@ -1254,8 +1254,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         xa.reserve(xlen);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,&secx[0]);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,&secy[0]);
+        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
+        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
 
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -1376,7 +1376,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         xa.clear();
         xa.reserve(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,&secx[0]);
+            xlen,xa,seqx,secx);
 
         for (j=0;j<chain2_num;j++)
         {
@@ -1396,7 +1396,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             ya.clear();
             ya.reserve(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,&secy[0]);
+                ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             double t0[3];
@@ -1431,7 +1431,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 ya_trim.clear();
                 ya_trim.reserve(ylen_trim);
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
-                    ylen_trim,ya_trim,seqy_trim,&secy_trim[0]);
+                    ylen_trim,ya_trim,seqy_trim,secy_trim);
                 TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -1539,13 +1539,13 @@ std::vector<int> assign2_list(chain2_num);
         secx.resize(xlen+1);
         xa.clear();
         xa.reserve(xlen);
-        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,&secx[0]);
+        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,secx);
 
         ylen =ylen_vec[j];
         secy.resize(ylen+1);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,&secy[0]);
+        copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,secy);
 
         // declare variable specific to this pair of TMalign
         double t0[3];
@@ -1735,7 +1735,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         secx.resize(xlen+1);
         xa.clear();
         xa.reserve(xlen);
-        copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,&secx[0]);
+        copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
         seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
         for (j=i+1;j<chain_num;j++)
         {
@@ -1745,7 +1745,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             secy.resize(ylen+1);
             ya.clear();
             ya.reserve(ylen);
-            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,&secy[0]);
+            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             double t0[3];
@@ -1927,7 +1927,7 @@ std::vector<int> assign_list(chain_num);
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,&secx[0]);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
 
             double maxTM=TMave_mat[i][repr_idx];
             int maxj=repr_idx;
@@ -1944,7 +1944,7 @@ std::vector<int> assign_list(chain_num);
             secy.resize(ylen+1);
             ya.clear();
             ya.reserve(ylen);
-            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j], ylen,ya,seqy,&secy[0]);
+            copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j], ylen,ya,seqy,secy);
 
             sequence[0]=seqxA_mat[i][j];
             sequence[1]=seqyA_mat[i][j];
@@ -2048,7 +2048,7 @@ std::vector<int> invmap(ylen+1);
         secy.resize(ylen+1);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,&secy[0]);
+        copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
 
         // recover alignment
         int    ylen_ext=ylen;        // chain length
@@ -2070,7 +2070,7 @@ std::vector<int> invmap(ylen+1);
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,&secx[0]);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
         
             // declare variable specific to this pair of TMalign
             double TM1;
@@ -2217,7 +2217,7 @@ std::vector<int> invmap(ylen+1);
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,&secx[0]);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
             for (j=i+1;j<chain_num;j++)
             {
                 ylen=len_vec[j];
@@ -2227,7 +2227,7 @@ std::vector<int> invmap(ylen+1);
                 secy.resize(ylen+1);
                 ya.clear();
                 ya.reserve(ylen);
-                copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,&secy[0]);
+                copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
                 sequence[0]=seqxA_mat[i][j];
                 sequence[1]=seqyA_mat[i][j];
             
