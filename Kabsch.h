@@ -333,3 +333,12 @@ bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double &r
     rms = rms1;
     return true;
 }
+
+// Vec3/RotMat overload (bridges to double[3] implementation)
+inline bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double &rms,
+    Vec3& t, RotMat& u)
+{
+    return Kabsch(x, y, n, mode, rms,
+                  reinterpret_cast<double(&)[3]>(t),
+                  reinterpret_cast<double(&)[3][3]>(u));
+}
