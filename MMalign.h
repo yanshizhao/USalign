@@ -1938,14 +1938,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, Co
     }
 }
 
-inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, CharMatrix& mask,
-    double t[3], double u[3][3], double d02, double gap_open, int j2i[])
-{
-    std::vector<int> j2i_v(len2 + 1);
-    NWDP_TM_dimer(path, val, x, y, len1, len2, mask, t, u, d02, gap_open, j2i_v);
-    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
-}
 
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
@@ -1974,13 +1966,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
     }
 }
 
-inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, CharMatrix& mask, const double gap_open, int j2i[])
-{
-    std::vector<int> j2i_v(len2 + 1);
-    NWDP_TM_dimer(path, val, secx, secy, len1, len2, mask, gap_open, j2i_v);
-    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
-}
 
 //heuristic run of dynamic programing iteratively to find the best alignment
 //input: initial rotation matrix t, u

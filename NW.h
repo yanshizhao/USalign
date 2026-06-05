@@ -25,17 +25,6 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArr
     int len1, int len2, double d02, double gap_open, std::vector<int>& j2i,
     const int hinge);
 
-/* Input: score[1:len1, 1:len2], and gap_open
- * Output: j2i[1:len2] \in {1:len1} U {-1}
- * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
-    DoubleMatrix& val, int len1, int len2, double gap_open, int j2i[])
-{
-    std::vector<int> j2i_v(len2+1);
-    NWDP_TM(score, path, val, len1, len2, gap_open, j2i_v);
-    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
-}
-
 inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i)
 {
@@ -82,15 +71,6 @@ inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
     int len1, int len2, double t[3], double u[3][3],
-    double d02, double gap_open, int j2i[])
-{
-    std::vector<int> j2i_v(len2+1);
-    NWDP_TM(path, val, x, y, len1, len2, t, u, d02, gap_open, j2i_v);
-    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
-}
-
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
-    int len1, int len2, double t[3], double u[3][3],
     double d02, double gap_open, std::vector<int>& j2i)
 {
     int i,j; double h,v,d;
@@ -135,15 +115,6 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
  * Input: vectors x, y, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, double d02, double gap_open, int j2i[],
-    const int hinge)
-{
-    std::vector<int> j2i_v(len2+1);
-    for (int _k = 0; _k <= len2; _k++) j2i_v[_k] = j2i[_k];
-    NWDP_SE(path, val, x, y, len1, len2, d02, gap_open, j2i_v, hinge);
-    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
-}
 
 
 
@@ -156,13 +127,6 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArr
 
 
 
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, const double gap_open, int j2i[])
-{
-    std::vector<int> j2i_v(len2+1);
-    NWDP_TM(path, val, secx, secy, len1, len2, gap_open, j2i_v);
-    for (int _k = 0; _k <= len2; _k++) j2i[_k] = j2i_v[_k];
-}
 
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
     const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
