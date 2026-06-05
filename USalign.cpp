@@ -2404,7 +2404,7 @@ std::vector<int> invmap(ylen+1);
                 ya[r][1]= a_vec[i][r][1];
                 ya[r][2]= a_vec[i][r][2];
             }
-            Kabsch(xa, ya, xlen, 1, &rmsd, t, u);
+            Kabsch(xa, ya, xlen, 1, rmsd, t, u);
             for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=u[ui][uj];
             for (uj=0;uj<3;uj++) ut_mat[i][9+uj]=t[uj];
         }

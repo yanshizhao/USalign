@@ -472,7 +472,7 @@ void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt
                 yfrag[k][2]=yk[j*closeK_opt+k][2];
             }
 
-            Kabsch(xfrag, yfrag, closeK_opt, 1, &rmsd, t, u);
+            Kabsch(xfrag, yfrag, closeK_opt, 1, rmsd, t, u);
  
             do_rotation(xfrag, xtran, closeK_opt, t, u);
 
@@ -783,7 +783,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     n_ali8=k;
 
-    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
 
     //normalized by length of structure A

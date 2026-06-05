@@ -125,7 +125,7 @@ bool adjust_dimer_assignment(
         L_ali++;
     }
 
-    Kabsch(xa, ya, L_ali, 1, &RMSD, t, u);
+    Kabsch(xa, ya, L_ali, 1, RMSD, t, u);
     do_rotation(xa, xt, L_ali, t, u);
 
     double total_score1=0;
@@ -167,7 +167,7 @@ bool adjust_dimer_assignment(
         L_ali++;
     }
 
-    Kabsch(xa, ya, L_ali, 1, &RMSD, t, u);
+    Kabsch(xa, ya, L_ali, 1, RMSD, t, u);
     do_rotation(xa, xt, L_ali, t, u);
 
     double total_score2=0;
@@ -380,7 +380,7 @@ double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     double TMscore=0;
     if (Nali>=3)
     {
-        Kabsch(r1, r2, Nali, 1, &RMSD, t, u);
+        Kabsch(r1, r2, Nali, 1, RMSD, t, u);
         do_rotation(r1, xt, Nali, t, u);
 
         // calculate pseudo-TMscore
@@ -2115,7 +2115,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                     r2[k][2] = y[k + j][2];
                 }
 
-                Kabsch(r1, r2, n_frag[i_frag], 1, &rmsd, t, u);
+                Kabsch(r1, r2, n_frag[i_frag], 1, rmsd, t, u);
 
                 double gap_open = 0.0;
                 NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
@@ -2631,7 +2631,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     n_ali8=k;
 
-    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
 
 

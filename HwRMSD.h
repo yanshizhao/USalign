@@ -30,7 +30,7 @@ double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     }
 
     double RMSD = 0;
-    Kabsch(r1, r2, L_ali, 1, &RMSD, t, u);
+    Kabsch(r1, r2, L_ali, 1, RMSD, t, u);
     RMSD = sqrt( RMSD/(1.0*L_ali) );
 
     for (i=0; i<xlen; i++)

@@ -13,7 +13,7 @@ rms   - sum of w*(ux+t-y)**2 over all atom pairs            (output)
 u    - u(i,j) is   rotation  matrix for best superposition  (output)
 t    - t(i)   is translation vector for best superposition  (output)
 **************************************************************************/
-bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double *rms,
+bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double &rms,
     double t[3], double u[3][3])
 {
     int i, j, m, m1, l, k;
@@ -30,7 +30,7 @@ bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double *r
     double epsilon = 0.00000001;
 
     //initialization
-    *rms = 0;
+    rms = 0;
     rms1 = 0;
     e0 = 0;
     double c1[3], c2[3];
@@ -330,6 +330,6 @@ bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double *r
         if (rms1 < 0.0) rms1 = 0.0;
     }
 
-    *rms = rms1;
+    rms = rms1;
     return true;
 }
