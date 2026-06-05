@@ -990,8 +990,8 @@ void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, Cha
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-void find_max_frag(const CoordArray& x, int len, int *start_max,
-    int *end_max, double dcu0, const bool fast_opt)
+void find_max_frag(const CoordArray& x, int len, int &start_max,
+    int &end_max, double dcu0, const bool fast_opt)
 {
     int r_min, fra_min=4;
     if (fast_opt) fra_min=8;
@@ -1008,11 +1008,11 @@ void find_max_frag(const CoordArray& x, int len, int *start_max,
             if(dist(x[i-1], x[i]) < dcu_cut) {
                 j++;
                 if(i==(len-1)) {
-                    if(j > Lfr_max) { Lfr_max=j; *start_max=start; *end_max=i; }
+                    if(j > Lfr_max) { Lfr_max=j; start_max=start; end_max=i; }
                     j=1;
                 }
             } else {
-                if(j>Lfr_max) { Lfr_max=j; *start_max=start; *end_max=i-1; }
+                if(j>Lfr_max) { Lfr_max=j; start_max=start; end_max=i-1; }
                 j=1; start=i;
             }
         }
@@ -1044,8 +1044,8 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     int xend=0;
     int yend=0;
 
-    find_max_frag(x, xlen, &xstart, &xend, dcu0, fast_opt);
-    find_max_frag(y, ylen, &ystart, &yend, dcu0, fast_opt);
+    find_max_frag(x, xlen, xstart, xend, dcu0, fast_opt);
+    find_max_frag(y, ylen, ystart, yend, dcu0, fast_opt);
 
 
     int Lx = xend-xstart+1;
