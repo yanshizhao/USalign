@@ -191,7 +191,7 @@ int calculate_score_gotoh(const int xlen,const int ylen, IntMatrix& S,
 // trace back dynamic programming path to diciper pairwise alignment
 void trace_back_gotoh(const char *seqx, const char *seqy,
     IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
-    const int xlen, const int ylen, int *invmap, const int invmap_only=1)
+    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
 {
     int i;
     int j;
@@ -263,7 +263,7 @@ void trace_back_gotoh(const char *seqx, const char *seqy,
  * pairwise local alignment */
 void trace_back_sw(const char *seqx, const char *seqy,
     IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
-    const int xlen, const int ylen, int *invmap, const int invmap_only=1)
+    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
 {
     int i;
     int j;
@@ -363,7 +363,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
  *               2: return seqxA, seqyA and invmap */
 int NWalign_main(const std::string &seqx, const std::string &seqy, const int xlen,
     const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
-    int *invmap, const int invmap_only=0, const int glocal=0)
+    std::vector<int>& invmap, const int invmap_only=0, const int glocal=0)
 {
     IntMatrix JumpH;
     IntMatrix JumpV;
@@ -414,7 +414,7 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     return aln_score; // aligment score
 }
 
-void get_seqID(int *invmap, const char *seqx, const char *seqy, 
+void get_seqID(const std::vector<int>& invmap, const char *seqx, const char *seqy,
     const int ylen, double &Liden,int &L_ali)
 {
     Liden=0;
@@ -513,7 +513,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, 
     int ylen=resi_vec2.size();
     if (byresi_opt==4 || byresi_opt==5 || byresi_opt==7) // global or glocal sequence alignment
     {
-        int *invmap;
+        std::vector<int> invmap(ylen+1);
         int glocal=0;
         if (byresi_opt==5 || byresi_opt==7) glocal=2;
         int mol_type=0;
@@ -655,7 +655,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, 
 
     if (byresi_opt==7)
     {
-        int *invmap;
+        std::vector<int> invmap(ylen+1);
         int glocal=2;
         int mol_type=0;
 
@@ -667,7 +667,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, 
             else mol_type--;
         NWalign_main(seqx, seqy, xlen, ylen, sequence[0],sequence[1],
             mol_type, invmap, 0, glocal);
-        delete [] invmap;
+        // invmap auto-destruct (std::vector)
         return sequence[0].size();
     }
 

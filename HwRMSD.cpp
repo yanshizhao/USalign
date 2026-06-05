@@ -521,10 +521,10 @@ int main(int argc, char *argv[])
                         rmsd_ali, n_ali, n_ali8, xlen, ylen, sequence,
                         Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j],
-                        invmap.data(), glocal, iter_opt, seq_opt, early_opt);
+                        invmap, glocal, iter_opt, seq_opt, early_opt);
 
                     if (outfmt_opt>=2) 
-                        get_seqID(invmap.data(), seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali8);
+                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali8);
 
                     // print result
                     output_results(

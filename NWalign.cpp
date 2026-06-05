@@ -354,9 +354,9 @@ int main(int argc, char *argv[])
                     
                     int aln_score=NWalign_main(seqx, seqy, xlen, ylen,
                         seqxA, seqyA, mol_vec1[chain_i]+mol_vec2[chain_j],
-                        invmap.data(), (outfmt_opt>=2)?1:0, glocal);
-                    
-                    if (outfmt_opt>=2) get_seqID(invmap.data(), seqx.c_str(), seqy.c_str(),
+                        invmap, (outfmt_opt>=2)?1:0, glocal);
+
+                    if (outfmt_opt>=2) get_seqID(invmap, seqx.c_str(), seqy.c_str(),
                         ylen, Liden, L_ali);
                     else get_seqID(seqxA, seqyA, seqM, Liden, L_ali);
 

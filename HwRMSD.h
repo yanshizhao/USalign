@@ -5,7 +5,7 @@
 #include "se.h"
 
 double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
-    CoordArray& xa, CoordArray& ya, int xlen, int ylen, int invmap[],
+    CoordArray& xa, CoordArray& ya, int xlen, int ylen, std::vector<int>& invmap,
     int& L_ali, double t[3], double u[3][3], const int mol_type)
 {
     L_ali = 0;
@@ -44,7 +44,7 @@ double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
 }
 
 void parse_alignment_into_invmap(const string seqxA_tmp,
-    const string seqyA_tmp, const int xlen, const int ylen, int *invmap_tmp)
+    const string seqyA_tmp, const int xlen, const int ylen, std::vector<int>& invmap_tmp)
 {
     if (seqxA_tmp.size()==0) return;
     int i1=-1;
@@ -76,7 +76,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
     const vector<string>&sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt,
     const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
-    int *invmap, const int glocal=0, const int iter_opt=10,
+    std::vector<int>& invmap, const int glocal=0, const int iter_opt=10,
     const int seq_opt=3, const double early_opt=0.01)
 {
     /***********************/
@@ -124,9 +124,9 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
         seqyA_tmp=sequence[1];
     }
     else if (seq_opt==2) NWalign_main(secx, secy, xlen, ylen,
-            seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp.data(), 1, glocal);
+            seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp, 1, glocal);
     else NWalign_main(seqx, seqy, xlen, ylen,
-            seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp.data(), 1, glocal);
+            seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp, 1, glocal);
     int total_iter=(i_opt==3 || iter_opt<1)?1:iter_opt;
 
     /*******************************/
@@ -137,13 +137,13 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
         n_ali_tmp=n_ali8_tmp=0;
         // get ss alignment for the second iteration
         if (iter==1 && !i_opt && seq_opt==3) NWalign_main(secx, secy, xlen,
-            ylen, seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp.data(), 1, glocal);
+            ylen, seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp, 1, glocal);
 
         // parse initial alignment
-        parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp.data());
+        parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp);
 
         // superpose
-        Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp.data(),
+        Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
             L_ali, t, u, mol_type);
 
         // derive new alignment
@@ -153,7 +153,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
             rmsd0_tmp, L_ali_tmp, Liden_tmp,
             TM_ali_tmp, rmsd_ali_tmp, n_ali_tmp, n_ali8_tmp, xlen, ylen,
             sequence, Lnorm_ass, d0_scale, i_opt==3, a_opt, u_opt, d_opt,
-            mol_type, 1, invmap_tmp.data());
+            mol_type, 1, invmap_tmp);
 
         if (n_ali8_tmp==0)
         {
@@ -174,9 +174,9 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
                 for (i1=seqyA_tmp.size();i1<xlen;i1++) seqyA_tmp+='-';
             }
         
-            parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp.data());
+            parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp);
 
-            Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp.data(),
+            Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
                 L_ali, t, u, mol_type);
 
             se_main(xt, ya, seqx, seqy, TM1_tmp, TM2_tmp, TM3_tmp, TM4_tmp,
@@ -185,7 +185,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
                 rmsd0_tmp, L_ali_tmp, Liden_tmp,
                 TM_ali_tmp, rmsd_ali_tmp, n_ali_tmp, n_ali8_tmp, xlen, ylen,
                 sequence, Lnorm_ass, d0_scale, i_opt==3, a_opt, u_opt, d_opt,
-                mol_type, 1, invmap_tmp.data());
+                mol_type, 1, invmap_tmp);
         }
 
         // accept new alignment

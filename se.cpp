@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
                         outfmt_opt, invmap);
 
                     if (outfmt_opt>=2)
-                        get_seqID(invmap.data(), seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);
+                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);
 
                     // print result
                     output_results(

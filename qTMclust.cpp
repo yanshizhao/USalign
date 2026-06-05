@@ -565,7 +565,7 @@ int main(int argc, char *argv[])
                 sequence, Lnorm_ass,
                 d0_scale, i_opt,
                 a_opt, u_opt, d_opt, mol_vec[chain_i]+mol_vec[chain_j],
-                invmap.data(), glocal, iter_opt);
+                invmap, glocal, iter_opt);
 
             TM=TM3; // average length
             if      (s_opt==1) TM=TM2; // shorter length
