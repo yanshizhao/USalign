@@ -2,7 +2,7 @@
 #include "TMalign.h"
 
 int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, int i_ali[],
-    double *score1, int score_sum_method, const double Lnorm,
+    double &score1, int score_sum_method, const double Lnorm,
     const double score_d8, const double d0,
     double GDT_list_tmp[5], double &maxsub_tmp)
 {
@@ -69,12 +69,12 @@ int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, 
         else break;
     }
 
-    *score1=score_sum/Lnorm;
+    score1=score_sum/Lnorm;
     return n_cut;
 }
 
 int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, double d,
-    int i_ali[], double *score1, int score_sum_method,
+    int i_ali[], double &score1, int score_sum_method,
     double score_d8, double d0, double GDT_list_tmp[5], double &maxsub_tmp)
 {
     double score_sum = 0;
@@ -141,7 +141,7 @@ int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, d
         else break;
     }
 
-    *score1 = score_sum / n_ali;
+    score1 = score_sum / n_ali;
     return n_cut;
 }
 
@@ -231,7 +231,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
             //get subsegment of this fragment
             d = local_d0_search - 1;
-            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
+            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), score,
                 score_sum_method, Lnorm, score_d8, d0,
                 GDT_list_tmp, maxsub_tmp);
             if(score>score_max)
@@ -275,7 +275,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
                 Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
 
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), &score,
+                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), score,
                     score_sum_method, Lnorm, score_d8, d0);
                 if(score>score_max)
                 {
@@ -402,7 +402,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
             do_rotation(xtm, xt, Lali, t, u);
 
             d = local_d0_search - 1;
-            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
+            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), score,
                 score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);
 
             if (score>score_max)
@@ -443,7 +443,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                 Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
 
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), &score,
+                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), score,
                     score_sum_method, score_d8, d0, GDT_list_tmp, maxsub_tmp);
                 if (score>score_max)
                 {
@@ -824,7 +824,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     }
     n_ali8=k;
 
-    Kabsch(r1, r2, n_ali8, 0, &rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     rmsd0 = sqrt(rmsd0 / n_ali8);
 
 
