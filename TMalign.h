@@ -245,6 +245,157 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     }//for(i_init
     return score_max;
 }
+// Vec3/RotMat overload (same body)
+inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, int Lali, Vec3& t0, RotMat& u0, int simplify_step,
+    int score_sum_method, double &Rcomm, double local_d0_search, double Lnorm,
+    double score_d8, double d0)
+{
+    int i;
+    int m;
+    double score_max;
+    double score;
+    double rmsd;
+    const int kmax=Lali;
+    std::vector<int> k_ali(kmax);
+    int ka;
+    int k;
+    Vec3 t;
+    RotMat u;
+    double d;
+
+    int n_it=20;
+    int n_init_max=6;
+    int L_ini[6];
+    int L_ini_min=4;
+    if(Lali<L_ini_min) L_ini_min=Lali;
+
+    int n_init=0;
+    int i_init;
+    for(i=0; i<n_init_max-1; i++)
+    {
+        n_init++;
+        L_ini[i]=static_cast<int>(Lali/pow(2.0, static_cast<double>(i)));
+        if(L_ini[i]<=L_ini_min)
+        {
+            L_ini[i]=L_ini_min;
+            break;
+        }
+    }
+    if(i==n_init_max-1)
+    {
+        n_init++;
+        L_ini[i]=L_ini_min;
+    }
+
+    score_max=-1;
+    std::vector<int> i_ali(kmax);
+    int n_cut;
+    int L_frag;
+    int iL_max;
+
+    for(i_init=0; i_init<n_init; i_init++)
+    {
+        L_frag=L_ini[i_init];
+        iL_max=Lali-L_frag;
+
+        i=0;
+        while(1)
+        {
+            ka=0;
+            for(k=0; k<L_frag; k++)
+            {
+                int kk=k+i;
+                r1[k][0]=xtm[kk][0];
+                r1[k][1]=xtm[kk][1];
+                r1[k][2]=xtm[kk][2];
+
+                r2[k][0]=ytm[kk][0];
+                r2[k][1]=ytm[kk][1];
+                r2[k][2]=ytm[kk][2];
+
+                k_ali[ka]=kk;
+                ka++;
+            }
+
+            Kabsch(r1, r2, L_frag, 1, rmsd, t, u);
+
+            if (simplify_step != 1)
+                Rcomm = 0;
+            do_rotation(xtm, xt, Lali, t, u);
+
+            d = local_d0_search - 1;
+            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), score,
+                score_sum_method, Lnorm, score_d8, d0);
+            if(score>score_max)
+            {
+                score_max=score;
+
+                for(k=0; k<3; k++)
+                {
+                    t0[k]=t[k];
+                    u0[k][0]=u[k][0];
+                    u0[k][1]=u[k][1];
+                    u0[k][2]=u[k][2];
+                }
+            }
+
+            d = local_d0_search + 1;
+            for(int it=0; it<n_it; it++)
+            {
+                ka=0;
+                for(k=0; k<n_cut; k++)
+                {
+                    m=i_ali[k];
+                    r1[k][0]=xtm[m][0];
+                    r1[k][1]=xtm[m][1];
+                    r1[k][2]=xtm[m][2];
+
+                    r2[k][0]=ytm[m][0];
+                    r2[k][1]=ytm[m][1];
+                    r2[k][2]=ytm[m][2];
+
+                    k_ali[ka]=m;
+                    ka++;
+                }
+                Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
+
+                do_rotation(xtm, xt, Lali, t, u);
+                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), score,
+                    score_sum_method, Lnorm, score_d8, d0);
+                if(score>score_max)
+                {
+                    score_max=score;
+
+                    for(k=0; k<3; k++)
+                    {
+                        t0[k]=t[k];
+                        u0[k][0]=u[k][0];
+                        u0[k][1]=u[k][1];
+                        u0[k][2]=u[k][2];
+                    }
+                }
+
+                if(n_cut==ka)
+                {
+                    for(k=0; k<n_cut; k++)
+                    {
+                        if(i_ali[k]!=k_ali[k]) break;
+                    }
+                    if(k==n_cut) break;
+                }
+            }
+
+            if(i<iL_max)
+            {
+                i=i+simplify_step;
+                if(i>iL_max) i=iL_max;
+            }
+            else if(i>=iL_max) break;
+        }
+    }
+    return score_max;
+}
 
 
 
