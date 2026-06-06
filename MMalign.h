@@ -1485,7 +1485,7 @@ void MMalign_final(
 
     // print alignment
     output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
-        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
         Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
         TM_0, d0_0, d0A, d0B, 0, d0_scale, d0a, d0u,
@@ -1558,7 +1558,7 @@ void MMalign_final(
             // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
-                xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
                 seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
                 seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
                 TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
@@ -1712,7 +1712,7 @@ void MMalign_se_final(
 
     // print alignment
     output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
-        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
         Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
         TM_0, d0_0, d0A, d0B, 0, d0_scale, d0a, d0u, 
@@ -1789,7 +1789,7 @@ void MMalign_se_final(
             // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
-                xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
                 seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
                 seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
                 TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,

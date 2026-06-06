@@ -1315,7 +1315,7 @@ inline double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArra
 
 // script format: 0 - no script; 1 - pymol; 3 - chimerax
 void output_pymol(const string xname, const string yname,
-    const string fname_super, double t[3], double u[3][3], const int ter_opt, 
+    const string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const char *seqM, const char *seqxA, const char *seqyA,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2,
@@ -1346,8 +1346,8 @@ void output_pymol(const string xname, const string yname,
     stringstream buf;
     stringstream buf_pymol;
     string line;
-    double x[3];  // before transform
-    double x1[3]; // after transform
+    Vec3 x;  // before transform
+    Vec3 x1; // after transform
 
     // for PDBx/mmCIF only
     map<string,int> _atom_site;
@@ -1976,7 +1976,7 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
 }
 
 void output_rasmol(const string xname, const string yname,
-    const string fname_super, double t[3], double u[3][3], const int ter_opt,
+    const string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const char *seqM, const char *seqxA, const char *seqyA,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2,
@@ -1991,8 +1991,8 @@ void output_rasmol(const string xname, const string yname,
     stringstream buf_all_atm_lig;
     stringstream buf_tm;
     string line;
-    double x[3];  // before transform
-    double x1[3]; // after transform
+    Vec3 x;  // before transform
+    Vec3 x1; // after transform
     bool after_ter; // true if passed the "TER" line in PDB
     string asym_id; // chain ID
 
@@ -2626,7 +2626,7 @@ void output_rasmol(const string xname, const string yname,
 
 // extract rotation matrix based on TMscore8
 void output_rotation_matrix(const std::string& fname_matrix,
-    const double t[3], const double u[3][3])
+    const Vec3& t, const RotMat& u)
 {
     stringstream ss;
     ss << "------ The rotation matrix to rotate Structure_1 to Structure_2 ------\n";
@@ -2664,7 +2664,7 @@ void output_rotation_matrix(const std::string& fname_matrix,
 //output the final results
 void output_results(const string xname, const string yname,
     const string chainID1, const string chainID2,
-    const int xlen, const int ylen, double t[3], double u[3][3],
+    const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
     const double rmsd, const double d0_out, const char *seqM,
@@ -2759,7 +2759,7 @@ void output_results(const string xname, const string yname,
 
 void output_mTMalign_results(const string xname, const string yname,
     const string chainID1, const string chainID2,
-    const int xlen, const int ylen, double t[3], double u[3][3],
+    const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
     const double rmsd, const double d0_out, const char *seqM,
