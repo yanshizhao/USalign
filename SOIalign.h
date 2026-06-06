@@ -644,6 +644,36 @@ void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArra
     do_rotation(xa, xt, xlen, t, u);
 }
 
+// Vec3/RotMat overload (same body)
+inline void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CoordArray& xa, CoordArray& ya,
+    const int xlen, const int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap,
+    double local_d0_search, double Lnorm, double d0, double score_d8)
+{
+    int i;
+    int j;
+    int k;
+    double rmsd;
+
+    k=0;
+    for (j=0; j<ylen; j++)
+    {
+        i=invmap[j];
+        if (i<0) continue;
+        xtm[k][0]=xa[i][0];
+        xtm[k][1]=xa[i][1];
+        xtm[k][2]=xa[i][2];
+
+        ytm[k][0]=ya[j][0];
+        ytm[k][1]=ya[j][1];
+        ytm[k][2]=ya[j][2];
+        k++;
+    }
+    TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+        40, 8, rmsd, local_d0_search, Lnorm, score_d8, d0);
+    do_rotation(xa, xt, xlen, t, u);
+}
+
 /* entry function for TM-align with circular permutation
  * i_opt, a_opt, u_opt, d_opt, TMcut are not implemented yet */
 
