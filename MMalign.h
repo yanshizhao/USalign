@@ -349,59 +349,6 @@ double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
  * dij is the centroid distance between chain pair i and j
  * d0MM is scaling factor. TMave_mat[i][j] is the TM-score between
  * chain pair i and j multiple by getmin(Li*Lj) */
-double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
-    const int chain1_num, const int chain2_num, const CoordArray& xcentroids,
-    const CoordArray& ycentroids, const double d0MM, CoordArray& r1, CoordArray& r2,
-    CoordArray& xt, double t[3], double u[3][3], const int L)
-{
-    int Nali=0; // number of aligned chain
-    int i;
-    int j;
-    double MMscore=0;
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        if (j<0) continue;
-
-        r1[Nali][0]=xcentroids[i][0];
-        r1[Nali][1]=xcentroids[i][1];
-        r1[Nali][2]=xcentroids[i][2];
-
-        r2[Nali][0]=ycentroids[j][0];
-        r2[Nali][1]=ycentroids[j][1];
-        r2[Nali][2]=ycentroids[j][2];
-
-        Nali++;
-        MMscore+=TMave_mat[i][j];
-    }
-    MMscore/=L;
-
-    double RMSD = 0;
-    double TMscore=0;
-    if (Nali>=3)
-    {
-        Kabsch(r1, r2, Nali, 1, RMSD, t, u);
-        do_rotation(r1, xt, Nali, t, u);
-
-        // calculate pseudo-TMscore
-        double dd=0;
-        for (i=0;i<Nali;i++)
-        {
-            dd=dist(xt[i], r2[i]);
-            TMscore+=1/(1+dd/(d0MM*d0MM));
-        }
-    }
-    else if (Nali==2)
-    {
-        double dd=dist(r1[0],r2[0]);
-        TMscore=1/(1+dd/(d0MM*d0MM));
-    }
-    else TMscore=1; // only one aligned chain.
-    TMscore/=getmin(chain1_num,chain2_num);
-
-    MMscore*=TMscore;
-    return MMscore;
-}
 
 // Vec3/RotMat overload (same body)
 inline double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
@@ -1962,35 +1909,6 @@ void MMalign_iter(double & max_total_score, const int max_iter,
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int len1, int len2, CharMatrix& mask, double t[3], double u[3][3],
-    double d02, double gap_open, std::vector<int>& j2i)
-{
-    int i,j; double h,v,d;
-    for(i=0; i<=len1; i++) { val[i][0]=i*gap_open; path[i][0]=0; }
-    for(j=0; j<=len2; j++) { val[0][j]=j*gap_open; path[0][j]=0; j2i[j]=-1; }
-    double xx[3], dij;
-    for(i=1; i<=len1; i++) {
-        transform(t, u, &x[i-1][0], xx);
-        for(j=1; j<=len2; j++) {
-            d=FLT_MIN;
-            if (mask[i][j]) { dij=dist(xx, &y[j-1][0]); d=val[i-1][j-1] + 1.0/(1+dij/d02); }
-            h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
-            v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
-            if(d>=h && d>=v) { path[i][j]=1; val[i][j]=d; }
-            else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
-        }
-    }
-    i=len1; j=len2;
-    while(i>0 && j>0) {
-        if(path[i][j]) { j2i[j-1]=i-1; i--; j--; }
-        else {
-            h=val[i-1][j]; if(path[i-1][j]) h +=gap_open;
-            v=val[i][j-1]; if(path[i][j-1]) v +=gap_open;
-            if(v>=h) j--; else i--;
-        }
-    }
-}
 
 // Vec3/RotMat overload (same body)
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
@@ -2058,78 +1976,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap.data()
 
-double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
-    int xlen, int ylen, CharMatrix& mask, double t[3], double u[3][3], std::vector<int>& invmap0,
-    int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
-{
-    double gap_open[2]={-0.6, 0};
-    double rmsd; 
-    std::vector<int> invmap(ylen+1);
-    
-    int iteration;
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double tmscore_max;
-    double tmscore_old=0;
-    int score_sum_method=8;
-    int simplify_step=40;
-    tmscore_max=-1;
-
-
-    //double d01=d0+1.5;
-    double d02=d0*d0;
-    for(int g=g1; g<g2; g++)
-    {
-        for(iteration=0; iteration<iteration_max; iteration++)
-        {           
-            NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
-                t, u, d02, gap_open[g], invmap);
-            
-            k=0;
-            for(j=0; j<ylen; j++) 
-            {
-                i=invmap[j];
-
-                if(i>=0) //aligned
-                {
-                    xtm[k][0]=x[i][0];
-                    xtm[k][1]=x[i][1];
-                    xtm[k][2]=x[i][2];
-                    
-                    ytm[k][0]=y[j][0];
-                    ytm[k][1]=y[j][1];
-                    ytm[k][2]=y[j][2];
-                    k++;
-                }
-            }
-
-            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
-                simplify_step, score_sum_method, rmsd, local_d0_search,
-                Lnorm, score_d8, d0);
-
-           
-            if(tmscore>tmscore_max)
-            {
-                tmscore_max=tmscore;
-                for(i=0; i<ylen; i++) invmap0[i]=invmap[i];
-            }
-    
-            if(iteration>0)
-            {
-                if(fabs(tmscore_old-tmscore)<0.000001) break;       
-            }
-            tmscore_old=tmscore;
-        }// for iteration           
-        
-    }//for gapopen
-    
-
-    return tmscore_max;
-}
 
 // Vec3/RotMat overload (same body)
 inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
@@ -2219,8 +2065,8 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
 {
     double GL;
     double rmsd;
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
 
     double d01 = d0 + 1.5;
     if (d01 < D0_MIN) d01 = D0_MIN;
@@ -2311,623 +2157,6 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
  * 0   - full TM-score calculation
  * 1   - terminated due to exception
  * 2-7 - pre-terminated due to low TM-score */
-
-
-inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
-    double t0[3], double u0[3][3],
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    CharMatrix& mask,
-    const vector<string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
-{
-
-
-
-
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
-    double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
-    DoubleMatrix score;       // Input score table for dynamic programming
-    CharMatrix  path;        // for dynamic programming
-    DoubleMatrix val;         // for dynamic programming
-    CoordArray xtm, ytm;      // for TMscore search engine
-    CoordArray xt;            //for saving the superposed version of r_1 or xtm
-    CoordArray r1, r2;        // for Kabsch rotation
-
-    /***********************/
-    // allocate memory
-    /***********************/
-    int minlen = min(xlen, ylen);
-    score.assign(xlen+1, std::vector<double>(ylen+1));
-    path.assign( xlen+1, std::vector<char>(ylen+1));
-    val.assign(  xlen+1, std::vector<double>(ylen+1));
-    xtm.resize(minlen);
-    ytm.resize(minlen);
-    xt.resize(xlen);
-    r1.resize(minlen);
-    r2.resize(minlen);
-    std::vector<double*> sv(xlen+1), vv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++){sv[_i]=score[_i].data();vv[_i]=val[_i].data();}
-    std::vector<char*> pv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++) pv[_i]=path[_i].data();
-
-    /***********************/
-    //    parameter set   
-    /***********************/
-    parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
-        score_d8, d0, d0_search, dcu0);
-    int simplify_step    = 40; //for simplified search engine
-    int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
-
-    int i;
-    std::vector<int> invmap0(ylen+1, -1);
-    std::vector<int> invmap(ylen+1);
-    double TM;
-    double TMmax=-1;
-
-    double ddcc=0.4;
-    if (Lnorm <= 40) ddcc=0.1;   //Lnorm was setted in parameter_set4search
-    double local_d0_search = d0_search;
-
-    //************************************************//
-    //    get initial alignment from user's input:    //
-    //    Stick to the initial alignment              //
-    //************************************************//
-    bool bAlignStick = false;
-    if (i_opt==3)// if input has set parameter for "-I"
-    {
-        // In the original code, this loop starts from 1, which is
-        // incorrect. Fortran starts from 1 but C++ should starts from 0.
-        for (int j = 0; j < ylen; j++)// Set aligned position to be "-1"
-            invmap[j] = -1;
-
-        int i1 = -1;// in C version, index starts from zero, not from one
-        int i2 = -1;
-        int L1 = sequence[0].size();
-        int L2 = sequence[1].size();
-        int L = min(L1, L2);// Get positions for aligned residues
-        for (int kk1 = 0; kk1 < L; kk1++)
-        {
-            if (sequence[0][kk1] != '-') i1++;
-            if (sequence[1][kk1] != '-')
-            {
-                i2++;
-                if (i2 >= ylen || i1 >= xlen) kk1 = L;
-                else if (sequence[0][kk1] != '-') invmap[i2] = i1;
-            }
-        }
-
-        //--------------- 2. Align proteins from original alignment
-        double prevD0_MIN = D0_MIN;// stored for later use
-        int prevLnorm = Lnorm;
-        double prevd0 = d0;
-        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
-            t, u, mol_type);
-        D0_MIN = prevD0_MIN;
-        Lnorm = prevLnorm;
-        d0 = prevd0;
-        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
-        if (TM > TMmax)
-        {
-            TMmax = TM;
-            for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-        }
-        bAlignStick = true;
-    }
-
-    /******************************************************/
-    //    get initial alignment with gapless threading   
-    /******************************************************/
-    if (!bAlignStick)
-    {
-        get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
-            d0_search, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
-            t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-            score_d8, d0);
-        if (TM>TMmax) TMmax = TM;
-        if (TMcut>0) copy_t_u(t, u, t0, u0);
-        //run dynamic programing iteratively to find the best alignment
-        TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
-             mask, t, u, invmap, 0, 2, (fast_opt)?2:30,
-             local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-        if (TM>TMmax)
-        {
-            TMmax = TM;
-            for (int i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-            if (TMcut>0) copy_t_u(t, u, t0, u0);
-        }
-
-        if (TMcut>0) // pre-terminate if TM-score is too low
-        {
-            double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
-
-            if (TMtmp<0.5*TMcut)
-            {
-                TM1=TM2=TM3=TM4=TM5=TMtmp;
-
-
-                // score/val auto-destruct (DoubleMatrix)
-                return 2;
-            }
-        }
-
-        /************************************************************/
-        //    get initial alignment based on secondary structure
-        /************************************************************/
-        get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
-            t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-            score_d8, d0);
-        if (TM>TMmax)
-        {
-            TMmax = TM;
-            for (int i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-            if (TMcut>0) copy_t_u(t, u, t0, u0);
-        }
-        if (TM > TMmax*0.2)
-        {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
-                (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-            if (TM>TMmax)
-            {
-                TMmax = TM;
-                for (int i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-                if (TMcut>0) copy_t_u(t, u, t0, u0);
-            }
-        }
-
-        if (TMcut>0) // pre-terminate if TM-score is too low
-        {
-            double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
-
-            if (TMtmp<0.52*TMcut)
-            {
-                TM1=TM2=TM3=TM4=TM5=TMtmp;
-
-
-                // score/val auto-destruct (DoubleMatrix)
-                return 3;
-            }
-        }
-
-        /************************************************************/
-        //    get initial alignment based on local superposition   
-        /************************************************************/
-        //=initial5 in original TM-align
-        if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa_c, ya_c,
-            xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
-        {
-            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-                invmap, t, u, simplify_step, score_sum_method,
-                local_d0_search, Lnorm, score_d8, d0);
-            if (TM>TMmax)
-            {
-                TMmax = TM;
-                for (int i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-                if (TMcut>0) copy_t_u(t, u, t0, u0);
-            }
-            if (TM > TMmax*ddcc)
-            {
-                TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                    xlen, ylen, mask, t, u, invmap, 0, 2, 2,
-                    local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-                if (TM>TMmax)
-                {
-                    TMmax = TM;
-                    for (int i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-                    if (TMcut>0) copy_t_u(t, u, t0, u0);
-                }
-            }
-        }
-        else
-            cerr << "\n\nWarning: initial alignment from local superposition fail!\n\n" << endl;
-
-        if (TMcut>0) // pre-terminate if TM-score is too low
-        {
-            double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
-
-            if (TMtmp<0.54*TMcut)
-            {
-                TM1=TM2=TM3=TM4=TM5=TMtmp;
-
-
-                // score/val auto-destruct (DoubleMatrix)
-                return 4;
-            }
-        }
-
-        /********************************************************************/
-        // get initial alignment by local superposition+secondary structure
-        /********************************************************************/
-        //=initial3 in original TM-align
-        get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
-            xlen, ylen, invmap0, invmap, D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
-             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-             score_d8, d0);
-        if (TM>TMmax)
-        {
-            TMmax = TM;
-            for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-            if (TMcut>0) copy_t_u(t, u, t0, u0);
-        }
-        if (TM > TMmax*ddcc)
-        {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
-                (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-            if (TM>TMmax)
-            {
-                TMmax = TM;
-                for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-                if (TMcut>0) copy_t_u(t, u, t0, u0);
-            }
-        }
-
-        if (TMcut>0) // pre-terminate if TM-score is too low
-        {
-            double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
-
-            if (TMtmp<0.56*TMcut)
-            {
-                TM1=TM2=TM3=TM4=TM5=TMtmp;
-
-
-                // score/val auto-destruct (DoubleMatrix)
-                return 5;
-            }
-        }
-
-        /*******************************************************************/
-        //    get initial alignment based on fragment gapless threading   
-        /*******************************************************************/
-        //=initial4 in original TM-align
-        get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
-            invmap, d0, d0_search, dcu0, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
-            t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-            score_d8, d0);
-        if (TM>TMmax)
-        {
-            TMmax = TM;
-            for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-            if (TMcut>0) copy_t_u(t, u, t0, u0);
-        }
-        if (TM > TMmax*ddcc)
-        {
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 1, 2, 2,
-                local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-            if (TM>TMmax)
-            {
-                TMmax = TM;
-                for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-                if (TMcut>0) copy_t_u(t, u, t0, u0);
-            }
-        }
-
-        if (TMcut>0) // pre-terminate if TM-score is too low
-        {
-            double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
-
-            if (TMtmp<0.58*TMcut)
-            {
-                TM1=TM2=TM3=TM4=TM5=TMtmp;
-
-
-                // score/val auto-destruct (DoubleMatrix)
-                return 6;
-            }
-        }
-
-        //************************************************//
-        //    get initial alignment from user's input:    //
-        //************************************************//
-        if (i_opt==1)// if input has set parameter for "-i"
-        {
-            for (int j = 0; j < ylen; j++)// Set aligned position to be "-1"
-                invmap[j] = -1;
-
-            int i1 = -1;// in C version, index starts from zero, not from one
-            int i2 = -1;
-            int L1 = sequence[0].size();
-            int L2 = sequence[1].size();
-            int L = min(L1, L2);// Get positions for aligned residues
-            for (int kk1 = 0; kk1 < L; kk1++)
-            {
-                if (sequence[0][kk1] != '-')
-                    i1++;
-                if (sequence[1][kk1] != '-')
-                {
-                    i2++;
-                    if (i2 >= ylen || i1 >= xlen) kk1 = L;
-                    else if (sequence[0][kk1] != '-') invmap[i2] = i1;
-                }
-            }
-
-            //--------------- 2. Align proteins from original alignment
-            double prevD0_MIN = D0_MIN;// stored for later use
-            int prevLnorm = Lnorm;
-            double prevd0 = d0;
-            TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
-                d0_search, score_d8, t, u, mol_type);
-            D0_MIN = prevD0_MIN;
-            Lnorm = prevLnorm;
-            d0 = prevd0;
-
-            TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
-                score_d8, d0);
-            if (TM > TMmax)
-            {
-                TMmax = TM;
-                for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-            }
-            // Different from get_initial, get_initial_ss and get_initial_ssplus
-            TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
-                xlen, ylen, mask, t, u, invmap, 0, 2,
-                (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
-            if (TM>TMmax)
-            {
-                TMmax = TM;
-                for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
-            }
-        }
-    }
-
-
-
-    //*******************************************************************//
-    //    The alignment will not be changed any more in the following    //
-    //*******************************************************************//
-    //check if the initial alignment is generated appropriately
-    bool flag=false;
-    for(i=0; i<ylen; i++)
-    {
-        if(invmap0[i]>=0)
-        {
-            flag=true;
-            break;
-        }
-    }
-    if(!flag)
-    {
-        cout << "There is no alignment between the two structures! "
-             << "Program stop with no result!" << endl;
-        TM1=TM2=TM3=TM4=TM5=0;
-        return 1;
-    }
-
-    // last TM-score pre-termination
-    if (TMcut>0)
-    {
-        double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
-
-        if (TMtmp<0.6*TMcut)
-        {
-            TM1=TM2=TM3=TM4=TM5=TMtmp;
-
-
-            // score/val auto-destruct (DoubleMatrix)
-            return 7;
-        }
-    }
-
-    //********************************************************************//
-    //    Detailed TMscore search engine --> prepare for final TMscore    //
-    //********************************************************************//
-    //run detailed TMscore search engine for the best alignment, and
-    //extract the best rotation matrix (t, u) for the best alignment
-    simplify_step=1;
-    if (fast_opt) simplify_step=40;
-    score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
-        false, Lnorm, score_d8, d0);
-
-    //select pairs with dis<d8 for final TMscore computation and output alignment
-    int k=0;
-    double d;
-    std::vector<int> m1(xlen); //alignd index in x
-    std::vector<int> m2(ylen); //alignd index in y
-    do_rotation(xa_c, xt, xlen, t, u);
-    k=0;
-    for(int j=0; j<ylen; j++)
-    {
-        i=invmap0[j];
-        if(i>=0)//aligned
-        {
-            n_ali++;
-            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
-            if (d <= score_d8 || (i_opt == 3))
-            {
-                m1[k]=i;
-                m2[k]=j;
-
-                xtm[k][0]=xa_c[i][0];
-                xtm[k][1]=xa_c[i][1];
-                xtm[k][2]=xa_c[i][2];
-
-                ytm[k][0]=ya_c[j][0];
-                ytm[k][1]=ya_c[j][1];
-                ytm[k][2]=ya_c[j][2];
-
-                r1[k][0] = xt[i][0];
-                r1[k][1] = xt[i][1];
-                r1[k][2] = xt[i][2];
-                r2[k][0] = ya_c[j][0];
-                r2[k][1] = ya_c[j][1];
-                r2[k][2] = ya_c[j][2];
-
-                k++;
-            }
-        }
-    }
-    n_ali8=k;
-
-    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
-    rmsd0 = sqrt(rmsd0 / n_ali8);
-
-
-    //****************************************//
-    //              Final TMscore             //
-    //    Please set parameters for output    //
-    //****************************************//
-    double rmsd;
-    simplify_step=1;
-    score_sum_method=0;
-    double Lnorm_0=ylen;
-
-
-    //normalized by length of structure A
-    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-    d0A=d0;
-    d0_0=d0A;
-    local_d0_search = d0_search;
-    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0], simplify_step,
-        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
-    TM_0 = TM1;
-
-    //normalized by length of structure B
-    parameter_set4final(xlen+0.0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-    d0B=d0;
-    local_d0_search = d0_search;
-    TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
-        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
-
-    double Lnorm_d0;
-    if (a_opt>0)
-    {
-        //normalized by average length of structures A, B
-        Lnorm_0=(xlen+ylen)*0.5;
-        parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-        d0a=d0;
-        d0_0=d0a;
-        local_d0_search = d0_search;
-
-        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM3;
-    }
-    if (u_opt)
-    {
-        //normalized by user assigned length
-        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
-            d0, d0_search, mol_type);
-        d0u=d0;
-        d0_0=d0u;
-        Lnorm_0=Lnorm_ass;
-        local_d0_search = d0_search;
-        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM4;
-    }
-    if (d_opt)
-    {
-        //scaled by user assigned d0
-        parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
-        d0_out=d0_scale;
-        d0_0=d0_scale;
-        //Lnorm_0=ylen;
-        Lnorm_d0=Lnorm_0;
-        local_d0_search = d0_search;
-        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM5;
-    }
-
-    // derive alignment from superposition
-    int ali_len=xlen+ylen; //maximum length of alignment
-    seqxA.assign(ali_len,'-');
-    seqM.assign( ali_len,' ');
-    seqyA.assign(ali_len,'-');
-
-    do_rotation(xa_c, xt, xlen, t0, u0);
-
-    int kk=0;
-    int i_old=0;
-    int j_old=0;
-    d=0;
-    for(int k=0; k<n_ali8; k++)
-    {
-        for(int i=i_old; i<m1[k]; i++)
-        {
-            //align x to gap
-            seqxA[kk]=seqx[i];
-            seqyA[kk]='-';
-            seqM[kk]=' ';                    
-            kk++;
-        }
-
-        for(int j=j_old; j<m2[k]; j++)
-        {
-            //align y to gap
-            seqxA[kk]='-';
-            seqyA[kk]=seqy[j];
-            seqM[kk]=' ';
-            kk++;
-        }
-
-        seqxA[kk]=seqx[m1[k]];
-        seqyA[kk]=seqy[m2[k]];
-        Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(&xt[m1[k]][0], &ya_c[m2[k]][0]));
-        if(d<d0_out) seqM[kk]=':';
-        else         seqM[kk]='.';
-        kk++;  
-        i_old=m1[k]+1;
-        j_old=m2[k]+1;
-    }
-
-    //tail
-    for(int i=i_old; i<xlen; i++)
-    {
-        //align x to gap
-        seqxA[kk]=seqx[i];
-        seqyA[kk]='-';
-        seqM[kk]=' ';
-        kk++;
-    }    
-    for(int j=j_old; j<ylen; j++)
-    {
-        //align y to gap
-        seqxA[kk]='-';
-        seqyA[kk]=seqy[j];
-        seqM[kk]=' ';
-        kk++;
-    }
-    seqxA=seqxA.substr(0,kk);
-    seqyA=seqyA.substr(0,kk);
-    seqM =seqM.substr(0,kk);
-
-    // score/val auto-destruct (DoubleMatrix)
-    return 0; // zero for no exception
-}
-
 
 
 
@@ -3073,7 +2302,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
@@ -3114,7 +2343,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
@@ -3161,7 +2390,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
@@ -3204,7 +2433,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
@@ -3247,7 +2476,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
@@ -3342,7 +2571,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
+            xa_c, ya_c, t0, u0, invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
@@ -3425,7 +2654,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     d0A=d0;
     d0_0=d0A;
     local_d0_search = d0_search;
-    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0], simplify_step,
+    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
         score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
     TM_0 = TM1;
 
@@ -3446,7 +2675,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         d0_0=d0a;
         local_d0_search = d0_search;
 
-        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
+        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM3;
@@ -3460,7 +2689,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         d0_0=d0u;
         Lnorm_0=Lnorm_ass;
         local_d0_search = d0_search;
-        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
+        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM4;
@@ -3474,7 +2703,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //Lnorm_0=ylen;
         Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
-        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
+        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM5;

@@ -366,78 +366,6 @@ inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const in
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
 
-double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, CoordArray& xa, CoordArray& ya,
-    int xlen, int ylen, double t[3], double u[3][3], std::vector<int>& invmap0,
-    int iteration_max, double local_d0_search,
-    double Lnorm, double d0, double score_d8,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
-{
-    double rmsd;
-    std::vector<int> invmap(ylen+1);
-
-    int iteration;
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double tmscore_max;
-    double tmscore_old=0;
-    tmscore_max=-1;
-
-
-
-
-    double d02=d0*d0;
-    for (iteration=0; iteration<iteration_max; iteration++)
-    {
-        if (iteration==0 && init_invmap)
-            for (j=0;j<ylen;j++) invmap[j]=invmap0[j];
-        else
-        {
-            for (j=0; j<ylen; j++) invmap[j]=-1;
-            if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
-        }
-        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
-
-        k=0;
-        for (j=0; j<ylen; j++)
-        {
-            i=invmap[j];
-            if (i<0) continue;
-
-            xtm[k][0]=xa[i][0];
-            xtm[k][1]=xa[i][1];
-            xtm[k][2]=xa[i][2];
-
-            ytm[k][0]=ya[j][0];
-            ytm[k][1]=ya[j][1];
-            ytm[k][2]=ya[j][2];
-            k++;
-        }
-
-        tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
-            40, 8, rmsd, local_d0_search, Lnorm, score_d8, d0);
-
-        if (tmscore>tmscore_max)
-        {
-            tmscore_max=tmscore;
-            for (j=0; j<ylen; j++) invmap0[j]=invmap[j];
-        }
-
-        if (iteration>0 && fabs(tmscore_old-tmscore)<0.000001) break;
-        tmscore_old=tmscore;
-        do_rotation(xa, xt, xlen, t, u);
-        SOI_super2score(xt, ya, xlen, ylen, score, d0, score_d8);
-    }
-
-    return tmscore_max;
-}
-
-
-
-
-
 // Vec3/RotMat overload (same body)
 inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, CoordArray& xa, CoordArray& ya,
@@ -506,60 +434,6 @@ inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
     return tmscore_max;
 }
-void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt,
-    DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
-    double t[3], double u[3][3], std::vector<int>& invmap,
-    double local_d0_search, double d0, double score_d8,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
-{
-    int i;
-    int j;
-    int k;
-    CoordArray xfrag, xtran, yfrag;
-    xfrag.resize(closeK_opt);
-    xtran.resize(closeK_opt);
-    yfrag.resize(closeK_opt);
-    double rmsd;
-    double d02=d0*d0;
-    double score_d82=score_d8*score_d8;
-    double d2;
-
-    for (i=0;i<xlen;i++)
-    {
-        for (k=0;k<closeK_opt;k++)
-        {
-            xfrag[k][0]=xk[i*closeK_opt+k][0];
-            xfrag[k][1]=xk[i*closeK_opt+k][1];
-            xfrag[k][2]=xk[i*closeK_opt+k][2];
-        }
-
-        for (j=0;j<ylen;j++)
-        {
-            for (k=0;k<closeK_opt;k++)
-            {
-                yfrag[k][0]=yk[j*closeK_opt+k][0];
-                yfrag[k][1]=yk[j*closeK_opt+k][1];
-                yfrag[k][2]=yk[j*closeK_opt+k][2];
-            }
-
-            Kabsch(xfrag, yfrag, closeK_opt, 1, rmsd, t, u);
- 
-            do_rotation(xfrag, xtran, closeK_opt, t, u);
-
-            k=closeK_opt-1;
-            d2=dist(xtran[k], yfrag[k]);
-            if (d2>score_d82) score[i+1][j+1]=0;
-            else score[i+1][j+1]=1./(1+d2/d02);
-        }
-    }
-
-    for (j=0;j<ylen;j++) invmap[j]=-1;
-    if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
-    for (j=0; j<ylen;j++) i=invmap[j];
-    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
-
-}
-
 // Vec3/RotMat overload (same body)
 inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt,
     DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
@@ -613,35 +487,6 @@ inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int clo
     for (j=0; j<ylen;j++) i=invmap[j];
     soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
 
-}
-
-void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, CoordArray& xa, CoordArray& ya,
-    const int xlen, const int ylen, double t[3], double u[3][3], std::vector<int>& invmap,
-    double local_d0_search, double Lnorm, double d0, double score_d8)
-{
-    int i;
-    int j;
-    int k;
-    double rmsd;
-
-    k=0;
-    for (j=0; j<ylen; j++)
-    {
-        i=invmap[j];
-        if (i<0) continue;
-        xtm[k][0]=xa[i][0];
-        xtm[k][1]=xa[i][1];
-        xtm[k][2]=xa[i][2];
-
-        ytm[k][0]=ya[j][0];
-        ytm[k][1]=ya[j][1];
-        ytm[k][2]=ya[j][2];
-        k++;
-    }
-    TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
-        40, 8, rmsd, local_d0_search, Lnorm, score_d8, d0);
-    do_rotation(xa, xt, xlen, t, u);
 }
 
 // Vec3/RotMat overload (same body)
