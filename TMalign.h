@@ -3758,6 +3758,39 @@ double approx_TM(const int xlen, const int ylen, const int a_opt,
     return TMtmp;
 }
 
+// Vec3/RotMat overload (same body)
+inline double approx_TM(const int xlen, const int ylen, const int a_opt,
+    const CoordArray& xa, const CoordArray& ya, const Vec3& t, const RotMat& u,
+    const std::vector<int>& invmap0, const int mol_type)
+{
+    double Lnorm_0=ylen;
+    if (a_opt==-2 && xlen>ylen) Lnorm_0=xlen;
+    else if (a_opt==-1 && xlen<ylen) Lnorm_0=xlen;
+    else if (a_opt==1) Lnorm_0=(xlen+ylen)/2.;
+
+    double D0_MIN;
+    double Lnorm;
+    double d0;
+    double d0_search;
+    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+    double TMtmp=0;
+    double d;
+    Vec3 xtmp = {};
+
+    for(int i=0,j=0; j<ylen; j++)
+    {
+        i=invmap0[j];
+        if(i>=0)
+        {
+            transform(t, u, xa[i], xtmp);
+            d=sqrt(dist(xtmp, ya[j]));
+            TMtmp+=1/(1+(d/d0)*(d/d0));
+        }
+    }
+    TMtmp/=Lnorm_0;
+    return TMtmp;
+}
+
 
 #endif
 
