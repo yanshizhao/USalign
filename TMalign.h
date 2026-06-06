@@ -5275,3 +5275,169 @@ int CPalign_main(CoordArray& xa, CoordArray& ya,
     return cp_point;
 }
 
+
+
+// Vec3/RotMat overload (same body)
+inline int CPalign_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    Vec3& t0, RotMat& u0,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const double TMcut)
+{
+    std::string seqx_cp;
+    std::string secx_cp;
+    CoordArray xa_cp;
+    string seqxA_cp,seqyA_cp;
+    int i;
+    int r;
+    int    cp_point=0;
+    int    cp_aln_best=0;
+    int    cp_aln_current;
+
+    xa_cp.resize(xlen*2);
+    seqx_cp.resize(xlen*2 + 1);
+    secx_cp.resize(xlen*2 + 1);
+    for (r=0;r<xlen;r++)
+    {
+        xa_cp[r+xlen][0]=xa_cp[r][0]=xa[r][0];
+        xa_cp[r+xlen][1]=xa_cp[r][1]=xa[r][1];
+        xa_cp[r+xlen][2]=xa_cp[r][2]=xa[r][2];
+        seqx_cp[r+xlen]=seqx_cp[r]=seqx[r];
+        secx_cp[r+xlen]=secx_cp[r]=secx[r];
+    }
+
+    double TM1_cp;
+    double TM2_cp;
+    double TM4_cp;
+    const double Lnorm_tmp=getmin(xlen,ylen);
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+        t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
+        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen*2, ylen, sequence, Lnorm_tmp, d0_scale,
+        0, false, true, false, true, mol_type, -1);
+
+    r=0;
+    seqxA=seqxA_cp;
+    seqyA=seqyA_cp;
+    for (i=0;i<seqxA_cp.size();i++)
+    {
+        if (seqxA_cp[i]!='-')
+        {
+            seqxA[r]=seqxA_cp[i];
+            seqyA[r]=seqyA_cp[i];
+            r++;
+        }
+    }
+    seqxA=seqxA.substr(0,r);
+    seqyA=seqyA.substr(0,r);
+
+    for (r=0;r<xlen-1;r++)
+    {
+        cp_aln_current=0;
+        for (i=r;i<r+xlen;i++) cp_aln_current+=(seqyA[i]!='-');
+
+        if (cp_aln_current>cp_aln_best)
+        {
+            cp_aln_best=cp_aln_current;
+            cp_point=r;
+        }
+    }
+    seqM.clear();
+    seqxA.clear();
+    seqyA.clear();
+    seqxA_cp.clear();
+    seqyA_cp.clear();
+    rmsd0=Liden=n_ali=n_ali8=0;
+
+    TMalign_main(xa, ya, seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
+        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+        0, false, true, false, true, mol_type, -1);
+
+    if (n_ali8>=cp_aln_best || TM4>=TM4_cp) cp_point=0;
+
+    seqM.clear();
+    seqxA.clear();
+    seqyA.clear();
+    rmsd0=Liden=n_ali=n_ali8=0;
+    if (cp_point!=0)
+    {
+        for (r=0;r<xlen;r++)
+        {
+            xa_cp[r][0]=xa_cp[r+cp_point][0];
+            xa_cp[r][1]=xa_cp[r+cp_point][1];
+            xa_cp[r][2]=xa_cp[r+cp_point][2];
+            seqx_cp[r]=seqx_cp[r+cp_point];
+            secx_cp[r]=secx_cp[r+cp_point];
+        }
+    }
+    seqx_cp[xlen]=0;
+    secx_cp[xlen]=0;
+
+    if (cp_point!=0)
+    {
+        TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+            t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
+            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
+            do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, cp_aln_best,
+            xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+            0, false, true, false, true, mol_type, -1);
+        if (n_ali8>=cp_aln_best || TM4>=TM4_cp)
+        {
+            cp_point=0;
+            for (r=0;r<xlen;r++)
+            {
+                xa_cp[r][0]=xa[r][0];
+                xa_cp[r][1]=xa[r][1];
+                xa_cp[r][2]=xa[r][2];
+                seqx_cp[r]=seqx[r];
+                secx_cp[r]=secx[r];
+            }
+        }
+    }
+
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
+        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale,
+        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, TMcut);
+
+    if (cp_point>0)
+    {
+        r=0;
+        for (i=0;i<seqxA_cp.size();i++)
+        {
+            r+=(seqxA_cp[i]!='-');
+            if (r>=(xlen-cp_point))
+            {
+                i++;
+                break;
+            }
+        }
+        seqxA=seqxA_cp.substr(0,i)+'*'+seqxA_cp.substr(i);
+        seqM =seqM.substr(0,i)    +' '+seqM.substr(i);
+        seqyA=seqyA_cp.substr(0,i)+'-'+seqyA_cp.substr(i);
+    }
+    else
+    {
+        seqxA=seqxA_cp;
+        seqyA=seqyA_cp;
+    }
+
+    seqxA_cp.clear();
+    seqyA_cp.clear();
+    return cp_point;
+}
