@@ -3713,6 +3713,16 @@ void copy_t_u(double t[3], double u[3][3], double t0[3], double u0[3][3])
     }
 }
 
+// Vec3/RotMat overload (same body)
+inline void copy_t_u(const Vec3& t, const RotMat& u, Vec3& t0, RotMat& u0)
+{
+    for (int i=0;i<3;i++)
+    {
+        t0[i]=t[i];
+        for (int j=0;j<3;j++) u0[i][j]=u[i][j];
+    }
+}
+
 // calculate approximate TM-score given rotation matrix
 
 
