@@ -2131,6 +2131,75 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
     return tmscore_max;
 }
 
+// Vec3/RotMat overload (same body)
+inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+    CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
+    int xlen, int ylen, CharMatrix& mask, Vec3& t, RotMat& u, std::vector<int>& invmap0,
+    int g1, int g2, int iteration_max, double local_d0_search,
+    double D0_MIN, double Lnorm, double d0, double score_d8)
+{
+    double gap_open[2]={-0.6, 0};
+    double rmsd;
+    std::vector<int> invmap(ylen+1);
+
+    int iteration;
+    int i;
+    int j;
+    int k;
+    double tmscore;
+    double tmscore_max;
+    double tmscore_old=0;
+    int score_sum_method=8;
+    int simplify_step=40;
+    tmscore_max=-1;
+
+    double d02=d0*d0;
+    for(int g=g1; g<g2; g++)
+    {
+        for(iteration=0; iteration<iteration_max; iteration++)
+        {
+            NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
+                t, u, d02, gap_open[g], invmap);
+
+            k=0;
+            for(j=0; j<ylen; j++)
+            {
+                i=invmap[j];
+
+                if(i>=0)
+                {
+                    xtm[k][0]=x[i][0];
+                    xtm[k][1]=x[i][1];
+                    xtm[k][2]=x[i][2];
+
+                    ytm[k][0]=y[j][0];
+                    ytm[k][1]=y[j][1];
+                    ytm[k][2]=y[j][2];
+                    k++;
+                }
+            }
+
+            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
+                simplify_step, score_sum_method, rmsd, local_d0_search,
+                Lnorm, score_d8, d0);
+
+            if(tmscore>tmscore_max)
+            {
+                tmscore_max=tmscore;
+                for(i=0; i<ylen; i++) invmap0[i]=invmap[i];
+            }
+
+            if(iteration>0)
+            {
+                if(fabs(tmscore_old-tmscore)<0.000001) break;
+            }
+            tmscore_old=tmscore;
+        }
+    }
+
+    return tmscore_max;
+}
+
 
 
 
