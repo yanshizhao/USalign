@@ -398,7 +398,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                     // entry function for structure alignment
                     if (cp_opt) CPalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -438,7 +438,7 @@ std::vector<int> invmap(ylen+1);
                     }
                     else TMalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -725,7 +725,7 @@ std::vector<int> invmap(ylen+1);
 
         }
         else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+            t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -912,7 +912,7 @@ std::vector<int> invmap(ylen+1);
 
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1281,7 +1281,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
         // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+            t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1433,7 +1433,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
                     ylen_trim,ya_trim,seqy_trim,secy_trim);
                 TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
-                    (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1458,7 +1458,7 @@ std::vector<int> invmap(ylen+1);
                 sequence[0]=seqxA;
                 sequence[1]=seqyA;
                 TMalign_main(xt, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
-                    (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1469,7 +1469,7 @@ std::vector<int> invmap(ylen+1);
             else
             {
                 TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                    (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1577,7 +1577,7 @@ std::vector<int> assign2_list(chain2_num);
             
         // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+            t0, u0, TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1800,7 +1800,7 @@ std::vector<int> invmap(ylen+1);
 
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2002,7 +2002,7 @@ std::vector<int> invmap(ylen+1);
 
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                t0, u0, TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2647,7 +2647,7 @@ std::vector<int> invmap(ylen+1);
                     {
                     SOIalign_main(xa, ya, xk, yk, closeK_opt,
                         seqx, seqy, secx, secy,
-                        (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, invmap,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2882,7 +2882,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     // entry function for structure alignment
                     int hingeNum=flexalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        (double*)&t0[0], (double(*)[3])&u0[0], tu_vec, TM1, TM2, TM3, TM4, TM5,
+                        t0, u0, tu_vec, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2893,8 +2893,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     if (hinge_opt && hingeNum<=1 &&
                         n_ali8<0.6*getmin(xlen,ylen))
                     {
-                        double t0_h[3];
-                        double u0_h[3][3];
+                        Vec3 t0_h;
+                        RotMat u0_h;
                         double TM1_h;
                         double TM2_h;
                         double TM3_h;
