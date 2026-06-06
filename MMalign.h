@@ -1282,8 +1282,8 @@ double MMalign_search(
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    double t0[3];
-    double u0[3][3];
+    Vec3 t0;
+    RotMat u0;
     double TM1;
     double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1458,8 +1458,8 @@ void MMalign_final(
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    double t0[3];
-    double u0[3][3];
+    Vec3 t0;
+    RotMat u0;
     double TM1;
     double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1538,7 +1538,7 @@ void MMalign_final(
 
     // print alignment
     output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
-        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
         Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
         TM_0, d0_0, d0A, d0B, 0, d0_scale, d0a, d0u,
@@ -1611,7 +1611,7 @@ void MMalign_final(
             // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
-                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+                xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
                 seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
                 seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
                 TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
@@ -1678,8 +1678,8 @@ void MMalign_se_final(
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    double t0[3];
-    double u0[3][3];
+    Vec3 t0;
+    RotMat u0;
     double TM1;
     double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1765,7 +1765,7 @@ void MMalign_se_final(
 
     // print alignment
     output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
-        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
         Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
         TM_0, d0_0, d0A, d0B, 0, d0_scale, d0a, d0u, 
@@ -1842,7 +1842,7 @@ void MMalign_se_final(
             // print result
             if (j==assign1_list[i]) output_results(xname, yname,
                 chainID_list1[i].c_str(), chainID_list2[j].c_str(),
-                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+                xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
                 seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
                 seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
                 TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
@@ -2453,7 +2453,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
@@ -2494,7 +2494,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
@@ -2541,7 +2541,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
@@ -2584,7 +2584,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
@@ -2627,7 +2627,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
@@ -2722,7 +2722,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0, mol_type);
+            xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
@@ -2805,7 +2805,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     d0A=d0;
     d0_0=d0A;
     local_d0_search = d0_search;
-    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
+    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0], simplify_step,
         score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
     TM_0 = TM1;
 
@@ -2826,7 +2826,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         d0_0=d0a;
         local_d0_search = d0_search;
 
-        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM3;
@@ -2840,7 +2840,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         d0_0=d0u;
         Lnorm_0=Lnorm_ass;
         local_d0_search = d0_search;
-        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM4;
@@ -2854,7 +2854,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //Lnorm_0=ylen;
         Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
-        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM5;
@@ -3073,7 +3073,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.5*TMcut)
             {
@@ -3114,7 +3114,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.52*TMcut)
             {
@@ -3161,7 +3161,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.54*TMcut)
             {
@@ -3204,7 +3204,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.56*TMcut)
             {
@@ -3247,7 +3247,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
             double TMtmp=approx_TM(xlen, ylen, a_opt,
-                xa_c, ya_c, t0, u0, invmap0, mol_type);
+                xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
             if (TMtmp<0.58*TMcut)
             {
@@ -3342,7 +3342,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0, mol_type);
+            xa_c, ya_c, (double*)&t0[0], (double(*)[3])&u0[0], invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
@@ -3425,7 +3425,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     d0A=d0;
     d0_0=d0A;
     local_d0_search = d0_search;
-    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
+    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0], simplify_step,
         score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
     TM_0 = TM1;
 
@@ -3446,7 +3446,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         d0_0=d0a;
         local_d0_search = d0_search;
 
-        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM3;
@@ -3460,7 +3460,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         d0_0=d0u;
         Lnorm_0=Lnorm_ass;
         local_d0_search = d0_search;
-        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM4;
@@ -3474,7 +3474,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         //Lnorm_0=ylen;
         Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
-        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, (double*)&t0[0], (double(*)[3])&u0[0],
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
             score_d8, d0);
         TM_0=TM5;
@@ -3614,8 +3614,8 @@ void MMalign_dimer(double & total_score,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    double t0[3];
-    double u0[3][3];
+    Vec3 t0;
+    RotMat u0;
     double TM1;
     double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
