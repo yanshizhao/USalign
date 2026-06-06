@@ -373,8 +373,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
-                    double t0[3];
-                    double u0[3][3];
+                    Vec3 t0;
+                    RotMat u0;
                     double TM1;
                     double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -398,7 +398,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                     // entry function for structure alignment
                     if (cp_opt) CPalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -438,7 +438,7 @@ std::vector<int> invmap(ylen+1);
                     }
                     else TMalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -462,7 +462,7 @@ std::vector<int> invmap(ylen+1);
                         xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
                         yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
                         chainID_list1[chain_i], chainID_list2[chain_j],
-                        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                         rmsd0, d0_out, seqM.c_str(),
                         seqxA.c_str(), seqyA.c_str(), Liden,
                         n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
@@ -670,8 +670,8 @@ int MMalign(const string &xname, const string &yname,
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
 
         // declare variable specific to this pair of TMalign
-        double t0[3];
-        double u0[3][3];
+        Vec3 t0;
+        RotMat u0;
         double TM1;
         double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -725,7 +725,7 @@ std::vector<int> invmap(ylen+1);
 
         }
         else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            t0, u0, TM1, TM2, TM3, TM4, TM5,
+            (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -738,7 +738,7 @@ std::vector<int> invmap(ylen+1);
             xname.substr(dir1_opt.size()),
             yname.substr(dir2_opt.size()),
             chainID_list1[0], chainID_list2[0],
-            xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+            xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
             seqM.c_str(), seqxA.c_str(), seqyA.c_str(), Liden,
             n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0, d0A, d0B,
             0, d0_scale, d0a, d0u, (m_opt?fname_matrix:"").c_str(),
@@ -835,8 +835,8 @@ std::vector<int> invmap(ylen+1);
                 ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0;
+            RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -912,7 +912,7 @@ std::vector<int> invmap(ylen+1);
 
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
+                (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1258,8 +1258,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
 
         // declare variable specific to this pair of TMalign
-        double t0[3];
-        double u0[3][3];
+        Vec3 t0;
+        RotMat u0;
         double TM1;
         double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1281,7 +1281,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
         // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            t0, u0, TM1, TM2, TM3, TM4, TM5,
+            (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1294,7 +1294,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             xname.substr(dir1_opt.size()),
             yname.substr(dir2_opt.size()),
             chainID_list1[0], chainID_list2[0],
-            xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+            xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
             seqM.c_str(), seqxA.c_str(), seqyA.c_str(), Liden,
             n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0, d0A, d0B,
             Lnorm_ass, d0_scale, d0a, d0u, (m_opt?fname_matrix:"").c_str(),
@@ -1399,8 +1399,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0;
+            RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1433,7 +1433,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
                     ylen_trim,ya_trim,seqy_trim,secy_trim);
                 TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1458,7 +1458,7 @@ std::vector<int> invmap(ylen+1);
                 sequence[0]=seqxA;
                 sequence[1]=seqyA;
                 TMalign_main(xt, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1469,7 +1469,7 @@ std::vector<int> invmap(ylen+1);
             else
             {
                 TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1548,8 +1548,8 @@ std::vector<int> assign2_list(chain2_num);
         copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,secy);
 
         // declare variable specific to this pair of TMalign
-        double t0[3];
-        double u0[3][3];
+        Vec3 t0;
+        RotMat u0;
         double TM1;
         double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1577,7 +1577,7 @@ std::vector<int> assign2_list(chain2_num);
             
         // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            t0, u0, TM1, TM2, TM3, TM4, TM5,
+            (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1594,7 +1594,7 @@ std::vector<int> assign2_list(chain2_num);
         if (outfmt_opt<2) output_results(
             xname.c_str(), yname.c_str(),
             chainID_list1[i], chainID_list2[j],
-            xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
+            xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
             rmsd0, d0_out, seqM.c_str(),
             seqxA.c_str(), seqyA.c_str(), Liden,
             n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
@@ -1748,8 +1748,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0;
+            RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -1800,7 +1800,7 @@ std::vector<int> invmap(ylen+1);
 
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
+                (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -1815,7 +1815,7 @@ std::vector<int> invmap(ylen+1);
                 //<<chain_list[j]<<':'<<chainID_list[j]<<"\tTM4="<<TM4<<endl;
             if (full_opt) output_results(
                 chain_list[i],chain_list[j], chainID_list[i], chainID_list[j],
-                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
+                xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
                 seqM.c_str(), seqxA.c_str(), seqyA.c_str(), Liden,
                 n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0, d0A, d0B,
                 Lnorm_ass, d0_scale, d0a, d0u, "",
@@ -1950,8 +1950,8 @@ std::vector<int> assign_list(chain_num);
             sequence[1]=seqyA_mat[i][j];
 
             // declare variable specific to this pair of TMalign
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0;
+            RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -2002,7 +2002,7 @@ std::vector<int> invmap(ylen+1);
 
             }
             else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
+                (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2011,7 +2011,7 @@ std::vector<int> invmap(ylen+1);
 
             if (outfmt_opt<0) output_results(
                 xname_vec[i].c_str(), xname_vec[j].c_str(), "", "",
-                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
+                xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                 rmsd0, d0_out, seqM.c_str(),
                 seqxA.c_str(), seqyA.c_str(), Liden,
                 n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
@@ -2350,8 +2350,8 @@ std::vector<int> invmap(ylen+1);
     string seqM="";
     string seqxA="";
     string seqyA="";
-    double t0[3];
-    double u0[3][3];
+    Vec3 t0;
+    RotMat u0;
     stringstream buf;
     for (i=0; i<chain_num; i++)
     {
@@ -2369,7 +2369,7 @@ std::vector<int> invmap(ylen+1);
     //MergeAlign(seqxA_mat,seqyA_mat,repr_idx,xname_vec,chain_num,seqM);
     if (outfmt_opt==0) print_version();
     output_mTMalign_results( xname,yname, "","",
-        xlen_total, ylen_total, t0, u0, TM1_total, TM2_total, 
+        xlen_total, ylen_total, (double*)&t0[0], (double(*)[3])&u0[0], TM1_total, TM2_total, 
         TM3_total, TM4_total, TM5_total, rmsd0_total, d0_out_total,
         seqM.c_str(), seqxA.c_str(), seqyA.c_str(), Liden_total,
         n_ali8_total, L_ali_total, TM_ali_total, rmsd_ali_total,
@@ -2385,8 +2385,8 @@ std::vector<int> invmap(ylen+1);
         ut_mat.resize(chain_num);
         int ui;
         int uj;
-        double t[3];
-        double u[3][3];
+        Vec3 t;
+        RotMat u;
         double rmsd;
         for (i=0;i<chain_num;i++)
         {
@@ -2589,8 +2589,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     }
 
                     // declare variable specific to this pair of TMalign
-                    double t0[3];
-                    double u0[3][3];
+                    Vec3 t0;
+                    RotMat u0;
                     double TM1;
                     double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -2647,7 +2647,7 @@ std::vector<int> invmap(ylen+1);
                     {
                     SOIalign_main(xa, ya, xk, yk, closeK_opt,
                         seqx, seqy, secx, secy,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, invmap,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2663,7 +2663,7 @@ std::vector<int> invmap(ylen+1);
                         xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
                         yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
                         chainID_list1[chain_i], chainID_list2[chain_j],
-                        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], TM1, TM2, TM3, TM4, TM5,
                         rmsd0, d0_out, seqM.c_str(),
                         seqxA.c_str(), seqyA.c_str(), Liden,
                         n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
@@ -2856,8 +2856,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
-                    double t0[3];
-                    double u0[3][3];
+                    Vec3 t0;
+                    RotMat u0;
                     double TM1;
                     double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -2882,7 +2882,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                     // entry function for structure alignment
                     int hingeNum=flexalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        t0, u0, tu_vec, TM1, TM2, TM3, TM4, TM5,
+                        (double*)&t0[0], (double(*)[3])&u0[0], tu_vec, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
@@ -2969,7 +2969,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                         xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
                         yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
                         chainID_list1[chain_i], chainID_list2[chain_j],
-                        xlen, ylen, t0, u0, tu_vec, TM1, TM2, TM3, TM4, TM5,
+                        xlen, ylen, (double*)&t0[0], (double(*)[3])&u0[0], tu_vec, TM1, TM2, TM3, TM4, TM5,
                         rmsd0, d0_out, seqM.c_str(),
                         seqxA.c_str(), seqyA.c_str(), Liden,
                         n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,

@@ -34,6 +34,18 @@ void tu2t_u(vector<double> tu_tmp, double t0[3],double u0[3][3])
     }
 }
 
+// Vec3/RotMat overload (same body)
+inline void tu2t_u(vector<double> tu_tmp, Vec3& t0, RotMat& u0)
+{
+    for (int i=0;i<3;i++) t0[i]=tu_tmp[i];
+    int k=3;
+    for (int i=0;i<3;i++) for (int j=0;j<3;j++)
+    {
+        u0[i][j]=tu_tmp[k];
+        k++;
+    }
+}
+
 void aln2invmap(const string &seqxA, const string &seqyA, std::vector<int>& invmap)
 {
     int i;
