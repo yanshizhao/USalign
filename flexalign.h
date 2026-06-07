@@ -1246,6 +1246,366 @@ void output_flexalign_pymol(const string xname, const string yname,
     resi2hinge_dict.clear();
 }
 
+// Vec3/RotMat overload — local t/u, no external buffer needed
+inline void output_flexalign_pymol(const string xname, const string yname,
+    const string fname_super, const vector<vector<double> >&tu_vec,
+    const int ter_opt,
+    const int mm_opt, const int split_opt, const int mirror_opt,
+    const char *seqM, const char *seqxA, const char *seqyA,
+    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    const string chainID1, const string chainID2)
+{
+    Vec3 t; RotMat u;
+    int compress_type=0; // uncompressed file
+    ifstream fin;
+#ifndef REDI_PSTREAM_H_SEEN
+    ifstream fin_gz;
+#else
+    redi::ipstream fin_gz; // if file is compressed
+    if (xname.size()>=3 &&
+        xname.substr(xname.size()-3,3)==".gz")
+    {
+        fin_gz.open("gunzip -c "+xname);
+        compress_type=1;
+    }
+    else if (xname.size()>=4 &&
+        xname.substr(xname.size()-4,4)==".bz2")
+    {
+        fin_gz.open("bzcat "+xname);
+        compress_type=2;
+    }
+    else
+#endif
+        fin.open(xname.c_str());
+
+    map<string,int> resi2hinge_dict;
+    int r;
+    int i;
+    int j;
+    j=-1;
+    char hinge_char=0;
+    int xlen=resi_vec1.size();
+    int ali_len=strlen(seqM);
+    for (r=0;r<strlen(seqxA);r++)
+    {
+        if (seqxA[r]=='-') continue;
+        j++;
+        hinge_char=seqM[r];
+        if (hinge_char==' ')
+        {
+            for (i=1;i<ali_len;i++)
+            {
+                if (r-i>=0 && seqM[r-i]!=' ')
+                    hinge_char=seqM[r-i];
+                else if (r+i<xlen && seqM[r+i]!=' ')
+                    hinge_char=seqM[r+i];
+                if (hinge_char!=' ') break;
+            }
+        }
+        resi2hinge_dict[resi_vec1[j]]=hinge_char-'0';
+    }
+    string resi=resi_vec1[0];
+    int read_resi=resi.size()-4;
+
+    stringstream buf;
+    stringstream buf_pymol;
+    string line;
+    Vec3 x;  // before transform
+    Vec3 x1; // after transform
+
+    // for PDBx/mmCIF only
+    map<string,int> _atom_site;
+    size_t atom_site_pos;
+    vector<string> line_vec;
+    int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
+    int hinge=0;
+    string asym_id="."; // this is similar to chainID, except that
+                        // chainID is char while asym_id is a string
+                        // with possibly multiple char
+    while (compress_type?fin_gz.good():fin.good())
+    {
+        if (compress_type) getline(fin_gz, line);
+        else               getline(fin, line);
+        if (line.compare(0, 6, "ATOM  ")==0 ||
+            line.compare(0, 6, "HETATM")==0) // PDB format
+        {
+            infmt=0;
+            x[0]=safe_stod(line.substr(30,8).c_str());
+            x[1]=safe_stod(line.substr(38,8).c_str());
+            x[2]=safe_stod(line.substr(46,8).c_str());
+            if (mirror_opt) x[2]=-x[2];
+            if (read_resi==1) resi=line.substr(22,5);
+            else resi=line.substr(22,5)+line[21];
+            hinge=0;
+            if (resi2hinge_dict.count(resi)) hinge=resi2hinge_dict[resi];
+            tu2t_u(tu_vec[hinge],t,u);
+            transform(t, u, x, x1);
+            buf<<line.substr(0,30)<<setiosflags(ios::fixed)
+                <<setprecision(3)
+                <<setw(8)<<x1[0] <<setw(8)<<x1[1] <<setw(8)<<x1[2]
+                <<line.substr(54)<<'\n';
+        }
+        else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
+        {
+            infmt=3;
+            buf<<line<<'\n';
+            while(1)
+            {
+                if (compress_type)
+                {
+                    if (fin_gz.good()) getline(fin_gz, line);
+                    else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                }
+                else
+                {
+                    if (fin.good()) getline(fin, line);
+                    else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                }
+                if (line.size()) break;
+            }
+            buf<<line<<'\n';
+            if (line.compare(0,11,"_atom_site.")) continue;
+            _atom_site.clear();
+            atom_site_pos=0;
+            _atom_site[Trim(line.substr(11))]=atom_site_pos;
+            while(1)
+            {
+                while(1)
+                {
+                    if (compress_type)
+                    {
+                        if (fin_gz.good()) getline(fin_gz, line);
+                        else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                    }
+                    else
+                    {
+                        if (fin.good()) getline(fin, line);
+                        else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                    }
+                    if (line.size()) break;
+                }
+                if (line.compare(0,11,"_atom_site.")) break;
+                _atom_site[Trim(line.substr(11))]=++atom_site_pos;
+                buf<<line<<'\n';
+            }
+
+            if (_atom_site.count("group_PDB")*
+                _atom_site.count("Cartn_x")*
+                _atom_site.count("Cartn_y")*
+                _atom_site.count("Cartn_z")==0)
+            {
+                buf<<line<<'\n';
+                cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                continue;
+            }
+
+            while(1)
+            {
+                line_vec.clear();
+                split(line,line_vec);
+                if (line_vec[_atom_site["group_PDB"]]!="ATOM" &&
+                    line_vec[_atom_site["group_PDB"]]!="HETATM") break;
+
+                x[0]=safe_stod(line_vec[_atom_site["Cartn_x"]].c_str());
+                x[1]=safe_stod(line_vec[_atom_site["Cartn_y"]].c_str());
+                x[2]=safe_stod(line_vec[_atom_site["Cartn_z"]].c_str());
+                if (mirror_opt) x[2]=-x[2];
+
+                if (_atom_site.count("auth_seq_id"))
+                    resi=line_vec[_atom_site["auth_seq_id"]];
+                else resi=line_vec[_atom_site["label_seq_id"]];
+                if (_atom_site.count("pdbx_PDB_ins_code") &&
+                    line_vec[_atom_site["pdbx_PDB_ins_code"]]!="?")
+                    resi+=line_vec[_atom_site["pdbx_PDB_ins_code"]][0];
+                else resi+=" ";
+                if (read_resi>=2)
+                {
+                    if (_atom_site.count("auth_asym_id"))
+                        asym_id=line_vec[_atom_site["auth_asym_id"]];
+                    else asym_id=line_vec[_atom_site["label_asym_id"]];
+                    if (asym_id==".") asym_id=" ";
+                    resi+=asym_id[0];
+                }
+                hinge=0;
+                if (resi2hinge_dict.count(resi)) hinge=resi2hinge_dict[resi];
+                tu2t_u(tu_vec[hinge],t,u);
+                transform(t, u, x, x1);
+
+                for (atom_site_pos=0; atom_site_pos<_atom_site.size(); atom_site_pos++)
+                {
+                    if (atom_site_pos==_atom_site["Cartn_x"])
+                        buf<<setiosflags(ios::fixed)<<setprecision(3)
+                           <<setw(8)<<x1[0]<<' ';
+                    else if (atom_site_pos==_atom_site["Cartn_y"])
+                        buf<<setiosflags(ios::fixed)<<setprecision(3)
+                           <<setw(8)<<x1[1]<<' ';
+                    else if (atom_site_pos==_atom_site["Cartn_z"])
+                        buf<<setiosflags(ios::fixed)<<setprecision(3)
+                           <<setw(8)<<x1[2]<<' ';
+                    else buf<<line_vec[atom_site_pos]<<' ';
+                }
+                buf<<'\n';
+
+                if (compress_type && fin_gz.good()) getline(fin_gz, line);
+                else if (!compress_type && fin.good()) getline(fin, line);
+                else break;
+            }
+            if (compress_type?fin_gz.good():fin.good()) buf<<line<<'\n';
+        }
+        else if (line.size())
+        {
+            buf<<line<<'\n';
+            if (ter_opt>=1 && line.compare(0,3,"END")==0) break;
+        }
+    }
+    if (compress_type) fin_gz.close();
+    else               fin.close();
+
+    string fname_super_full=fname_super;
+    if (infmt==0)      fname_super_full+=".pdb";
+    else if (infmt==3) fname_super_full+=".cif";
+    ofstream fp;
+    fp.open(fname_super_full.c_str());
+    fp<<buf.str();
+    fp.close();
+    buf.str(string()); // clear stream
+
+    string chain1_sele;
+    string chain2_sele;
+    if (!mm_opt)
+    {
+        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
+        {
+            chain1_sele=" and c. "+chainID1.substr(1);
+            chain2_sele=" and c. "+chainID2.substr(1);
+        }
+        else if (split_opt==2 && ter_opt==0) // align one chain from each model
+        {
+            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
+            chain1_sele=" and c. "+chainID1.substr(i+1);
+            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
+            chain2_sele=" and c. "+chainID2.substr(i+1);
+        }
+    }
+
+    // extract aligned region
+    int i1=-1;
+    int i2=-1;
+    string resi1_sele;
+    string resi2_sele;
+    string resi1_bond;
+    string resi2_bond;
+    string prev_resi1;
+    string prev_resi2;
+    string curr_resi1;
+    string curr_resi2;
+    if (mm_opt)
+    {
+        ;
+    }
+    else
+    {
+        for (i=0;i<strlen(seqM);i++)
+        {
+            i1+=(seqxA[i]!='-' && seqxA[i]!='*');
+            i2+=(seqyA[i]!='-');
+            if (seqM[i]==' ' || seqxA[i]=='*') continue;
+            curr_resi1=resi_vec1[i1].substr(0,4);
+            curr_resi2=resi_vec2[i2].substr(0,4);
+            if (curr_resi1==curr_resi2)
+            {
+                if (resi1_sele.size()==0) resi1_sele=resi2_sele=curr_resi1;
+                if (prev_resi1.size() && prev_resi1!=curr_resi1)
+                {
+                    // check if residue range is continuous
+                    int prev_num1=0,prev_num2=0,curr_num1=0,curr_num2=0;
+                    istringstream(prev_resi1.substr(0,4)) >> prev_num1;
+                    istringstream(prev_resi2.substr(0,4)) >> prev_num2;
+                    istringstream(curr_resi1.substr(0,4)) >> curr_num1;
+                    istringstream(curr_resi2.substr(0,4)) >> curr_num2;
+                    if (curr_num1==prev_num1+1 || curr_num2==prev_num2+1) //continuous
+                    {
+                        if (curr_resi1>prev_resi1)
+                        {
+                            for (int r=prev_num1+1;r<curr_num1;r++)
+                            {
+                                ostringstream oss;
+                                oss<<r;
+                                resi1_sele+='+'+oss.str();
+                                resi2_sele+='+'+oss.str();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        resi1_sele+=','+curr_resi1;
+                        resi2_sele+=','+curr_resi2;
+                    }
+                }
+                prev_resi1=curr_resi1;
+                prev_resi2=curr_resi2;
+            }
+            else
+            {
+                resi1_sele+=','+curr_resi1;
+                resi2_sele+=','+curr_resi2;
+                prev_resi1=curr_resi1;
+                prev_resi2=curr_resi2;
+            }
+        }
+    }
+
+    // output PyMOL scripts
+    buf_pymol<<"#! /usr/bin/env pymol\n";
+    buf_pymol<<"# This script is generate by USalign\n";
+
+    // remove file extension
+    int cut;
+    for (cut=fname_super.size()-1;cut>=0;cut--)
+        if (fname_super[cut]=='/' || fname_super[cut]=='\\') break;
+    string fname_super_no_path=fname_super.substr(cut+1);
+    for (cut=fname_super_no_path.size()-1;cut>=0;cut--)
+        if (fname_super_no_path[cut]=='.') break;
+    if (cut>=0) fname_super_no_path=fname_super_no_path.substr(0,cut);
+
+    buf_pymol<<"from pymol import cmd\n";
+    buf_pymol<<"import pymol\n";
+    buf_pymol<<"\n";
+    buf_pymol<<"cmd.load(\""<<fname_super_full<<"\")\n";
+    if (mm_opt)
+    {
+        buf_pymol<<"cmd.hide(\"all\")\n";
+        buf_pymol<<"cmd.bg_color(\"white\")\n";
+        buf_pymol<<"cmd.show(\"cartoon\")\n";
+    }
+    else
+    {
+        buf_pymol<<"cmd.hide(\"all\")\n";
+        buf_pymol<<"cmd.bg_color(\"white\")\n";
+        buf_pymol<<"cmd.show(\"cartoon\")\n";
+        buf_pymol<<"cmd.color(\"green\",\"c. "<<chainID1<<"\")\n";
+        buf_pymol<<"cmd.color(\"magenta\",\"c. "<<chainID2<<"\")\n";
+        buf_pymol<<"cmd.select(\"binding_site\",\"resi "<<resi1_sele<<"\""<<chain1_sele<<")\n";
+        if (resi1_sele.size())
+            buf_pymol<<"cmd.show(\"sticks\",\"binding_site\")\n";
+        buf_pymol<<"cmd.select(\"binding_site2\",\"resi "<<resi2_sele<<"\""<<chain2_sele<<")\n";
+        if (resi2_sele.size())
+            buf_pymol<<"cmd.show(\"sticks\",\"binding_site2\")\n";
+        buf_pymol<<"cmd.zoom(\"binding_site\")\n";
+        buf_pymol<<"cmd.set(\"orthoscopic\",\"on\")\n";
+    }
+    fp.open((fname_super+".pml").c_str());
+    fp<<buf_pymol.str();
+    fp.close();
+
+    // clear stream
+    buf.str(string());
+    buf_pymol.str(string());
+    chain1_sele.clear();
+    chain2_sele.clear();
+    resi2hinge_dict.clear();
+}
+
 //output the final results
 void output_flexalign_results(const string xname, const string yname,
     const string chainID1, const string chainID2,
