@@ -698,7 +698,7 @@ std::vector<int> assign2_init(chain2_num);
             fname_super, fname_lign, fname_matrix,
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
+            nullptr, nullptr, string(), string(), string(), string(), len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
             seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
@@ -770,7 +770,7 @@ std::vector<int> assign2_init(chain2_num);
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
+            nullptr, nullptr, string(), string(), string(), string(), len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -789,7 +789,7 @@ std::vector<int> assign2_init(chain2_num);
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, len_aa, len_na,
+        nullptr, nullptr, string(), string(), string(), string(), len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
