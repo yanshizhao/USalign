@@ -118,6 +118,48 @@ void output_flexalign_rotation_matrix(const std::string& fname_matrix,
     ss.str(string());
 }
 
+// Vec3/RotMat overload — local t/u, no external buffer needed
+inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
+    const vector<vector<double> >&tu_vec)
+{
+    Vec3 t; RotMat u;
+    stringstream ss;
+    char dest[1000];
+    for (int hinge=0;hinge<tu_vec.size();hinge++)
+    {
+        tu2t_u(tu_vec[hinge],t,u);
+        ss << "------ The rotation matrix to rotate Structure_1 to Structure_2 ------\n";
+        sprintf(dest, "m %18s %14s %14s %14s\n", "t[m]", "u[m][0]", "u[m][1]", "u[m][2]");
+        ss << string(dest);
+        for (int k = 0; k < 3; k++)
+        {
+            sprintf(dest, "%d %18.10f %14.10f %14.10f %14.10f\n", k, t[k], u[k][0], u[k][1], u[k][2]);
+            ss << string(dest);
+        }
+    }
+    ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"
+            "for(i=0; i<L; i++)\n"
+            "{\n"
+            "   X[i] = t[0] + u[0][0]*x[i] + u[0][1]*y[i] + u[0][2]*z[i];\n"
+            "   Y[i] = t[1] + u[1][0]*x[i] + u[1][1]*y[i] + u[1][2]*z[i];\n"
+            "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
+            "}\n";
+    if (fname_matrix == "-")
+       cout<<ss.str();
+    else
+    {
+        fstream fout;
+        fout.open(fname_matrix, ios::out | ios::trunc);
+        if (fout)
+        {
+            fout<<ss.str();
+            fout.close();
+        }
+        else cout << "Open file to output rotation matrix fail.\n";
+    }
+    ss.str(string());
+}
+
 void output_flexalign_rasmol(const string xname, const string yname,
     const string fname_super,const vector<vector<double> >&tu_vec,
     double t[3], double u[3][3], const int ter_opt,
