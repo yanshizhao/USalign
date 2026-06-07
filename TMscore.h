@@ -161,8 +161,8 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     std::vector<int> k_ali(kmax);
     int ka;
     int k;
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     double d;
 
 
@@ -336,8 +336,8 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     std::vector<int> k_ali(kmax);
     int ka;
     int k;
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     double d;
 
     //iterative parameters
@@ -662,7 +662,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
-    double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
+    Vec3 t; RotMat u; //Kabsch translation vector and rotation matrix
     DoubleMatrix score;      // Input score table for dynamic programming
     CharMatrix path;         // for dynamic programming
     DoubleMatrix val;         // for dynamic programming
