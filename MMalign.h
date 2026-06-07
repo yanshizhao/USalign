@@ -963,13 +963,13 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
     int a;
     string name;
     int chainnum;
-    double x[3];  // before transform
-    double x1[3]; // after transform
+    Vec3 x;  // before transform
+    Vec3 x1; // after transform
     string line;
     vector<vector<string> >PDB_lines;
     int m=0;
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     int ui;
     int uj;
     stringstream buf;

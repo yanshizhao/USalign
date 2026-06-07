@@ -412,8 +412,7 @@ int main(int argc, char *argv[])
         copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
         
         // declare variable specific to this pair of TMalign
-        double t0[3];
-        double u0[3][3];
+        Vec3 t0; RotMat u0;
         double TM1;
         double TM2;
         double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -549,8 +548,7 @@ int main(int argc, char *argv[])
                 ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0; RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt

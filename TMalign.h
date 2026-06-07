@@ -914,14 +914,14 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     double rmsd;
     double dij;
     double d01 = d0 + 1.5;
     if (d01 < D0_MIN) d01 = D0_MIN;
     double d02 = d01 * d01;
-    double xx[3];
+    Vec3 xx;
     int i;
     int k = 0;
 
@@ -944,7 +944,7 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
 
     for (int ii = 0; ii < xlen; ii++)
     {
-        transform(t, u, (double*)&x[ii][0], xx);
+        transform(t, u, x[ii], xx);
         for (int jj = 0; jj < ylen; jj++)
         {
             dij = dist(xx, (double*)&y[jj][0]);
@@ -1728,8 +1728,8 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
     int compress_type=0; // uncompressed file
     size_t m;
     string name;
-    double t[3];
-    double u[3][3];
+    Vec3 t;
+    RotMat u;
     int ui;
     int uj;
     string filename;
@@ -1796,8 +1796,8 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
 
 
         string line;
-        double x[3];  // before transform
-        double x1[3]; // after transform
+        Vec3 x;  // before transform
+        Vec3 x1; // after transform
 
         // for PDBx/mmCIF only
         map<string,int> _atom_site;
