@@ -6,7 +6,7 @@
 
 double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     CoordArray& xa, CoordArray& ya, int xlen, int ylen, std::vector<int>& invmap,
-    int& L_ali, double t[3], double u[3][3], const int mol_type)
+    int& L_ali, Vec3& t, RotMat& u, const int mol_type)
 {
     L_ali = 0;
     int i;
@@ -67,7 +67,7 @@ void parse_alignment_into_invmap(const string seqxA_tmp,
 
 
 int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *seqy,
-    const char *secx, const char *secy, double t0[3], double u0[3][3],
+    const char *secx, const char *secy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
     double &d0a, double &d0_out, string &seqM, string &seqxA, string &seqyA,
@@ -82,7 +82,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const char *seqx, const char *se
     /***********************/
     // allocate memory    
     /***********************/
-    double t[3], u[3][3]; //Kabsch translation vector and rotation matrix
+    Vec3 t; RotMat u; //Kabsch translation vector and rotation matrix
     CoordArray xt;            //for saving the superposed version of r_1 or xtm
     CoordArray r1, r2;        // for Kabsch rotation
     int minlen = min(xlen, ylen);
