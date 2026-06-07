@@ -532,8 +532,7 @@ int main(int argc, char *argv[])
             }
 
             // declare variable specific to this pair of HwRMSD
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0; RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt
@@ -652,8 +651,7 @@ int main(int argc, char *argv[])
             bool overwrite_fast_opt=(fast_opt==true || Lave>=fast_ub);
             
             // declare variable specific to this pair of TMalign
-            double t0[3];
-            double u0[3][3];
+            Vec3 t0; RotMat u0;
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt

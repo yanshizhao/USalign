@@ -348,8 +348,8 @@ int main(int argc, char *argv[])
                                // --> superpose xa onto ya
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
-    double t0[3]={0,0,0};
-    double u0[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+    Vec3 t0 = {0,0,0};
+    RotMat u0 = {}; // zero-initialized (identity set by first use)
 
     // loop over file names
     for (int i=0;i<chain1_list.size();i++)

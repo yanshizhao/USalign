@@ -556,8 +556,7 @@ int main(int argc, char *argv[])
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
-                    double t0[3];
-                    double u0[3][3];
+                    Vec3 t0; RotMat u0;
                     double TM1;
                     double TM2;
                     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
