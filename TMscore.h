@@ -146,7 +146,7 @@ int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, d
 }
 
 double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, int Lali, double t0[3], double u0[3][3], int simplify_step,
+    CoordArray& xt, int Lali, Vec3& t0, RotMat& u0, int simplify_step,
     int score_sum_method, double &Rcomm, double local_d0_search, double Lnorm,
     double score_d8, double d0, double GDT_list[5], double &maxsub)
 {
@@ -321,7 +321,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
 double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, int Lali,
-    double t0[3], double u0[3][3], int simplify_step, int score_sum_method,
+    Vec3& t0, RotMat& u0, int simplify_step, int score_sum_method,
     double &Rcomm, double local_d0_search, double score_d8, double d0,
     double GDT_list[5], double &maxsub)
 {
@@ -485,7 +485,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 
 double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, std::vector<int>& invmap0, double t[3], double u[3][3],
+    int xlen, int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0,
     double GDT_list[5], double &maxsub)
@@ -528,7 +528,7 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 void output_TMscore_results(
     const string xname, const string yname,
     const string chainID1, const string chainID2,
-    const int xlen, const int ylen, double t[3], double u[3][3],
+    const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
     const double rmsd, const double d0_out,
@@ -645,7 +645,7 @@ void output_TMscore_results(
 
 
 int TMscore_main(CoordArray& xa, CoordArray& ya,
-    const char *seqx, const char *seqy, double t0[3], double u0[3][3],
+    const char *seqx, const char *seqy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
