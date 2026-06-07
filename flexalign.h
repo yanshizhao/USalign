@@ -2405,6 +2405,101 @@ void output_flexalign_results(const string xname, const string yname,
             xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
 }
 
+// Vec3/RotMat overload — uses Vec3/RotMat parameters
+inline void output_flexalign_results(const string xname, const string yname,
+    const string chainID1, const string chainID2,
+    const int xlen, const int ylen, const Vec3& t, const RotMat& u,
+    const vector<vector<double> >&tu_vec, const double TM1, const double TM2,
+    const double TM3, const double TM4, const double TM5,
+    const double rmsd, const double d0_out, const char *seqM,
+    const char *seqxA, const char *seqyA, const double Liden,
+    const int n_ali8, const int L_ali, const double TM_ali,
+    const double rmsd_ali, const double TM_0, const double d0_0,
+    const double d0A, const double d0B, const double Lnorm_ass,
+    const double d0_scale, const double d0a, const double d0u,
+    const char* fname_matrix, const int outfmt_opt, const int ter_opt,
+    const int mm_opt, const int split_opt, const int o_opt,
+    const string fname_super, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const int mirror_opt,
+    const vector<string>&resi_vec1, const vector<string>&resi_vec2)
+{
+    if (outfmt_opt<=0)
+    {
+        fcout("\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
+            xname, chainID1);
+        fcout("Name of Structure_2: %s%s\n", yname, chainID2);
+        fcout("Length of Structure_1: %d residues\n", xlen);
+        fcout("Length of Structure_2: %d residues\n\n", ylen);
+
+        if (i_opt)
+            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", TM_ali, L_ali, rmsd_ali);
+
+        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
+        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", TM2, xlen, d0B);
+        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", TM1, ylen, d0A);
+
+        if (a_opt==1)
+            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+        if (u_opt)
+            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
+        if (d_opt)
+            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
+        cout << "(You should use TM-score normalized by length of the reference structure)\n";
+    
+        //output alignment
+        cout << "\n([0-9] denote different aligned fragment pairs separated by different hinges)\n";
+        cout << seqxA << "\n";
+        cout << seqM << "\n";
+        cout << seqyA << "\n";
+    }
+    else if (outfmt_opt==1)
+    {
+        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+            xname, chainID1, xlen, d0B, Liden/xlen, TM2);
+        cout << seqxA << "\n";
+        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+            yname, chainID2, ylen, d0A, Liden/ylen, TM1);
+        cout << seqyA << "\n";
+
+        fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
+            n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
+
+        if (i_opt)
+            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", TM_ali, L_ali, rmsd_ali);
+
+        if(a_opt)
+            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+
+        if(u_opt)
+            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
+
+        if(d_opt)
+            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
+
+        cout << "$$$$\n";
+    }
+    else if (outfmt_opt==2)
+    {
+        fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
+            xname, chainID1, yname, chainID2,
+            TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
+            xlen, ylen, n_ali8);
+    }
+    cout << endl;
+
+    if (strlen(fname_matrix)) output_flexalign_rotation_matrix(
+            fname_matrix, tu_vec);
+
+    if (o_opt==1) output_flexalign_pymol(xname, yname, fname_super, tu_vec,
+            ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+            resi_vec1, resi_vec2, chainID1, chainID2);
+    else if (o_opt==2)
+        output_flexalign_rasmol(xname, yname, fname_super, tu_vec,
+            ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+            resi_vec1, resi_vec2, chainID1, chainID2,
+            xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
+}
+
 
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
