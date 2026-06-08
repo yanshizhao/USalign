@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
                     std::vector<int> invmap(ylen+1);
 
                     // entry function for structure alignment
-                    HwRMSD_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(), t0, u0,
+                    HwRMSD_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
                         TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
                         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                         rmsd0, L_ali, Liden, TM_ali,

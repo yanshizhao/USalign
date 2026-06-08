@@ -475,7 +475,7 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     seqxA.clear();
     seqyA.clear();
 
-    if (glocal<3) trace_back_gotoh(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P,
+    if (glocal<3) trace_back_gotoh(seqx, seqy, JumpH, JumpV, P,
             seqxA, seqyA, xlen, ylen, invmap, invmap_only);
     else trace_back_sw(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
