@@ -104,7 +104,7 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 
     int n_it=20;
     int n_init_max=6;
-    int L_ini[6];
+    std::array<int, 6> L_ini;
     int L_ini_min=4;
     if(Lali<L_ini_min) L_ini_min=Lali;
 
@@ -258,7 +258,7 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 
     int n_it = 20;
     int n_init_max = 6;
-    int L_ini[6];
+    std::array<int, 6> L_ini;
     int L_ini_min = 4;
     if (Lali<L_ini_min) L_ini_min = Lali;
 
