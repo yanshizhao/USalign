@@ -131,9 +131,8 @@ int main(int argc, char *argv[])
         ifstream fp(xname.c_str());
         if (! fp.is_open())
         {
-            char message[5000];
-            sprintf(message, "Can not open file: %s\n", xname.c_str());
-            PrintErrorAndQuit(message);
+            std::string message = "Can not open file: " + xname + "\n";
+            PrintErrorAndQuit(message.c_str());
         }
         string line;
         while (fp.good())
