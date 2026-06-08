@@ -957,11 +957,58 @@ void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     }
 }
 
+// string& overload — same body (operator[] syntax identical)
+inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
+    const std::string& secx, const std::string& secy, const CoordArray& x, const CoordArray& y,
+    int xlen, int ylen, std::vector<int>& y2x, const double D0_MIN, double d0)
+{
+    Vec3 t;
+    RotMat u;
+    double rmsd;
+    double dij;
+    double d01 = d0 + 1.5;
+    if (d01 < D0_MIN) d01 = D0_MIN;
+    double d02 = d01 * d01;
+    Vec3 xx;
+    int i;
+    int k = 0;
+
+    for (int j = 0; j < ylen; j++)
+    {
+        i = y2x[j];
+        if (i >= 0)
+        {
+            r1[k][0] = x[i][0];
+            r1[k][1] = x[i][1];
+            r1[k][2] = x[i][2];
+
+            r2[k][0] = y[j][0];
+            r2[k][1] = y[j][1];
+            r2[k][2] = y[j][2];
+            k++;
+        }
+    }
+    Kabsch(r1, r2, k, 1, rmsd, t, u);
+
+    for (int ii = 0; ii < xlen; ii++)
+    {
+        transform(t, u, x[ii], xx);
+        for (int jj = 0; jj < ylen; jj++)
+        {
+            dij = dist(xx, y[jj]);
+            if (secx[ii] == secy[jj])
+                score[ii + 1][jj + 1] = 1.0 / (1 + dij / d02) + 0.5;
+            else
+                score[ii + 1][jj + 1] = 1.0 / (1 + dij / d02);
+        }
+    }
+}
+
 //get initial alignment from secondary structure and previous alignments
 //input: x, y, xlen, ylen
-//output: y2x stores the best alignment: e.g., 
+//output: y2x stores the best alignment: e.g.,
 //y2x[j]=i means:
-//the jth element in y is aligned to the ith element in x if i>=0 
+//the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
 
 void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
