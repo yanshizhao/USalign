@@ -365,8 +365,8 @@ int main(int argc, char *argv[])
                         yname.substr(dir2_opt.size()+dir_opt.size()),
                         chainID_list1[chain_i].c_str(),
                         chainID_list2[chain_j].c_str(),
-                        xlen, ylen, seqM.c_str(), seqxA.c_str(),
-                        seqyA.c_str(), Liden, L_ali, aln_score, outfmt_opt);
+                        xlen, ylen, seqM, seqxA,
+                        seqyA, Liden, L_ali, aln_score, outfmt_opt);
 
                     // Done! Free memory
                     seqM.clear();

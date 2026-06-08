@@ -93,7 +93,7 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     const string fname_super,const vector<vector<double> >&tu_vec,
     const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
-    const char *seqM, const char *seqxA, const char *seqyA,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2,
     const string chainID1, const string chainID2,
     const int xlen, const int ylen, const double d0A, const int n_ali8,
@@ -118,8 +118,8 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     int j;
     j=-1;
     char hinge_char=0;
-    int ali_len=strlen(seqM);
-    for (r=0;r<strlen(seqxA);r++)
+    int ali_len=seqM.size();
+    for (r=0;r<seqxA.size();r++)
     {
         if (seqxA[r]=='-') continue;
         j++;
@@ -204,7 +204,7 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     int i2=-1;
     if (!mm_opt)
     {
-        for (i=0;i<strlen(seqM);i++)
+        for (i=0;i<seqM.size();i++)
         {
             i1+=(seqxA[i]!='-');
             i2+=(seqyA[i]!='-');
@@ -797,7 +797,7 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     const string fname_super, const vector<vector<double> >&tu_vec,
     const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
-    const char *seqM, const char *seqxA, const char *seqyA,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2,
     const string chainID1, const string chainID2)
 {
@@ -831,8 +831,8 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     j=-1;
     char hinge_char=0;
     int xlen=resi_vec1.size();
-    int ali_len=strlen(seqM);
-    for (r=0;r<strlen(seqxA);r++)
+    int ali_len=seqM.size();
+    for (r=0;r<seqxA.size();r++)
     {
         if (seqxA[r]=='-') continue;
         j++;
@@ -1051,7 +1051,7 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     }
     else
     {
-        for (i=0;i<strlen(seqM);i++)
+        for (i=0;i<seqM.size();i++)
         {
             i1+=(seqxA[i]!='-' && seqxA[i]!='*');
             i2+=(seqyA[i]!='-');
@@ -1159,8 +1159,8 @@ inline void output_flexalign_results(const string xname, const string yname,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const vector<vector<double> >&tu_vec, const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
-    const double rmsd, const double d0_out, const char *seqM,
-    const char *seqxA, const char *seqyA, const double Liden,
+    const double rmsd, const double d0_out, const std::string& seqM,
+    const std::string& seqxA, const std::string& seqyA, const double Liden,
     const int n_ali8, const int L_ali, const double TM_ali,
     const double rmsd_ali, const double TM_0, const double d0_0,
     const double d0A, const double d0B, const double Lnorm_ass,

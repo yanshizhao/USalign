@@ -448,7 +448,7 @@ int main(int argc, char *argv[])
             yname.substr(dir2_opt.size()),
             chainID_list1[0], chainID_list2[0],
             xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
-            seqM.c_str(), seqxA.c_str(), seqyA.c_str(), Liden,
+            seqM, seqxA, seqyA, Liden,
             n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0, d0A, d0B,
             0, d0_scale, d0a, d0u, (m_opt?fname_matrix:"").c_str(),
             outfmt_opt, ter_opt, true, split_opt, o_opt, fname_super,

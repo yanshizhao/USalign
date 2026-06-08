@@ -532,7 +532,7 @@ void output_TMscore_results(
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
     const double rmsd, const double d0_out,
-    const char *seqM, const char *seqxA, const char *seqyA, const double Liden,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA, const double Liden,
     const int n_ali8, const int L_ali,
     const double TM_ali, const double rmsd_ali, const double TM_0,
     const double d0_0, const double d0A, const double d0B,
@@ -589,7 +589,7 @@ void output_TMscore_results(
 
         //output alignment
         string seq_scale=seqM;
-        for (i=0;i<strlen(seqM);i++)
+        for (i=0;i<seqM.size();i++)
         {
             L_lt_d+=seqM[i]==':';
             seq_scale[i]=(i+1)%10+'0';
