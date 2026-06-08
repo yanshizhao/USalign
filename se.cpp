@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
                         resi_vec2, byresi_opt);
 
                     if (byresi_opt) extract_aln_from_resi(sequence,
-                        seqx.c_str(), seqy.c_str(), resi_vec1, resi_vec2, byresi_opt);
+                        seqx, seqy, resi_vec1, resi_vec2, byresi_opt);
 
                     // declare variable specific to this pair of TMalign
                     double TM1;
@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
                         outfmt_opt, invmap);
 
                     if (outfmt_opt>=2)
-                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali);
+                        get_seqID(invmap, seqx, seqy, ylen, Liden, n_ali);
 
                     // print result
                     output_results(

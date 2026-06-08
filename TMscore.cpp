@@ -472,7 +472,7 @@ int main(int argc, char *argv[])
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, byresi_opt);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
                     Vec3 t0; RotMat u0;
@@ -502,7 +502,7 @@ int main(int argc, char *argv[])
 
                     // entry function for structure alignment
                     TMscore_main(
-                        xa, ya, seqx.c_str(), seqy.c_str(),
+                        xa, ya, seqx, seqy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA,

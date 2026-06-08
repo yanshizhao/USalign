@@ -645,7 +645,7 @@ void output_TMscore_results(
 
 
 int TMscore_main(CoordArray& xa, CoordArray& ya,
-    const char *seqx, const char *seqy, Vec3& t0, RotMat& u0,
+    const std::string& seqx, const std::string& seqy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,

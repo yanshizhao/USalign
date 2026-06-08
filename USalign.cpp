@@ -370,7 +370,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                          make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
                     Vec3 t0;
@@ -691,7 +691,7 @@ int MMalign(const string &xname, const string &yname,
         int n_ali8=0;
         vector<double> do_vec;
 
-        if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
+        if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
         // entry function for structure alignment
         if (se_opt)
@@ -861,7 +861,7 @@ std::vector<int> invmap(ylen+1);
             
             if (byresi_opt)
             {
-                int total_aln=extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),
+                int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
                     resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
                 seqxA_mat[i][j]=sequence[0];
                 seqyA_mat[i][j]=sequence[1];
@@ -1457,7 +1457,7 @@ std::vector<int> invmap(ylen+1);
                 if (sequence.size()<2) sequence.push_back("");
                 sequence[0]=seqxA;
                 sequence[1]=seqyA;
-                TMalign_main(xt, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+                TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
@@ -2536,7 +2536,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             if (mm_opt==6) 
             {
                 secx_bond.resize(xlen);
-                assign_sec_bond(secx_bond, secx.c_str(), xlen);
+                assign_sec_bond(secx_bond, secx, xlen);
             }
 
             for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
@@ -2585,7 +2585,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     if (mm_opt==6) 
                     {
                         secy_bond.resize(ylen);
-                        assign_sec_bond(secy_bond, secy.c_str(), ylen);
+                        assign_sec_bond(secy_bond, secy, ylen);
                     }
 
                     // declare variable specific to this pair of TMalign
@@ -2853,7 +2853,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
                          make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
                     else make_sec(ya, ylen, secy);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
                     Vec3 t0;

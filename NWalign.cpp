@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
                         seqxA, seqyA, mol_vec1[chain_i]+mol_vec2[chain_j],
                         invmap, (outfmt_opt>=2)?1:0, glocal);
 
-                    if (outfmt_opt>=2) get_seqID(invmap, seqx.c_str(), seqy.c_str(),
+                    if (outfmt_opt>=2) get_seqID(invmap, seqx, seqy,
                         ylen, Liden, L_ali);
                     else get_seqID(seqxA, seqyA, seqM, Liden, L_ali);
 

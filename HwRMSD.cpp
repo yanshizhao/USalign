@@ -489,7 +489,7 @@ int main(int argc, char *argv[])
                         else make_sec(ya, ylen, secy);
                     }
 
-                    if (byresi_opt) extract_aln_from_resi(sequence, seqx.c_str(), seqy.c_str(),resi_vec1,resi_vec2,byresi_opt);
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of HwRMSD
                     Vec3 t0; RotMat u0;
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
                         invmap, glocal, iter_opt, seq_opt, early_opt);
 
                     if (outfmt_opt>=2) 
-                        get_seqID(invmap, seqx.c_str(), seqy.c_str(), ylen, Liden, n_ali8);
+                        get_seqID(invmap, seqx, seqy, ylen, Liden, n_ali8);
 
                     // print result
                     output_results(

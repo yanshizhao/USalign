@@ -414,7 +414,7 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     return aln_score; // aligment score
 }
 
-void get_seqID(const std::vector<int>& invmap, const char *seqx, const char *seqy,
+void get_seqID(const std::vector<int>& invmap, const std::string& seqx, const std::string& seqy,
     const int ylen, double &Liden,int &L_ali)
 {
     Liden=0;
@@ -499,7 +499,7 @@ void output_NWalign_results(
 /* extract pairwise sequence alignment from residue index vectors,
  * assuming that "sequence" contains two empty strings.
  * return length of alignment, including gap. */
-int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, const char *seqy,
+int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string& seqx, const std::string& seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const int byresi_opt)
 {
@@ -635,7 +635,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, 
 
 /* extract pairwise sequence alignment from residue index vectors,
  * return length of alignment, including gap. */
-int extract_aln_from_resi(std::vector<std::string> &sequence, const char *seqx, const char *seqy,
+int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string& seqx, const std::string& seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const std::vector<int> xlen_vec, const std::vector<int> ylen_vec,
     const int chain_i, const int chain_j, const int byresi_opt)
