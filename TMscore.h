@@ -800,7 +800,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         if(i>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xt[i][0], &ya[j][0]));
+            d=sqrt(dist(xt[i], ya[j]));
             m1[k]=i;
             m2[k]=j;
 
@@ -927,7 +927,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         seqxA[kk]=seqx[m1[k]];
         seqyA[kk]=seqy[m2[k]];
         Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(&xt[m1[k]][0], &ya[m2[k]][0]));
+        d=sqrt(dist(xt[m1[k]], ya[m2[k]]));
         //if(d<d0_out) seqM[kk]=':';
         //else         seqM[kk]='.';
         if(d<5) seqM[kk]=':';

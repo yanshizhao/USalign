@@ -121,7 +121,7 @@ int se_main(
         if(i>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xa[i][0], &ya[j][0]));
+            d=sqrt(dist(xa[i], ya[j]));
             if (d <= score_d8 || i_opt || invmap0[j]==i)
             {
                 if (outfmt_opt<2)
@@ -193,7 +193,7 @@ int se_main(
         seqxA[kk]=seqx[m1[k]];
         seqyA[kk]=seqy[m2[k]];
         Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(&xa[m1[k]][0], &ya[m2[k]][0]));
+        d=sqrt(dist(xa[m1[k]], ya[m2[k]]));
         if(d<d0_out) seqM[kk]=':';
         else         seqM[kk]='.';
         do_vec[kk]=d;
