@@ -1943,33 +1943,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, Co
 }
 
 
-inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
-{
-    int i,j; double h,v,d;
-    for(i=0; i<=len1; i++) { val[i][0]=i*gap_open; path[i][0]=0; }
-    for(j=0; j<=len2; j++) { val[0][j]=j*gap_open; path[0][j]=0; j2i[j]=-1; }
-    for(i=1; i<=len1; i++) {
-        for(j=1; j<=len2; j++) {
-            d=FLT_MIN;
-            if (mask[i][j]) d=val[i-1][j-1] + 1.0*(secx[i-1]==secy[j-1]);
-            h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
-            v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
-            if(d>=h && d>=v) { path[i][j]=1; val[i][j]=d; }
-            else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
-        }
-    }
-    i=len1; j=len2;
-    while(i>0 && j>0) {
-        if(path[i][j]) { j2i[j-1]=i-1; i--; j--; }
-        else {
-            h=val[i-1][j]; if(path[i-1][j]) h +=gap_open;
-            v=val[i][j-1]; if(path[i][j-1]) v +=gap_open;
-            if(v>=h) j--; else i--;
-        }
-    }
-}
-
 // string& overload — same body (operator[] syntax identical to const char*)
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const std::string& secx, const std::string& secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
@@ -2078,13 +2051,6 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
 
 
 
-
-inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char *secx,
-    const char *secy, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x)
-{
-    double gap_open=-1.0;
-    NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
-}
 
 // string& overload — same body
 inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const std::string& secx,

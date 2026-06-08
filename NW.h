@@ -21,8 +21,6 @@ inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
     int len1, int len2, const Vec3& t, const RotMat& u,
     double d02, double gap_open, std::vector<int>& j2i);
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, const double gap_open, std::vector<int>& j2i);
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const std::string& secx, const std::string& secy,
     const int len1, const int len2, const double gap_open, std::vector<int>& j2i);
 inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
@@ -133,45 +131,6 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
 
 
 
-
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const char *secx, const char *secy,
-    const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
-{
-    int i,j; double h,v,d;
-    for(i=0; i<=len1; i++) { val[i][0]=0; path[i][0]=0; }
-    for(j=0; j<=len2; j++) { val[0][j]=0; path[0][j]=0; j2i[j]=-1; }
-    for(i=1; i<=len1; i++) {
-        for(j=1; j<=len2; j++) {
-            d=val[i-1][j-1] + 1.0*(secx[i-1]==secy[j-1]);
-            h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
-            v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
-            if(d>=h && d>=v) { path[i][j]=1; val[i][j]=d; }
-            else { path[i][j]=0; if(v>=h) val[i][j]=v; else val[i][j]=h; }
-        }
-    }
-    //trace back to extract the alignment
-    i=len1; j=len2;
-    while(i>0 && j>0)
-    {
-        if(path[i][j]) //from diagonal
-        {
-            j2i[j-1]=i-1;
-            i--;
-            j--;
-        }
-        else
-        {
-            h=val[i-1][j];
-            if(path[i-1][j]) h +=gap_open;
-
-            v=val[i][j-1];
-            if(path[i][j-1]) v +=gap_open;
-
-            if(v>=h) j--;
-            else i--;
-        }
-    }
-}
 
 // string& overload — same body (operator[] syntax identical to const char*)
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const std::string& secx, const std::string& secy,

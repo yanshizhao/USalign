@@ -553,9 +553,13 @@ int main(int argc, char *argv[])
             std::vector<int> invmap(ylen+1);
 
             // entry function for structure alignment
+            {
+            std::string seqx_str(&seq_vec[chain_i][0], xlen);
+            std::string seqy_str(&seq_vec[chain_j][0], ylen);
+            std::string secx_str(&sec_vec[chain_i][0], xlen);
+            std::string secy_str(&sec_vec[chain_j][0], ylen);
             HwRMSD_main(
-                xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
-                &sec_vec[chain_i][0], &sec_vec[chain_j][0], t0, u0,
+                xa, ya, seqx_str, seqy_str, secx_str, secy_str, t0, u0,
                 TM1, TM2, TM3, TM4, TM5,
                 d0_0, TM_0, d0A, d0B, d0u,
                 d0a, d0_out, seqM, seqxA, seqyA,
@@ -565,6 +569,7 @@ int main(int argc, char *argv[])
                 d0_scale, i_opt,
                 a_opt, u_opt, d_opt, mol_vec[chain_i]+mol_vec[chain_j],
                 invmap, glocal, iter_opt);
+            }
 
             TM=TM3; // average length
             if      (s_opt==1) TM=TM2; // shorter length
