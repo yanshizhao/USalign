@@ -911,52 +911,6 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
 
 
 
-void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
-    const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, std::vector<int>& y2x, const double D0_MIN, double d0)
-{
-    Vec3 t;
-    RotMat u;
-    double rmsd;
-    double dij;
-    double d01 = d0 + 1.5;
-    if (d01 < D0_MIN) d01 = D0_MIN;
-    double d02 = d01 * d01;
-    Vec3 xx;
-    int i;
-    int k = 0;
-
-    for (int j = 0; j < ylen; j++)
-    {
-        i = y2x[j];
-        if (i >= 0)
-        {
-            r1[k][0] = x[i][0];
-            r1[k][1] = x[i][1];
-            r1[k][2] = x[i][2];
-
-            r2[k][0] = y[j][0];
-            r2[k][1] = y[j][1];
-            r2[k][2] = y[j][2];
-            k++;
-        }
-    }
-    Kabsch(r1, r2, k, 1, rmsd, t, u);
-
-    for (int ii = 0; ii < xlen; ii++)
-    {
-        transform(t, u, x[ii], xx);
-        for (int jj = 0; jj < ylen; jj++)
-        {
-            dij = dist(xx, y[jj]);
-            if (secx[ii] == secy[jj])
-                score[ii + 1][jj + 1] = 1.0 / (1 + dij / d02) + 0.5;
-            else
-                score[ii + 1][jj + 1] = 1.0 / (1 + dij / d02);
-        }
-    }
-}
-
 // string& overload — same body (operator[] syntax identical)
 inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     const std::string& secx, const std::string& secy, const CoordArray& x, const CoordArray& y,
@@ -1011,8 +965,9 @@ inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix&
 //the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
 
-void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
-    DoubleMatrix& val, const char *secx, const char *secy, const CoordArray& x, const CoordArray& y,
+// string& overload — same body
+inline void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
+    DoubleMatrix& val, const std::string& secx, const std::string& secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
@@ -3262,7 +3217,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         // get initial alignment by local superposition+secondary structure
         /********************************************************************/
         //=initial3 in original TM-align
-        get_initial_ssplus(r1, r2, score, path, val, secx.c_str(), secy.c_str(), xa_c, ya_c,
+        get_initial_ssplus(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
         TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,

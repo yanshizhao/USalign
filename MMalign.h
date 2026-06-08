@@ -2147,7 +2147,7 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
     const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
-    score_matrix_rmsd_sec(r1, r2, score, secx.c_str(), secy.c_str(), x, y, xlen, ylen, y2x0, D0_MIN,d0);
+    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
     int i,j;
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
     double gap_open=-1.0;
