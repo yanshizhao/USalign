@@ -847,7 +847,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
         n_jump2 = ylen / 3;
 
     // fragment sizes for superposition
-    int n_frag[2] = { 20, 100 };
+    std::array<int, 2> n_frag = { 20, 100 };
     if (n_frag[0] > (aL / 3))
         n_frag[0] = aL / 3;
     if (n_frag[1] > (aL / 2))

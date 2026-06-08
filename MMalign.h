@@ -2090,7 +2090,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
     else n_jump2 = 15;
     if (n_jump2 > (ylen / 3)) n_jump2 = ylen / 3;
 
-    int n_frag[2] = { 20, 100 };
+    std::array<int, 2> n_frag = { 20, 100 };
     if (n_frag[0] > (aL / 3)) n_frag[0] = aL / 3;
     if (n_frag[1] > (aL / 2)) n_frag[1] = aL / 2;
 
