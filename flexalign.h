@@ -55,17 +55,14 @@ inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
 {
     Vec3 t; RotMat u;
     stringstream ss;
-    char dest[1000];
     for (int hinge=0;hinge<tu_vec.size();hinge++)
     {
         tu2t_u(tu_vec[hinge],t,u);
         ss << "------ The rotation matrix to rotate Structure_1 to Structure_2 ------\n";
-        sprintf(dest, "m %18s %14s %14s %14s\n", "t[m]", "u[m][0]", "u[m][1]", "u[m][2]");
-        ss << string(dest);
+        ss << strfmt("m %18s %14s %14s %14s\n", "t[m]", "u[m][0]", "u[m][1]", "u[m][2]");
         for (int k = 0; k < 3; k++)
         {
-            sprintf(dest, "%d %18.10f %14.10f %14.10f %14.10f\n", k, t[k], u[k][0], u[k][1], u[k][2]);
-            ss << string(dest);
+            ss << strfmt("%d %18.10f %14.10f %14.10f %14.10f\n", k, t[k], u[k][0], u[k][1], u[k][2]);
         }
     }
     ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"

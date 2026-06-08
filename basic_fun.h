@@ -819,11 +819,6 @@ inline double dist(const std::array<double,3>& x, const std::array<double,3>& y)
     return (d1*d1 + d2*d2 + d3*d3);
 }
 
-double dot(const double *a, const double *b)
-{
-    return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
-}
-
 inline double dot(const std::array<double,3>& a, const std::array<double,3>& b)
 {
     return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
@@ -1109,4 +1104,21 @@ void fcout(const char* fmt, const Args&... args) {
 // No-argument overload (const char* → direct cout, no snprintf overhead)
 inline void fcout(const char* fmt) {
     std::cout << fmt;
+}
+
+// ---- strfmt: printf-style formatting to std::string ----
+// Replaces: char buf[N]; sprintf(buf, ...); ss << string(buf);
+//         → ss << strfmt("format", ...);
+
+template<typename... Args>
+inline std::string strfmt(const char* fmt, const Args&... args) {
+    int size = std::snprintf(nullptr, 0, fmt, to_cstr(args)...);
+    if (size <= 0) return {};
+    std::string buf(size, '\0');
+    std::snprintf(&buf[0], size + 1, fmt, to_cstr(args)...);
+    return buf;
+}
+
+inline std::string strfmt(const char* fmt) {
+    return fmt;
 }
