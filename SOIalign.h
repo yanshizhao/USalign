@@ -275,7 +275,7 @@ inline int soi_se_main(
         if(i>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xa[i][0], &ya[j][0]));
+            d=sqrt(dist(xa[i], ya[j]));
             dist_list[j]=d;
             if (score[i+1][j+1]>0)
             {
@@ -756,7 +756,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if(j>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
+            d=sqrt(dist(xt[i], ya_c[j]));
             if (d <= score_d8)
             {
                 m1[k]=i;
@@ -805,7 +805,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         i=invmap0[j];
         if(i>=0)//aligned
         {
-            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
+            d=sqrt(dist(xt[i], ya_c[j]));
             if (d <= score_d8)
             {
                 m1[k]=i;

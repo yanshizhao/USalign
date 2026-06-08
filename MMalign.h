@@ -2608,7 +2608,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         if(i>=0)//aligned
         {
             n_ali++;
-            d=sqrt(dist(&xt[i][0], &ya_c[j][0]));
+            d=sqrt(dist(xt[i], ya_c[j]));
             if (d <= score_d8 || (i_opt == 3))
             {
                 m1[k]=i;
@@ -2744,7 +2744,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         seqxA[kk]=seqx[m1[k]];
         seqyA[kk]=seqy[m2[k]];
         Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(&xt[m1[k]][0], &ya_c[m2[k]][0]));
+        d=sqrt(dist(xt[m1[k]], ya_c[m2[k]]));
         if(d<d0_out) seqM[kk]=':';
         else         seqM[kk]='.';
         kk++;  
