@@ -190,7 +190,7 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArr
         {
             for(j=1; j<=len2; j++)
             {
-                dij=dist((double*)&x[i-1][0], (double*)&y[j-1][0]);
+                dij=dist(x[i-1], y[j-1]);
                 d=val[i-1][j-1] +  1.0/(1+dij/d02);
                 h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
                 v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
@@ -231,7 +231,7 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArr
         for(j=1; j<=len2; j++)
         {
             dij=0;
-            if (path[i][j]==0) dij=dist((double*)&x[i-1][0], (double*)&y[j-1][0]);
+            if (path[i][j]==0) dij=dist(x[i-1], y[j-1]);
             d=val[i-1][j-1] +  1.0/(1+dij/d02);
             h=val[i-1][j]; if(path[i-1][j]) h += gap_open;
             v=val[i][j-1]; if(path[i][j-1]) v += gap_open;
