@@ -2175,12 +2175,13 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
 
 
 
+// string& overload — same body
 inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
-    DoubleMatrix& val, const char *secx, const char *secy,
+    DoubleMatrix& val, const std::string& secx, const std::string& secy,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
-    score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
+    score_matrix_rmsd_sec(r1, r2, score, secx.c_str(), secy.c_str(), x, y, xlen, ylen, y2x0, D0_MIN,d0);
     int i,j;
     for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
     double gap_open=-1.0;
@@ -2196,9 +2197,9 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
 
 
 
-// Vec3/RotMat overload (same body)
+// string& overload — same body
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
-    const char *seqx, const char *seqy, const char *secx, const char *secy,
+    const std::string& seqx, const std::string& seqy, const std::string& secx, const std::string& secy,
     Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
@@ -2812,6 +2813,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     // score/val auto-destruct (DoubleMatrix)
     return 0; // zero for no exception
 }
+
 void MMalign_dimer(double & total_score,
     const vector<vector<vector<double> > >&xa_vec,
     const vector<vector<vector<double> > >&ya_vec,
@@ -2901,7 +2903,7 @@ void MMalign_dimer(double & total_score,
 
     double Lnorm_ass=len_aa+len_na;
 
-    TMalign_dimer_main(xa, ya, seqx.c_str(), seqy.c_str(), secx.c_str(), secy.c_str(),
+    TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,

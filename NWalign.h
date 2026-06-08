@@ -259,16 +259,15 @@ inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
 }
 
 
-/* trace back Smith-Waterman dynamic programming path to diciper 
- * pairwise local alignment */
-void trace_back_sw(const char *seqx, const char *seqy,
+// string& overload — same body
+inline void trace_back_sw(const std::string& seqx, const std::string& seqy,
     IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
 {
     int i;
     int j;
     int gaplen;
-    bool found_start_cell=false; // std::find the first non-zero cell in P
+    bool found_start_cell=false;
     std::string buf;
 
     if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
@@ -294,10 +293,10 @@ void trace_back_sw(const char *seqx, const char *seqy,
     {
         buf.assign(ylen-j,'-');
         seqxA=buf;
-        buf.assign(seqx+i,xlen-i);
+        buf.assign(&seqx[i],xlen-i);
         seqxA+=buf;
 
-        buf.assign(seqy+j,ylen-j);
+        buf.assign(&seqy[j],ylen-j);
         seqyA+=buf;
         buf.assign(xlen-i,'-');
         seqyA+=buf;
@@ -314,7 +313,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
             gaplen=JumpH[i][j];
             j-=gaplen;
             if (invmap_only==1) continue;
-            buf.assign(seqy+j,gaplen);
+            buf.assign(&seqy[j],gaplen);
             seqyA=buf+seqyA;
 
             buf.assign(gaplen,'-');
@@ -325,7 +324,7 @@ void trace_back_sw(const char *seqx, const char *seqy,
             gaplen=JumpV[i][j];
             i-=gaplen;
             if (invmap_only==1) continue;
-            buf.assign(seqx+i,gaplen);
+            buf.assign(&seqx[i],gaplen);
             seqxA=buf+seqxA;
 
             buf.assign(gaplen,'-');
@@ -347,14 +346,15 @@ void trace_back_sw(const char *seqx, const char *seqy,
     if (invmap_only!=1)
     {
         buf.assign(j,'-');
-        buf.append(seqx,i);
+        buf.append(seqx.data(),i);
         seqxA=buf+seqxA;
 
-        buf.assign(seqy,j);
+        buf.assign(seqy.data(),j);
         buf.append(i,'-');
         seqyA=buf+seqyA;
     }
 }
+
 
 /* entry function for NWalign
  * invmap_only - whether to return seqxA and seqyA or to return invmap
@@ -407,7 +407,7 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
 
     if (glocal<3) trace_back_gotoh(seqx, seqy, JumpH, JumpV, P,
             seqxA, seqyA, xlen, ylen, invmap, invmap_only);
-    else trace_back_sw(seqx.c_str(), seqy.c_str(), JumpH, JumpV, P, seqxA, seqyA,
+    else trace_back_sw(seqx, seqy, JumpH, JumpV, P, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
 
     // JumpH/JumpV/P/S auto-destruct (IntMatrix)
