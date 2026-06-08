@@ -20,8 +20,10 @@ inline bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, do
     int i, j, m, m1, l, k;
     double e0, rms1, d, h, g;
     double cth, sth, sqrth, p, det, sigma;
-    double xc[3], yc[3];
-    double a[3][3], b[3][3], r[3][3], e[3], rr[6], ss[6];
+    Vec3 xc, yc;
+    RotMat a, b, r;
+    std::array<double,3> e;
+    std::array<double,6> rr, ss;
     double sqrt3 = 1.73205080756888, tol = 0.01;
     int ip[] = { 0, 1, 3, 1, 2, 4, 3, 4, 5 };
     int ip2312[] = { 1, 2, 0, 1 };
@@ -34,9 +36,9 @@ inline bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, do
     rms = 0;
     rms1 = 0;
     e0 = 0;
-    double c1[3], c2[3];
-    double s1[3], s2[3];
-    double sx[3], sy[3], sz[3];
+    Vec3 c1, c2;
+    Vec3 s1, s2;
+    Vec3 sx, sy, sz;
     for (i = 0; i < 3; i++)
     {
         s1[i] = 0.0;
