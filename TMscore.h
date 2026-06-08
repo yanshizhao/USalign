@@ -537,8 +537,8 @@ void output_TMscore_results(
     const double TM_ali, const double rmsd_ali, const double TM_0,
     const double d0_0, const double d0A, const double d0B,
     const double Lnorm_ass, const double d0_scale, 
-    const double d0a, const double d0u, const char* fname_matrix,
-    const int outfmt_opt, const int ter_opt, const char *fname_super,
+    const double d0a, const double d0u, const std::string& fname_matrix,
+    const int outfmt_opt, const int ter_opt, const std::string& fname_super,
     const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
     int L_lt_d, const double rmsd_d0_out,
     double GDT_list[5], double maxsub, const int split_opt,
@@ -635,9 +635,9 @@ void output_TMscore_results(
     }
     cout << endl;
 
-    if (strlen(fname_matrix)) 
+    if (!fname_matrix.empty()) 
         output_rotation_matrix(fname_matrix, t, u);
-    if (strlen(fname_super))
+    if (!fname_super.empty())
         output_pymol(xname, yname, fname_super, t, u, ter_opt,
             0, split_opt, mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2);

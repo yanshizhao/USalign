@@ -696,7 +696,7 @@ bool overlap(const int a1,const int b1,const int c1,const int d1,
 }
 
 // find base pairing stacks in RNA
-void sec_str(int len,const char *seq, const vector<vector<bool> >&bp,
+void sec_str(int len,const std::string& seq, const vector<vector<bool> >&bp,
     int a, int b,int &c, int &d)
 {
     int i;
@@ -727,7 +727,7 @@ inline void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
-void make_sec(const char *seq, const CoordArray& x, int len, std::string& sec, const string atom_opt)
+void make_sec(const std::string& seq, const CoordArray& x, int len, std::string& sec, const string atom_opt)
 {
     int ii;
     int jj;
@@ -2673,7 +2673,7 @@ void output_results(const string xname, const string yname,
     const double rmsd_ali, const double TM_0, const double d0_0,
     const double d0A, const double d0B, const double Lnorm_ass,
     const double d0_scale, const double d0a, const double d0u,
-    const char* fname_matrix, const int outfmt_opt, const int ter_opt,
+    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
     const string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
@@ -2744,7 +2744,7 @@ void output_results(const string xname, const string yname,
     }
     if (outfmt_opt<5) cout << endl;
 
-    if (strlen(fname_matrix)) output_rotation_matrix(fname_matrix, t, u);
+    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u);
 
     if (o_opt==1 || o_opt==3)
         output_pymol(xname, yname, fname_super, t, u, ter_opt,
@@ -2768,7 +2768,7 @@ void output_mTMalign_results(const string xname, const string yname,
     const double rmsd_ali, const double TM_0, const double d0_0,
     const double d0A, const double d0B, const double Lnorm_ass,
     const double d0_scale, const double d0a, const double d0u,
-    const char* fname_matrix, const int outfmt_opt, const int ter_opt,
+    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
     const string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
@@ -2820,7 +2820,7 @@ void output_mTMalign_results(const string xname, const string yname,
     }
     cout << endl;
 
-    if (strlen(fname_matrix)) output_rotation_matrix(fname_matrix, t, u);
+    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u);
 
     if (o_opt==1 || o_opt==3)
         output_pymol(xname, yname, fname_super, t, u, ter_opt,

@@ -1165,7 +1165,7 @@ inline void output_flexalign_results(const string xname, const string yname,
     const double rmsd_ali, const double TM_0, const double d0_0,
     const double d0A, const double d0B, const double Lnorm_ass,
     const double d0_scale, const double d0a, const double d0u,
-    const char* fname_matrix, const int outfmt_opt, const int ter_opt,
+    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
     const string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
@@ -1235,7 +1235,7 @@ inline void output_flexalign_results(const string xname, const string yname,
     }
     cout << endl;
 
-    if (strlen(fname_matrix)) output_flexalign_rotation_matrix(
+    if (!fname_matrix.empty()) output_flexalign_rotation_matrix(
             fname_matrix, tu_vec);
 
     if (o_opt==1) output_flexalign_pymol(xname, yname, fname_super, tu_vec,

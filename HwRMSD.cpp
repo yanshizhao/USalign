@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
             {
                 secx.resize(xlen+1);
                 if (mol_vec1[chain_i]>0)
-                     make_sec(seqx.c_str(), xa, xlen, secx, atom_opt);
+                     make_sec(seqx, xa, xlen, secx, atom_opt);
                 else make_sec(xa, xlen, secx);
             }
 
@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
                     {
                         secy.resize(ylen+1);
                         if (mol_vec2[chain_j]>0)
-                             make_sec(seqy.c_str(), ya, ylen, secy, atom_opt);
+                             make_sec(seqy, ya, ylen, secy, atom_opt);
                         else make_sec(ya, ylen, secy);
                     }
 

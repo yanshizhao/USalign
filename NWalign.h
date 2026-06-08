@@ -451,7 +451,7 @@ void get_seqID(const std::string& seqxA, const std::string& seqyA,
 
 void output_NWalign_results(
     const std::string xname, const std::string yname,
-    const char *chainID1, const char *chainID2,
+    const std::string& chainID1, const std::string& chainID2,
     const int xlen, const int ylen, const std::string& seqM, 
     const std::string& seqxA, const std::string& seqyA, const double Liden,
     const int L_ali, const int aln_score, const int outfmt_opt)

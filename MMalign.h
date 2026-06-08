@@ -1077,7 +1077,7 @@ void parse_chain_list(const vector<string>&chain_list,
             len = read_PDB(PDB_lines[chain_i], xa, seq, resi_vec, read_resi);
             if (mirror_opt) for (r=0;r<len;r++) xa[r][2]=-xa[r][2];
             if (mol_vec[chain_i]>0 || mol_opt=="RNA")
-                make_sec(seq.c_str(), xa, len, sec, atom_opt);
+                make_sec(seq, xa, len, sec, atom_opt);
             else make_sec(xa, len, sec); // secondary structure assignment
             
             // store in vector
@@ -1484,7 +1484,7 @@ void MMalign_final(
     }
 
     // print alignment
-    output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
+    output_results(xname, yname, chainID1, chainID2,
         xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
         Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
@@ -1711,7 +1711,7 @@ void MMalign_se_final(
     }
 
     // print alignment
-    output_results(xname, yname, chainID1.c_str(), chainID2.c_str(),
+    output_results(xname, yname, chainID1, chainID2,
         xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
         sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
         Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
