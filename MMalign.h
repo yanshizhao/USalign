@@ -2086,6 +2086,14 @@ inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const char
     NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
 }
 
+// string& overload — same body
+inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const std::string& secx,
+    const std::string& secy, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x)
+{
+    double gap_open=-1.0;
+    NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
+}
+
 inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CharMatrix& path, DoubleMatrix& val,
     CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x,
