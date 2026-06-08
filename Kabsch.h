@@ -25,8 +25,8 @@ inline bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, do
     std::array<double,3> e;
     std::array<double,6> rr, ss;
     double sqrt3 = 1.73205080756888, tol = 0.01;
-    int ip[] = { 0, 1, 3, 1, 2, 4, 3, 4, 5 };
-    int ip2312[] = { 1, 2, 0, 1 };
+    std::array<int, 9> ip = { 0, 1, 3, 1, 2, 4, 3, 4, 5 };
+    std::array<int, 4> ip2312 = { 1, 2, 0, 1 };
 
     int a_failed = 0;
     int b_failed = 0;

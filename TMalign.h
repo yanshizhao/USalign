@@ -13,7 +13,7 @@ using namespace std;
 
 //     1, collect those residues with dis<d;
 //     2, calculate TMscore
-int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, int i_ali[],
+int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, std::vector<int>& i_ali,
     double &score1, int score_sum_method, const double Lnorm,
     const double score_d8, const double d0)
 {
@@ -59,7 +59,7 @@ int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, 
 }
 
 int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, double d,
-    int i_ali[], double &score1, int score_sum_method,
+    std::vector<int>& i_ali, double &score1, int score_sum_method,
     double score_d8, double d0)
 {
     double score_sum = 0;
@@ -163,7 +163,7 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
             do_rotation(xtm, xt, Lali, t, u);
 
             d = local_d0_search - 1;
-            n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), score,
+            n_cut=score_fun8(xt, ytm, Lali, d, i_ali, score,
                 score_sum_method, Lnorm, score_d8, d0);
             if(score>score_max)
             {
@@ -199,7 +199,7 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
                 Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
 
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut=score_fun8(xt, ytm, Lali, d, i_ali.data(), score,
+                n_cut=score_fun8(xt, ytm, Lali, d, i_ali, score,
                     score_sum_method, Lnorm, score_d8, d0);
                 if(score>score_max)
                 {
@@ -316,7 +316,7 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
             do_rotation(xtm, xt, Lali, t, u);
 
             d = local_d0_search - 1;
-            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), score,
+            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, score,
                 score_sum_method, score_d8, d0);
 
             if (score>score_max)
@@ -354,7 +354,7 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                 Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
 
                 do_rotation(xtm, xt, Lali, t, u);
-                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali.data(), score,
+                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, score,
                     score_sum_method, score_d8, d0);
                 if (score>score_max)
                 {
