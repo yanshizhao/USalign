@@ -3141,10 +3141,10 @@ void output_dock_rotation_matrix(const std::string& fname_matrix,
              << "m               t[m]        u[m][0]        u[m][1]        u[m][2]\n";
         for (k = 0; k < 3; k++)
             ss<<k<<setiosflags(ios::fixed)<<setprecision(10)
-              <<' '<<setw(18)<<ut_mat[i][9+k]
-              <<' '<<setw(14)<<ut_mat[i][3*k+0]
-              <<' '<<setw(14)<<ut_mat[i][3*k+1]
-              <<' '<<setw(14)<<ut_mat[i][3*k+2]<<'\n';
+              <<' '<<setw(18)<<clean_fmt(ut_mat[i][9+k])
+              <<' '<<setw(14)<<clean_fmt(ut_mat[i][3*k+0])
+              <<' '<<setw(14)<<clean_fmt(ut_mat[i][3*k+1])
+              <<' '<<setw(14)<<clean_fmt(ut_mat[i][3*k+2])<<'\n';
     }
     ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"
           "for(i=0; i<L; i++)\n"

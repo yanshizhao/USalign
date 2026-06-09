@@ -30,6 +30,9 @@ using DoubleCube    = std::vector<std::vector<std::vector<double>>>;  // 3D cube
 using Vec3          = std::array<double, 3>;                // 3D vector (translation)
 using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation matrix
 
+// suppress -0.0000000000: values below %.10f display threshold normalize to +0.0
+inline double clean_fmt(double x) { return (std::abs(x) < 1e-10) ? +0.0 : x; }
+
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
 void PrintErrorAndQuit(const std::string sErrorString)

@@ -2623,10 +2623,10 @@ void output_rotation_matrix(const std::string& fname_matrix,
     stringstream ss;
     ss << "------ The rotation matrix to rotate Structure_1 to Structure_2 ------\n";
     ss << strfmt("m %18s %14s %14s %14s\n", "t[m]", "u[m][0]", "u[m][1]", "u[m][2]");
+    // suppress -0.0000000000: values rounding to zero at 10 decimal places normalize to +0.0
     for (int k = 0; k < 3; k++)
-    {
-        ss << strfmt("%d %18.10f %14.10f %14.10f %14.10f\n", k, t[k], u[k][0], u[k][1], u[k][2]);
-    }
+        ss << strfmt("%d %18.10f %14.10f %14.10f %14.10f\n",
+            k, clean_fmt(t[k]), clean_fmt(u[k][0]), clean_fmt(u[k][1]), clean_fmt(u[k][2]));
     ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"
             "for(i=0; i<L; i++)\n"
             "{\n"

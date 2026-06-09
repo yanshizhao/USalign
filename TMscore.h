@@ -583,9 +583,9 @@ void output_TMscore_results(
 
         cout << "\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n";
         cout << " i          t(i)         u(i,1)         u(i,2)         u(i,3)\n";
-        fcout(" 1 %17.10f %14.10f %14.10f %14.10f\n",t[0],u[0][0],u[0][1],u[0][2]);
-        fcout(" 2 %17.10f %14.10f %14.10f %14.10f\n",t[1],u[1][0],u[1][1],u[1][2]);
-        fcout(" 3 %17.10f %14.10f %14.10f %14.10f\n",t[2],u[2][0],u[2][1],u[2][2]);
+        fcout(" 1 %17.10f %14.10f %14.10f %14.10f\n",clean_fmt(t[0]),clean_fmt(u[0][0]),clean_fmt(u[0][1]),clean_fmt(u[0][2]));
+        fcout(" 2 %17.10f %14.10f %14.10f %14.10f\n",clean_fmt(t[1]),clean_fmt(u[1][0]),clean_fmt(u[1][1]),clean_fmt(u[1][2]));
+        fcout(" 3 %17.10f %14.10f %14.10f %14.10f\n",clean_fmt(t[2]),clean_fmt(u[2][0]),clean_fmt(u[2][1]),clean_fmt(u[2][2]));
 
         //output alignment
         string seq_scale=seqM;
