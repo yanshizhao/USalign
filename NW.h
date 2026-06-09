@@ -71,7 +71,6 @@ inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
-// Vec3/RotMat overload (same body)
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, const CoordArray& y,
     int len1, int len2, const Vec3& t, const RotMat& u,
     double d02, double gap_open, std::vector<int>& j2i)
@@ -132,7 +131,6 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const CoordArray& x, co
 
 
 
-// string& overload — same body (operator[] syntax identical to const char*)
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val, const std::string& secx, const std::string& secy,
     const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
 {

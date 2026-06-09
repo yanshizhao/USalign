@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
     CoordArray ya;           // xyz coordinate
     vector<string> resi_vec;    // residue index for chain, dummy variable
     vector<pair<int,size_t> >chainLen_list; // vector of (length,index) pair
-    vector<vector<char> > seq_vec;
+    CharMatrix seq_vec;
     vector<string> sec_vec;
     vector<vector<vector<float> > >xyz_vec;
 

@@ -17,7 +17,6 @@ inline void t_u2tu(const Vec3& t0, const RotMat& u0, vector<double> &tu_tmp)
     }
 }
 
-// Vec3/RotMat overload (same body)
 inline void tu2t_u(vector<double> tu_tmp, Vec3& t0, RotMat& u0)
 {
     for (int i=0;i<3;i++) t0[i]=tu_tmp[i];
@@ -49,9 +48,8 @@ void aln2invmap(const string &seqxA, const string &seqyA, std::vector<int>& invm
 
 
 // extract rotation matrix based on TMscore8
-// Vec3/RotMat overload — local t/u, no external buffer needed
 inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
-    const vector<vector<double> >&tu_vec)
+    const DoubleMatrix&tu_vec)
 {
     Vec3 t; RotMat u;
     stringstream ss;
@@ -88,9 +86,8 @@ inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
     ss.str(string());
 }
 
-// Vec3/RotMat overload — local t/u/x/x1, no external buffer needed
 inline void output_flexalign_rasmol(const string xname, const string yname,
-    const string fname_super,const vector<vector<double> >&tu_vec,
+    const string fname_super,const DoubleMatrix&tu_vec,
     const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
@@ -792,9 +789,8 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     model_index.clear();
 }
 
-// Vec3/RotMat overload — local t/u, no external buffer needed
 inline void output_flexalign_pymol(const string xname, const string yname,
-    const string fname_super, const vector<vector<double> >&tu_vec,
+    const string fname_super, const DoubleMatrix&tu_vec,
     const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
@@ -1153,11 +1149,10 @@ inline void output_flexalign_pymol(const string xname, const string yname,
 }
 
 //output the final results
-// Vec3/RotMat overload — uses Vec3/RotMat parameters
 inline void output_flexalign_results(const string xname, const string yname,
     const string chainID1, const string chainID2,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
-    const vector<vector<double> >&tu_vec, const double TM1, const double TM2,
+    const DoubleMatrix&tu_vec, const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
     const double rmsd, const double d0_out, const std::string& seqM,
     const std::string& seqxA, const std::string& seqyA, const double Liden,
@@ -1251,7 +1246,7 @@ inline void output_flexalign_results(const string xname, const string yname,
 
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    Vec3& t0, RotMat& u0, vector<vector<double> >&tu_vec,
+    Vec3& t0, RotMat& u0, DoubleMatrix&tu_vec,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -1601,7 +1596,6 @@ std::vector<int> invmap_h(ylen+1);
 
     if (tu_vec.size()<=1)
     {
-        // xt auto-destruct (CoordArray)
 
         return tu_vec.size();
     }
@@ -1802,7 +1796,6 @@ std::vector<int> invmap_h(ylen+1);
     // clean up
     seqM_char.clear();
     di_vec.clear();
-    // xt auto-destruct (CoordArray)
 
     return tu_vec.size();
 

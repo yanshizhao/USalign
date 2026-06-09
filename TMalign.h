@@ -83,7 +83,6 @@ int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, d
     return n_cut;
 }
 
-// Vec3/RotMat overload (same body)
 inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, int Lali, Vec3& t0, RotMat& u0, int simplify_step,
     int score_sum_method, double &Rcomm, double local_d0_search, double Lnorm,
@@ -237,7 +236,6 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 
 
 
-// Vec3/RotMat overload (same body)
 inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, int Lali,
     Vec3& t0, RotMat& u0, int simplify_step, int score_sum_method,
@@ -399,7 +397,6 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 //                            8 for socre over the pairs with dist<score_d8
 // output:  the best rotaion matrix t, u that results in highest TMscore
 
-// Vec3/RotMat overload (same body)
 inline double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& invmap0, Vec3& t, RotMat& u, int simplify_step,
@@ -425,7 +422,6 @@ inline double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 }
 
 
-// Vec3/RotMat overload (same body)
 inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
@@ -453,7 +449,6 @@ inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 }
 
 //compute the score quickly in three iterations
-// Vec3/RotMat overload (same body)
 double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
     double d0, double d0_search, Vec3& t, RotMat& u)
@@ -544,7 +539,6 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 }
 
 //perform gapless threading to find the best initial alignment
-// Vec3/RotMat overload (same body)
 inline double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& y2x,
     double d0, double d0_search, const bool fast_opt,
@@ -719,7 +713,6 @@ void sec_str(int len,const std::string& seq, const vector<vector<bool> >&bp,
 //the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
 
-// string& overload — same body
 inline void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
     const std::string& secx, const std::string& secy, int xlen, int ylen, std::vector<int>& y2x)
 {
@@ -911,7 +904,6 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
 
 
 
-// string& overload — same body (operator[] syntax identical)
 inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
     const std::string& secx, const std::string& secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& y2x, const double D0_MIN, double d0)
@@ -965,7 +957,6 @@ inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix&
 //the jth element in y is aligned to the ith element in x if i>=0
 //the jth element in y is aligned to a gap in x if i==-1
 
-// string& overload — same body
 inline void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, const std::string& secx, const std::string& secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
@@ -1015,7 +1006,6 @@ void find_max_frag(const CoordArray& x, int len, int &start_max,
 //y2x0[j]=i means:
 //the jth element in y is aligned to the ith element in x if i>=0 
 //the jth element in y is aligned to a gap in x if i==-1
-// Vec3/RotMat overload (same body)
 inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& y2x, double d0, double d0_search,
@@ -1260,7 +1250,6 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 //input: initial rotation matrix t, u
 //       vectors x and y, d0
 //output: best alignment that maximizes the TMscore, will be stored in invmap
-// Vec3/RotMat overload (same body)
 inline double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap0,
@@ -2834,7 +2823,6 @@ void output_mTMalign_results(const string xname, const string yname,
 }
 
 
-// Vec3/RotMat overload (same body)
 inline double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
@@ -2877,7 +2865,6 @@ inline double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, 
 }
 
 // copy the value of t and u into t0,u0
-// Vec3/RotMat overload (same body)
 inline void copy_t_u(const Vec3& t, const RotMat& u, Vec3& t0, RotMat& u0)
 {
     for (int i=0;i<3;i++)
@@ -2890,7 +2877,6 @@ inline void copy_t_u(const Vec3& t, const RotMat& u, Vec3& t0, RotMat& u0)
 // calculate approximate TM-score given rotation matrix
 
 
-// Vec3/RotMat overload (same body)
 inline double approx_TM(const int xlen, const int ylen, const int a_opt,
     const CoordArray& xa, const CoordArray& ya, const Vec3& t, const RotMat& u,
     const std::vector<int>& invmap0, const int mol_type)
@@ -3120,7 +3106,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score auto-destruct (DoubleMatrix)
                 return 2;
             }
         }
@@ -3161,7 +3146,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score auto-destruct (DoubleMatrix)
                 return 3;
             }
         }
@@ -3208,7 +3192,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score auto-destruct (DoubleMatrix)
                 return 4;
             }
         }
@@ -3251,7 +3234,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score auto-destruct (DoubleMatrix)
                 return 5;
             }
         }
@@ -3294,7 +3276,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score auto-destruct (DoubleMatrix)
                 return 6;
             }
         }
@@ -3389,7 +3370,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
             TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-            // score auto-destruct (DoubleMatrix)
             return 7;
         }
     }
@@ -3594,7 +3574,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
 
-    // score auto-destruct (DoubleMatrix)
     return 0; // zero for no exception
 }
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,

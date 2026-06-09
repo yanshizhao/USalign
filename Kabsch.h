@@ -13,7 +13,6 @@ rms   - sum of w*(ux+t-y)**2 over all atom pairs            (output)
 u    - u(i,j) is   rotation  matrix for best superposition  (output)
 t    - t(i)   is translation vector for best superposition  (output)
 **************************************************************************/
-// Vec3/RotMat overload (same body — operator[] syntax identical to double[3])
 inline bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double &rms,
     Vec3& t, RotMat& u)
 {

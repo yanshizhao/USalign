@@ -354,10 +354,10 @@ int main(int argc, char *argv[])
     // declare previously global variables
     vector<vector<vector<double> > > xa_vec; // structure of complex1
     vector<vector<vector<double> > > ya_vec; // structure of complex2
-    vector<vector<char> >seqx_vec; // sequence of complex1
-    vector<vector<char> >seqy_vec; // sequence of complex2
-    vector<vector<char> >secx_vec; // secondary structure of complex1
-    vector<vector<char> >secy_vec; // secondary structure of complex2
+    CharMatrix seqx_vec; // sequence of complex1
+    CharMatrix seqy_vec; // sequence of complex2
+    CharMatrix secx_vec; // secondary structure of complex1
+    CharMatrix secy_vec; // secondary structure of complex2
     vector<int> mol_vec1;          // molecule type of complex1, RNA if >0
     vector<int> mol_vec2;          // molecule type of complex2, RNA if >0
     vector<string> chainID_list1;  // list of chainID1
@@ -466,10 +466,10 @@ int main(int argc, char *argv[])
 
         vector<vector<vector<double> > >().swap(xa_vec); // structure of complex1
         vector<vector<vector<double> > >().swap(ya_vec); // structure of complex2
-        vector<vector<char> >().swap(seqx_vec); // sequence of complex1
-        vector<vector<char> >().swap(seqy_vec); // sequence of complex2
-        vector<vector<char> >().swap(secx_vec); // secondary structure of complex1
-        vector<vector<char> >().swap(secy_vec); // secondary structure of complex2
+        CharMatrix().swap(seqx_vec); // sequence of complex1
+        CharMatrix().swap(seqy_vec); // sequence of complex2
+        CharMatrix().swap(secx_vec); // secondary structure of complex1
+        CharMatrix().swap(secy_vec); // secondary structure of complex2
         mol_vec1.clear();       // molecule type of complex1, RNA if >0
         mol_vec2.clear();       // molecule type of complex2, RNA if >0
         chainID_list1.clear();  // list of chainID1
@@ -660,7 +660,6 @@ std::vector<int> assign2_list(chain2_num);
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // store initial assignment
@@ -687,7 +686,7 @@ std::vector<int> assign2_init(chain2_num);
     std::string sx, sy, scx, scy;
     MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
         seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num,
+        ylen_vec, sx, sy, scx, scy, len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap);
 
@@ -698,7 +697,7 @@ std::vector<int> assign2_init(chain2_num);
             fname_super, fname_lign, fname_matrix,
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            nullptr, nullptr, string(), string(), string(), string(), len_aa, len_na,
+            string(), string(), string(), string(), len_aa, len_na,
             chain1_num, chain2_num, TMave_mat,
             seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, 1, 0, 5, ter_opt, split_opt,
@@ -722,7 +721,6 @@ std::vector<int> assign2_init(chain2_num);
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na);
 
-        // xcentroids, ycentroids auto-destruct (CoordArray)
     }
 
     // sometime MMalign_iter is even worse than monomer alignment
@@ -747,7 +745,7 @@ std::vector<int> assign2_init(chain2_num);
         std::string sx, sy, scx, scy;
         MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            nullptr, nullptr, sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
+            sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
@@ -770,7 +768,7 @@ std::vector<int> assign2_init(chain2_num);
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            nullptr, nullptr, string(), string(), string(), string(), len_aa, len_na, chain1_num, chain2_num,
+            string(), string(), string(), string(), len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -789,14 +787,12 @@ std::vector<int> assign2_init(chain2_num);
         fname_super, fname_lign, fname_matrix,
         xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        nullptr, nullptr, string(), string(), string(), string(), len_aa, len_na,
+        string(), string(), string(), string(), len_aa, len_na,
         chain1_num, chain2_num, TMave_mat,
         seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
         a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
 
-    // TMave_mat auto-destruct (DoubleMatrix)
-    // ut_mat auto-destruct (RotArray)
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
@@ -804,16 +800,15 @@ std::vector<int> assign2_init(chain2_num);
 
 
 
-    // TMave_init auto-destruct (DoubleMatrix)
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
 
     vector<vector<vector<double> > >().swap(xa_vec); // structure of complex1
     vector<vector<vector<double> > >().swap(ya_vec); // structure of complex2
-    vector<vector<char> >().swap(seqx_vec); // sequence of complex1
-    vector<vector<char> >().swap(seqy_vec); // sequence of complex2
-    vector<vector<char> >().swap(secx_vec); // secondary structure of complex1
-    vector<vector<char> >().swap(secy_vec); // secondary structure of complex2
+    CharMatrix().swap(seqx_vec); // sequence of complex1
+    CharMatrix().swap(seqy_vec); // sequence of complex2
+    CharMatrix().swap(secx_vec); // secondary structure of complex1
+    CharMatrix().swap(secy_vec); // secondary structure of complex2
     mol_vec1.clear();       // molecule type of complex1, RNA if >0
     mol_vec2.clear();       // molecule type of complex2, RNA if >0
     vector<string>().swap(chainID_list1);  // list of chainID1

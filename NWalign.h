@@ -184,11 +184,9 @@ int calculate_score_gotoh(const int xlen,const int ylen, IntMatrix& S,
         find_highest_align_score(S,P,aln_score,xlen,ylen);
 
     // release memory
-    // H,V auto-destruct (IntMatrix)
     return aln_score; // final alignment score
 }
 
-// string& overload — same body (operator[]/data() equivalent)
 inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
     IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
@@ -259,7 +257,6 @@ inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
 }
 
 
-// string& overload — same body
 inline void trace_back_sw(const std::string& seqx, const std::string& seqy,
     IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
@@ -410,7 +407,6 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     else trace_back_sw(seqx, seqy, JumpH, JumpV, P, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
 
-    // JumpH/JumpV/P/S auto-destruct (IntMatrix)
     return aln_score; // aligment score
 }
 
@@ -667,7 +663,6 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
             else mol_type--;
         NWalign_main(seqx, seqy, xlen, ylen, sequence[0],sequence[1],
             mol_type, invmap, 0, glocal);
-        // invmap auto-destruct (std::vector)
         return sequence[0].size();
     }
 

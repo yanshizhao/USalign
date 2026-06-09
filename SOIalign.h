@@ -32,7 +32,7 @@ inline void assign_sec_bond(IntPairArray& secx_bond, const std::string& secx, co
 
 inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt, CoordArray& xk)
 {
-    vector<vector<double>> score;
+    DoubleMatrix score;
     score.assign(xlen+1, vector<double>(xlen+1, 0));
     vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
     int i,j,k;
@@ -336,7 +336,6 @@ inline int soi_se_main(
         k++;
     }
 
-    // score/path/val auto-destruct (DoubleMatrix/CharMatrix)
     return 0; // zero for no exception
 }
 
@@ -366,7 +365,6 @@ inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const in
 //output: best alignment that maximizes the TMscore, will be stored in invmap
 
 
-// Vec3/RotMat overload (same body)
 inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, CoordArray& xa, CoordArray& ya,
     int xlen, int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap0,
@@ -434,7 +432,6 @@ inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
     return tmscore_max;
 }
-// Vec3/RotMat overload (same body)
 inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt,
     DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
     Vec3& t, RotMat& u, std::vector<int>& invmap,
@@ -489,7 +486,6 @@ inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int clo
 
 }
 
-// Vec3/RotMat overload (same body)
 inline void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CoordArray& xa, CoordArray& ya,
     const int xlen, const int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap,
@@ -922,9 +918,6 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
 
     // clean up
-    // score/scoret/val auto-destruct (DoubleMatrix)
-    // path auto-destruct (CharMatrix)
-    // xtm/ytm/xt/yt/r1/r2 auto-destruct (CoordArray)
 
 
 

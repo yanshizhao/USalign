@@ -153,7 +153,6 @@ int se_main(
     {
         if (hinge) seqM_char.clear();    
 
-        // path/val auto-destruct (CharMatrix/DoubleMatrix)
         return 0;
     }
 
@@ -232,7 +231,5 @@ int se_main(
         }
     }
 
-    // m1/m2 auto-destruct (std::vector)
-    // path/val auto-destruct (CharMatrix/DoubleMatrix)
     return 0; // zero for no exception
 }

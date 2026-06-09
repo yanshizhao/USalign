@@ -217,7 +217,6 @@ int main(int argc, char *argv[])
                 <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<secx.c_str()<<endl;
 
             PDB_lines[chain_i].clear();
-            // xa auto-destruct (CoordArray)
         } // chain_i
         xname.clear();
         PDB_lines.clear();

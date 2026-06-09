@@ -26,6 +26,7 @@ using CharMatrix    = std::vector<std::vector<char>>;       // 2D matrix of char
 using IntMatrix     = std::vector<std::vector<int>>;        // 2D matrix of ints
 using RotArray      = std::vector<std::array<double, 12>>;  // Array of rotation matrices (3x3 + translation)
 using IntPairArray  = std::vector<std::array<int, 2>>;      // Array of int pairs [start, end]
+using DoubleCube    = std::vector<std::vector<std::vector<double>>>;  // 3D cube: [chain][residue][xyz]
 using Vec3          = std::array<double, 3>;                // 3D vector (translation)
 using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation matrix
 

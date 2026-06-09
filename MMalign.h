@@ -34,8 +34,8 @@ int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
 /* adjust chain assignment for dimer-dimer alignment 
  * return true if assignment is adjusted */
 bool adjust_dimer_assignment(        
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
     const vector<int>&xlen_vec, const vector<int>&ylen_vec,
     const vector<int>&mol_vec1, const vector<int>&mol_vec2,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list,
@@ -295,12 +295,12 @@ double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& as
         if (delta_score<=0) break; // cannot swap any chain pair
     }
 
-    // assign1_tmp/assign2_tmp auto-destruct (std::vector)
+
     return total_score;
 }
 
 
-double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
+double calculate_centroids(const DoubleCube&a_vec,
     const int chain_num, CoordArray& centroids)
 {
     int L=0;
@@ -350,7 +350,6 @@ double calculate_centroids(const vector<vector<vector<double> > >&a_vec,
  * d0MM is scaling factor. TMave_mat[i][j] is the TM-score between
  * chain pair i and j multiple by getmin(Li*Lj) */
 
-// Vec3/RotMat overload (same body)
 inline double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     const int chain1_num, const int chain2_num, const CoordArray& xcentroids,
     const CoordArray& ycentroids, const double d0MM, CoordArray& r1, CoordArray& r2,
@@ -530,7 +529,6 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
         }
     }
 
-    // ut_tm_vec/xt auto-destruct (std::vector/CoordArray)
     return MMscore;
 }
 
@@ -619,7 +617,7 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<in
     return MMscore;
 }
 
-void copy_chain_data(const vector<vector<double> >&a_vec_i,
+void copy_chain_data(const DoubleMatrix&a_vec_i,
     const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
     const int len,CoordArray& a,std::string &seq,std::string &sec)
 {
@@ -1020,8 +1018,8 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
 }
 
 void parse_chain_list(const vector<string>&chain_list,
-    vector<vector<vector<double> > >&a_vec, vector<vector<char> >&seq_vec,
-    vector<vector<char> >&sec_vec, vector<int>&mol_vec, vector<int>&len_vec,
+    DoubleCube&a_vec, CharMatrix&seq_vec,
+    CharMatrix&sec_vec, vector<int>&mol_vec, vector<int>&len_vec,
     vector<string>&chainID_list, const int ter_opt, const int split_opt,
     const string mol_opt, const int infmt_opt, const string atom_opt,
     const bool autojustify, const int mirror_opt, const int het_opt,
@@ -1040,7 +1038,7 @@ void parse_chain_list(const vector<string>&chain_list,
 
     vector<vector<string> >PDB_lines;
     vector<double> tmp_atom_array(3,0);
-    vector<vector<double> > tmp_chain_array;
+    DoubleMatrix tmp_chain_array;
     vector<char>tmp_seq_array;
     vector<char>tmp_sec_array;
     int read_resi=2;
@@ -1134,10 +1132,10 @@ void parse_chain_list(const vector<string>&chain_list,
 }
 
 int copy_chain_pair_data(
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
     CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
@@ -1187,13 +1185,13 @@ int copy_chain_pair_data(
 }
 
 double MMalign_search(
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
+    const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
@@ -1363,13 +1361,13 @@ void MMalign_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
     string fname_super, string fname_lign, string fname_matrix,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
+    const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
     DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
@@ -1584,13 +1582,13 @@ void MMalign_se_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
     string fname_super, string fname_lign, string fname_matrix,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
+    const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num,
     DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqM_mat,
@@ -1844,13 +1842,13 @@ void copy_chain_assign_data(int chain1_num, int chain2_num,
 }
 
 void MMalign_iter(double & max_total_score, const int max_iter,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray* xa, CoordArray* ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
+    std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
@@ -1875,7 +1873,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     {
         total_score=MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            xa, ya, seqx, seqy, secx, secy, len_aa, len_na,
+            seqx, seqy, secx, secy, len_aa, len_na,
             chain1_num, chain2_num,
             TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
             sequence, d0_scale, fast_opt, 3, byresi_opt);
@@ -1910,7 +1908,6 @@ void MMalign_iter(double & max_total_score, const int max_iter,
  * Output: j2i[1:len2] \in {1:len1} U {-1}
  * path[0:len1, 0:len2]=1,2,3, from diagonal, horizontal, vertical */
 
-// Vec3/RotMat overload (same body)
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int len1, int len2, CharMatrix& mask, const Vec3& t, const RotMat& u,
     double d02, double gap_open, std::vector<int>& j2i)
@@ -1943,7 +1940,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, CoordArray& x, Co
 }
 
 
-// string& overload — same body (operator[] syntax identical to const char*)
 inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const std::string& secx, const std::string& secy,
     const int len1, const int len2, CharMatrix& mask, const double gap_open, std::vector<int>& j2i)
 {
@@ -1978,7 +1974,6 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const std::string
 //output: best alignment that maximizes the TMscore, will be stored in invmap.data()
 
 
-// Vec3/RotMat overload (same body)
 inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, CharMatrix& mask, Vec3& t, RotMat& u, std::vector<int>& invmap0,
@@ -2052,7 +2047,6 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
 
 
 
-// string& overload — same body
 inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const std::string& secx,
     const std::string& secy, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x)
 {
@@ -2141,7 +2135,6 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
 
 
 
-// string& overload — same body
 inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, const std::string& secx, const std::string& secy,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen,
@@ -2163,7 +2156,6 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
 
 
 
-// string& overload — same body
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& seqx, const std::string& seqy, const std::string& secx, const std::string& secy,
     Vec3& t0, RotMat& u0,
@@ -2312,7 +2304,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score/val auto-destruct (DoubleMatrix)
                 return 2;
             }
         }
@@ -2353,7 +2344,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score/val auto-destruct (DoubleMatrix)
                 return 3;
             }
         }
@@ -2400,7 +2390,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score/val auto-destruct (DoubleMatrix)
                 return 4;
             }
         }
@@ -2443,7 +2432,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score/val auto-destruct (DoubleMatrix)
                 return 5;
             }
         }
@@ -2486,7 +2474,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
                 TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-                // score/val auto-destruct (DoubleMatrix)
                 return 6;
             }
         }
@@ -2581,7 +2568,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             TM1=TM2=TM3=TM4=TM5=TMtmp;
 
 
-            // score/val auto-destruct (DoubleMatrix)
             return 7;
         }
     }
@@ -2776,18 +2762,17 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     seqyA=seqyA.substr(0,kk);
     seqM =seqM.substr(0,kk);
 
-    // score/val auto-destruct (DoubleMatrix)
     return 0; // zero for no exception
 }
 
 void MMalign_dimer(double & total_score,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray* /*_xa*/, CoordArray* /*_ya*/, const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
+    const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
@@ -2877,7 +2862,6 @@ void MMalign_dimer(double & total_score,
         1, false, true, false, fast_opt, mol_type, -1);
 
     // clean up TM-align
-    // mask auto-destruct (CharMatrix)
 
     // re-compute chain level alignment
     total_score=0;
@@ -2961,13 +2945,13 @@ void MMalign_dimer(double & total_score,
 
 
 void MMalign_cross(double & max_total_score, const int max_iter,
-    const vector<vector<vector<double> > >&xa_vec,
-    const vector<vector<vector<double> > >&ya_vec,
-    const vector<vector<char> >&seqx_vec, const vector<vector<char> >&seqy_vec,
-    const vector<vector<char> >&secx_vec, const vector<vector<char> >&secy_vec,
+    const DoubleCube&xa_vec,
+    const DoubleCube&ya_vec,
+    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
+    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
     const vector<int> &mol_vec1, const vector<int> &mol_vec2,
     const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    CoordArray* xa, CoordArray* ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
+    std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
@@ -2988,7 +2972,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
 
     double total_score=MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+        seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
         TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, sequence_tmp,
         d0_scale, fast_opt, 1);
     if (total_score>max_total_score)
@@ -3002,7 +2986,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
     if (max_iter) MMalign_iter(
         max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+        seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
         TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
         d0_scale, fast_opt, chainmap);
     vector<string>().swap(tmp_str_vec);
@@ -3013,11 +2997,11 @@ void MMalign_cross(double & max_total_score, const int max_iter,
 }
 
 // return the number of chains that are trimmed
-int trimComplex(vector<vector<vector<double> > >&a_trim_vec,
-    vector<vector<char> >&seq_trim_vec, vector<vector<char> >&sec_trim_vec,
+int trimComplex(DoubleCube&a_trim_vec,
+    CharMatrix&seq_trim_vec, CharMatrix&sec_trim_vec,
     vector<int>&len_trim_vec,
-    const vector<vector<vector<double> > >&a_vec,
-    const vector<vector<char> >&seq_vec, const vector<vector<char> >&sec_vec,
+    const DoubleCube&a_vec,
+    const CharMatrix&seq_vec, const CharMatrix&sec_vec,
     const vector<int> &len_vec, const vector<int> &mol_vec,
     const int Lchain_aa_max, const int Lchain_na_max)
 {
@@ -3032,7 +3016,7 @@ int trimComplex(vector<vector<vector<double> > >&a_trim_vec,
     vector<pair<double,int> >dinter_vec;
     vector<bool> include_vec;
     vector<char> seq_empty;
-    vector<vector<double> >  a_empty;
+    DoubleMatrix  a_empty;
     vector<double> xcoor(3,0);
     vector<double> ycoor(3,0);
     int xlen;
@@ -3103,8 +3087,8 @@ int trimComplex(vector<vector<vector<double> > >&a_trim_vec,
     return trim_chain_count;
 }
 
-void writeTrimComplex(vector<vector<vector<double> > >&a_trim_vec,
-    vector<vector<char> >&seq_trim_vec, vector<int>&len_trim_vec,
+void writeTrimComplex(DoubleCube&a_trim_vec,
+    CharMatrix&seq_trim_vec, vector<int>&len_trim_vec,
     vector<string>&chainID_list, vector<int>&mol_vec,
     const string &atom_opt, string filename)
 {
