@@ -93,8 +93,8 @@ int main(int argc, char *argv[])
     if (argc < 2) print_help();
 
 
-    clock_t t1, t2;
-    t1 = clock();
+    std::clock_t t1, t2;
+    t1 = std::clock();
 
     /**********************/
     //    get argument   

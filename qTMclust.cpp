@@ -146,8 +146,8 @@ int main(int argc, char *argv[])
     if (argc < 2) print_help();
 
 
-    clock_t t1, t2;
-    t1 = clock();
+    std::clock_t t1, t2;
+    t1 = std::clock();
 
     /**********************/
     //    get argument   
@@ -805,7 +805,7 @@ int main(int argc, char *argv[])
     vector<string>().swap(model2parse);
     map<string, map<string,bool> >().swap(init_cluster);
 
-    t2 = clock();
+    t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
     fcout("#Total CPU time is %5.2f seconds\n", diff);
     return 0;
