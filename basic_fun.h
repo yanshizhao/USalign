@@ -33,6 +33,7 @@ using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation mat
 // suppress -0.0000000000: values below %.10f display threshold normalize to +0.0
 inline double clean_fmt(double x) { return (std::abs(x) < 1e-10) ? +0.0 : x; }
 
+#include <climits>
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
 void PrintErrorAndQuit(const std::string sErrorString)
