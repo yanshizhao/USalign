@@ -1,6 +1,7 @@
 CC=g++
 MINGW=x86_64-w64-mingw32-g++ -static
 CFLAGS=-O3 -ffast-math
+OMPFLAGS=-fopenmp
 LDFLAGS=#-static# -lm
 PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
