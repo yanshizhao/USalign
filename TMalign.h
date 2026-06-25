@@ -86,6 +86,199 @@ int score_fun8_standard(const CoordArray& xa, const CoordArray& ya, int n_ali, d
     return n_cut;
 }
 
+
+// ---------------------------------------------------------------------------
+// Per-position TM-score search kernel (used by parallel TMscore8_search)
+// Processes one alignment position: extract fragment → Kabsch → score → refine
+// The `use_standard` flag selects score_fun8 vs score_fun8_standard.
+// ---------------------------------------------------------------------------
+inline void tmscore_search_pos(CoordArray& xtm, const CoordArray& ytm,
+    int Lali, int L_frag, int ii,
+    double local_d0_search, int score_sum_method, double Lnorm,
+    double score_d8, double d0, int n_it,
+    bool use_standard,
+    double& score_max, Vec3& t0, RotMat& u0)
+{
+    CoordArray r1_l(Lali), r2_l(Lali), xt_l(Lali);
+    std::vector<int> i_ali_l(Lali), k_ali_l(Lali);
+    Vec3 t_l, t_l_best; RotMat u_l, u_l_best;
+    double score_l, score_max_l = -1;
+    int n_cut_l, ka_l; double rmsd_l, d_l;
+
+    // ① Extract fragment of L_frag residues starting at ii
+    ka_l = 0;
+    for (int kk = 0; kk < L_frag; kk++) {
+        int idx = kk + ii;
+        r1_l[kk][0] = xtm[idx][0];
+        r1_l[kk][1] = xtm[idx][1];
+        r1_l[kk][2] = xtm[idx][2];
+        r2_l[kk][0] = ytm[idx][0];
+        r2_l[kk][1] = ytm[idx][1];
+        r2_l[kk][2] = ytm[idx][2];
+        k_ali_l[ka_l++] = idx;
+    }
+
+    // ② Kabsch rotation from the fragment
+    Kabsch(r1_l, r2_l, L_frag, 1, rmsd_l, t_l, u_l);
+    do_rotation(xtm, xt_l, Lali, t_l, u_l);
+
+    // ③ Initial score
+    d_l = local_d0_search - 1;
+    if (use_standard)
+        n_cut_l = score_fun8_standard(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
+            score_sum_method, score_d8, d0);
+    else
+        n_cut_l = score_fun8(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
+            score_sum_method, Lnorm, score_d8, d0);
+    if (score_l > score_max_l) {
+        score_max_l = score_l;
+        t_l_best = t_l; u_l_best = u_l;
+    }
+
+    // ④ Iterative refinement (≤ n_it iterations)
+    d_l = local_d0_search + 1;
+    for (int it = 0; it < n_it; it++) {
+        ka_l = 0;
+        for (int kk = 0; kk < n_cut_l; kk++) {
+            int m = i_ali_l[kk];
+            r1_l[kk][0] = xtm[m][0];
+            r1_l[kk][1] = xtm[m][1];
+            r1_l[kk][2] = xtm[m][2];
+            r2_l[kk][0] = ytm[m][0];
+            r2_l[kk][1] = ytm[m][1];
+            r2_l[kk][2] = ytm[m][2];
+            k_ali_l[ka_l++] = m;
+        }
+        Kabsch(r1_l, r2_l, n_cut_l, 1, rmsd_l, t_l, u_l);
+        do_rotation(xtm, xt_l, Lali, t_l, u_l);
+        if (use_standard)
+            n_cut_l = score_fun8_standard(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
+                score_sum_method, score_d8, d0);
+        else
+            n_cut_l = score_fun8(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
+                score_sum_method, Lnorm, score_d8, d0);
+        if (score_l > score_max_l) {
+            score_max_l = score_l;
+            t_l_best = t_l; u_l_best = u_l;
+        }
+        if (n_cut_l == ka_l) {
+            int kk;
+            for (kk = 0; kk < n_cut_l; kk++)
+                if (i_ali_l[kk] != k_ali_l[kk]) break;
+            if (kk == n_cut_l) break;
+        }
+    }
+
+    // ⑤ Update global best (thread-safe via caller's critical section)
+    if (score_max_l > score_max) {
+        score_max = score_max_l;
+        for (int kk = 0; kk < 3; kk++) {
+            t0[kk] = t_l_best[kk];
+            for (int j = 0; j < 3; j++)
+                u0[kk][j] = u_l_best[kk][j];
+        }
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// Serial TM-score search: iterates all positions sequentially (used by #else)
+// ---------------------------------------------------------------------------
+inline void tmscore_search_serial(CoordArray& r1, CoordArray& r2,
+    CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
+    int Lali, int L_frag, int iL_max, int simplify_step,
+    double local_d0_search, int score_sum_method, double Lnorm,
+    double score_d8, double d0, int n_it,
+    double& Rcomm,
+    bool use_standard,
+    double& score_max, Vec3& t0, RotMat& u0)
+{
+    int i = 0, k, m, ka, n_cut;
+    double rmsd, d, score;
+    std::vector<int> k_ali(Lali), i_ali(Lali);
+    Vec3 t; RotMat u;
+
+    while (1) {
+        ka = 0;
+        for (k = 0; k < L_frag; k++) {
+            int kk = k + i;
+            r1[k][0] = xtm[kk][0];
+            r1[k][1] = xtm[kk][1];
+            r1[k][2] = xtm[kk][2];
+            r2[k][0] = ytm[kk][0];
+            r2[k][1] = ytm[kk][1];
+            r2[k][2] = ytm[kk][2];
+            k_ali[ka] = kk;
+            ka++;
+        }
+
+        Kabsch(r1, r2, L_frag, 1, rmsd, t, u);
+        if (simplify_step != 1) Rcomm = 0;
+        do_rotation(xtm, xt, Lali, t, u);
+
+        d = local_d0_search - 1;
+        if (use_standard)
+            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, score,
+                score_sum_method, score_d8, d0);
+        else
+            n_cut = score_fun8(xt, ytm, Lali, d, i_ali, score,
+                score_sum_method, Lnorm, score_d8, d0);
+        if (score > score_max) {
+            score_max = score;
+            for (k = 0; k < 3; k++) {
+                t0[k] = t[k];
+                u0[k][0] = u[k][0];
+                u0[k][1] = u[k][1];
+                u0[k][2] = u[k][2];
+            }
+        }
+
+        d = local_d0_search + 1;
+        for (int it = 0; it < n_it; it++) {
+            ka = 0;
+            for (k = 0; k < n_cut; k++) {
+                m = i_ali[k];
+                r1[k][0] = xtm[m][0];
+                r1[k][1] = xtm[m][1];
+                r1[k][2] = xtm[m][2];
+                r2[k][0] = ytm[m][0];
+                r2[k][1] = ytm[m][1];
+                r2[k][2] = ytm[m][2];
+                k_ali[ka] = m;
+                ka++;
+            }
+            Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
+            do_rotation(xtm, xt, Lali, t, u);
+            if (use_standard)
+                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, score,
+                    score_sum_method, score_d8, d0);
+            else
+                n_cut = score_fun8(xt, ytm, Lali, d, i_ali, score,
+                    score_sum_method, Lnorm, score_d8, d0);
+            if (score > score_max) {
+                score_max = score;
+                for (k = 0; k < 3; k++) {
+                    t0[k] = t[k];
+                    u0[k][0] = u[k][0];
+                    u0[k][1] = u[k][1];
+                    u0[k][2] = u[k][2];
+                }
+            }
+            if (n_cut == ka) {
+                for (k = 0; k < n_cut; k++)
+                    if (i_ali[k] != k_ali[k]) break;
+                if (k == n_cut) break;
+            }
+        }
+
+        if (i < iL_max) {
+            i = i + simplify_step;
+            if (i > iL_max) i = iL_max;
+        } else if (i >= iL_max) break;
+    }
+}
+
+
 inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, int Lali, Vec3& t0, RotMat& u0, int simplify_step,
     int score_sum_method, double &Rcomm, double local_d0_search, double Lnorm,
@@ -141,171 +334,29 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 
         #ifdef _OPENMP
         if (simplify_step != 1) Rcomm = 0;
-        {
+        if (Lali > 200) {
             int n_pos = (iL_max + simplify_step - 1) / simplify_step + 1;
             #pragma omp parallel for
             for (int pos = 0; pos < n_pos; pos++) {
                 int ii = pos * simplify_step;
                 if (ii > iL_max) ii = iL_max;
-                CoordArray r1_l(Lali), r2_l(Lali), xt_l(Lali);
-                std::vector<int> i_ali_l(Lali), k_ali_l(Lali);
-                Vec3 t_l, t_l_best; RotMat u_l, u_l_best;
-                double score_l, score_max_l = -1;
-                int n_cut_l, ka_l, m_l; double rmsd_l, d_l;
-                ka_l = 0;
-                for (int kk = 0; kk < L_frag; kk++) {
-                    int idx = kk + ii;
-                    r1_l[kk][0] = xtm[idx][0];
-                    r1_l[kk][1] = xtm[idx][1];
-                    r1_l[kk][2] = xtm[idx][2];
-                    r2_l[kk][0] = ytm[idx][0];
-                    r2_l[kk][1] = ytm[idx][1];
-                    r2_l[kk][2] = ytm[idx][2];
-                    k_ali_l[ka_l++] = idx;
-                }
-                Kabsch(r1_l, r2_l, L_frag, 1, rmsd_l, t_l, u_l);
-                do_rotation(xtm, xt_l, Lali, t_l, u_l);
-                d_l = local_d0_search - 1;
-                n_cut_l = score_fun8(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
-                    score_sum_method, Lnorm, score_d8, d0);
-                if (score_l > score_max_l) {
-                    score_max_l = score_l;
-                    t_l_best = t_l; u_l_best = u_l;
-                }
-                d_l = local_d0_search + 1;
-                for (int it = 0; it < n_it; it++) {
-                    ka_l = 0;
-                    for (int kk = 0; kk < n_cut_l; kk++) {
-                        m_l = i_ali_l[kk];
-                        r1_l[kk][0] = xtm[m_l][0];
-                        r1_l[kk][1] = xtm[m_l][1];
-                        r1_l[kk][2] = xtm[m_l][2];
-                        r2_l[kk][0] = ytm[m_l][0];
-                        r2_l[kk][1] = ytm[m_l][1];
-                        r2_l[kk][2] = ytm[m_l][2];
-                        k_ali_l[ka_l++] = m_l;
-                    }
-                    Kabsch(r1_l, r2_l, n_cut_l, 1, rmsd_l, t_l, u_l);
-                    do_rotation(xtm, xt_l, Lali, t_l, u_l);
-                    n_cut_l = score_fun8(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
-                        score_sum_method, Lnorm, score_d8, d0);
-                    if (score_l > score_max_l) {
-                        score_max_l = score_l;
-                        t_l_best = t_l; u_l_best = u_l;
-                    }
-                    if (n_cut_l == ka_l) {
-                        int kk;
-                        for (kk = 0; kk < n_cut_l; kk++)
-                            if (i_ali_l[kk] != k_ali_l[kk]) break;
-                        if (kk == n_cut_l) break;
-                    }
-                }
-                #pragma omp critical
-                if (score_max_l > score_max) {
-                    score_max = score_max_l;
-                    for (int kk = 0; kk < 3; kk++) {
-                        t0[kk] = t_l_best[kk];
-                        for (int j = 0; j < 3; j++)
-                            u0[kk][j] = u_l_best[kk][j];
-                    }
-                }
+                tmscore_search_pos(xtm, ytm, Lali, L_frag, ii,
+                    local_d0_search, score_sum_method, Lnorm, score_d8, d0, n_it,
+                    false, score_max, t0, u0);
             }
+        } else {
+            tmscore_search_serial(r1, r2, xtm, ytm, xt,
+                Lali, L_frag, iL_max, simplify_step,
+                local_d0_search, score_sum_method, Lnorm,
+                score_d8, d0, n_it,
+                Rcomm, false, score_max, t0, u0);
         }
 #else
-i=0;
-        while(1)
-        {
-            ka=0;
-            for(k=0; k<L_frag; k++)
-            {
-                int kk=k+i;
-                r1[k][0]=xtm[kk][0];
-                r1[k][1]=xtm[kk][1];
-                r1[k][2]=xtm[kk][2];
-
-                r2[k][0]=ytm[kk][0];
-                r2[k][1]=ytm[kk][1];
-                r2[k][2]=ytm[kk][2];
-
-                k_ali[ka]=kk;
-                ka++;
-            }
-
-            Kabsch(r1, r2, L_frag, 1, rmsd, t, u);
-
-            if (simplify_step != 1)
-                Rcomm = 0;
-            do_rotation(xtm, xt, Lali, t, u);
-
-            d = local_d0_search - 1;
-            n_cut=score_fun8(xt, ytm, Lali, d, i_ali, score,
-                score_sum_method, Lnorm, score_d8, d0);
-            if(score>score_max)
-            {
-                score_max=score;
-
-                for(k=0; k<3; k++)
-                {
-                    t0[k]=t[k];
-                    u0[k][0]=u[k][0];
-                    u0[k][1]=u[k][1];
-                    u0[k][2]=u[k][2];
-                }
-            }
-
-            d = local_d0_search + 1;
-            for(int it=0; it<n_it; it++)
-            {
-                ka=0;
-                for(k=0; k<n_cut; k++)
-                {
-                    m=i_ali[k];
-                    r1[k][0]=xtm[m][0];
-                    r1[k][1]=xtm[m][1];
-                    r1[k][2]=xtm[m][2];
-
-                    r2[k][0]=ytm[m][0];
-                    r2[k][1]=ytm[m][1];
-                    r2[k][2]=ytm[m][2];
-
-                    k_ali[ka]=m;
-                    ka++;
-                }
-                Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
-
-                do_rotation(xtm, xt, Lali, t, u);
-                n_cut=score_fun8(xt, ytm, Lali, d, i_ali, score,
-                    score_sum_method, Lnorm, score_d8, d0);
-                if(score>score_max)
-                {
-                    score_max=score;
-
-                    for(k=0; k<3; k++)
-                    {
-                        t0[k]=t[k];
-                        u0[k][0]=u[k][0];
-                        u0[k][1]=u[k][1];
-                        u0[k][2]=u[k][2];
-                    }
-                }
-
-                if(n_cut==ka)
-                {
-                    for(k=0; k<n_cut; k++)
-                    {
-                        if(i_ali[k]!=k_ali[k]) break;
-                    }
-                    if(k==n_cut) break;
-                }
-            }
-
-            if(i<iL_max)
-            {
-                i=i+simplify_step;
-                if(i>iL_max) i=iL_max;
-            }
-            else if(i>=iL_max) break;
-        }
+        tmscore_search_serial(r1, r2, xtm, ytm, xt,
+            Lali, L_frag, iL_max, simplify_step,
+            local_d0_search, score_sum_method, Lnorm,
+            score_d8, d0, n_it,
+            Rcomm, false, score_max, t0, u0);
 #endif
     }
     return score_max;
@@ -366,174 +417,31 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
         L_frag = L_ini[i_init];
         iL_max = Lali - L_frag;
 
-        #ifdef _OPENMP
+#ifdef _OPENMP
         if (simplify_step != 1) Rcomm = 0;
-        {
+        if (Lali > 200) {
             int n_pos = (iL_max + simplify_step - 1) / simplify_step + 1;
             #pragma omp parallel for
             for (int pos = 0; pos < n_pos; pos++) {
                 int ii = pos * simplify_step;
                 if (ii > iL_max) ii = iL_max;
-                CoordArray r1_l(Lali), r2_l(Lali), xt_l(Lali);
-                std::vector<int> i_ali_l(Lali), k_ali_l(Lali);
-                Vec3 t_l, t_l_best; RotMat u_l, u_l_best;
-                double score_l, score_max_l = -1;
-                int n_cut_l, ka_l, m_l; double rmsd_l, d_l;
-                ka_l = 0;
-                for (int kk = 0; kk < L_frag; kk++) {
-                    int idx = kk + ii;
-                    r1_l[kk][0] = xtm[idx][0];
-                    r1_l[kk][1] = xtm[idx][1];
-                    r1_l[kk][2] = xtm[idx][2];
-                    r2_l[kk][0] = ytm[idx][0];
-                    r2_l[kk][1] = ytm[idx][1];
-                    r2_l[kk][2] = ytm[idx][2];
-                    k_ali_l[ka_l++] = idx;
-                }
-                Kabsch(r1_l, r2_l, L_frag, 1, rmsd_l, t_l, u_l);
-                do_rotation(xtm, xt_l, Lali, t_l, u_l);
-                d_l = local_d0_search - 1;
-                n_cut_l = score_fun8_standard(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
-                    score_sum_method, score_d8, d0);
-                if (score_l > score_max_l) {
-                    score_max_l = score_l;
-                    t_l_best = t_l; u_l_best = u_l;
-                }
-                d_l = local_d0_search + 1;
-                for (int it = 0; it < n_it; it++) {
-                    ka_l = 0;
-                    for (int kk = 0; kk < n_cut_l; kk++) {
-                        m_l = i_ali_l[kk];
-                        r1_l[kk][0] = xtm[m_l][0];
-                        r1_l[kk][1] = xtm[m_l][1];
-                        r1_l[kk][2] = xtm[m_l][2];
-                        r2_l[kk][0] = ytm[m_l][0];
-                        r2_l[kk][1] = ytm[m_l][1];
-                        r2_l[kk][2] = ytm[m_l][2];
-                        k_ali_l[ka_l++] = m_l;
-                    }
-                    Kabsch(r1_l, r2_l, n_cut_l, 1, rmsd_l, t_l, u_l);
-                    do_rotation(xtm, xt_l, Lali, t_l, u_l);
-                    n_cut_l = score_fun8_standard(xt_l, ytm, Lali, d_l, i_ali_l, score_l,
-                        score_sum_method, score_d8, d0);
-                    if (score_l > score_max_l) {
-                        score_max_l = score_l;
-                        t_l_best = t_l; u_l_best = u_l;
-                    }
-                    if (n_cut_l == ka_l) {
-                        int kk;
-                        for (kk = 0; kk < n_cut_l; kk++)
-                            if (i_ali_l[kk] != k_ali_l[kk]) break;
-                        if (kk == n_cut_l) break;
-                    }
-                }
-                #pragma omp critical
-                if (score_max_l > score_max) {
-                    score_max = score_max_l;
-                    for (int kk = 0; kk < 3; kk++) {
-                        t0[kk] = t_l_best[kk];
-                        for (int j = 0; j < 3; j++)
-                            u0[kk][j] = u_l_best[kk][j];
-                    }
-                }
+                tmscore_search_pos(xtm, ytm, Lali, L_frag, ii,
+                    local_d0_search, score_sum_method, 0.0, score_d8, d0, n_it,
+                    true, score_max, t0, u0);
             }
+        } else {
+            tmscore_search_serial(r1, r2, xtm, ytm, xt,
+                Lali, L_frag, iL_max, simplify_step,
+                local_d0_search, score_sum_method, 0.0,
+                score_d8, d0, n_it,
+                Rcomm, true, score_max, t0, u0);
         }
 #else
-i = 0;
-        while (1)
-        {
-            ka = 0;
-            for (k = 0; k<L_frag; k++)
-            {
-                int kk = k + i;
-                r1[k][0] = xtm[kk][0];
-                r1[k][1] = xtm[kk][1];
-                r1[k][2] = xtm[kk][2];
-
-                r2[k][0] = ytm[kk][0];
-                r2[k][1] = ytm[kk][1];
-                r2[k][2] = ytm[kk][2];
-
-                k_ali[ka] = kk;
-                ka++;
-            }
-            Kabsch(r1, r2, L_frag, 1, rmsd, t, u);
-
-            if (simplify_step != 1)
-                Rcomm = 0;
-            do_rotation(xtm, xt, Lali, t, u);
-
-            d = local_d0_search - 1;
-            n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, score,
-                score_sum_method, score_d8, d0);
-
-            if (score>score_max)
-            {
-                score_max = score;
-
-                for (k = 0; k<3; k++)
-                {
-                    t0[k] = t[k];
-                    u0[k][0] = u[k][0];
-                    u0[k][1] = u[k][1];
-                    u0[k][2] = u[k][2];
-                }
-            }
-
-            d = local_d0_search + 1;
-            for (int it = 0; it<n_it; it++)
-            {
-                ka = 0;
-                for (k = 0; k<n_cut; k++)
-                {
-                    m = i_ali[k];
-                    r1[k][0] = xtm[m][0];
-                    r1[k][1] = xtm[m][1];
-                    r1[k][2] = xtm[m][2];
-
-                    r2[k][0] = ytm[m][0];
-                    r2[k][1] = ytm[m][1];
-                    r2[k][2] = ytm[m][2];
-
-                    k_ali[ka] = m;
-                    ka++;
-                }
-
-                Kabsch(r1, r2, n_cut, 1, rmsd, t, u);
-
-                do_rotation(xtm, xt, Lali, t, u);
-                n_cut = score_fun8_standard(xt, ytm, Lali, d, i_ali, score,
-                    score_sum_method, score_d8, d0);
-                if (score>score_max)
-                {
-                    score_max = score;
-
-                    for (k = 0; k<3; k++)
-                    {
-                        t0[k] = t[k];
-                        u0[k][0] = u[k][0];
-                        u0[k][1] = u[k][1];
-                        u0[k][2] = u[k][2];
-                    }
-                }
-
-                if (n_cut == ka)
-                {
-                    for (k = 0; k<n_cut; k++)
-                    {
-                        if (i_ali[k] != k_ali[k]) break;
-                    }
-                    if (k == n_cut) break;
-                }
-            }
-
-            if (i<iL_max)
-            {
-                i = i + simplify_step;
-                if (i>iL_max) i = iL_max;
-            }
-            else if (i >= iL_max) break;
-        }
+        tmscore_search_serial(r1, r2, xtm, ytm, xt,
+            Lali, L_frag, iL_max, simplify_step,
+            local_d0_search, score_sum_method, 0.0,
+            score_d8, d0, n_it,
+            Rcomm, true, score_max, t0, u0);
 #endif
     }
     return score_max;
