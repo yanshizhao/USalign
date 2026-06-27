@@ -1096,19 +1096,28 @@ inline T to_cstr(const T& val) { return val; }
 
 // ---- fcout ----
 
-// Primary template: snprintf → std::cout
+// Primary template: snprintf → std::ostream
 template<typename... Args>
-void fcout(const char* fmt, const Args&... args) {
+void fcout(std::ostream& os, const char* fmt, const Args&... args) {
     int size = std::snprintf(nullptr, 0, fmt, to_cstr(args)...);
     if (size <= 0) return;
     std::string buf(size, '\0');
     std::snprintf(&buf[0], size + 1, fmt, to_cstr(args)...);
-    std::cout << buf;
+    os << buf;
 }
 
-// No-argument overload (const char* → direct cout, no snprintf overhead)
+// cout version: forwards to ostream overload (defaults to std::cout)
+template<typename... Args>
+void fcout(const char* fmt, const Args&... args) {
+    fcout(std::cout, fmt, args...);
+}
+
+// No-argument overload (const char* → direct os, no snprintf overhead)
+inline void fcout(std::ostream& os, const char* fmt) {
+    os << fmt;
+}
 inline void fcout(const char* fmt) {
-    std::cout << fmt;
+    fcout(std::cout, fmt);
 }
 
 // ---- strfmt: printf-style formatting to std::string ----

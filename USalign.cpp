@@ -6,9 +6,9 @@
 
 using namespace std;
 
-void print_version()
+void print_version(std::ostream& os = std::cout)
 {
-    cout << 
+    os <<
 "\n"
 " ********************************************************************\n"
 " * US-align (Version 20260329)                                      *\n"
@@ -247,7 +247,272 @@ void print_help(bool h_opt=false)
     exit(EXIT_SUCCESS);
 }
 
+// ---------------------------------------------------------------------------
+// Per-chain pre-parsed data (used by parallel batch mode)
+// ---------------------------------------------------------------------------
+struct ParsedChain {
+    CoordArray     xa;           // 3D coordinates
+    string         seqx;         // sequence
+    string         secx;         // secondary structure
+    vector<string> resi_vec;     // residue index (for -do output)
+    int            xlen;         // length
+    string         chainID;      // chain ID
+    int            mol_type;     // molecule type (-1=protein, 1=RNA)
+    string         filename;     // source filename (for output)
+    vector<string> pdb_lines;    // raw PDB lines (for -do output)
+};
+
+struct PairTask {
+    int chain1_idx;
+    int chain2_idx;
+    int order;
+};
+
+// ---------------------------------------------------------------------------
+// BatchConfig — aggregates all configuration needed by run_batch_parallel()
+// ---------------------------------------------------------------------------
+struct BatchConfig {
+    const vector<string>* chain1_list;
+    const vector<string>* chain2_list;
+    const vector<string>* chain2parse1;
+    const vector<string>* chain2parse2;
+    const vector<string>* model2parse1;
+    const vector<string>* model2parse2;
+    const vector<string>* sequence;
+    string  dir_opt, dir1_opt, dir2_opt, dirpair_opt;
+    string  fname_matrix, fname_super, atom_opt, mol_opt;
+    double  Lnorm_ass, d0_scale, TMcut;
+    int     outfmt_opt, ter_opt, split_opt, o_opt;
+    int     i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi;
+    bool    fast_opt, cp_opt, se_opt, do_opt, u_opt, d_opt, m_opt;
+    bool    autojustify;
+    int     het_opt, mirror_opt;
+};
+
+// ---------------------------------------------------------------------------
+// output_do_block — print aligned residue-pair distances (-do mode)
+// Extracted from the inner loop so it can be reused in both serial and
+// parallel paths.
+// ---------------------------------------------------------------------------
+void output_do_block(std::ostream& os,
+    const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& pdb_lines1,
+    const std::vector<std::string>& pdb_lines2,
+    const std::vector<double>& do_vec,
+    size_t right_num)
+{
+    os << "###############\t###############\t#########" << std::endl;
+    os << "#Aligned atom 1\tAligned atom 2 \tDistance#" << std::endl;
+    size_t r1 = right_num;
+    size_t r2 = 0;
+    int    postcp = 0;
+    for (size_t r = 0; r < seqxA.size(); r++)
+    {
+        r1 += seqxA[r] != '-';
+        r2 += seqyA[r] != '-';
+        if (seqxA[r] == '*')
+        {
+            os << "###### Circular\tPermutation ###\t#########\n";
+            r1 = 0;
+            postcp = 1;
+        }
+        else if (seqxA[r] != '-' && seqyA[r] != '-')
+        {
+            os << pdb_lines1[r1 - 1].substr(12, 15) << '\t'
+               << pdb_lines2[r2 - 1].substr(12, 15) << '\t'
+               << std::setw(9) << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+               << do_vec[r - postcp] << '\n';
+        }
+    }
+    os << "###############\t###############\t#########" << std::endl;
+}
+
 // TMalign, RNAalign, CPalign, TMscore
+
+int run_batch_parallel(BatchConfig& cfg)
+{
+    // Local aliases for config fields
+    const auto& chain1_list = *cfg.chain1_list;
+    const auto& chain2_list = *cfg.chain2_list;
+    const auto& chain2parse1 = *cfg.chain2parse1;
+    const auto& chain2parse2 = *cfg.chain2parse2;
+    const auto& model2parse1 = *cfg.model2parse1;
+    const auto& model2parse2 = *cfg.model2parse2;
+    const auto& sequence = *cfg.sequence;
+    const auto& dir_opt = cfg.dir_opt;
+    const auto& dir1_opt = cfg.dir1_opt;
+    const auto& dir2_opt = cfg.dir2_opt;
+    const auto& dirpair_opt = cfg.dirpair_opt;
+    const auto& fname_matrix = cfg.fname_matrix;
+    const auto& fname_super = cfg.fname_super;
+    const auto& atom_opt = cfg.atom_opt;
+    const auto& mol_opt = cfg.mol_opt;
+    double Lnorm_ass = cfg.Lnorm_ass, d0_scale = cfg.d0_scale, TMcut = cfg.TMcut;
+    int outfmt_opt = cfg.outfmt_opt, ter_opt = cfg.ter_opt;
+    int split_opt = cfg.split_opt, o_opt = cfg.o_opt;
+    int i_opt = cfg.i_opt, a_opt = cfg.a_opt;
+    int infmt1_opt = cfg.infmt1_opt, infmt2_opt = cfg.infmt2_opt;
+    int read_resi = cfg.read_resi;
+    int i, j, chain_i, chain_j;
+    bool fast_opt = cfg.fast_opt, cp_opt = cfg.cp_opt;
+    bool se_opt = cfg.se_opt, do_opt = cfg.do_opt;
+    bool u_opt = cfg.u_opt, d_opt = cfg.d_opt, m_opt = cfg.m_opt;
+    int mirror_opt = cfg.mirror_opt;
+    bool autojustify = cfg.autojustify;
+    int het_opt = cfg.het_opt;
+
+            // ---- Phase 1: pre-parse all unique files, build task list ----
+            vector<ParsedChain> all_chains;
+            map<string, vector<int>> file_to_idx;
+            vector<PairTask> tasks;
+    
+            auto parse_file_into_cache = [&](const string& fname) {
+                if (file_to_idx.count(fname)) return;
+                vector<vector<string>> PDB_lines;
+                vector<int> mol_vec;
+                vector<string> chainID_list;
+                int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
+                    ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
+                    chain2parse1, model2parse1);
+                if (nchain == 0) return;
+                vector<int> indices;
+                for (int c = 0; c < nchain; c++) {
+                    int len = (int)PDB_lines[c].size();
+                    if (len < 3) { indices.push_back(-1); continue; }
+                    int idx = (int)all_chains.size();
+                    auto& chain = all_chains.emplace_back();
+                    chain.filename = fname; chain.xlen = len;
+                    chain.chainID = chainID_list[c]; chain.mol_type = mol_vec[c];
+                    chain.xa.reserve(len);
+                    string seq;
+                    chain.xlen = read_PDB(PDB_lines[c], chain.xa, seq,
+                        chain.resi_vec, read_resi);
+                    chain.seqx = seq;
+                    if (mol_vec[c] > 0)
+                        make_sec(seq, chain.xa, chain.xlen, chain.secx, atom_opt);
+                    else
+                        make_sec(chain.xa, chain.xlen, chain.secx);
+                    if (do_opt || cp_opt) chain.pdb_lines = std::move(PDB_lines[c]);
+                    else PDB_lines[c].clear();
+                    indices.push_back(idx);
+                }
+                PDB_lines.clear();
+                file_to_idx[fname] = indices;
+            };
+    
+            for (i = 0; i < (int)chain1_list.size(); i++) {
+                parse_file_into_cache(chain1_list[i]);
+                auto& c1_indices = file_to_idx[chain1_list[i]];
+                for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
+                    int c1_idx = c1_indices[chain_i];
+                    if (c1_idx < 0) continue;
+                    for (j = (dir_opt.size()>0)*(i+1); j < (int)chain2_list.size(); j++) {
+                        if (dirpair_opt.size() && j != i) continue;
+                        parse_file_into_cache(chain2_list[j]);
+                        auto& c2_indices = file_to_idx[chain2_list[j]];
+                        for (int c2_i = 0; c2_i < (int)c2_indices.size(); c2_i++) {
+                            int c2_idx = c2_indices[c2_i];
+                            if (c2_idx < 0) continue;
+                            tasks.push_back({c1_idx, c2_idx, (int)tasks.size()});
+                        }
+                    }
+                }
+            }
+    
+            // ---- Phase 2: parallel pair processing ----
+            vector<string> out_lines(tasks.size());
+            #pragma omp parallel for schedule(dynamic, 8)
+            for (int t = 0; t < (int)tasks.size(); t++) {
+                auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
+                auto& c2 = all_chains[task.chain2_idx];
+                CoordArray xa_c = c1.xa; CoordArray ya_c = c2.xa;
+                Vec3 t0; RotMat u0;
+                double TM1, TM2, TM3, TM4, TM5;
+                double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
+                string seqM, seqxA, seqyA; vector<double> do_vec;
+                double rmsd0 = 0.0; int L_ali = 0; double Liden = 0;
+                double TM_ali = 0, rmsd_ali = 0; int n_ali = 0, n_ali8 = 0;
+                bool force_fast = (min(c1.xlen, c2.xlen) > 1500) ? true : fast_opt;
+    
+                if (cp_opt) {
+                    CPalign_main(xa_c, ya_c, c1.seqx, c2.seqx, c1.secx, c2.secx,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
+                        i_opt, a_opt, u_opt, d_opt, force_fast,
+                        c1.mol_type + c2.mol_type, TMcut);
+                } else if (se_opt) {
+                    vector<int> invmap(c2.xlen + 1, -1);
+                    u0[0][0]=u0[1][1]=u0[2][2]=1;
+                    u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
+                    t0[0]=t0[1]=t0[2]=0;
+                    se_main(xa_c, ya_c, c1.seqx, c2.seqx,
+                        TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
+                        i_opt, a_opt, u_opt, d_opt,
+                        c1.mol_type + c2.mol_type, outfmt_opt, invmap);
+                    if (outfmt_opt >= 2) {
+                        Liden = L_ali = 0;
+                        for (int r2 = 0; r2 < c2.xlen; r2++) {
+                            int r1 = invmap[r2]; if (r1 < 0) continue;
+                            L_ali++; Liden += (c1.seqx[r1] == c2.seqx[r2]);
+                        }
+                    }
+                } else {
+                    TMalign_main(xa_c, ya_c, c1.seqx, c2.seqx, c1.secx, c2.secx,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
+                        i_opt, a_opt, u_opt, d_opt, force_fast,
+                        c1.mol_type + c2.mol_type, TMcut);
+                }
+    
+                stringstream ss;
+                string xname_out = c1.filename.substr(
+                    dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
+                string yname_out = c2.filename.substr(
+                    dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
+    
+                if (outfmt_opt == 0) print_version(ss);
+    
+                int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
+                bool after_cp = false;
+                if (cp_opt) after_cp = output_cp(xname_out, yname_out,
+                    seqxA, seqyA, outfmt_opt, left_num, right_num,
+                    left_aln_num, right_aln_num, ss);
+    
+                output_results(xname_out, yname_out,
+                    c1.chainID, c2.chainID,
+                    c1.xlen, c2.xlen, t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    rmsd0, d0_out, seqM, seqxA, seqyA, Liden,
+                    n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
+                    d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
+                    (m_opt?fname_matrix:"").c_str(),
+                    outfmt_opt, ter_opt, false, split_opt, o_opt,
+                    fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                    c1.resi_vec, c2.resi_vec, ss);
+    
+                if (do_opt || (cp_opt && outfmt_opt <= 0))
+                    output_do_block(ss, seqxA, seqyA,
+                        c1.pdb_lines, c2.pdb_lines, do_vec, right_num);
+    
+                out_lines[task.order] = ss.str();
+            }
+    
+            // ---- Phase 3: serial output in original order ----
+            for (int t = 0; t < (int)tasks.size(); t++)
+                std::cout << out_lines[t];
+    
+            return 0;
+        }
+
 int TMalign(string &xname, string &yname, const string &fname_super,
     const string &fname_lign, const string &fname_matrix,
     vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
@@ -280,14 +545,42 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     string secy;
     CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
     CoordArray ya;                  // ya[0...ylen-1][0..2], in general,
-                               // ya is regarded as native structure 
+                               // ya is regarded as native structure
                                // --> superpose xa onto ya
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
     int read_resi=byresi_opt;  // whether to read residue index
     if (byresi_opt==0 && o_opt) read_resi=2;
 
-    // loop over file names
+#ifdef _OPENMP
+    // === Parallel batch mode ===
+    if (chain1_list.size() > 1 || chain2_list.size() > 1) {
+        BatchConfig cfg;
+        cfg.chain1_list = &chain1_list; cfg.chain2_list = &chain2_list;
+        cfg.chain2parse1 = &chain2parse1; cfg.chain2parse2 = &chain2parse2;
+        cfg.model2parse1 = &model2parse1; cfg.model2parse2 = &model2parse2;
+        cfg.sequence = &sequence;
+        cfg.dir_opt = dir_opt; cfg.dir1_opt = dir1_opt;
+        cfg.dir2_opt = dir2_opt; cfg.dirpair_opt = dirpair_opt;
+        cfg.fname_matrix = fname_matrix; cfg.fname_super = fname_super;
+        cfg.atom_opt = atom_opt; cfg.mol_opt = mol_opt;
+        cfg.Lnorm_ass = Lnorm_ass; cfg.d0_scale = d0_scale; cfg.TMcut = TMcut;
+        cfg.outfmt_opt = outfmt_opt; cfg.ter_opt = ter_opt;
+        cfg.split_opt = split_opt; cfg.o_opt = o_opt;
+        cfg.i_opt = i_opt; cfg.a_opt = a_opt;
+        cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
+        cfg.read_resi = read_resi;
+        cfg.fast_opt = fast_opt; cfg.cp_opt = cp_opt;
+        cfg.se_opt = se_opt; cfg.do_opt = do_opt;
+        cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
+        cfg.autojustify = autojustify;
+        cfg.het_opt = het_opt;
+        cfg.mirror_opt = mirror_opt;
+        return run_batch_parallel(cfg);
+    }
+#endif  // _OPENMP
+
+    // loop over file names (original serial code)
     for (i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
@@ -473,31 +766,9 @@ std::vector<int> invmap(ylen+1);
                         resi_vec1, resi_vec2);
                     if (do_opt || (cp_opt && outfmt_opt<=0))
                     {
-                        cout<<"###############\t###############\t#########"<<endl;
-                        cout<<"#Aligned atom 1\tAligned atom 2 \tDistance#"<<endl;
-                        size_t r1=right_num;
-                        size_t r2=0;
-                        size_t r;
-                        int    postcp=0;
-                        for (r=0;r<seqxA.size();r++)
-                        {
-                            r1+=seqxA[r]!='-';
-                            r2+=seqyA[r]!='-';
-                            if (seqxA[r]=='*')
-                            {
-                                cout<<"###### Circular\tPermutation ###\t#########\n";
-                                r1=0;
-                                postcp=1;
-                            }
-                            else if (seqxA[r]!='-' && seqyA[r]!='-')
-                            {
-                                cout<<PDB_lines1[chain_i][r1-1].substr(12,15)<<'\t'
-                                    <<PDB_lines2[chain_j][r2-1].substr(12,15)<<'\t'
-                                    <<setw(9)<<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<do_vec[r-postcp]<<'\n';
-                            }
-                        }
-                        cout<<"###############\t###############\t#########"<<endl;
+                        output_do_block(std::cout, seqxA, seqyA,
+                            PDB_lines1[chain_i], PDB_lines2[chain_j],
+                            do_vec, right_num);
                     }
 
                     // Done! Free memory
