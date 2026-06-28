@@ -289,6 +289,63 @@ struct BatchConfig {
     int     het_opt, mirror_opt;
 };
 
+inline void fill_batch_config(BatchConfig& cfg,
+    const vector<string>& chain1_list, const vector<string>& chain2_list,
+    const vector<string>& chain2parse1, const vector<string>& chain2parse2,
+    const vector<string>& model2parse1, const vector<string>& model2parse2,
+    const vector<string>& sequence,
+    const string& dir_opt, const string& dir1_opt,
+    const string& dir2_opt, const string& dirpair_opt,
+    const string& fname_matrix, const string& fname_super,
+    const string& atom_opt, const string& mol_opt,
+    double Lnorm_ass, double d0_scale, double TMcut,
+    int outfmt_opt, int ter_opt, int split_opt, int o_opt,
+    int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
+    bool fast_opt, bool cp_opt, bool se_opt, bool do_opt,
+    bool u_opt, bool d_opt, bool m_opt,
+    bool autojustify, int het_opt, int mirror_opt)
+{
+    cfg.chain1_list = &chain1_list;
+    cfg.chain2_list = &chain2_list;
+    cfg.chain2parse1 = &chain2parse1;
+    cfg.chain2parse2 = &chain2parse2;
+    cfg.model2parse1 = &model2parse1;
+    cfg.model2parse2 = &model2parse2;
+    cfg.sequence = &sequence;
+    cfg.dir_opt = dir_opt;
+    cfg.dir1_opt = dir1_opt;
+    cfg.dir2_opt = dir2_opt;
+    cfg.dirpair_opt = dirpair_opt;
+    cfg.fname_matrix = fname_matrix;
+    cfg.fname_super = fname_super;
+    cfg.atom_opt = atom_opt;
+    cfg.mol_opt = mol_opt;
+    cfg.Lnorm_ass = Lnorm_ass;
+    cfg.d0_scale = d0_scale;
+    cfg.TMcut = TMcut;
+    cfg.outfmt_opt = outfmt_opt;
+    cfg.ter_opt = ter_opt;
+    cfg.split_opt = split_opt;
+    cfg.o_opt = o_opt;
+    cfg.i_opt = i_opt;
+    cfg.a_opt = a_opt;
+    cfg.infmt1_opt = infmt1_opt;
+    cfg.infmt2_opt = infmt2_opt;
+    cfg.read_resi = read_resi;
+    cfg.fast_opt = fast_opt;
+    cfg.cp_opt = cp_opt;
+    cfg.se_opt = se_opt;
+    cfg.do_opt = do_opt;
+    cfg.u_opt = u_opt;
+    cfg.d_opt = d_opt;
+    cfg.m_opt = m_opt;
+    cfg.autojustify = autojustify;
+    cfg.het_opt = het_opt;
+    cfg.mirror_opt = mirror_opt;
+}
+
+
+
 struct MMalignBatchConfig {
     const DoubleCube* xa_vec;
     const DoubleCube* ya_vec;
@@ -810,27 +867,21 @@ int TMalign(string &xname, string &yname, const string &fname_super,
 #ifdef _OPENMP
     // === Parallel batch mode ===
     if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-        BatchConfig cfg;
-        cfg.chain1_list = &chain1_list; cfg.chain2_list = &chain2_list;
-        cfg.chain2parse1 = &chain2parse1; cfg.chain2parse2 = &chain2parse2;
-        cfg.model2parse1 = &model2parse1; cfg.model2parse2 = &model2parse2;
-        cfg.sequence = &sequence;
-        cfg.dir_opt = dir_opt; cfg.dir1_opt = dir1_opt;
-        cfg.dir2_opt = dir2_opt; cfg.dirpair_opt = dirpair_opt;
-        cfg.fname_matrix = fname_matrix; cfg.fname_super = fname_super;
-        cfg.atom_opt = atom_opt; cfg.mol_opt = mol_opt;
-        cfg.Lnorm_ass = Lnorm_ass; cfg.d0_scale = d0_scale; cfg.TMcut = TMcut;
-        cfg.outfmt_opt = outfmt_opt; cfg.ter_opt = ter_opt;
-        cfg.split_opt = split_opt; cfg.o_opt = o_opt;
-        cfg.i_opt = i_opt; cfg.a_opt = a_opt;
-        cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
-        cfg.read_resi = read_resi;
-        cfg.fast_opt = fast_opt; cfg.cp_opt = cp_opt;
-        cfg.se_opt = se_opt; cfg.do_opt = false;
-        cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
-        cfg.autojustify = autojustify;
-        cfg.het_opt = het_opt;
-        cfg.mirror_opt = mirror_opt;
+                BatchConfig cfg;
+        fill_batch_config(cfg,
+            chain1_list, chain2_list,
+            chain2parse1, chain2parse2,
+            model2parse1, model2parse2,
+            sequence,
+            dir_opt, dir1_opt, dir2_opt, dirpair_opt,
+            fname_matrix, fname_super,
+            atom_opt, mol_opt,
+            Lnorm_ass, d0_scale, TMcut,
+            outfmt_opt, ter_opt, split_opt, o_opt,
+            i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
+            fast_opt, cp_opt, se_opt, false,
+            u_opt, d_opt, m_opt,
+            autojustify, het_opt, mirror_opt);
         return run_batch_parallel(cfg);
     }
 #endif  // _OPENMP
@@ -3029,26 +3080,21 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
 
 #ifdef _OPENMP
     if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-        BatchConfig cfg;
-        cfg.chain1_list = &chain1_list; cfg.chain2_list = &chain2_list;
-        cfg.chain2parse1 = &chain2parse1; cfg.chain2parse2 = &chain2parse2;
-        cfg.model2parse1 = &model2parse1; cfg.model2parse2 = &model2parse2;
-        cfg.sequence = &sequence;
-        cfg.dir_opt = dir_opt; cfg.dir1_opt = dir1_opt;
-        cfg.dir2_opt = dir2_opt; cfg.dirpair_opt = dirpair_opt;
-        cfg.fname_matrix = fname_matrix; cfg.fname_super = fname_super;
-        cfg.atom_opt = atom_opt; cfg.mol_opt = mol_opt;
-        cfg.Lnorm_ass = Lnorm_ass; cfg.d0_scale = d0_scale; cfg.TMcut = TMcut;
-        cfg.outfmt_opt = outfmt_opt; cfg.ter_opt = ter_opt;
-        cfg.split_opt = split_opt; cfg.o_opt = o_opt;
-        cfg.i_opt = i_opt; cfg.a_opt = a_opt;
-        cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
-        cfg.read_resi = read_resi;
-        cfg.fast_opt = fast_opt; cfg.cp_opt = false;
-        cfg.se_opt = false; cfg.do_opt = false;
-        cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
-        cfg.autojustify = autojustify;
-        cfg.het_opt = het_opt; cfg.mirror_opt = mirror_opt;
+                BatchConfig cfg;
+        fill_batch_config(cfg,
+            chain1_list, chain2_list,
+            chain2parse1, chain2parse2,
+            model2parse1, model2parse2,
+            sequence,
+            dir_opt, dir1_opt, dir2_opt, dirpair_opt,
+            fname_matrix, fname_super,
+            atom_opt, mol_opt,
+            Lnorm_ass, d0_scale, TMcut,
+            outfmt_opt, ter_opt, split_opt, o_opt,
+            i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
+            fast_opt, false, false, false,
+            u_opt, d_opt, m_opt,
+            autojustify, het_opt, mirror_opt);
         return run_batch_parallel(cfg);
     }
 #endif  // _OPENMP
@@ -3330,26 +3376,21 @@ int flexalign(string &xname, string &yname, const string &fname_super,
 #ifdef _OPENMP
     // === Parallel batch mode ===
     if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-        BatchConfig cfg;
-        cfg.chain1_list = &chain1_list; cfg.chain2_list = &chain2_list;
-        cfg.chain2parse1 = &chain2parse1; cfg.chain2parse2 = &chain2parse2;
-        cfg.model2parse1 = &model2parse1; cfg.model2parse2 = &model2parse2;
-        cfg.sequence = &sequence;
-        cfg.dir_opt = dir_opt; cfg.dir1_opt = dir1_opt;
-        cfg.dir2_opt = dir2_opt; cfg.dirpair_opt = dirpair_opt;
-        cfg.fname_matrix = fname_matrix; cfg.fname_super = fname_super;
-        cfg.atom_opt = atom_opt; cfg.mol_opt = mol_opt;
-        cfg.Lnorm_ass = Lnorm_ass; cfg.d0_scale = d0_scale; cfg.TMcut = TMcut;
-        cfg.outfmt_opt = outfmt_opt; cfg.ter_opt = ter_opt;
-        cfg.split_opt = split_opt; cfg.o_opt = o_opt;
-        cfg.i_opt = i_opt; cfg.a_opt = a_opt;
-        cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
-        cfg.read_resi = read_resi;
-        cfg.fast_opt = fast_opt; cfg.cp_opt = false;
-        cfg.se_opt = false; cfg.do_opt = false;
-        cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
-        cfg.autojustify = autojustify;
-        cfg.het_opt = het_opt; cfg.mirror_opt = mirror_opt;
+                BatchConfig cfg;
+        fill_batch_config(cfg,
+            chain1_list, chain2_list,
+            chain2parse1, chain2parse2,
+            model2parse1, model2parse2,
+            sequence,
+            dir_opt, dir1_opt, dir2_opt, dirpair_opt,
+            fname_matrix, fname_super,
+            atom_opt, mol_opt,
+            Lnorm_ass, d0_scale, TMcut,
+            outfmt_opt, ter_opt, split_opt, o_opt,
+            i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
+            fast_opt, false, false, false,
+            u_opt, d_opt, m_opt,
+            autojustify, het_opt, mirror_opt);
         return run_batch_parallel(cfg);
     }
 #endif  // _OPENMP
