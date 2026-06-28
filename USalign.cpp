@@ -967,7 +967,7 @@ int MMalign(const string &xname, const string &yname,
         // entry function for structure alignment
         if (se_opt)
         {
-std::vector<int> invmap(ylen+1);
+            std::vector<int> invmap(ylen+1);
             u0[0][0]=u0[1][1]=u0[2][2]=1;
             u0[0][1]=         u0[0][2]=
             u0[1][0]=         u0[1][2]=
@@ -1061,6 +1061,149 @@ std::vector<int> invmap(ylen+1);
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
+#ifdef _OPENMP
+    if (chain1_num > 1 || chain2_num > 1)
+    {
+        #pragma omp parallel for schedule(dynamic, 8) \
+            private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
+        for (i=0;i<chain1_num;i++)
+        {
+            int Lnorm_tmp;
+            string seqM, seqxA, seqyA;
+            vector<double> do_vec;
+            xlen=xlen_vec[i];
+            if (xlen<3)
+            {
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                continue;
+            }
+            secx.resize(xlen+1);
+            xa.resize(xlen);
+            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+                xlen,xa,seqx,secx);
+
+            for (j=0;j<chain2_num;j++)
+            {
+                ut_idx=i*chain2_num+j;
+                for (ui=0;ui<4;ui++)
+                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
+                ut_mat[ut_idx][0]=1;
+                ut_mat[ut_idx][4]=1;
+                ut_mat[ut_idx][8]=1;
+
+                if (mol_vec1[i]*mol_vec2[j]<0)
+                {
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    continue;
+                }
+                if (chainmap.size() && (!chainmap.count(i) || chainmap[i]!=j))
+                {
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    continue;
+                }
+
+                ylen=ylen_vec[j];
+                if (ylen<3)
+                {
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    continue;
+                }
+                secy.resize(ylen+1);
+                ya.resize(ylen);
+                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                    ylen,ya,seqy,secy);
+
+                Lnorm_tmp=len_aa;
+                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+
+                if (byresi_opt)
+                {
+            bool _byresi_skip = false;
+                    #pragma omp critical(byresi)
+                    {
+                        int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
+                            resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
+                        seqxA_mat[i][j]=sequence[0];
+                        seqyA_mat[i][j]=sequence[1];
+                        if (total_aln>xlen+ylen-3)
+                        {
+                            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++)
+                                ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
+                            for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
+                            TMave_mat[i][j]=TMave_mat[j][i]=0;
+                            seqM.clear(); seqxA.clear(); seqyA.clear();
+                            _byresi_skip = true;
+                        }
+                    }
+                if (_byresi_skip) continue;
+                }
+
+                // entry function for structure alignment
+                Vec3 t0; RotMat u0;
+                double TM1, TM2, TM3, TM4, TM5;
+                double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
+                double rmsd0 = 0.0;
+                int L_ali = 0; double Liden = 0;
+                double TM_ali = 0, rmsd_ali = 0;
+                int n_ali = 0, n_ali8 = 0;
+                if (se_opt)
+                {
+                    std::vector<int> invmap(ylen+1);
+                    u0[0][0]=u0[1][1]=u0[2][2]=1;
+                    u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
+                    t0[0]=t0[1]=t0[2]=0;
+                    se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        i_opt, false, true, false,
+                        mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
+                    if (outfmt_opt>=2)
+                    {
+                        Liden=L_ali=0;
+                        int r1; int r2;
+                        for (r2=0;r2<ylen;r2++)
+                        {
+                            r1=invmap[r2];
+                            if (r1<0) continue;
+                            L_ali+=1;
+                            Liden+=(seqx[r1]==seqy[r2]);
+                        }
+                    }
+                }
+                else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                    seqM, seqxA, seqyA, do_vec,
+                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    i_opt, false, true, false, fast_opt,
+                    mol_vec1[i]+mol_vec2[j],TMcut);
+
+                // store result
+                for (ui=0;ui<3;ui++)
+                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
+                for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
+                seqxA_mat[i][j]=seqxA;
+                seqyA_mat[i][j]=seqyA;
+                TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
+                #pragma omp critical(maxTMmono)
+                if (TMave_mat[i][j]>maxTMmono)
+                {
+                    maxTMmono=TMave_mat[i][j];
+                    maxTMmono_i=i;
+                    maxTMmono_j=j;
+                }
+
+                seqM.clear(); seqxA.clear(); seqyA.clear(); do_vec.clear();
+            }
+        }
+    
+        return 0;
+    }
+#endif  // _OPENMP
+
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
