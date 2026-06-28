@@ -289,6 +289,96 @@ struct BatchConfig {
     int     het_opt, mirror_opt;
 };
 
+struct MMalignBatchConfig {
+    const DoubleCube* xa_vec;
+    const DoubleCube* ya_vec;
+    const CharMatrix* seqx_vec;
+    const CharMatrix* seqy_vec;
+    const CharMatrix* secx_vec;
+    const CharMatrix* secy_vec;
+    const vector<int>* xlen_vec;
+    const vector<int>* ylen_vec;
+    const vector<int>* mol_vec1;
+    const vector<int>* mol_vec2;
+    const map<int,int>* chainmap;
+    vector<string>* sequence;
+    vector<string>* resi_vec1;
+    vector<string>* resi_vec2;
+    DoubleMatrix* TMave_mat;
+    RotArray* ut_mat;
+    vector<vector<string>>* seqxA_mat;
+    vector<vector<string>>* seqM_mat;
+    vector<vector<string>>* seqyA_mat;
+    double* maxTMmono;
+    int* maxTMmono_i;
+    int* maxTMmono_j;
+    int chain1_num, chain2_num;
+    int len_aa, len_na;
+    int outfmt_opt, i_opt;
+    double TMcut, d0_scale;
+    bool byresi_opt, se_opt, fast_opt;
+};
+
+inline void fill_mmalign_config(MMalignBatchConfig& mc,
+    const DoubleCube& xa_vec, const DoubleCube& ya_vec,
+    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
+    const CharMatrix& secx_vec, const CharMatrix& secy_vec,
+    const vector<int>& xlen_vec, const vector<int>& ylen_vec,
+    const vector<int>& mol_vec1, const vector<int>& mol_vec2,
+    const map<int,int>& chainmap,
+    vector<string>& sequence,
+    vector<string>& resi_vec1, vector<string>& resi_vec2,
+    DoubleMatrix& TMave_mat, RotArray& ut_mat,
+    vector<vector<string>>& seqxA_mat,
+    vector<vector<string>>& seqM_mat,
+    vector<vector<string>>& seqyA_mat,
+    double& maxTMmono, int& maxTMmono_i, int& maxTMmono_j,
+    int chain1_num, int chain2_num,
+    int len_aa, int len_na,
+    int outfmt_opt, int i_opt,
+    double TMcut, double d0_scale,
+    bool byresi_opt, bool se_opt, bool fast_opt)
+{
+
+    mc.xa_vec = &xa_vec;
+    mc.ya_vec = &ya_vec;
+    mc.seqx_vec = &seqx_vec;
+    mc.seqy_vec = &seqy_vec;
+    mc.secx_vec = &secx_vec;
+    mc.secy_vec = &secy_vec;
+    mc.xlen_vec = &xlen_vec;
+    mc.ylen_vec = &ylen_vec;
+    mc.mol_vec1 = &mol_vec1;
+    mc.mol_vec2 = &mol_vec2;
+    mc.chainmap = &chainmap;
+    mc.sequence = &sequence;
+    mc.resi_vec1 = &resi_vec1;
+    mc.resi_vec2 = &resi_vec2;
+    mc.TMave_mat = &TMave_mat;
+    mc.ut_mat = &ut_mat;
+    mc.seqxA_mat = &seqxA_mat;
+    mc.seqM_mat = &seqM_mat;
+    mc.seqyA_mat = &seqyA_mat;
+    mc.maxTMmono = &maxTMmono;
+    mc.maxTMmono_i = &maxTMmono_i;
+    mc.maxTMmono_j = &maxTMmono_j;
+    mc.chain1_num = chain1_num;
+    mc.chain2_num = chain2_num;
+    mc.len_aa = len_aa;
+    mc.len_na = len_na;
+    mc.outfmt_opt = outfmt_opt;
+    mc.i_opt = i_opt;
+    mc.TMcut = TMcut;
+    mc.d0_scale = d0_scale;
+    mc.byresi_opt = byresi_opt;
+    mc.se_opt = se_opt;
+    mc.fast_opt = fast_opt;
+
+}
+
+
+
+
 // ---------------------------------------------------------------------------
 // output_do_block — print aligned residue-pair distances (-do mode)
 // Extracted from the inner loop so it can be reused in both serial and
@@ -512,6 +602,171 @@ int run_batch_parallel(BatchConfig& cfg)
     
             return 0;
         }
+
+void run_mmalign_parallel(MMalignBatchConfig& mc)
+{
+    const auto& xa_vec = *mc.xa_vec;
+    const auto& ya_vec = *mc.ya_vec;
+    const auto& seqx_vec = *mc.seqx_vec;
+    const auto& seqy_vec = *mc.seqy_vec;
+    const auto& secx_vec = *mc.secx_vec;
+    const auto& secy_vec = *mc.secy_vec;
+    const auto& xlen_vec = *mc.xlen_vec;
+    const auto& ylen_vec = *mc.ylen_vec;
+    const auto& mol_vec1 = *mc.mol_vec1;
+    const auto& mol_vec2 = *mc.mol_vec2;
+    const auto& chainmap = *mc.chainmap;
+    auto& TMave_mat = *mc.TMave_mat;
+    auto& ut_mat = *mc.ut_mat;
+    auto& seqxA_mat = *mc.seqxA_mat;
+    auto& seqyA_mat = *mc.seqyA_mat;
+    auto& sequence = *mc.sequence;
+    auto& resi_vec1 = *mc.resi_vec1;
+    auto& resi_vec2 = *mc.resi_vec2;
+    int chain1_num = mc.chain1_num, chain2_num = mc.chain2_num;
+    int len_aa = mc.len_aa, len_na = mc.len_na;
+    int outfmt_opt = mc.outfmt_opt, i_opt = mc.i_opt;
+    double TMcut = mc.TMcut, d0_scale = mc.d0_scale;
+    bool byresi_opt = mc.byresi_opt, se_opt = mc.se_opt, fast_opt = mc.fast_opt;
+
+    int i, j, ui, uj, ut_idx, xlen, ylen;
+    string secx, secy, seqx, seqy;
+    CoordArray xa, ya;
+
+#pragma omp parallel for schedule(dynamic, 8) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
+    for (i=0;i<chain1_num;i++)
+    {
+            int Lnorm_tmp;
+            string seqM, seqxA, seqyA;
+            vector<double> do_vec;
+            xlen=xlen_vec[i];
+            if (xlen<3)
+            {
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                continue;
+            }
+            secx.resize(xlen+1);
+            xa.resize(xlen);
+            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+                xlen,xa,seqx,secx);
+
+            for (j=0;j<chain2_num;j++)
+            {
+                ut_idx=i*chain2_num+j;
+                for (ui=0;ui<4;ui++)
+                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
+                ut_mat[ut_idx][0]=1;
+                ut_mat[ut_idx][4]=1;
+                ut_mat[ut_idx][8]=1;
+
+                if (mol_vec1[i]*mol_vec2[j]<0)
+                {
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    continue;
+                }
+                if (chainmap.size() && (!chainmap.count(i) || chainmap.find(i)->second!=j))
+                {
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    continue;
+                }
+
+                ylen=ylen_vec[j];
+                if (ylen<3)
+                {
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    continue;
+                }
+                secy.resize(ylen+1);
+                ya.resize(ylen);
+                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                    ylen,ya,seqy,secy);
+
+                Lnorm_tmp=len_aa;
+                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+
+                if (byresi_opt)
+                {
+            bool _byresi_skip = false;
+                    #pragma omp critical(byresi)
+                    {
+                        int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
+                            resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
+                        seqxA_mat[i][j]=sequence[0];
+                        seqyA_mat[i][j]=sequence[1];
+                        if (total_aln>xlen+ylen-3)
+                        {
+                            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++)
+                                ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
+                            for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
+                            TMave_mat[i][j]=TMave_mat[j][i]=0;
+                            seqM.clear(); seqxA.clear(); seqyA.clear();
+                            _byresi_skip = true;
+                        }
+                    }
+                if (_byresi_skip) continue;
+                }
+
+                // entry function for structure alignment
+                Vec3 t0; RotMat u0;
+                double TM1, TM2, TM3, TM4, TM5;
+                double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
+                double rmsd0 = 0.0;
+                int L_ali = 0; double Liden = 0;
+                double TM_ali = 0, rmsd_ali = 0;
+                int n_ali = 0, n_ali8 = 0;
+                if (se_opt)
+                {
+                    std::vector<int> invmap(ylen+1);
+                    u0[0][0]=u0[1][1]=u0[2][2]=1;
+                    u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
+                    t0[0]=t0[1]=t0[2]=0;
+                    se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        i_opt, false, true, false,
+                        mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
+                    if (outfmt_opt>=2)
+                    {
+                        Liden=L_ali=0;
+                        int r1; int r2;
+                        for (r2=0;r2<ylen;r2++)
+                        {
+                            r1=invmap[r2];
+                            if (r1<0) continue;
+                            L_ali+=1;
+                            Liden+=(seqx[r1]==seqy[r2]);
+                        }
+                    }
+                }
+                else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                    seqM, seqxA, seqyA, do_vec,
+                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    i_opt, false, true, false, fast_opt,
+                    mol_vec1[i]+mol_vec2[j],TMcut);
+
+                // store result
+                for (ui=0;ui<3;ui++)
+                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
+                for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
+                seqxA_mat[i][j]=seqxA;
+                seqyA_mat[i][j]=seqyA;
+                TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
+                #pragma omp critical(maxTMmono)
+                if (TMave_mat[i][j]>*mc.maxTMmono)
+                {
+                    *mc.maxTMmono=TMave_mat[i][j];
+                    *mc.maxTMmono_i=i;
+                    *mc.maxTMmono_j=j;
+                }
+
+                seqM.clear(); seqxA.clear(); seqyA.clear(); do_vec.clear();
+            }    }
+}
 
 int TMalign(string &xname, string &yname, const string &fname_super,
     const string &fname_lign, const string &fname_matrix,
@@ -1061,148 +1316,22 @@ int MMalign(const string &xname, const string &yname,
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
-#ifdef _OPENMP
-    if (chain1_num > 1 || chain2_num > 1)
-    {
-        #pragma omp parallel for schedule(dynamic, 8) \
-            private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
-        for (i=0;i<chain1_num;i++)
-        {
-            int Lnorm_tmp;
-            string seqM, seqxA, seqyA;
-            vector<double> do_vec;
-            xlen=xlen_vec[i];
-            if (xlen<3)
-            {
-                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
-                continue;
-            }
-            secx.resize(xlen+1);
-            xa.resize(xlen);
-            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-                xlen,xa,seqx,secx);
-
-            for (j=0;j<chain2_num;j++)
-            {
-                ut_idx=i*chain2_num+j;
-                for (ui=0;ui<4;ui++)
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
-                ut_mat[ut_idx][0]=1;
-                ut_mat[ut_idx][4]=1;
-                ut_mat[ut_idx][8]=1;
-
-                if (mol_vec1[i]*mol_vec2[j]<0)
-                {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
-                    continue;
-                }
-                if (chainmap.size() && (!chainmap.count(i) || chainmap[i]!=j))
-                {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
-                    continue;
-                }
-
-                ylen=ylen_vec[j];
-                if (ylen<3)
-                {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
-                    continue;
-                }
-                secy.resize(ylen+1);
-                ya.resize(ylen);
-                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                    ylen,ya,seqy,secy);
-
-                Lnorm_tmp=len_aa;
-                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
-
-                if (byresi_opt)
-                {
-            bool _byresi_skip = false;
-                    #pragma omp critical(byresi)
-                    {
-                        int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
-                            resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
-                        seqxA_mat[i][j]=sequence[0];
-                        seqyA_mat[i][j]=sequence[1];
-                        if (total_aln>xlen+ylen-3)
-                        {
-                            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++)
-                                ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
-                            for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                            TMave_mat[i][j]=TMave_mat[j][i]=0;
-                            seqM.clear(); seqxA.clear(); seqyA.clear();
-                            _byresi_skip = true;
-                        }
-                    }
-                if (_byresi_skip) continue;
-                }
-
-                // entry function for structure alignment
-                Vec3 t0; RotMat u0;
-                double TM1, TM2, TM3, TM4, TM5;
-                double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
-                double rmsd0 = 0.0;
-                int L_ali = 0; double Liden = 0;
-                double TM_ali = 0, rmsd_ali = 0;
-                int n_ali = 0, n_ali8 = 0;
-                if (se_opt)
-                {
-                    std::vector<int> invmap(ylen+1);
-                    u0[0][0]=u0[1][1]=u0[2][2]=1;
-                    u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
-                    t0[0]=t0[1]=t0[2]=0;
-                    se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                        i_opt, false, true, false,
-                        mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
-                    if (outfmt_opt>=2)
-                    {
-                        Liden=L_ali=0;
-                        int r1; int r2;
-                        for (r2=0;r2<ylen;r2++)
-                        {
-                            r1=invmap[r2];
-                            if (r1<0) continue;
-                            L_ali+=1;
-                            Liden+=(seqx[r1]==seqy[r2]);
-                        }
-                    }
-                }
-                else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                    seqM, seqxA, seqyA, do_vec,
-                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    i_opt, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut);
-
-                // store result
-                for (ui=0;ui<3;ui++)
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
-                seqxA_mat[i][j]=seqxA;
-                seqyA_mat[i][j]=seqyA;
-                TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
-                #pragma omp critical(maxTMmono)
-                if (TMave_mat[i][j]>maxTMmono)
-                {
-                    maxTMmono=TMave_mat[i][j];
-                    maxTMmono_i=i;
-                    maxTMmono_j=j;
-                }
-
-                seqM.clear(); seqxA.clear(); seqyA.clear(); do_vec.clear();
-            }
-        }
-    
+#ifdef _OPENMP
+    if (chain1_num > 1 || chain2_num > 1) {
+        MMalignBatchConfig mc;
+        fill_mmalign_config(mc,
+            xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
+            xlen_vec, ylen_vec, mol_vec1, mol_vec2, chainmap, sequence,
+            resi_vec1, resi_vec2, TMave_mat, ut_mat, seqxA_mat, seqM_mat, seqyA_mat,
+            maxTMmono, maxTMmono_i, maxTMmono_j,
+            chain1_num, chain2_num, len_aa, len_na,
+            outfmt_opt, i_opt, TMcut, d0_scale,
+            byresi_opt, se_opt, fast_opt);
+        run_mmalign_parallel(mc);
         return 0;
     }
 #endif  // _OPENMP
+
 
     for (i=0;i<chain1_num;i++)
     {
