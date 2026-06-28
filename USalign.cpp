@@ -571,7 +571,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
         cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
         cfg.read_resi = read_resi;
         cfg.fast_opt = fast_opt; cfg.cp_opt = cp_opt;
-        cfg.se_opt = se_opt; cfg.do_opt = do_opt;
+        cfg.se_opt = se_opt; cfg.do_opt = false;
         cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
         cfg.autojustify = autojustify;
         cfg.het_opt = het_opt;
@@ -2754,6 +2754,33 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int read_resi=0;  // whether to read residue index
     if (o_opt) read_resi=2;
 
+
+#ifdef _OPENMP
+    if (chain1_list.size() > 1 || chain2_list.size() > 1) {
+        BatchConfig cfg;
+        cfg.chain1_list = &chain1_list; cfg.chain2_list = &chain2_list;
+        cfg.chain2parse1 = &chain2parse1; cfg.chain2parse2 = &chain2parse2;
+        cfg.model2parse1 = &model2parse1; cfg.model2parse2 = &model2parse2;
+        cfg.sequence = &sequence;
+        cfg.dir_opt = dir_opt; cfg.dir1_opt = dir1_opt;
+        cfg.dir2_opt = dir2_opt; cfg.dirpair_opt = dirpair_opt;
+        cfg.fname_matrix = fname_matrix; cfg.fname_super = fname_super;
+        cfg.atom_opt = atom_opt; cfg.mol_opt = mol_opt;
+        cfg.Lnorm_ass = Lnorm_ass; cfg.d0_scale = d0_scale; cfg.TMcut = TMcut;
+        cfg.outfmt_opt = outfmt_opt; cfg.ter_opt = ter_opt;
+        cfg.split_opt = split_opt; cfg.o_opt = o_opt;
+        cfg.i_opt = i_opt; cfg.a_opt = a_opt;
+        cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
+        cfg.read_resi = read_resi;
+        cfg.fast_opt = fast_opt; cfg.cp_opt = false;
+        cfg.se_opt = false; cfg.do_opt = false;
+        cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
+        cfg.autojustify = autojustify;
+        cfg.het_opt = het_opt; cfg.mirror_opt = mirror_opt;
+        return run_batch_parallel(cfg);
+    }
+#endif  // _OPENMP
+
     // loop over file names
     for (i=0;i<chain1_list.size();i++)
     {
@@ -3026,6 +3053,34 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     vector<string> resi_vec2;  // residue index for chain2
     int read_resi=byresi_opt;  // whether to read residue index
     if (byresi_opt==0 && o_opt) read_resi=2;
+
+
+#ifdef _OPENMP
+    // === Parallel batch mode ===
+    if (chain1_list.size() > 1 || chain2_list.size() > 1) {
+        BatchConfig cfg;
+        cfg.chain1_list = &chain1_list; cfg.chain2_list = &chain2_list;
+        cfg.chain2parse1 = &chain2parse1; cfg.chain2parse2 = &chain2parse2;
+        cfg.model2parse1 = &model2parse1; cfg.model2parse2 = &model2parse2;
+        cfg.sequence = &sequence;
+        cfg.dir_opt = dir_opt; cfg.dir1_opt = dir1_opt;
+        cfg.dir2_opt = dir2_opt; cfg.dirpair_opt = dirpair_opt;
+        cfg.fname_matrix = fname_matrix; cfg.fname_super = fname_super;
+        cfg.atom_opt = atom_opt; cfg.mol_opt = mol_opt;
+        cfg.Lnorm_ass = Lnorm_ass; cfg.d0_scale = d0_scale; cfg.TMcut = TMcut;
+        cfg.outfmt_opt = outfmt_opt; cfg.ter_opt = ter_opt;
+        cfg.split_opt = split_opt; cfg.o_opt = o_opt;
+        cfg.i_opt = i_opt; cfg.a_opt = a_opt;
+        cfg.infmt1_opt = infmt1_opt; cfg.infmt2_opt = infmt2_opt;
+        cfg.read_resi = read_resi;
+        cfg.fast_opt = fast_opt; cfg.cp_opt = false;
+        cfg.se_opt = false; cfg.do_opt = false;
+        cfg.u_opt = u_opt; cfg.d_opt = d_opt; cfg.m_opt = m_opt;
+        cfg.autojustify = autojustify;
+        cfg.het_opt = het_opt; cfg.mirror_opt = mirror_opt;
+        return run_batch_parallel(cfg);
+    }
+#endif  // _OPENMP
 
     // loop over file names
     for (i=0;i<chain1_list.size();i++)
