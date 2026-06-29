@@ -271,167 +271,6 @@ struct PairTask {
 // ---------------------------------------------------------------------------
 // BatchConfig — aggregates all configuration needed by run_batch_parallel()
 // ---------------------------------------------------------------------------
-struct BatchConfig {
-    const vector<string>* chain1_list;
-    const vector<string>* chain2_list;
-    const vector<string>* chain2parse1;
-    const vector<string>* chain2parse2;
-    const vector<string>* model2parse1;
-    const vector<string>* model2parse2;
-    const vector<string>* sequence;
-    string  dir_opt, dir1_opt, dir2_opt, dirpair_opt;
-    string  fname_matrix, fname_super, atom_opt, mol_opt;
-    double  Lnorm_ass, d0_scale, TMcut;
-    int     outfmt_opt, ter_opt, split_opt, o_opt;
-    int     i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi;
-    bool    fast_opt, cp_opt, se_opt, do_opt, u_opt, d_opt, m_opt;
-    bool    autojustify;
-    int     het_opt, mirror_opt;
-};
-
-inline void fill_batch_config(BatchConfig& cfg,
-    const vector<string>& chain1_list, const vector<string>& chain2_list,
-    const vector<string>& chain2parse1, const vector<string>& chain2parse2,
-    const vector<string>& model2parse1, const vector<string>& model2parse2,
-    const vector<string>& sequence,
-    const string& dir_opt, const string& dir1_opt,
-    const string& dir2_opt, const string& dirpair_opt,
-    const string& fname_matrix, const string& fname_super,
-    const string& atom_opt, const string& mol_opt,
-    double Lnorm_ass, double d0_scale, double TMcut,
-    int outfmt_opt, int ter_opt, int split_opt, int o_opt,
-    int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
-    bool fast_opt, bool cp_opt, bool se_opt, bool do_opt,
-    bool u_opt, bool d_opt, bool m_opt,
-    bool autojustify, int het_opt, int mirror_opt)
-{
-    cfg.chain1_list = &chain1_list;
-    cfg.chain2_list = &chain2_list;
-    cfg.chain2parse1 = &chain2parse1;
-    cfg.chain2parse2 = &chain2parse2;
-    cfg.model2parse1 = &model2parse1;
-    cfg.model2parse2 = &model2parse2;
-    cfg.sequence = &sequence;
-    cfg.dir_opt = dir_opt;
-    cfg.dir1_opt = dir1_opt;
-    cfg.dir2_opt = dir2_opt;
-    cfg.dirpair_opt = dirpair_opt;
-    cfg.fname_matrix = fname_matrix;
-    cfg.fname_super = fname_super;
-    cfg.atom_opt = atom_opt;
-    cfg.mol_opt = mol_opt;
-    cfg.Lnorm_ass = Lnorm_ass;
-    cfg.d0_scale = d0_scale;
-    cfg.TMcut = TMcut;
-    cfg.outfmt_opt = outfmt_opt;
-    cfg.ter_opt = ter_opt;
-    cfg.split_opt = split_opt;
-    cfg.o_opt = o_opt;
-    cfg.i_opt = i_opt;
-    cfg.a_opt = a_opt;
-    cfg.infmt1_opt = infmt1_opt;
-    cfg.infmt2_opt = infmt2_opt;
-    cfg.read_resi = read_resi;
-    cfg.fast_opt = fast_opt;
-    cfg.cp_opt = cp_opt;
-    cfg.se_opt = se_opt;
-    cfg.do_opt = do_opt;
-    cfg.u_opt = u_opt;
-    cfg.d_opt = d_opt;
-    cfg.m_opt = m_opt;
-    cfg.autojustify = autojustify;
-    cfg.het_opt = het_opt;
-    cfg.mirror_opt = mirror_opt;
-}
-
-
-
-struct MMalignBatchConfig {
-    const DoubleCube* xa_vec;
-    const DoubleCube* ya_vec;
-    const CharMatrix* seqx_vec;
-    const CharMatrix* seqy_vec;
-    const CharMatrix* secx_vec;
-    const CharMatrix* secy_vec;
-    const vector<int>* xlen_vec;
-    const vector<int>* ylen_vec;
-    const vector<int>* mol_vec1;
-    const vector<int>* mol_vec2;
-    const map<int,int>* chainmap;
-    vector<string>* sequence;
-    vector<string>* resi_vec1;
-    vector<string>* resi_vec2;
-    DoubleMatrix* TMave_mat;
-    RotArray* ut_mat;
-    vector<vector<string>>* seqxA_mat;
-    vector<vector<string>>* seqM_mat;
-    vector<vector<string>>* seqyA_mat;
-    double* maxTMmono;
-    int* maxTMmono_i;
-    int* maxTMmono_j;
-    int chain1_num, chain2_num;
-    int len_aa, len_na;
-    int outfmt_opt, i_opt;
-    double TMcut, d0_scale;
-    bool byresi_opt, se_opt, fast_opt;
-};
-
-inline void fill_mmalign_config(MMalignBatchConfig& mc,
-    const DoubleCube& xa_vec, const DoubleCube& ya_vec,
-    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
-    const CharMatrix& secx_vec, const CharMatrix& secy_vec,
-    const vector<int>& xlen_vec, const vector<int>& ylen_vec,
-    const vector<int>& mol_vec1, const vector<int>& mol_vec2,
-    const map<int,int>& chainmap,
-    vector<string>& sequence,
-    vector<string>& resi_vec1, vector<string>& resi_vec2,
-    DoubleMatrix& TMave_mat, RotArray& ut_mat,
-    vector<vector<string>>& seqxA_mat,
-    vector<vector<string>>& seqM_mat,
-    vector<vector<string>>& seqyA_mat,
-    double& maxTMmono, int& maxTMmono_i, int& maxTMmono_j,
-    int chain1_num, int chain2_num,
-    int len_aa, int len_na,
-    int outfmt_opt, int i_opt,
-    double TMcut, double d0_scale,
-    bool byresi_opt, bool se_opt, bool fast_opt)
-{
-
-    mc.xa_vec = &xa_vec;
-    mc.ya_vec = &ya_vec;
-    mc.seqx_vec = &seqx_vec;
-    mc.seqy_vec = &seqy_vec;
-    mc.secx_vec = &secx_vec;
-    mc.secy_vec = &secy_vec;
-    mc.xlen_vec = &xlen_vec;
-    mc.ylen_vec = &ylen_vec;
-    mc.mol_vec1 = &mol_vec1;
-    mc.mol_vec2 = &mol_vec2;
-    mc.chainmap = &chainmap;
-    mc.sequence = &sequence;
-    mc.resi_vec1 = &resi_vec1;
-    mc.resi_vec2 = &resi_vec2;
-    mc.TMave_mat = &TMave_mat;
-    mc.ut_mat = &ut_mat;
-    mc.seqxA_mat = &seqxA_mat;
-    mc.seqM_mat = &seqM_mat;
-    mc.seqyA_mat = &seqyA_mat;
-    mc.maxTMmono = &maxTMmono;
-    mc.maxTMmono_i = &maxTMmono_i;
-    mc.maxTMmono_j = &maxTMmono_j;
-    mc.chain1_num = chain1_num;
-    mc.chain2_num = chain2_num;
-    mc.len_aa = len_aa;
-    mc.len_na = len_na;
-    mc.outfmt_opt = outfmt_opt;
-    mc.i_opt = i_opt;
-    mc.TMcut = TMcut;
-    mc.d0_scale = d0_scale;
-    mc.byresi_opt = byresi_opt;
-    mc.se_opt = se_opt;
-    mc.fast_opt = fast_opt;
-
-}
 
 
 
@@ -476,39 +315,25 @@ void output_do_block(std::ostream& os,
 
 // TMalign, RNAalign, CPalign, TMscore
 
-int run_batch_parallel(BatchConfig& cfg)
+int run_batch_parallel(
+    const vector<string>& chain1_list, const vector<string>& chain2_list,
+    const vector<string>& chain2parse1, const vector<string>& chain2parse2,
+    const vector<string>& model2parse1, const vector<string>& model2parse2,
+    const vector<string>& sequence,
+    const string& dir_opt, const string& dir1_opt,
+    const string& dir2_opt, const string& dirpair_opt,
+    const string& fname_matrix, const string& fname_super,
+    const string& atom_opt, const string& mol_opt,
+    double Lnorm_ass, double d0_scale, double TMcut,
+    int outfmt_opt, int ter_opt, int split_opt, int o_opt,
+    int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
+    bool fast_opt, bool cp_opt, bool se_opt, bool do_opt,
+    bool u_opt, bool d_opt, bool m_opt,
+    bool autojustify, int het_opt, int mirror_opt)
 {
-    // Local aliases for config fields
-    const auto& chain1_list = *cfg.chain1_list;
-    const auto& chain2_list = *cfg.chain2_list;
-    const auto& chain2parse1 = *cfg.chain2parse1;
-    const auto& chain2parse2 = *cfg.chain2parse2;
-    const auto& model2parse1 = *cfg.model2parse1;
-    const auto& model2parse2 = *cfg.model2parse2;
-    const auto& sequence = *cfg.sequence;
-    const auto& dir_opt = cfg.dir_opt;
-    const auto& dir1_opt = cfg.dir1_opt;
-    const auto& dir2_opt = cfg.dir2_opt;
-    const auto& dirpair_opt = cfg.dirpair_opt;
-    const auto& fname_matrix = cfg.fname_matrix;
-    const auto& fname_super = cfg.fname_super;
-    const auto& atom_opt = cfg.atom_opt;
-    const auto& mol_opt = cfg.mol_opt;
-    double Lnorm_ass = cfg.Lnorm_ass, d0_scale = cfg.d0_scale, TMcut = cfg.TMcut;
-    int outfmt_opt = cfg.outfmt_opt, ter_opt = cfg.ter_opt;
-    int split_opt = cfg.split_opt, o_opt = cfg.o_opt;
-    int i_opt = cfg.i_opt, a_opt = cfg.a_opt;
-    int infmt1_opt = cfg.infmt1_opt, infmt2_opt = cfg.infmt2_opt;
-    int read_resi = cfg.read_resi;
     int i, j, chain_i, chain_j;
-    bool fast_opt = cfg.fast_opt, cp_opt = cfg.cp_opt;
-    bool se_opt = cfg.se_opt, do_opt = cfg.do_opt;
-    bool u_opt = cfg.u_opt, d_opt = cfg.d_opt, m_opt = cfg.m_opt;
-    int mirror_opt = cfg.mirror_opt;
-    bool autojustify = cfg.autojustify;
-    int het_opt = cfg.het_opt;
 
-            // ---- Phase 1: pre-parse all unique files, build task list ----
+// ---- Phase 1: pre-parse all unique files, build task list ----
             vector<ParsedChain> all_chains;
             map<string, vector<int>> file_to_idx;
             vector<PairTask> tasks;
@@ -660,32 +485,26 @@ int run_batch_parallel(BatchConfig& cfg)
             return 0;
         }
 
-void run_mmalign_parallel(MMalignBatchConfig& mc)
+void run_mmalign_parallel(
+    const DoubleCube& xa_vec, const DoubleCube& ya_vec,
+    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
+    const CharMatrix& secx_vec, const CharMatrix& secy_vec,
+    const vector<int>& xlen_vec, const vector<int>& ylen_vec,
+    const vector<int>& mol_vec1, const vector<int>& mol_vec2,
+    const map<int,int>& chainmap,
+    vector<string>& sequence,
+    vector<string>& resi_vec1, vector<string>& resi_vec2,
+    DoubleMatrix& TMave_mat, RotArray& ut_mat,
+    vector<vector<string>>& seqxA_mat,
+    vector<vector<string>>& seqM_mat,
+    vector<vector<string>>& seqyA_mat,
+    double& maxTMmono, int& maxTMmono_i, int& maxTMmono_j,
+    int chain1_num, int chain2_num,
+    int len_aa, int len_na,
+    int outfmt_opt, int i_opt,
+    double TMcut, double d0_scale,
+    bool byresi_opt, bool se_opt, bool fast_opt)
 {
-    const auto& xa_vec = *mc.xa_vec;
-    const auto& ya_vec = *mc.ya_vec;
-    const auto& seqx_vec = *mc.seqx_vec;
-    const auto& seqy_vec = *mc.seqy_vec;
-    const auto& secx_vec = *mc.secx_vec;
-    const auto& secy_vec = *mc.secy_vec;
-    const auto& xlen_vec = *mc.xlen_vec;
-    const auto& ylen_vec = *mc.ylen_vec;
-    const auto& mol_vec1 = *mc.mol_vec1;
-    const auto& mol_vec2 = *mc.mol_vec2;
-    const auto& chainmap = *mc.chainmap;
-    auto& TMave_mat = *mc.TMave_mat;
-    auto& ut_mat = *mc.ut_mat;
-    auto& seqxA_mat = *mc.seqxA_mat;
-    auto& seqyA_mat = *mc.seqyA_mat;
-    auto& sequence = *mc.sequence;
-    auto& resi_vec1 = *mc.resi_vec1;
-    auto& resi_vec2 = *mc.resi_vec2;
-    int chain1_num = mc.chain1_num, chain2_num = mc.chain2_num;
-    int len_aa = mc.len_aa, len_na = mc.len_na;
-    int outfmt_opt = mc.outfmt_opt, i_opt = mc.i_opt;
-    double TMcut = mc.TMcut, d0_scale = mc.d0_scale;
-    bool byresi_opt = mc.byresi_opt, se_opt = mc.se_opt, fast_opt = mc.fast_opt;
-
     int i, j, ui, uj, ut_idx, xlen, ylen;
     string secx, secy, seqx, seqy;
     CoordArray xa, ya;
@@ -814,11 +633,11 @@ void run_mmalign_parallel(MMalignBatchConfig& mc)
                 seqyA_mat[i][j]=seqyA;
                 TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
                 #pragma omp critical(maxTMmono)
-                if (TMave_mat[i][j]>*mc.maxTMmono)
+                if (TMave_mat[i][j]>maxTMmono)
                 {
-                    *mc.maxTMmono=TMave_mat[i][j];
-                    *mc.maxTMmono_i=i;
-                    *mc.maxTMmono_j=j;
+                    maxTMmono=TMave_mat[i][j];
+                    maxTMmono_i=i;
+                    maxTMmono_j=j;
                 }
 
                 seqM.clear(); seqxA.clear(); seqyA.clear(); do_vec.clear();
@@ -867,22 +686,17 @@ int TMalign(string &xname, string &yname, const string &fname_super,
 #ifdef _OPENMP
     // === Parallel batch mode ===
     if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-                BatchConfig cfg;
-        fill_batch_config(cfg,
-            chain1_list, chain2_list,
-            chain2parse1, chain2parse2,
-            model2parse1, model2parse2,
-            sequence,
+                return run_batch_parallel(
+            chain1_list, chain2_list, chain2parse1, chain2parse2,
+            model2parse1, model2parse2, sequence,
             dir_opt, dir1_opt, dir2_opt, dirpair_opt,
-            fname_matrix, fname_super,
-            atom_opt, mol_opt,
+            fname_matrix, fname_super, atom_opt, mol_opt,
             Lnorm_ass, d0_scale, TMcut,
             outfmt_opt, ter_opt, split_opt, o_opt,
             i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
             fast_opt, cp_opt, se_opt, false,
             u_opt, d_opt, m_opt,
             autojustify, het_opt, mirror_opt);
-        return run_batch_parallel(cfg);
     }
 #endif  // _OPENMP
 
@@ -1369,16 +1183,16 @@ int MMalign(const string &xname, const string &yname,
     if (len_aa+len_na>500) fast_opt=true;
 #ifdef _OPENMP
     if (chain1_num > 1 || chain2_num > 1) {
-        MMalignBatchConfig mc;
-        fill_mmalign_config(mc,
-            xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
-            xlen_vec, ylen_vec, mol_vec1, mol_vec2, chainmap, sequence,
-            resi_vec1, resi_vec2, TMave_mat, ut_mat, seqxA_mat, seqM_mat, seqyA_mat,
+        run_mmalign_parallel(
+            xa_vec, ya_vec, seqx_vec, seqy_vec,
+            secx_vec, secy_vec, xlen_vec, ylen_vec,
+            mol_vec1, mol_vec2, chainmap, sequence,
+            resi_vec1, resi_vec2, TMave_mat, ut_mat,
+            seqxA_mat, seqM_mat, seqyA_mat,
             maxTMmono, maxTMmono_i, maxTMmono_j,
             chain1_num, chain2_num, len_aa, len_na,
             outfmt_opt, i_opt, TMcut, d0_scale,
             byresi_opt, se_opt, fast_opt);
-        run_mmalign_parallel(mc);
         return 0;
     }
 #endif  // _OPENMP
@@ -3080,22 +2894,17 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
 
 #ifdef _OPENMP
     if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-                BatchConfig cfg;
-        fill_batch_config(cfg,
-            chain1_list, chain2_list,
-            chain2parse1, chain2parse2,
-            model2parse1, model2parse2,
-            sequence,
+                return run_batch_parallel(
+            chain1_list, chain2_list, chain2parse1, chain2parse2,
+            model2parse1, model2parse2, sequence,
             dir_opt, dir1_opt, dir2_opt, dirpair_opt,
-            fname_matrix, fname_super,
-            atom_opt, mol_opt,
+            fname_matrix, fname_super, atom_opt, mol_opt,
             Lnorm_ass, d0_scale, TMcut,
             outfmt_opt, ter_opt, split_opt, o_opt,
             i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
             fast_opt, false, false, false,
             u_opt, d_opt, m_opt,
             autojustify, het_opt, mirror_opt);
-        return run_batch_parallel(cfg);
     }
 #endif  // _OPENMP
 
@@ -3376,22 +3185,17 @@ int flexalign(string &xname, string &yname, const string &fname_super,
 #ifdef _OPENMP
     // === Parallel batch mode ===
     if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-                BatchConfig cfg;
-        fill_batch_config(cfg,
-            chain1_list, chain2_list,
-            chain2parse1, chain2parse2,
-            model2parse1, model2parse2,
-            sequence,
+        return run_batch_parallel(
+            chain1_list, chain2_list, chain2parse1, chain2parse2,
+            model2parse1, model2parse2, sequence,
             dir_opt, dir1_opt, dir2_opt, dirpair_opt,
-            fname_matrix, fname_super,
-            atom_opt, mol_opt,
+            fname_matrix, fname_super, atom_opt, mol_opt,
             Lnorm_ass, d0_scale, TMcut,
             outfmt_opt, ter_opt, split_opt, o_opt,
             i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
             fast_opt, false, false, false,
             u_opt, d_opt, m_opt,
             autojustify, het_opt, mirror_opt);
-        return run_batch_parallel(cfg);
     }
 #endif  // _OPENMP
 
