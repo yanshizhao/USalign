@@ -636,6 +636,44 @@ void run_mmalign_parallel(
             }    }
 }
 
+// MMdock parallel wrapper — reuses run_mmalign_parallel with dummy buffers
+inline void run_mmdock_parallel(
+    const DoubleCube& xa_vec, const DoubleCube& ya_vec,
+    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
+    const CharMatrix& secx_vec, const CharMatrix& secy_vec,
+    const vector<int>& xlen_vec, const vector<int>& ylen_vec,
+    const vector<int>& mol_vec1, const vector<int>& mol_vec2,
+    vector<string>& sequence,
+    vector<string>& resi_vec1, vector<string>& resi_vec2,
+    DoubleMatrix& TMave_mat,
+    vector<vector<string>>& seqxA_mat,
+    vector<vector<string>>& seqM_mat,
+    vector<vector<string>>& seqyA_mat,
+    int chain1_num, int chain2_num,
+    int len_aa, int len_na,
+    int outfmt_opt, double TMcut, double d0_scale,
+    bool fast_opt,
+    int parallel_threads = 1)
+{
+    // Dummy buffers needed by run_mmalign_parallel but unused by MMdock post-processing
+    RotArray ut_mat_dummy;
+    ut_mat_dummy.assign(chain1_num * chain2_num, std::array<double, 12>());
+    double maxTMmono_dummy = -1;
+    int maxTMmono_i_dummy = 0, maxTMmono_j_dummy = 0;
+
+    run_mmalign_parallel(
+        xa_vec, ya_vec, seqx_vec, seqy_vec,
+        secx_vec, secy_vec, xlen_vec, ylen_vec,
+        mol_vec1, mol_vec2, std::map<int,int>(), sequence,
+        resi_vec1, resi_vec2, TMave_mat, ut_mat_dummy,
+        seqxA_mat, seqM_mat, seqyA_mat,
+        maxTMmono_dummy, maxTMmono_i_dummy, maxTMmono_j_dummy,
+        chain1_num, chain2_num, len_aa, len_na,
+        outfmt_opt, 0, TMcut, d0_scale,
+        false, false, fast_opt,
+        parallel_threads);
+}
+
 int TMalign(string &xname, string &yname, const string &fname_super,
     const string &fname_lign, const string &fname_matrix,
     vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
@@ -1763,6 +1801,22 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     std::string secy_trim;           // for the secondary structure
     CoordArray xt;
 
+    bool mmdock_parallel_done = false;
+#ifdef _OPENMP
+    if (parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1)) {
+        run_mmdock_parallel(
+            xa_vec, ya_vec, seqx_vec, seqy_vec,
+            secx_vec, secy_vec, xlen_vec, ylen_vec,
+            mol_vec1, mol_vec2, sequence,
+            resi_vec1, resi_vec2, TMave_mat,
+            seqxA_mat, seqM_mat, seqyA_mat,
+            chain1_num, chain2_num, len_aa, len_na,
+            outfmt_opt, TMcut, d0_scale, fast_opt,
+            parallel_threads);
+        mmdock_parallel_done = true;
+    }
+#endif
+    if (!mmdock_parallel_done)
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
     for (i=0;i<chain1_num;i++)
@@ -2024,7 +2078,7 @@ std::vector<int> assign2_list(chain2_num);
         TM=sqrt(TM/TM_vec.size());
         string query_name=xname;
         string template_name=yname;
-        for (i=0;i<chain1_num;i++)
+for (i=0;i<chain1_num;i++)
         {
             j=assign1_list[i];
             if (j<0) continue;
