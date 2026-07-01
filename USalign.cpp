@@ -503,7 +503,7 @@ void run_mmalign_parallel(
     string secx, secy, seqx, seqy;
     CoordArray xa, ya;
 
-#pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
+#pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj, j)
     for (i=0;i<chain1_num;i++)
     {
             int Lnorm_tmp;
@@ -512,7 +512,7 @@ void run_mmalign_parallel(
             xlen=xlen_vec[i];
             if (xlen<3)
             {
-                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                 continue;
             }
             secx.resize(xlen+1);
@@ -531,19 +531,19 @@ void run_mmalign_parallel(
 
                 if (mol_vec1[i]*mol_vec2[j]<0)
                 {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                     continue;
                 }
                 if (chainmap.size() && (!chainmap.count(i) || chainmap.find(i)->second!=j))
                 {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                     continue;
                 }
 
                 ylen=ylen_vec[j];
                 if (ylen<3)
                 {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                     continue;
                 }
                 secy.resize(ylen+1);
@@ -567,7 +567,7 @@ void run_mmalign_parallel(
                             for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++)
                                 ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
                             for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                            TMave_mat[i][j]=TMave_mat[j][i]=0;
+                            TMave_mat[i][j]=0; if (j<chain1_num) TMave_mat[j][i]=0;
                             seqM.clear(); seqxA.clear(); seqyA.clear();
                             _byresi_skip = true;
                         }
@@ -624,7 +624,8 @@ void run_mmalign_parallel(
                 for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
                 seqxA_mat[i][j]=seqxA;
                 seqyA_mat[i][j]=seqyA;
-                TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
+                TMave_mat[i][j]=TM4*Lnorm_tmp;
+                if (i != j && j < chain1_num) TMave_mat[j][i]=TM4*Lnorm_tmp;
                 if (TMave_mat[i][j]>maxTMmono)
                 {
                     maxTMmono=TMave_mat[i][j];
@@ -1238,7 +1239,7 @@ int MMalign(const string &xname, const string &yname,
         xlen=xlen_vec[i];
         if (xlen<3)
         {
-            for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
+            for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
             continue;
         }
         secx.resize(xlen+1);
@@ -1257,19 +1258,19 @@ int MMalign(const string &xname, const string &yname,
 
             if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
             {
-                TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                 continue;
             }
             if (chainmap.size() && (!chainmap.count(i) || chainmap[i]!=j))
             {
-                TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                 continue;
             }
 
             ylen=ylen_vec[j];
             if (ylen<3)
             {
-                TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                 continue;
             }
             secy.resize(ylen+1);
@@ -1313,7 +1314,7 @@ int MMalign(const string &xname, const string &yname,
                     for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) 
                         ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
                     for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                    TMave_mat[i][j]=TMave_mat[j][i]=0;
+                    TMave_mat[i][j]=0; if (j<chain1_num) TMave_mat[j][i]=0;
                     seqM.clear();
                     seqxA.clear();
                     seqyA.clear();
@@ -1369,7 +1370,8 @@ int MMalign(const string &xname, const string &yname,
             for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
-            TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
+            TMave_mat[i][j]=TM4*Lnorm_tmp;
+                if (i != j && j < chain1_num) TMave_mat[j][i]=TM4*Lnorm_tmp;
             if (TMave_mat[i][j]>maxTMmono)
             {
                 maxTMmono=TMave_mat[i][j];
@@ -2263,7 +2265,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 mol_type,TMcut);
 
             // store result
-            TMave_mat[i][j]=TMave_mat[j][i]=TM4;
+            TMave_mat[i][j]=TM4; TMave_mat[j][i]=TM4;
             seqxA_mat[i][j]=seqyA_mat[j][i]=seqxA;
             seqyA_mat[i][j]=seqxA_mat[j][i]=seqyA;
                 //<<chain_list[j]<<':'<<chainID_list[j]<<"\tTM4="<<TM4<<endl;
