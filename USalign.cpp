@@ -1176,6 +1176,7 @@ int MMalign(const string &xname, const string &yname,
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
+    bool parallel_done = false;
 #ifdef _OPENMP
     if (parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1)) {
         run_mmalign_parallel(
@@ -1189,11 +1190,11 @@ int MMalign(const string &xname, const string &yname,
             outfmt_opt, i_opt, TMcut, d0_scale,
             byresi_opt, se_opt, fast_opt,
             parallel_threads);
-        return 0;
+        parallel_done = true;
     }
 #endif  // _OPENMP
 
-
+    if (!parallel_done)
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -2407,7 +2408,7 @@ std::vector<int> invmap(ylen+1);
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
                 2,  a_opt, u_opt, d_opt, fast_opt, mol_type,
-                parallel_threads);
+                TMcut, parallel_threads);
 
             if (outfmt_opt<0) output_results(
                 xname_vec[i].c_str(), xname_vec[j].c_str(), "", "",

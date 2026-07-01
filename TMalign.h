@@ -2785,7 +2785,7 @@ void output_results(const string xname, const string yname,
     }
     if (outfmt_opt<5) os << endl;
 
-    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u);
+    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u, os);
 
     if (o_opt==1 || o_opt==3)
         output_pymol(xname, yname, fname_super, t, u, ter_opt,
@@ -2862,7 +2862,7 @@ void output_mTMalign_results(const string xname, const string yname,
     }
     os << endl;
 
-    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u);
+    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u, os);
 
     if (o_opt==1 || o_opt==3)
         output_pymol(xname, yname, fname_super, t, u, ter_opt,
