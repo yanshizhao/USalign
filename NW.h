@@ -16,6 +16,11 @@
  * values) caused by the NWPD_TM implement.
  */
 
+// 3-state path encoding for fast backtracking
+#define PATH_DIAG  1   // diagonal: residue i aligns with residue j
+#define PATH_UP    2   // up:       residue i aligns with a gap
+#define PATH_LEFT  3   // left:     gap aligns with residue j
+
 // Forward declarations
 inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i);
@@ -50,18 +55,18 @@ inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
         for (j = 1; j <= len2; j++) {
             d = val[i - 1][j - 1] + score[i][j];
             h = val[i - 1][j];
-            if (path[i - 1][j] == 1) h += gap_open;
+            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
             v = val[i][j - 1];
-            if (path[i][j - 1] == 1) v += gap_open;
+            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
 
             if (d >= h && d >= v) {
-                path[i][j] = 1;  // diagonal
+                path[i][j] = PATH_DIAG;// diagonal
                 val[i][j] = d;
             } else if (v >= h) {
-                path[i][j] = 3;  // left
+                path[i][j] = PATH_LEFT;// left
                 val[i][j] = v;
             } else {
-                path[i][j] = 2;  // up
+                path[i][j] = PATH_UP;// up
                 val[i][j] = h;
             }
         }
@@ -70,9 +75,9 @@ inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     // Fast backtrack using stored path codes
     i = len1; j = len2;
     while (i > 0 && j > 0) {
-        if (path[i][j] == 1) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == 2) { i--; }
-        else { j--; }  // path[i][j] == 3 (left)
+        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
+        else if (path[i][j] == PATH_UP) { i--; }
+        else { j--; }  // path[i][j] == PATH_LEFT(left)
     }
 }
 
@@ -102,18 +107,18 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
             dij = dist(xx, y[j - 1]);
             d   = val[i - 1][j - 1] + 1.0 / (1.0 + dij / d02);
             h   = val[i - 1][j];
-            if (path[i - 1][j] == 1) h += gap_open;
+            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
             v = val[i][j - 1];
-            if (path[i][j - 1] == 1) v += gap_open;
+            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
 
             if (d >= h && d >= v) {
-                path[i][j] = 1;  // diagonal
+                path[i][j] = PATH_DIAG;// diagonal
                 val[i][j] = d;
             } else if (v >= h) {
-                path[i][j] = 3;  // left
+                path[i][j] = PATH_LEFT;// left
                 val[i][j] = v;
             } else {
-                path[i][j] = 2;  // up
+                path[i][j] = PATH_UP;// up
                 val[i][j] = h;
             }
         }
@@ -122,8 +127,8 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     // Fast backtrack – no need to re-read val[] just to decide direction
     i = len1; j = len2;
     while (i > 0 && j > 0) {
-        if (path[i][j] == 1) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == 2) { i--; }
+        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
+        else if (path[i][j] == PATH_UP) { i--; }
         else { j--; }
     }
 }
@@ -147,18 +152,18 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
         for (j = 1; j <= len2; j++) {
             d = val[i - 1][j - 1] + 1.0 * (secx[i - 1] == secy[j - 1]);
             h = val[i - 1][j];
-            if (path[i - 1][j] == 1) h += gap_open;
+            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
             v = val[i][j - 1];
-            if (path[i][j - 1] == 1) v += gap_open;
+            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
 
             if (d >= h && d >= v) {
-                path[i][j] = 1;
+                path[i][j] = PATH_DIAG;// diagonal
                 val[i][j] = d;
             } else if (v >= h) {
-                path[i][j] = 3;
+                path[i][j] = PATH_LEFT;// left
                 val[i][j] = v;
             } else {
-                path[i][j] = 2;
+                path[i][j] = PATH_UP;// up
                 val[i][j] = h;
             }
         }
@@ -166,8 +171,8 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
 
     i = len1; j = len2;
     while (i > 0 && j > 0) {
-        if (path[i][j] == 1) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == 2) { i--; }
+        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
+        else if (path[i][j] == PATH_UP) { i--; }
         else { j--; }
     }
 }
@@ -194,18 +199,18 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
                 dij = dist(x[i - 1], y[j - 1]);
                 d   = val[i - 1][j - 1] + 1.0 / (1.0 + dij / d02);
                 h   = val[i - 1][j];
-                if (path[i - 1][j] == 1) h += gap_open;
+                if (path[i - 1][j] == PATH_DIAG) h += gap_open;
                 v = val[i][j - 1];
-                if (path[i][j - 1] == 1) v += gap_open;
+                if (path[i][j - 1] == PATH_DIAG) v += gap_open;
 
                 if (d >= h && d >= v) {
-                    path[i][j] = 1;
+                    path[i][j] = PATH_DIAG;// diagonal
                     val[i][j] = d;
                 } else if (v >= h) {
-                    path[i][j] = 3;
+                    path[i][j] = PATH_LEFT;// left
                     val[i][j] = v;
                 } else {
-                    path[i][j] = 2;
+                    path[i][j] = PATH_UP;// up
                     val[i][j] = h;
                 }
             }
@@ -213,8 +218,8 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
 
         i = len1; j = len2;
         while (i > 0 && j > 0) {
-            if (path[i][j] == 1) { j2i[j - 1] = i - 1;  i--;  j--; }
-            else if (path[i][j] == 2) { i--; }
+            if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
+            else if (path[i][j] == PATH_UP) { i--; }
             else { j--; }
         }
         return;
@@ -231,7 +236,7 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
     for (j = 0; j < len2; j++) {
         i = j2i[j];
         if (i < 0) continue;
-        path[i + 1][j + 1] = 1;
+        path[i + 1][j + 1] = PATH_DIAG;// diagonal
         val[i + 1][j + 1] = 0;
     }
 
@@ -243,18 +248,18 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
 
             d = val[i - 1][j - 1] + 1.0 / (1.0 + dij / d02);
             h = val[i - 1][j];
-            if (path[i - 1][j] == 1) h += gap_open;
+            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
             v = val[i][j - 1];
-            if (path[i][j - 1] == 1) v += gap_open;
+            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
 
             if (d >= h && d >= v && val[i][j] == 0) {
-                path[i][j] = 1;
+                path[i][j] = PATH_DIAG;// diagonal
                 val[i][j] = d;
             } else if (v >= h) {
-                path[i][j] = 3;
+                path[i][j] = PATH_LEFT;// left
                 val[i][j] = v;
             } else {
-                path[i][j] = 2;
+                path[i][j] = PATH_UP;// up
                 val[i][j] = h;
             }
         }
@@ -264,8 +269,8 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
 
     i = len1; j = len2;
     while (i > 0 && j > 0) {
-        if (path[i][j] == 1) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == 2) { i--; }
+        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
+        else if (path[i][j] == PATH_UP) { i--; }
         else { j--; }
     }
 }

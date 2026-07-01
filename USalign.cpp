@@ -269,13 +269,6 @@ struct PairTask {
 };
 
 // ---------------------------------------------------------------------------
-// BatchConfig — aggregates all configuration needed by run_batch_parallel()
-// ---------------------------------------------------------------------------
-
-
-
-
-// ---------------------------------------------------------------------------
 // output_do_block — print aligned residue-pair distances (-do mode)
 // Extracted from the inner loop so it can be reused in both serial and
 // parallel paths.
@@ -314,7 +307,6 @@ void output_do_block(std::ostream& os,
 }
 
 // TMalign, RNAalign, CPalign, TMscore
-
 int run_batch_parallel(
     const vector<string>& chain1_list, const vector<string>& chain2_list,
     const vector<string>& chain2parse1, const vector<string>& chain2parse2,
@@ -329,7 +321,8 @@ int run_batch_parallel(
     int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
     bool fast_opt, bool cp_opt, bool se_opt, bool do_opt,
     bool u_opt, bool d_opt, bool m_opt,
-    bool autojustify, int het_opt, int mirror_opt)
+    bool autojustify, int het_opt, int mirror_opt,
+    int parallel_threads = 1)
 {
     int i, j, chain_i, chain_j;
 
@@ -393,7 +386,7 @@ int run_batch_parallel(
     
             // ---- Phase 2: parallel pair processing ----
             vector<string> out_lines(tasks.size());
-            #pragma omp parallel for schedule(dynamic, 8)
+            #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
             for (int t = 0; t < (int)tasks.size(); t++) {
                 auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
                 auto& c2 = all_chains[task.chain2_idx];
@@ -503,13 +496,14 @@ void run_mmalign_parallel(
     int len_aa, int len_na,
     int outfmt_opt, int i_opt,
     double TMcut, double d0_scale,
-    bool byresi_opt, bool se_opt, bool fast_opt)
+    bool byresi_opt, bool se_opt, bool fast_opt,
+    int parallel_threads = 1)
 {
     int i, j, ui, uj, ut_idx, xlen, ylen;
     string secx, secy, seqx, seqy;
     CoordArray xa, ya;
 
-#pragma omp parallel for schedule(dynamic, 8) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
+#pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
     for (i=0;i<chain1_num;i++)
     {
             int Lnorm_tmp;
@@ -562,8 +556,7 @@ void run_mmalign_parallel(
 
                 if (byresi_opt)
                 {
-            bool _byresi_skip = false;
-                    #pragma omp critical(byresi)
+                    bool _byresi_skip = false;
                     {
                         int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
                             resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
@@ -632,7 +625,6 @@ void run_mmalign_parallel(
                 seqxA_mat[i][j]=seqxA;
                 seqyA_mat[i][j]=seqyA;
                 TMave_mat[i][j]=TMave_mat[j][i]=TM4*Lnorm_tmp;
-                #pragma omp critical(maxTMmono)
                 if (TMave_mat[i][j]>maxTMmono)
                 {
                     maxTMmono=TMave_mat[i][j];
@@ -658,7 +650,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     const vector<string> &chain2parse2, const vector<string> &model2parse1,
     const vector<string> &model2parse2, const int byresi_opt,
     const vector<string> &chain1_list, const vector<string> &chain2_list,
-    const bool se_opt, const bool do_opt)
+    const bool se_opt, const bool do_opt,
+    int parallel_threads = 1)
 {
     // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
@@ -685,8 +678,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
 
 #ifdef _OPENMP
     // === Parallel batch mode ===
-    if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-                return run_batch_parallel(
+    if (parallel_threads > 1 && (chain1_list.size() > 1 || chain2_list.size() > 1)) {
+        return run_batch_parallel(
             chain1_list, chain2_list, chain2parse1, chain2parse2,
             model2parse1, model2parse2, sequence,
             dir_opt, dir1_opt, dir2_opt, dirpair_opt,
@@ -696,7 +689,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
             i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
             fast_opt, cp_opt, se_opt, false,
             u_opt, d_opt, m_opt,
-            autojustify, het_opt, mirror_opt);
+            autojustify, het_opt, mirror_opt,
+            parallel_threads);
     }
 #endif  // _OPENMP
 
@@ -943,7 +937,8 @@ int MMalign(const string &xname, const string &yname,
     const vector<string> &chain2parse1, const vector<string> &chain2parse2,
     const vector<string> &model2parse1, const vector<string> &model2parse2,
     const vector<string> &chain1_list, const vector<string> &chain2_list,
-    const int byresi_opt,const string&chainmapfile, const bool se_opt)
+    const int byresi_opt,const string&chainmapfile, const bool se_opt,
+    int parallel_threads = 1)
 {
     // declare previously global variables
     DoubleCube xa_vec; // structure of complex1
@@ -1182,7 +1177,7 @@ int MMalign(const string &xname, const string &yname,
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
 #ifdef _OPENMP
-    if (chain1_num > 1 || chain2_num > 1) {
+    if (parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1)) {
         run_mmalign_parallel(
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, xlen_vec, ylen_vec,
@@ -1192,7 +1187,8 @@ int MMalign(const string &xname, const string &yname,
             maxTMmono, maxTMmono_i, maxTMmono_j,
             chain1_num, chain2_num, len_aa, len_na,
             outfmt_opt, i_opt, TMcut, d0_scale,
-            byresi_opt, se_opt, fast_opt);
+            byresi_opt, se_opt, fast_opt,
+            parallel_threads);
         return 0;
     }
 #endif  // _OPENMP
@@ -1326,7 +1322,7 @@ int MMalign(const string &xname, const string &yname,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_tmp, d0_scale,
                 i_opt, false, true, false, fast_opt,
-                mol_vec1[i]+mol_vec2[j],TMcut);
+                mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
 
             // store result
             for (ui=0;ui<3;ui++)
@@ -1599,7 +1595,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     const vector<string> &chain2parse1, const vector<string> &chain2parse2, 
     const vector<string> &model2parse1, const vector<string> &model2parse2, 
     const vector<string> &chain1_list, const vector<string> &chain2_list,
-    const bool do_opt)
+    const bool do_opt,
+    int parallel_threads = 1)
 {
     // declare previously global variables
     DoubleCube xa_vec; // structure of complex1
@@ -1842,7 +1839,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
                     0, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut);
+                    mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
                 seqxA.clear();
                 seqyA.clear();
 
@@ -2080,7 +2077,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     const int het_opt, const string &atom_opt, const bool autojustify,
     const string &mol_opt, const string &dir_opt, const int byresi_opt,
     const vector<string> &chain_list, const vector<string> &chain2parse,
-    const vector<string> &model2parse, const bool se_opt)
+    const vector<string> &model2parse, const bool se_opt,
+    int parallel_threads = 1)
 {
     // declare previously global variables
     DoubleCube a_vec;  // atomic structure
@@ -2173,7 +2171,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             // entry function for structure alignment
             if (se_opt)
             {
-std::vector<int> invmap(ylen+1);
+                std::vector<int> invmap(ylen+1);
                 u0[0][0]=u0[1][1]=u0[2][2]=1;
                 u0[0][1]=         u0[0][2]=
                 u0[1][0]=         u0[1][2]=
@@ -2408,7 +2406,8 @@ std::vector<int> invmap(ylen+1);
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                2,  a_opt, u_opt, d_opt, fast_opt, mol_type);
+                2,  a_opt, u_opt, d_opt, fast_opt, mol_type,
+                parallel_threads);
 
             if (outfmt_opt<0) output_results(
                 xname_vec[i].c_str(), xname_vec[j].c_str(), "", "",
@@ -2861,7 +2860,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     const vector<string> &chain2parse2, const vector<string> &model2parse1,
     const vector<string> &model2parse2, const vector<string> &chain1_list,
     const vector<string> &chain2_list, const bool se_opt,
-    const int closeK_opt, const int mm_opt)
+    const int closeK_opt, const int mm_opt,
+    int parallel_threads = 1)
 {
     // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
@@ -2893,8 +2893,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
 
 
 #ifdef _OPENMP
-    if (chain1_list.size() > 1 || chain2_list.size() > 1) {
-                return run_batch_parallel(
+    if (parallel_threads > 1 && (chain1_list.size() > 1 || chain2_list.size() > 1)) {
+        return run_batch_parallel(
             chain1_list, chain2_list, chain2parse1, chain2parse2,
             model2parse1, model2parse2, sequence,
             dir_opt, dir1_opt, dir2_opt, dirpair_opt,
@@ -2904,7 +2904,8 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
             fast_opt, false, false, false,
             u_opt, d_opt, m_opt,
-            autojustify, het_opt, mirror_opt);
+            autojustify, het_opt, mirror_opt,
+            parallel_threads);
     }
 #endif  // _OPENMP
 
@@ -3153,9 +3154,10 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     const bool autojustify, const string &mol_opt, const string &dir_opt,
     const string &dirpair_opt, const string &dir1_opt, const string &dir2_opt,
     const vector<string> &chain2parse1, const vector<string> &chain2parse2,
-    const vector<string> &model2parse1, const vector<string> &model2parse2, 
+    const vector<string> &model2parse1, const vector<string> &model2parse2,
     const int byresi_opt, const vector<string> &chain1_list,
-    const vector<string> &chain2_list, const int hinge_opt)
+    const vector<string> &chain2_list, const int hinge_opt,
+    int parallel_threads = 1)
 {
     // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
@@ -3184,7 +3186,7 @@ int flexalign(string &xname, string &yname, const string &fname_super,
 
 #ifdef _OPENMP
     // === Parallel batch mode ===
-    if (chain1_list.size() > 1 || chain2_list.size() > 1) {
+    if (parallel_threads > 1 && (chain1_list.size() > 1 || chain2_list.size() > 1)) {
         return run_batch_parallel(
             chain1_list, chain2_list, chain2parse1, chain2parse2,
             model2parse1, model2parse2, sequence,
@@ -3195,7 +3197,8 @@ int flexalign(string &xname, string &yname, const string &fname_super,
             i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
             fast_opt, false, false, false,
             u_opt, d_opt, m_opt,
-            autojustify, het_opt, mirror_opt);
+            autojustify, het_opt, mirror_opt,
+            parallel_threads);
     }
 #endif  // _OPENMP
 
@@ -3501,6 +3504,7 @@ int main(int argc, char *argv[])
     string dir2_opt  ="";    // set -dir2 to empty
     string chainmapfile="";  // chain mapping between two complexes
     int    byresi_opt=0;     // set -byresi to 0
+    int    parallel_threads=0;  // set -threads N for TMscore8 parallel search
     vector<string> chain1_list; // only when -dir1 is set
     vector<string> chain2_list; // only when -dir2 is set
     vector<string> chain2parse1;
@@ -3714,6 +3718,13 @@ int main(int argc, char *argv[])
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -atom");
             atom_opt=argv[i + 1]; i++;
+        }
+        else if ( string(argv[i]) == "-threads" )
+        {
+            if (i>=(argc-1))
+                PrintErrorAndQuit("ERROR! Missing value for -threads");
+            parallel_threads = atoi(argv[++i]);
+            if (parallel_threads <= 1) parallel_threads = 1;
         }
         else if ( string(argv[i]) == "-mol" )
         {
@@ -3982,7 +3993,8 @@ int main(int argc, char *argv[])
         split_opt, outfmt_opt, fast_opt, cp_opt, mirror_opt, het_opt,
         atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
         dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-        byresi_opt, chain1_list, chain2_list, se_opt, do_opt);
+        byresi_opt, chain1_list, chain2_list, se_opt, do_opt,
+        parallel_threads);
     else if (mm_opt==1)
     { 
         if (dirpair_opt.size()==0) MMalign(xname, yname, fname_super,
@@ -3991,7 +4003,8 @@ int main(int argc, char *argv[])
             ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
             atom_opt, autojustify, mol_opt, dir1_opt, dir2_opt,
             chain2parse1, chain2parse2, model2parse1, model2parse2,
-            chain1_list, chain2_list, byresi_opt,chainmapfile, se_opt);
+            chain1_list, chain2_list, byresi_opt,chainmapfile, se_opt,
+            parallel_threads);
         else
         {
             vector<string> tmp_vec1;
@@ -4006,43 +4019,48 @@ int main(int argc, char *argv[])
                     sequence, d0_scale, m_opt, o_opt, a_opt, d_opt, full_opt,
                     TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt,
                     outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt,
-                    autojustify, mol_opt, dirpair_opt, dirpair_opt, 
+                    autojustify, mol_opt, dirpair_opt, dirpair_opt,
                     chain2parse1, chain2parse2, model2parse1, model2parse2,
-                    tmp_vec1, tmp_vec2, byresi_opt,chainmapfile, se_opt);
+                    tmp_vec1, tmp_vec2, byresi_opt,chainmapfile, se_opt,
+                    parallel_threads);
                 tmp_vec1[0].clear(); tmp_vec1.clear();
                 tmp_vec2[0].clear(); tmp_vec2.clear();
             }
         }
         chainmapfile.clear();
     }
-    else if (mm_opt==2) MMdock(xname, yname, fname_super, 
+    else if (mm_opt==2) MMdock(xname, yname, fname_super,
         fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, o_opt, a_opt,
         u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
         atom_opt, autojustify, mol_opt, dir1_opt, dir2_opt,
-        chain2parse1, chain2parse2, model2parse1, model2parse2, 
-        chain1_list, chain2_list, do_opt);
+        chain2parse1, chain2parse2, model2parse1, model2parse2,
+        chain1_list, chain2_list, do_opt,
+        parallel_threads);
     else if (mm_opt==3) ; // should be changed to mm_opt=0, cp_opt=true
     else if (mm_opt==4) mTMalign(xname, yname, fname_super, fname_matrix,
         sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt,
         u_opt, d_opt, full_opt, TMcut, infmt1_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, het_opt,
         atom_opt, autojustify, mol_opt, dir_opt, byresi_opt, chain1_list,
-        chain2parse1, model2parse1, se_opt);
+        chain2parse1, model2parse1, se_opt,
+        parallel_threads);
     else if (mm_opt==5 || mm_opt==6) SOIalign(xname, yname, fname_super, fname_lign,
         fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
         a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, cp_opt, mirror_opt, het_opt,
         atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
         dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-        chain1_list, chain2_list, se_opt, closeK_opt, mm_opt);
-    else if (mm_opt==7) flexalign(xname, yname, fname_super, fname_lign, 
+        chain1_list, chain2_list, se_opt, closeK_opt, mm_opt,
+        parallel_threads);
+    else if (mm_opt==7) flexalign(xname, yname, fname_super, fname_lign,
         fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
         a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
         atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
         dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-        byresi_opt, chain1_list, chain2_list, hinge_opt);
+        byresi_opt, chain1_list, chain2_list, hinge_opt,
+        parallel_threads);
     else cerr<<"WARNING! -mm "<<mm_opt<<" not implemented"<<endl;
 
     // clean up

@@ -169,7 +169,8 @@ inline void tmscore_search_pos(CoordArray& xtm, const CoordArray& ytm,
         }
     }
 
-    // ⑤ Update global best (thread-safe via caller's critical section)
+    // ⑤ Update global best (protected by critical section for thread safety)
+    #pragma omp critical(tmscore_update)
     if (score_max_l > score_max) {
         score_max = score_max_l;
         for (int kk = 0; kk < 3; kk++) {
@@ -282,7 +283,7 @@ inline void tmscore_search_serial(CoordArray& r1, CoordArray& r2,
 inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, int Lali, Vec3& t0, RotMat& u0, int simplify_step,
     int score_sum_method, double &Rcomm, double local_d0_search, double Lnorm,
-    double score_d8, double d0)
+    double score_d8, double d0, int parallel_threads = 1)
 {
     int i;
     int m;
@@ -332,11 +333,11 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
         L_frag=L_ini[i_init];
         iL_max=Lali-L_frag;
 
-        #ifdef _OPENMP
-        if (simplify_step != 1) Rcomm = 0;
-        int n_pos = (iL_max + simplify_step - 1) / simplify_step + 1;
-        if (n_pos >= omp_get_max_threads()) {
-            #pragma omp parallel for
+#ifdef _OPENMP
+        if (parallel_threads > 1) {
+            if (simplify_step != 1) Rcomm = 0;
+            int n_pos = (iL_max + simplify_step - 1) / simplify_step + 1;
+            #pragma omp parallel for num_threads(parallel_threads)
             for (int pos = 0; pos < n_pos; pos++) {
                 int ii = pos * simplify_step;
                 if (ii > iL_max) ii = iL_max;
@@ -344,20 +345,15 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
                     local_d0_search, score_sum_method, Lnorm, score_d8, d0, n_it,
                     false, score_max, t0, u0);
             }
-        } else {
+        } else
+#endif
+        {
             tmscore_search_serial(r1, r2, xtm, ytm, xt,
                 Lali, L_frag, iL_max, simplify_step,
                 local_d0_search, score_sum_method, Lnorm,
                 score_d8, d0, n_it,
                 Rcomm, false, score_max, t0, u0);
         }
-#else
-        tmscore_search_serial(r1, r2, xtm, ytm, xt,
-            Lali, L_frag, iL_max, simplify_step,
-            local_d0_search, score_sum_method, Lnorm,
-            score_d8, d0, n_it,
-            Rcomm, false, score_max, t0, u0);
-#endif
     }
     return score_max;
 }
@@ -367,7 +363,7 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, int Lali,
     Vec3& t0, RotMat& u0, int simplify_step, int score_sum_method,
-    double &Rcomm, double local_d0_search, double score_d8, double d0)
+    double &Rcomm, double local_d0_search, double score_d8, double d0, int parallel_threads = 1)
 {
     int i;
     int m;
@@ -418,10 +414,10 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
         iL_max = Lali - L_frag;
 
 #ifdef _OPENMP
-        if (simplify_step != 1) Rcomm = 0;
-        int n_pos = (iL_max + simplify_step - 1) / simplify_step + 1;
-        if (n_pos >= omp_get_max_threads()) {
-            #pragma omp parallel for
+        if (parallel_threads > 1) {
+            if (simplify_step != 1) Rcomm = 0;
+            int n_pos = (iL_max + simplify_step - 1) / simplify_step + 1;
+            #pragma omp parallel for num_threads(parallel_threads)
             for (int pos = 0; pos < n_pos; pos++) {
                 int ii = pos * simplify_step;
                 if (ii > iL_max) ii = iL_max;
@@ -429,20 +425,15 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
                     local_d0_search, score_sum_method, 0.0, score_d8, d0, n_it,
                     true, score_max, t0, u0);
             }
-        } else {
+        } else
+#endif
+        {
             tmscore_search_serial(r1, r2, xtm, ytm, xt,
                 Lali, L_frag, iL_max, simplify_step,
                 local_d0_search, score_sum_method, 0.0,
                 score_d8, d0, n_it,
                 Rcomm, true, score_max, t0, u0);
         }
-#else
-        tmscore_search_serial(r1, r2, xtm, ytm, xt,
-            Lali, L_frag, iL_max, simplify_step,
-            local_d0_search, score_sum_method, 0.0,
-            score_d8, d0, n_it,
-            Rcomm, true, score_max, t0, u0);
-#endif
     }
     return score_max;
 }
@@ -460,7 +451,7 @@ inline double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& invmap0, Vec3& t, RotMat& u, int simplify_step,
     int score_sum_method, double local_d0_search, double Lnorm,
-    double score_d8, double d0)
+    double score_d8, double d0, int parallel_threads = 1)
 {
     int i,j,k;
     double tmscore, rmsd;
@@ -485,7 +476,7 @@ inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
     int simplify_step, int score_sum_method, double local_d0_search,
-    const bool& bNormalize, double Lnorm, double score_d8, double d0)
+    const bool& bNormalize, double Lnorm, double score_d8, double d0, int parallel_threads = 1)
 {
     int i,j,k;
     double tmscore, rmsd;
@@ -3037,7 +3028,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0)
+    Vec3& t0, RotMat& u0, int parallel_threads = 1)
 {
     int i;
     double TM;
@@ -3220,7 +3211,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0)
+    Vec3& t0, RotMat& u0, int parallel_threads = 1)
 {
     double TM;
 
@@ -3261,18 +3252,16 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     RotMat best_u = u;
     int minlen2 = minlen;
 
-    #pragma omp parallel for num_threads(2) schedule(static,1)
+    #pragma omp parallel for num_threads(min(parallel_threads, 2)) schedule(static,1)
     for (int sid = 1; sid < 3; sid++) {
         std::vector<int> inv_l(ylen + 1, -1);
         Vec3 t_l = {0, 0, 0};
         RotMat u_l = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
         CharMatrix path_l(xlen + 1, std::vector<char>(ylen + 1, 0));
         DoubleMatrix val_l(xlen + 1, std::vector<double>(ylen + 1, 0));
-        DoubleMatrix score_l(xlen + 1, std::vector<double>(ylen + 1, 0));
         CoordArray r1_l(minlen2), r2_l(minlen2),
             xtm_l(minlen2), ytm_l(minlen2), xt_l(xlen);
         double local_best = -1;
-        (void)score_l;
 
         if (sid == 1) {
             // Strategy 2: secondary structure
@@ -3317,22 +3306,21 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     // Phase 2b: Strategies 4-5 (parallel, 2 threads)
     //   Strategy 4 reads best_inv (best from Phase 1 + Phase 2a)
     // ================================================================
-    #pragma omp parallel for num_threads(2) schedule(static,1)
+    #pragma omp parallel for num_threads(min(parallel_threads, 2)) schedule(static,1)
     for (int sid = 3; sid < 5; sid++) {
         std::vector<int> inv_l(ylen + 1, -1);
         Vec3 t_l = {0, 0, 0};
         RotMat u_l = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
         CharMatrix path_l(xlen + 1, std::vector<char>(ylen + 1, 0));
         DoubleMatrix val_l(xlen + 1, std::vector<double>(ylen + 1, 0));
-        DoubleMatrix score_l(xlen + 1, std::vector<double>(ylen + 1, 0));
         CoordArray r1_l(minlen2), r2_l(minlen2),
             xtm_l(minlen2), ytm_l(minlen2), xt_l(xlen);
         double local_best = -1;
-        (void)score_l;
 
         if (sid == 3) {
             // Strategy 4: SS + distance — reads best alignment so far
             {
+                DoubleMatrix score_l(xlen + 1, std::vector<double>(ylen + 1, 0));
                 std::vector<int> inv_input(ylen + 1, -1);
                 for (int i = 0; i < ylen; i++) inv_input[i] = best_inv[i];
                 get_initial_ssplus(r1_l, r2_l, score_l, path_l, val_l,
@@ -3356,7 +3344,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
             local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
                 xa_c, ya_c, xlen, ylen, inv_l, t_l, u_l,
                 simplify_step, score_sum_method, local_d0_search,
-                Lnorm, score_d8, d0);
+                Lnorm, score_d8, d0, parallel_threads);
             double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
                 path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
                 inv_l, 1, 2, 2, local_d0_search,
@@ -3410,7 +3398,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const vector<string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
+    const int mol_type, const double TMcut=-1, int parallel_threads = 1)
 {
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
@@ -3519,26 +3507,31 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
 	if (i_opt<=1)
 	{
 #ifdef _OPENMP
-	    int ret = initial_strategies_parallel(
-	        xa_c, ya_c, secx, secy, xlen, ylen, minlen,
-	        d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
-	        simplify_step, score_sum_method, local_d0_search,
-	        fast_opt, a_opt, mol_type, TMcut,
-	        invmap0, invmap, t, u, TMmax,
-	        score, path, val, xtm, ytm, xt, r1, r2,
-	        TM1, TM2, TM3, TM4, TM5, t0, u0);
-	    if (ret) { return ret; }
-#else
-	    int ret = initial_strategies_serial(
-	        xa_c, ya_c, secx, secy, xlen, ylen,
-	        d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
-	        simplify_step, score_sum_method, local_d0_search,
-	        fast_opt, a_opt, mol_type, TMcut, ddcc,
-	        invmap0, invmap, t, u, TMmax,
-	        score, path, val, xtm, ytm, xt, r1, r2,
-	        TM1, TM2, TM3, TM4, TM5, t0, u0);
-	    if (ret) { return ret; }
+	    if (parallel_threads > 1) {
+	        int ret = initial_strategies_parallel(
+	            xa_c, ya_c, secx, secy, xlen, ylen, minlen,
+	            d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
+	            simplify_step, score_sum_method, local_d0_search,
+	            fast_opt, a_opt, mol_type, TMcut,
+	            invmap0, invmap, t, u, TMmax,
+	            score, path, val, xtm, ytm, xt, r1, r2,
+	            TM1, TM2, TM3, TM4, TM5, t0, u0,
+	            parallel_threads);
+	        if (ret) { return ret; }
+	    } else
 #endif
+	    {
+	        int ret = initial_strategies_serial(
+	            xa_c, ya_c, secx, secy, xlen, ylen,
+	            d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
+	            simplify_step, score_sum_method, local_d0_search,
+	            fast_opt, a_opt, mol_type, TMcut, ddcc,
+	            invmap0, invmap, t, u, TMmax,
+	            score, path, val, xtm, ytm, xt, r1, r2,
+	            TM1, TM2, TM3, TM4, TM5, t0, u0,
+	            parallel_threads);
+	        if (ret) { return ret; }
+	    }
 	}
     //************************************************//
     //    get initial alignment from user's input:    //
