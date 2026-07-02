@@ -4,6 +4,10 @@
 #include "SOIalign.h"
 #include "flexalign.h"
 
+// Minimum monomer count for MMdock pair-level parallelism.
+// Below this threshold, OpenMP overhead outweighs the benefit.
+#define MMDOCK_PARALLEL_MIN  16
+
 using namespace std;
 
 void print_version(std::ostream& os = std::cout)
@@ -659,14 +663,14 @@ inline void run_mmdock_parallel(
     int trim_chain_count,
     int parallel_threads = 1)
 {
-    #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
+    #pragma omp parallel for schedule(dynamic, 1) num_threads(parallel_threads)
     for (int i = 0; i < chain1_num; i++)
     {
         int xlen = xlen_vec[i];
         if (xlen < 3)
         {
             for (int j = 0; j < chain2_num; j++)
-                TMave_mat[i][j] = -1;   // 无对称写入
+                TMave_mat[i][j] = -1;   // no symmetric write
             continue;
         }
 
@@ -678,7 +682,7 @@ inline void run_mmdock_parallel(
 
         for (int j = 0; j < chain2_num; j++)
         {
-            // 分子类型检查（禁止蛋白-RNA比对）
+            // Skip protein-RNA cross-type alignment
             if (mol_vec1[i] * mol_vec2[j] < 0)
             {
                 TMave_mat[i][j] = -1;
@@ -701,7 +705,6 @@ inline void run_mmdock_parallel(
             int Lnorm_tmp = len_aa;
             if (mol_vec1[i] + mol_vec2[j] > 0) Lnorm_tmp = len_na;
 
-            // 每对(i,j)的 TMalign_main 局部变量
             Vec3 t0; RotMat u0;
             double TM1, TM2, TM3, TM4, TM5;
             double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
@@ -715,7 +718,7 @@ inline void run_mmdock_parallel(
             // entry function for structure alignment
             if (trim_chain_count && ylen_trim_vec[j] < ylen)
             {
-                // ---- trimComplex 分支 ----
+                // ---- trimComplex branch ----
                 int ylen_trim = ylen_trim_vec[j];
                 CoordArray ya_trim(ylen_trim);
                 string seqy_trim, secy_trim;
@@ -770,7 +773,7 @@ inline void run_mmdock_parallel(
                     mol_vec1[i] + mol_vec2[j], TMcut);
             }
 
-            // 存储结果（仅矩形下标，无对称写入）
+            // Store result (rectangular matrix, no symmetric write)
             seqxA_mat[i][j] = seqxA;
             seqyA_mat[i][j] = seqyA;
             TMave_mat[i][j] = TM4 * Lnorm_tmp;
@@ -1906,12 +1909,14 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     std::string secy_trim;           // for the secondary structure
     CoordArray xt;
 
-    // auto-enable fast mode (必须在并行前执行，保证两路径一致)
+    // Auto-enable fast mode BEFORE parallel entry to keep both paths consistent
     if (len_aa + len_na > 500) fast_opt = true;
 
     bool mmdock_parallel_done = false;
 #ifdef _OPENMP
-    if (parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1)) {
+    bool mmdock_parallel_eligible = (parallel_threads > 1 &&
+        chain1_num >= MMDOCK_PARALLEL_MIN);
+    if (mmdock_parallel_eligible) {
         run_mmdock_parallel(
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, xlen_vec, ylen_vec,
@@ -1924,6 +1929,11 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             trim_chain_count,
             parallel_threads);
         mmdock_parallel_done = true;
+    } else if (parallel_threads > 1) {
+        std::cerr << "Warning: monomer count (" << chain1_num
+                  << ") below minimum threshold (" << MMDOCK_PARALLEL_MIN
+                  << ") for parallel processing. Falling back to serial."
+                  << std::endl;
     }
 #endif
     if (!mmdock_parallel_done)
