@@ -637,12 +637,6 @@ void run_mmalign_parallel(
             }    }
 }
 
-// MMdock专用并行 all-against-all 比对
-// 不与 MMalign 共享实现，只做 MMdock 需要的事：
-//   - 矩形 TMave_mat[M×N]，无对称写入
-//   - 不计算 ut_mat / maxTMmono / chainmap / byresi_opt / se_opt
-//   - 支持 trimComplex（与串行路径一致）
-//   - firstprivate(sequence) 消除 data race
 inline void run_mmdock_parallel(
     const DoubleCube& xa_vec, const DoubleCube& ya_vec,
     const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
@@ -665,8 +659,7 @@ inline void run_mmdock_parallel(
     int trim_chain_count,
     int parallel_threads = 1)
 {
-    #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) \
-        firstprivate(sequence)
+    #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
     for (int i = 0; i < chain1_num; i++)
     {
         int xlen = xlen_vec[i];
@@ -722,7 +715,7 @@ inline void run_mmdock_parallel(
             // entry function for structure alignment
             if (trim_chain_count && ylen_trim_vec[j] < ylen)
             {
-                // ---- trimComplex 分支（与串行路径一致） ----
+                // ---- trimComplex 分支 ----
                 int ylen_trim = ylen_trim_vec[j];
                 CoordArray ya_trim(ylen_trim);
                 string seqy_trim, secy_trim;
@@ -730,7 +723,6 @@ inline void run_mmdock_parallel(
                 copy_chain_data(ya_trim_vec[j], seqy_trim_vec[j], secy_trim_vec[j],
                     ylen_trim, ya_trim, seqy_trim, secy_trim);
 
-                // 第一步：对裁剪后的复合物做 TMalign
                 TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -738,11 +730,10 @@ inline void run_mmdock_parallel(
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
                     0, false, true, false, fast_opt,
-                    mol_vec1[i] + mol_vec2[j], TMcut, parallel_threads);
+                    mol_vec1[i] + mol_vec2[j], TMcut);
                 seqxA.clear();
                 seqyA.clear();
 
-                // 第二步：将旋转应用到原始复合物，重新计算 TM-score
                 CoordArray xt(xlen);
                 do_rotation(xa, xt, xlen, t0, u0);
                 std::vector<int> invmap(ylen + 1);
@@ -758,7 +749,6 @@ inline void run_mmdock_parallel(
                 sequence[0] = seqxA;
                 sequence[1] = seqyA;
 
-                // 第三步：基于完整结构的最终精化
                 TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -770,7 +760,6 @@ inline void run_mmdock_parallel(
             }
             else
             {
-                // 标准 TMalign（无裁剪）
                 TMalign_main(xa, ya, seqx, seqy, secx, secy,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -1916,6 +1905,9 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     std::string seqy_trim;           // for the protein sequence
     std::string secy_trim;           // for the secondary structure
     CoordArray xt;
+
+    // auto-enable fast mode (必须在并行前执行，保证两路径一致)
+    if (len_aa + len_na > 500) fast_opt = true;
 
     bool mmdock_parallel_done = false;
 #ifdef _OPENMP
