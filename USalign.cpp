@@ -503,7 +503,7 @@ void run_mmalign_parallel(
     string secx, secy, seqx, seqy;
     CoordArray xa, ya;
 
-#pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj, j)
+#pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
     for (i=0;i<chain1_num;i++)
     {
             int Lnorm_tmp;
@@ -512,7 +512,7 @@ void run_mmalign_parallel(
             xlen=xlen_vec[i];
             if (xlen<3)
             {
-                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
                 continue;
             }
             secx.resize(xlen+1);
@@ -531,19 +531,19 @@ void run_mmalign_parallel(
 
                 if (mol_vec1[i]*mol_vec2[j]<0)
                 {
-                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
                     continue;
                 }
                 if (chainmap.size() && (!chainmap.count(i) || chainmap.find(i)->second!=j))
                 {
-                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
                     continue;
                 }
 
                 ylen=ylen_vec[j];
                 if (ylen<3)
                 {
-                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
                     continue;
                 }
                 secy.resize(ylen+1);
@@ -567,7 +567,7 @@ void run_mmalign_parallel(
                             for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++)
                                 ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
                             for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                            TMave_mat[i][j]=0; if (j<chain1_num) TMave_mat[j][i]=0;
+                            TMave_mat[i][j]=TMave_mat[j][i]=0;
                             seqM.clear(); seqxA.clear(); seqyA.clear();
                             _byresi_skip = true;
                         }
@@ -625,7 +625,7 @@ void run_mmalign_parallel(
                 seqxA_mat[i][j]=seqxA;
                 seqyA_mat[i][j]=seqyA;
                 TMave_mat[i][j]=TM4*Lnorm_tmp;
-                if (i != j && j < chain1_num) TMave_mat[j][i]=TM4*Lnorm_tmp;
+                if (i != j) TMave_mat[j][i]=TM4*Lnorm_tmp;
                 if (TMave_mat[i][j]>maxTMmono)
                 {
                     maxTMmono=TMave_mat[i][j];
@@ -637,7 +637,12 @@ void run_mmalign_parallel(
             }    }
 }
 
-// MMdock parallel wrapper — reuses run_mmalign_parallel with dummy buffers
+// MMdock专用并行 all-against-all 比对
+// 不与 MMalign 共享实现，只做 MMdock 需要的事：
+//   - 矩形 TMave_mat[M×N]，无对称写入
+//   - 不计算 ut_mat / maxTMmono / chainmap / byresi_opt / se_opt
+//   - 支持 trimComplex（与串行路径一致）
+//   - firstprivate(sequence) 消除 data race
 inline void run_mmdock_parallel(
     const DoubleCube& xa_vec, const DoubleCube& ya_vec,
     const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
@@ -648,31 +653,140 @@ inline void run_mmdock_parallel(
     vector<string>& resi_vec1, vector<string>& resi_vec2,
     DoubleMatrix& TMave_mat,
     vector<vector<string>>& seqxA_mat,
-    vector<vector<string>>& seqM_mat,
     vector<vector<string>>& seqyA_mat,
     int chain1_num, int chain2_num,
     int len_aa, int len_na,
     int outfmt_opt, double TMcut, double d0_scale,
     bool fast_opt,
+    const DoubleCube& ya_trim_vec,
+    const CharMatrix& seqy_trim_vec,
+    const CharMatrix& secy_trim_vec,
+    const vector<int>& ylen_trim_vec,
+    int trim_chain_count,
     int parallel_threads = 1)
 {
-    // Dummy buffers needed by run_mmalign_parallel but unused by MMdock post-processing
-    RotArray ut_mat_dummy;
-    ut_mat_dummy.assign(chain1_num * chain2_num, std::array<double, 12>());
-    double maxTMmono_dummy = -1;
-    int maxTMmono_i_dummy = 0, maxTMmono_j_dummy = 0;
+    #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) \
+        firstprivate(sequence)
+    for (int i = 0; i < chain1_num; i++)
+    {
+        int xlen = xlen_vec[i];
+        if (xlen < 3)
+        {
+            for (int j = 0; j < chain2_num; j++)
+                TMave_mat[i][j] = -1;   // 无对称写入
+            continue;
+        }
 
-    run_mmalign_parallel(
-        xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, xlen_vec, ylen_vec,
-        mol_vec1, mol_vec2, std::map<int,int>(), sequence,
-        resi_vec1, resi_vec2, TMave_mat, ut_mat_dummy,
-        seqxA_mat, seqM_mat, seqyA_mat,
-        maxTMmono_dummy, maxTMmono_i_dummy, maxTMmono_j_dummy,
-        chain1_num, chain2_num, len_aa, len_na,
-        outfmt_opt, 0, TMcut, d0_scale,
-        false, false, fast_opt,
-        parallel_threads);
+        CoordArray xa(xlen);
+        string seqx, secx;
+        secx.resize(xlen + 1);
+        copy_chain_data(xa_vec[i], seqx_vec[i], secx_vec[i],
+            xlen, xa, seqx, secx);
+
+        for (int j = 0; j < chain2_num; j++)
+        {
+            // 分子类型检查（禁止蛋白-RNA比对）
+            if (mol_vec1[i] * mol_vec2[j] < 0)
+            {
+                TMave_mat[i][j] = -1;
+                continue;
+            }
+
+            int ylen = ylen_vec[j];
+            if (ylen < 3)
+            {
+                TMave_mat[i][j] = -1;
+                continue;
+            }
+
+            CoordArray ya(ylen);
+            string seqy, secy;
+            secy.resize(ylen + 1);
+            copy_chain_data(ya_vec[j], seqy_vec[j], secy_vec[j],
+                ylen, ya, seqy, secy);
+
+            int Lnorm_tmp = len_aa;
+            if (mol_vec1[i] + mol_vec2[j] > 0) Lnorm_tmp = len_na;
+
+            // 每对(i,j)的 TMalign_main 局部变量
+            Vec3 t0; RotMat u0;
+            double TM1, TM2, TM3, TM4, TM5;
+            double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
+            double rmsd0 = 0.0;
+            int L_ali; double Liden = 0;
+            double TM_ali = 0, rmsd_ali = 0;
+            int n_ali = 0, n_ali8 = 0;
+            string seqM, seqxA, seqyA;
+            vector<double> do_vec;
+
+            // entry function for structure alignment
+            if (trim_chain_count && ylen_trim_vec[j] < ylen)
+            {
+                // ---- trimComplex 分支（与串行路径一致） ----
+                int ylen_trim = ylen_trim_vec[j];
+                CoordArray ya_trim(ylen_trim);
+                string seqy_trim, secy_trim;
+                secy_trim.resize(ylen_trim + 1);
+                copy_chain_data(ya_trim_vec[j], seqy_trim_vec[j], secy_trim_vec[j],
+                    ylen_trim, ya_trim, seqy_trim, secy_trim);
+
+                // 第一步：对裁剪后的复合物做 TMalign
+                TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                    seqM, seqxA, seqyA, do_vec,
+                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                    xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
+                    0, false, true, false, fast_opt,
+                    mol_vec1[i] + mol_vec2[j], TMcut, parallel_threads);
+                seqxA.clear();
+                seqyA.clear();
+
+                // 第二步：将旋转应用到原始复合物，重新计算 TM-score
+                CoordArray xt(xlen);
+                do_rotation(xa, xt, xlen, t0, u0);
+                std::vector<int> invmap(ylen + 1);
+                se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                    seqM, seqxA, seqyA, do_vec,
+                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    0, false, 2, false, mol_vec1[i] + mol_vec2[j], 1, invmap);
+
+                if (sequence.size() < 2) sequence.push_back("");
+                if (sequence.size() < 2) sequence.push_back("");
+                sequence[0] = seqxA;
+                sequence[1] = seqyA;
+
+                // 第三步：基于完整结构的最终精化
+                TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                    seqM, seqxA, seqyA, do_vec,
+                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    2, false, true, false, fast_opt,
+                    mol_vec1[i] + mol_vec2[j], TMcut);
+            }
+            else
+            {
+                // 标准 TMalign（无裁剪）
+                TMalign_main(xa, ya, seqx, seqy, secx, secy,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
+                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                    seqM, seqxA, seqyA, do_vec,
+                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    0, false, true, false, fast_opt,
+                    mol_vec1[i] + mol_vec2[j], TMcut);
+            }
+
+            // 存储结果（仅矩形下标，无对称写入）
+            seqxA_mat[i][j] = seqxA;
+            seqyA_mat[i][j] = seqyA;
+            TMave_mat[i][j] = TM4 * Lnorm_tmp;
+        }
+    }
 }
 
 int TMalign(string &xname, string &yname, const string &fname_super,
@@ -1811,9 +1925,11 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             secx_vec, secy_vec, xlen_vec, ylen_vec,
             mol_vec1, mol_vec2, sequence,
             resi_vec1, resi_vec2, TMave_mat,
-            seqxA_mat, seqM_mat, seqyA_mat,
+            seqxA_mat, seqyA_mat,
             chain1_num, chain2_num, len_aa, len_na,
             outfmt_opt, TMcut, d0_scale, fast_opt,
+            ya_trim_vec, seqy_trim_vec, secy_trim_vec, ylen_trim_vec,
+            trim_chain_count,
             parallel_threads);
         mmdock_parallel_done = true;
     }
