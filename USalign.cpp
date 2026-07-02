@@ -1277,8 +1277,6 @@ int MMalign(const string &xname, const string &yname,
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
-        
-        
         do_vec.clear();
 
         DoubleCube().swap(xa_vec); // structure of complex1
@@ -1337,166 +1335,161 @@ int MMalign(const string &xname, const string &yname,
 #endif  // _OPENMP
 
     if (!parallel_done)
-    for (i=0;i<chain1_num;i++)
     {
-        xlen=xlen_vec[i];
-        if (xlen<3)
+        for (i=0;i<chain1_num;i++)
         {
-            for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-            continue;
-        }
-        secx.resize(xlen+1);
-        xa.resize(xlen);
-        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,secx);
-
-        for (j=0;j<chain2_num;j++)
-        {
-            ut_idx=i*chain2_num+j;
-            for (ui=0;ui<4;ui++)
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
-            ut_mat[ut_idx][0]=1;
-            ut_mat[ut_idx][4]=1;
-            ut_mat[ut_idx][8]=1;
-
-            if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+            xlen=xlen_vec[i];
+            if (xlen<3)
             {
-                TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                 continue;
             }
-            if (chainmap.size() && (!chainmap.count(i) || chainmap[i]!=j))
-            {
-                TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-                continue;
-            }
+            secx.resize(xlen+1);
+            xa.resize(xlen);
+            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+                xlen,xa,seqx,secx);
 
-            ylen=ylen_vec[j];
-            if (ylen<3)
+            for (j=0;j<chain2_num;j++)
             {
-                TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-                continue;
-            }
-            secy.resize(ylen+1);
-            ya.resize(ylen);
-            copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,secy);
+                ut_idx=i*chain2_num+j;
+                for (ui=0;ui<4;ui++)
+                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
+                ut_mat[ut_idx][0]=1;
+                ut_mat[ut_idx][4]=1;
+                ut_mat[ut_idx][8]=1;
 
-            // declare variable specific to this pair of TMalign
-            Vec3 t0;
-            RotMat u0;
-            double TM1;
-            double TM2;
-            double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0;
-            double TM_0;
-            double d0A;
-            double d0B;
-            double d0u;
-            double d0a;
-            double d0_out=5.0;
-            string seqM, seqxA, seqyA;// for output alignment
-            double rmsd0 = 0.0;
-            int L_ali;                // Aligned length in standard_TMscore
-            double Liden=0;
-            double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-            int n_ali=0;
-            int n_ali8=0;
-            vector<double> do_vec;
-
-            int Lnorm_tmp=len_aa;
-            if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
-            
-            if (byresi_opt)
-            {
-                int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
-                    resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
-                seqxA_mat[i][j]=sequence[0];
-                seqyA_mat[i][j]=sequence[1];
-                if (total_aln>xlen+ylen-3)
+                if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
                 {
-                    for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) 
-                        ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                    TMave_mat[i][j]=0; if (j<chain1_num) TMave_mat[j][i]=0;
-                    seqM.clear();
-                    seqxA.clear();
-                    seqyA.clear();
-
-                    
+                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
                     continue;
                 }
-            }
+                if (chainmap.size() && (!chainmap.count(i) || chainmap[i]!=j))
+                {
+                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                    continue;
+                }
 
-            // entry function for structure alignment
-            if (se_opt)
-            {
-                std::vector<int> invmap(ylen+1);
-                u0[0][0]=u0[1][1]=u0[2][2]=1;
-                u0[0][1]=         u0[0][2]=
-                u0[1][0]=         u0[1][2]=
-                u0[2][0]=         u0[2][1]=
-                t0[0]   =t0[1]   =t0[2]   =0;
-                se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                ylen=ylen_vec[j];
+                if (ylen<3)
+                {
+                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
+                    continue;
+                }
+                secy.resize(ylen+1);
+                ya.resize(ylen);
+                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                    ylen,ya,seqy,secy);
+
+                // declare variable specific to this pair of TMalign
+                Vec3 t0;
+                RotMat u0;
+                double TM1;
+                double TM2;
+                double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
+                double d0_0;
+                double TM_0;
+                double d0A;
+                double d0B;
+                double d0u;
+                double d0a;
+                double d0_out=5.0;
+                string seqM, seqxA, seqyA;// for output alignment
+                double rmsd0 = 0.0;
+                int L_ali;                // Aligned length in standard_TMscore
+                double Liden=0;
+                double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
+                int n_ali=0;
+                int n_ali8=0;
+                vector<double> do_vec;
+
+                int Lnorm_tmp=len_aa;
+                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+                
+                if (byresi_opt)
+                {
+                    int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
+                        resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
+                    seqxA_mat[i][j]=sequence[0];
+                    seqyA_mat[i][j]=sequence[1];
+                    if (total_aln>xlen+ylen-3)
+                    {
+                        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) 
+                            ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
+                        for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
+                        TMave_mat[i][j]=0; if (j<chain1_num) TMave_mat[j][i]=0;
+                        seqM.clear();
+                        seqxA.clear();
+                        seqyA.clear();
+
+                        
+                        continue;
+                    }
+                }
+
+                // entry function for structure alignment
+                if (se_opt)
+                {
+                    std::vector<int> invmap(ylen+1);
+                    u0[0][0]=u0[1][1]=u0[2][2]=1;
+                    u0[0][1]=         u0[0][2]=
+                    u0[1][0]=         u0[1][2]=
+                    u0[2][0]=         u0[2][1]=
+                    t0[0]   =t0[1]   =t0[2]   =0;
+                    se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        i_opt, false, true, false,
+                        mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
+                    if (outfmt_opt>=2) 
+                    {
+                        Liden=L_ali=0;
+                        int r1;
+                        int r2;
+                        for (r2=0;r2<ylen;r2++)
+                        {
+                            r1=invmap[r2];
+                            if (r1<0) continue;
+                            L_ali+=1;
+                            Liden+=(seqx[r1]==seqy[r2]);
+                        }
+                    }
+                }
+                else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+                    t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    i_opt, false, true, false,
-                    mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
-                if (outfmt_opt>=2) 
+                    i_opt, false, true, false, fast_opt,
+                    mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
+
+                // store result
+                for (ui=0;ui<3;ui++)
+                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
+                for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
+                seqxA_mat[i][j]=seqxA;
+                seqyA_mat[i][j]=seqyA;
+                TMave_mat[i][j]=TM4*Lnorm_tmp;
+                    if (i != j && j < chain1_num) TMave_mat[j][i]=TM4*Lnorm_tmp;
+                if (TMave_mat[i][j]>maxTMmono)
                 {
-                    Liden=L_ali=0;
-                    int r1;
-                    int r2;
-                    for (r2=0;r2<ylen;r2++)
-                    {
-                        r1=invmap[r2];
-                        if (r1<0) continue;
-                        L_ali+=1;
-                        Liden+=(seqx[r1]==seqy[r2]);
-                    }
+                    maxTMmono=TMave_mat[i][j];
+                    maxTMmono_i=i;
+                    maxTMmono_j=j;
                 }
 
+                // clean up
+                seqM.clear();
+                seqxA.clear();
+                seqyA.clear();
+                do_vec.clear();
             }
-            else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                i_opt, false, true, false, fast_opt,
-                mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
-
-            // store result
-            for (ui=0;ui<3;ui++)
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
-            for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
-            seqxA_mat[i][j]=seqxA;
-            seqyA_mat[i][j]=seqyA;
-            TMave_mat[i][j]=TM4*Lnorm_tmp;
-                if (i != j && j < chain1_num) TMave_mat[j][i]=TM4*Lnorm_tmp;
-            if (TMave_mat[i][j]>maxTMmono)
-            {
-                maxTMmono=TMave_mat[i][j];
-                maxTMmono_i=i;
-                maxTMmono_j=j;
-            }
-
-            // clean up
-            seqM.clear();
-            seqxA.clear();
-            seqyA.clear();
-
-            
-            do_vec.clear();
         }
-
-        
     }
 
     // calculate initial chain-chain assignment
-
-
     std::vector<int> assign1_list(chain1_num);
     std::vector<int> assign2_list(chain2_num);
     double total_score=enhanced_greedy_search(TMave_mat, assign1_list,
@@ -1702,9 +1695,6 @@ int MMalign(const string &xname, const string &yname,
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
     vector<string>().swap(tmp_str_vec);
-
-
-
     vector<vector<string> >().swap(seqxA_init);
     vector<vector<string> >().swap(seqyA_init);
 
@@ -2373,12 +2363,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
-
-            
             do_vec.clear();
         }
-
-        
     }
 
     // representative related variables
@@ -2390,7 +2376,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<string>yname_vec;
     std::vector<double> TMave_list(chain_num);
 
-std::vector<int> assign_list(chain_num);
+    std::vector<int> assign_list(chain_num);
     vector<string> msa(ylen,""); // row is position along msa; column is sequence
 
     int compare_num;
@@ -2521,7 +2507,7 @@ std::vector<int> assign_list(chain_num);
             // entry function for structure alignment
             if (se_opt)
             {
-std::vector<int> invmap(ylen+1);
+                std::vector<int> invmap(ylen+1);
                 u0[0][0]=u0[1][1]=u0[2][2]=1;
                 u0[0][1]=         u0[0][2]=
                 u0[1][0]=         u0[1][2]=
@@ -2585,10 +2571,6 @@ std::vector<int> invmap(ylen+1);
             seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-
-            
-        
-            
             do_vec.clear();
         }
         ylen = len_vec[repr_idx];
@@ -2638,7 +2620,7 @@ std::vector<int> invmap(ylen+1);
             double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
             int n_ali=0;
             int n_ali8=0;
-std::vector<int> invmap(ylen+1);
+            std::vector<int> invmap(ylen+1);
             vector<double> do_vec;
 
             se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
@@ -2707,9 +2689,6 @@ std::vector<int> invmap(ylen+1);
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
-
-            
-
             do_vec.clear();
         }
         vector<string>().swap(msa_ext);
@@ -2796,7 +2775,7 @@ std::vector<int> invmap(ylen+1);
                 double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
                 int n_ali=0;
                 int n_ali8=0;
-std::vector<int> invmap(ylen+1);
+                std::vector<int> invmap(ylen+1);
                 vector<double> do_vec;
 
                 se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
@@ -2846,12 +2825,9 @@ std::vector<int> invmap(ylen+1);
                 n_ali8_total+=n_ali8;
 
                 // clean up
-
                 seqM.clear();
                 seqxA.clear();
-                seqyA.clear();
-
-                
+                seqyA.clear(); 
                 do_vec.clear();
             }
             
@@ -2965,7 +2941,7 @@ std::vector<int> invmap(ylen+1);
         }
 
         //if (o_opt) output_dock(chain_list, ter_opt, split_opt,
-                //infmt_opt, atom_opt, false, ut_mat, fname_super);
+        //infmt_opt, atom_opt, false, ut_mat, fname_super);
         if (o_opt) output_mTMalign_pymol(chain_list,
             infmt_opt, ut_mat, fname_super, o_opt);
 
