@@ -4,9 +4,6 @@
 #include "SOIalign.h"
 #include "flexalign.h"
 
-// Minimum monomer count for MMdock pair-level parallelism.
-// Below this threshold, OpenMP overhead outweighs the benefit.
-#define MMDOCK_PARALLEL_MIN  16
 
 using namespace std;
 
@@ -331,156 +328,156 @@ int run_batch_parallel(
     int i, j, chain_i, chain_j;
 
 // ---- Phase 1: pre-parse all unique files, build task list ----
-            vector<ParsedChain> all_chains;
-            map<string, vector<int>> file_to_idx;
-            vector<PairTask> tasks;
-    
-            auto parse_file_into_cache = [&](const string& fname) {
-                if (file_to_idx.count(fname)) return;
-                vector<vector<string>> PDB_lines;
-                vector<int> mol_vec;
-                vector<string> chainID_list;
-                int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
-                    ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
-                    chain2parse1, model2parse1);
-                if (nchain == 0) return;
-                vector<int> indices;
-                for (int c = 0; c < nchain; c++) {
-                    int len = (int)PDB_lines[c].size();
-                    if (len < 3) { indices.push_back(-1); continue; }
-                    int idx = (int)all_chains.size();
-                    auto& chain = all_chains.emplace_back();
-                    chain.filename = fname; chain.xlen = len;
-                    chain.chainID = chainID_list[c]; chain.mol_type = mol_vec[c];
-                    chain.xa.reserve(len);
-                    string seq;
-                    chain.xlen = read_PDB(PDB_lines[c], chain.xa, seq,
-                        chain.resi_vec, read_resi);
-                    chain.seqx = seq;
-                    if (mol_vec[c] > 0)
-                        make_sec(seq, chain.xa, chain.xlen, chain.secx, atom_opt);
-                    else
-                        make_sec(chain.xa, chain.xlen, chain.secx);
-                    if (do_opt || cp_opt) chain.pdb_lines = std::move(PDB_lines[c]);
-                    else PDB_lines[c].clear();
-                    indices.push_back(idx);
-                }
-                PDB_lines.clear();
-                file_to_idx[fname] = indices;
-            };
-    
-            for (i = 0; i < (int)chain1_list.size(); i++) {
-                parse_file_into_cache(chain1_list[i]);
-                auto& c1_indices = file_to_idx[chain1_list[i]];
-                for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
-                    int c1_idx = c1_indices[chain_i];
-                    if (c1_idx < 0) continue;
-                    for (j = (dir_opt.size()>0)*(i+1); j < (int)chain2_list.size(); j++) {
-                        if (dirpair_opt.size() && j != i) continue;
-                        parse_file_into_cache(chain2_list[j]);
-                        auto& c2_indices = file_to_idx[chain2_list[j]];
-                        for (int c2_i = 0; c2_i < (int)c2_indices.size(); c2_i++) {
-                            int c2_idx = c2_indices[c2_i];
-                            if (c2_idx < 0) continue;
-                            tasks.push_back({c1_idx, c2_idx, (int)tasks.size()});
-                        }
-                    }
-                }
-            }
-    
-            // ---- Phase 2: parallel pair processing ----
-            vector<string> out_lines(tasks.size());
-            #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
-            for (int t = 0; t < (int)tasks.size(); t++) {
-                auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
-                auto& c2 = all_chains[task.chain2_idx];
-                CoordArray xa_c = c1.xa; CoordArray ya_c = c2.xa;
-                Vec3 t0; RotMat u0;
-                double TM1, TM2, TM3, TM4, TM5;
-                double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
-                string seqM, seqxA, seqyA; vector<double> do_vec;
-                double rmsd0 = 0.0; int L_ali = 0; double Liden = 0;
-                double TM_ali = 0, rmsd_ali = 0; int n_ali = 0, n_ali8 = 0;
-                bool force_fast = (min(c1.xlen, c2.xlen) > 1500) ? true : fast_opt;
-    
-                if (cp_opt) {
-                    CPalign_main(xa_c, ya_c, c1.seqx, c2.seqx, c1.secx, c2.secx,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt, force_fast,
-                        c1.mol_type + c2.mol_type, TMcut);
-                } else if (se_opt) {
-                    vector<int> invmap(c2.xlen + 1, -1);
-                    u0[0][0]=u0[1][1]=u0[2][2]=1;
-                    u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
-                    t0[0]=t0[1]=t0[2]=0;
-                    se_main(xa_c, ya_c, c1.seqx, c2.seqx,
-                        TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt,
-                        c1.mol_type + c2.mol_type, outfmt_opt, invmap);
-                    if (outfmt_opt >= 2) {
-                        Liden = L_ali = 0;
-                        for (int r2 = 0; r2 < c2.xlen; r2++) {
-                            int r1 = invmap[r2]; if (r1 < 0) continue;
-                            L_ali++; Liden += (c1.seqx[r1] == c2.seqx[r2]);
-                        }
-                    }
-                } else {
-                    TMalign_main(xa_c, ya_c, c1.seqx, c2.seqx, c1.secx, c2.secx,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt, force_fast,
-                        c1.mol_type + c2.mol_type, TMcut);
-                }
-    
-                stringstream ss;
-                string xname_out = c1.filename.substr(
-                    dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
-                string yname_out = c2.filename.substr(
-                    dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
-    
-                if (outfmt_opt == 0) print_version(ss);
-    
-                int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
-                bool after_cp = false;
-                if (cp_opt) after_cp = output_cp(xname_out, yname_out,
-                    seqxA, seqyA, outfmt_opt, left_num, right_num,
-                    left_aln_num, right_aln_num, ss);
-    
-                output_results(xname_out, yname_out,
-                    c1.chainID, c2.chainID,
-                    c1.xlen, c2.xlen, t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    rmsd0, d0_out, seqM, seqxA, seqyA, Liden,
-                    n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
-                    d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
-                    (m_opt?fname_matrix:"").c_str(),
-                    outfmt_opt, ter_opt, false, split_opt, o_opt,
-                    fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
-                    c1.resi_vec, c2.resi_vec, ss);
-    
-                if (do_opt || (cp_opt && outfmt_opt <= 0))
-                    output_do_block(ss, seqxA, seqyA,
-                        c1.pdb_lines, c2.pdb_lines, do_vec, right_num);
-    
-                out_lines[task.order] = ss.str();
-            }
-    
-            // ---- Phase 3: serial output in original order ----
-            for (int t = 0; t < (int)tasks.size(); t++)
-                std::cout << out_lines[t];
-    
-            return 0;
+    vector<ParsedChain> all_chains;
+    map<string, vector<int>> file_to_idx;
+    vector<PairTask> tasks;
+
+    auto parse_file_into_cache = [&](const string& fname) {
+        if (file_to_idx.count(fname)) return;
+        vector<vector<string>> PDB_lines;
+        vector<int> mol_vec;
+        vector<string> chainID_list;
+        int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
+            ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
+            chain2parse1, model2parse1);
+        if (nchain == 0) return;
+        vector<int> indices;
+        for (int c = 0; c < nchain; c++) {
+            int len = (int)PDB_lines[c].size();
+            if (len < 3) { indices.push_back(-1); continue; }
+            int idx = (int)all_chains.size();
+            auto& chain = all_chains.emplace_back();
+            chain.filename = fname; chain.xlen = len;
+            chain.chainID = chainID_list[c]; chain.mol_type = mol_vec[c];
+            chain.xa.reserve(len);
+            string seq;
+            chain.xlen = read_PDB(PDB_lines[c], chain.xa, seq,
+                chain.resi_vec, read_resi);
+            chain.seqx = seq;
+            if (mol_vec[c] > 0)
+                make_sec(seq, chain.xa, chain.xlen, chain.secx, atom_opt);
+            else
+                make_sec(chain.xa, chain.xlen, chain.secx);
+            if (do_opt || cp_opt) chain.pdb_lines = std::move(PDB_lines[c]);
+            else PDB_lines[c].clear();
+            indices.push_back(idx);
         }
+        PDB_lines.clear();
+        file_to_idx[fname] = indices;
+    };
+
+    for (i = 0; i < (int)chain1_list.size(); i++) {
+        parse_file_into_cache(chain1_list[i]);
+        auto& c1_indices = file_to_idx[chain1_list[i]];
+        for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
+            int c1_idx = c1_indices[chain_i];
+            if (c1_idx < 0) continue;
+            for (j = (dir_opt.size()>0)*(i+1); j < (int)chain2_list.size(); j++) {
+                if (dirpair_opt.size() && j != i) continue;
+                parse_file_into_cache(chain2_list[j]);
+                auto& c2_indices = file_to_idx[chain2_list[j]];
+                for (int c2_i = 0; c2_i < (int)c2_indices.size(); c2_i++) {
+                    int c2_idx = c2_indices[c2_i];
+                    if (c2_idx < 0) continue;
+                    tasks.push_back({c1_idx, c2_idx, (int)tasks.size()});
+                }
+            }
+        }
+    }
+
+    // ---- Phase 2: parallel pair processing ----
+    vector<string> out_lines(tasks.size());
+    #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
+    for (int t = 0; t < (int)tasks.size(); t++) {
+        auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
+        auto& c2 = all_chains[task.chain2_idx];
+        CoordArray xa_c = c1.xa; CoordArray ya_c = c2.xa;
+        Vec3 t0; RotMat u0;
+        double TM1, TM2, TM3, TM4, TM5;
+        double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
+        string seqM, seqxA, seqyA; vector<double> do_vec;
+        double rmsd0 = 0.0; int L_ali = 0; double Liden = 0;
+        double TM_ali = 0, rmsd_ali = 0; int n_ali = 0, n_ali8 = 0;
+        bool force_fast = (min(c1.xlen, c2.xlen) > 1500) ? true : fast_opt;
+
+        if (cp_opt) {
+            CPalign_main(xa_c, ya_c, c1.seqx, c2.seqx, c1.secx, c2.secx,
+                t0, u0, TM1, TM2, TM3, TM4, TM5,
+                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                seqM, seqxA, seqyA, do_vec,
+                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
+                i_opt, a_opt, u_opt, d_opt, force_fast,
+                c1.mol_type + c2.mol_type, TMcut);
+        } else if (se_opt) {
+            vector<int> invmap(c2.xlen + 1, -1);
+            u0[0][0]=u0[1][1]=u0[2][2]=1;
+            u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
+            t0[0]=t0[1]=t0[2]=0;
+            se_main(xa_c, ya_c, c1.seqx, c2.seqx,
+                TM1, TM2, TM3, TM4, TM5,
+                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                seqM, seqxA, seqyA, do_vec,
+                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
+                i_opt, a_opt, u_opt, d_opt,
+                c1.mol_type + c2.mol_type, outfmt_opt, invmap);
+            if (outfmt_opt >= 2) {
+                Liden = L_ali = 0;
+                for (int r2 = 0; r2 < c2.xlen; r2++) {
+                    int r1 = invmap[r2]; if (r1 < 0) continue;
+                    L_ali++; Liden += (c1.seqx[r1] == c2.seqx[r2]);
+                }
+            }
+        } else {
+            TMalign_main(xa_c, ya_c, c1.seqx, c2.seqx, c1.secx, c2.secx,
+                t0, u0, TM1, TM2, TM3, TM4, TM5,
+                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                seqM, seqxA, seqyA, do_vec,
+                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
+                i_opt, a_opt, u_opt, d_opt, force_fast,
+                c1.mol_type + c2.mol_type, TMcut);
+        }
+
+        stringstream ss;
+        string xname_out = c1.filename.substr(
+            dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
+        string yname_out = c2.filename.substr(
+            dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
+
+        if (outfmt_opt == 0) print_version(ss);
+
+        int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
+        bool after_cp = false;
+        if (cp_opt) after_cp = output_cp(xname_out, yname_out,
+            seqxA, seqyA, outfmt_opt, left_num, right_num,
+            left_aln_num, right_aln_num, ss);
+
+        output_results(xname_out, yname_out,
+            c1.chainID, c2.chainID,
+            c1.xlen, c2.xlen, t0, u0, TM1, TM2, TM3, TM4, TM5,
+            rmsd0, d0_out, seqM, seqxA, seqyA, Liden,
+            n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
+            d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
+            (m_opt?fname_matrix:"").c_str(),
+            outfmt_opt, ter_opt, false, split_opt, o_opt,
+            fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+            c1.resi_vec, c2.resi_vec, ss);
+
+        if (do_opt || (cp_opt && outfmt_opt <= 0))
+            output_do_block(ss, seqxA, seqyA,
+                c1.pdb_lines, c2.pdb_lines, do_vec, right_num);
+
+        out_lines[task.order] = ss.str();
+    }
+
+    // ---- Phase 3: serial output in original order ----
+    for (int t = 0; t < (int)tasks.size(); t++)
+        std::cout << out_lines[t];
+
+    return 0;
+}
 
 void run_mmalign_parallel(
     const DoubleCube& xa_vec, const DoubleCube& ya_vec,
@@ -762,7 +759,7 @@ inline void run_mmdock_parallel(
                     mol_vec1[i] + mol_vec2[j], TMcut);
             }
             else
-            {
+            {    // ---- no trimComplex branch ----
                 TMalign_main(xa, ya, seqx, seqy, secx, secy,
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
@@ -1856,10 +1853,6 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
-        
-        
-
-
         do_vec.clear();
 
         DoubleCube().swap(xa_vec); // structure of complex1
@@ -1914,9 +1907,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
     bool mmdock_parallel_done = false;
 #ifdef _OPENMP
-    bool mmdock_parallel_eligible = (parallel_threads > 1 &&
-        chain1_num >= MMDOCK_PARALLEL_MIN);
-    if (mmdock_parallel_eligible) {
+    if (parallel_threads > 1 && chain1_num > 1) {
         run_mmdock_parallel(
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, xlen_vec, ylen_vec,
@@ -1929,147 +1920,136 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             trim_chain_count,
             parallel_threads);
         mmdock_parallel_done = true;
-    } else if (parallel_threads > 1) {
-        std::cerr << "Warning: monomer count (" << chain1_num
-                  << ") below minimum threshold (" << MMDOCK_PARALLEL_MIN
-                  << ") for parallel processing. Falling back to serial."
-                  << std::endl;
     }
 #endif
     if (!mmdock_parallel_done)
-    // get all-against-all alignment
-    if (len_aa+len_na>500) fast_opt=true;
-    for (i=0;i<chain1_num;i++)
     {
-        xlen=xlen_vec[i];
-        if (xlen<3)
+        for (i=0;i<chain1_num;i++)
         {
-            for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
-            continue;
-        }
-        secx.resize(xlen+1);
-        xa.clear();
-        xa.reserve(xlen);
-        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-            xlen,xa,seqx,secx);
-
-        for (j=0;j<chain2_num;j++)
-        {
-            if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+            xlen=xlen_vec[i];
+            if (xlen<3)
             {
-                TMave_mat[i][j]=-1;
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
                 continue;
             }
+            secx.resize(xlen+1);
+            xa.clear();
+            xa.reserve(xlen);
+            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+                xlen,xa,seqx,secx);
 
-            ylen=ylen_vec[j];
-            if (ylen<3)
+            for (j=0;j<chain2_num;j++)
             {
-                TMave_mat[i][j]=-1;
-                continue;
-            }
-            secy.resize(ylen+1);
-            ya.clear();
-            ya.reserve(ylen);
-            copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                ylen,ya,seqy,secy);
+                if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+                {
+                    TMave_mat[i][j]=-1;
+                    continue;
+                }
 
-            // declare variable specific to this pair of TMalign
-            Vec3 t0;
-            RotMat u0;
-            double TM1;
-            double TM2;
-            double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0;
-            double TM_0;
-            double d0A;
-            double d0B;
-            double d0u;
-            double d0a;
-            double d0_out=5.0;
-            string seqM, seqxA, seqyA;// for output alignment
-            double rmsd0 = 0.0;
-            int L_ali;                // Aligned length in standard_TMscore
-            double Liden=0;
-            double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-            int n_ali=0;
-            int n_ali8=0;
-            vector<double> do_vec;
+                ylen=ylen_vec[j];
+                if (ylen<3)
+                {
+                    TMave_mat[i][j]=-1;
+                    continue;
+                }
+                secy.resize(ylen+1);
+                ya.clear();
+                ya.reserve(ylen);
+                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                    ylen,ya,seqy,secy);
 
-            int Lnorm_tmp=len_aa;
-            if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+                // declare variable specific to this pair of TMalign
+                Vec3 t0;
+                RotMat u0;
+                double TM1;
+                double TM2;
+                double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
+                double d0_0;
+                double TM_0;
+                double d0A;
+                double d0B;
+                double d0u;
+                double d0a;
+                double d0_out=5.0;
+                string seqM, seqxA, seqyA;// for output alignment
+                double rmsd0 = 0.0;
+                int L_ali;                // Aligned length in standard_TMscore
+                double Liden=0;
+                double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
+                int n_ali=0;
+                int n_ali8=0;
+                vector<double> do_vec;
 
-            // entry function for structure alignment
-            if (trim_chain_count && ylen_trim_vec[j]<ylen)
-            {
-                ylen_trim = ylen_trim_vec[j];
-                secy_trim.resize(ylen_trim+1);
-                ya_trim.clear();
-                ya_trim.reserve(ylen_trim);
-                copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
-                    ylen_trim,ya_trim,seqy_trim,secy_trim);
-                TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                    seqM, seqxA, seqyA, do_vec,
-                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
-                    0, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
+                int Lnorm_tmp=len_aa;
+                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+
+                // entry function for structure alignment
+                if (trim_chain_count && ylen_trim_vec[j]<ylen)
+                {
+                    ylen_trim = ylen_trim_vec[j];
+                    secy_trim.resize(ylen_trim+1);
+                    ya_trim.clear();
+                    ya_trim.reserve(ylen_trim);
+                    copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
+                        ylen_trim,ya_trim,seqy_trim,secy_trim);
+                    TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
+                        0, false, true, false, fast_opt,
+                        mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
+                    seqxA.clear();
+                    seqyA.clear();
+
+                    xt.resize(xlen);
+                    do_rotation(xa, xt, xlen, t0, u0);
+                    std::vector<int> invmap(ylen+1);
+                    se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
+                        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
+
+
+                    if (sequence.size()<2) sequence.push_back("");
+                    if (sequence.size()<2) sequence.push_back("");
+                    sequence[0]=seqxA;
+                    sequence[1]=seqyA;
+                    TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        2, false, true, false, fast_opt,
+                        mol_vec1[i]+mol_vec2[j],TMcut);
+                }
+                else
+                {
+                    TMalign_main(xa, ya, seqx, seqy, secx, secy,
+                        t0, u0, TM1, TM2, TM3, TM4, TM5,
+                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                        seqM, seqxA, seqyA, do_vec,
+                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        0, false, true, false, fast_opt,
+                        mol_vec1[i]+mol_vec2[j],TMcut);
+                }
+
+                // store result
+                seqxA_mat[i][j]=seqxA;
+                seqyA_mat[i][j]=seqyA;
+                TMave_mat[i][j]=TM4*Lnorm_tmp;
+
+                // clean up
+                seqM.clear();
                 seqxA.clear();
                 seqyA.clear();
-
-                xt.resize(xlen);
-                do_rotation(xa, xt, xlen, t0, u0);
-std::vector<int> invmap(ylen+1);
-                se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-                    do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
-
-
-                if (sequence.size()<2) sequence.push_back("");
-                if (sequence.size()<2) sequence.push_back("");
-                sequence[0]=seqxA;
-                sequence[1]=seqyA;
-                TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                    seqM, seqxA, seqyA, do_vec,
-                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    2, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut);
+                do_vec.clear();
             }
-            else
-            {
-                TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                    seqM, seqxA, seqyA, do_vec,
-                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    0, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut);
-            }
-            
-            // store result
-            seqxA_mat[i][j]=seqxA;
-            seqyA_mat[i][j]=seqyA;
-            TMave_mat[i][j]=TM4*Lnorm_tmp;
-
-            // clean up
-            seqM.clear();
-            seqxA.clear();
-            seqyA.clear();
-            do_vec.clear();
-
-            
-
         }
-
-        
-
     }
     DoubleCube().swap(ya_trim_vec);
     CharMatrix().swap(seqy_trim_vec);
@@ -2077,10 +2057,8 @@ std::vector<int> invmap(ylen+1);
     vector<int> ().swap(ylen_trim_vec);
 
     // calculate initial chain-chain assignment
-
-
-std::vector<int> assign1_list(chain1_num);
-std::vector<int> assign2_list(chain2_num);
+    std::vector<int> assign1_list(chain1_num);
+    std::vector<int> assign2_list(chain2_num);
     enhanced_greedy_search(TMave_mat, assign1_list,
         assign2_list, chain1_num, chain2_num);
 
@@ -2183,12 +2161,6 @@ std::vector<int> assign2_list(chain2_num);
         seqM.clear();
         seqxA.clear();
         seqyA.clear();
-
-        
-
-
-        
-
         do_vec.clear();
     }
     if (outfmt_opt==2)
@@ -2198,7 +2170,8 @@ std::vector<int> assign2_list(chain2_num);
         TM=sqrt(TM/TM_vec.size());
         string query_name=xname;
         string template_name=yname;
-for (i=0;i<chain1_num;i++)
+
+        for (i=0;i<chain1_num;i++)
         {
             j=assign1_list[i];
             if (j<0) continue;
