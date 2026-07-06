@@ -122,6 +122,11 @@ void print_extra_help()
 "          Multiple models can be separated by commas, e.g.,\n"
 "          USalign -model1 1,2 1a03.pdb -model2 3,4 1a0n.pdb -ter 0\n"
 "\n"
+"-threads  Number of threads for OpenMP parallel execution, e.g., 1, 2, 4.\n"
+"          1: (default) sequential execution.\n"
+"          Supported in -dir, -dir1, -dir2 and -dirpair batch modes.\n"
+"          $ USalign -dir chain_folder/ chain_list -threads 4\n"
+"\n"
 "Advanced usage 1 (generate an image for a pair of superposed structures):\n"
 "    USalign 1cpc.pdb 1mba.pdb -o sup\n"
 "    pymol -c -d @sup_all_atm.pml -g sup_all_atm.png\n"
@@ -346,7 +351,8 @@ int run_batch_parallel(
             int len = (int)PDB_lines[c].size();
             if (len < 3) { indices.push_back(-1); continue; }
             int idx = (int)all_chains.size();
-            auto& chain = all_chains.emplace_back();
+            all_chains.emplace_back();
+            auto& chain = all_chains.back();
             chain.filename = fname; chain.xlen = len;
             chain.chainID = chainID_list[c]; chain.mol_type = mol_vec[c];
             chain.xa.reserve(len);

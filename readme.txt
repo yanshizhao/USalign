@@ -92,6 +92,8 @@
    2024/11/08: Add -chimerax for UCSF ChimeraX format output
    2026/03/28: Fix -mm 1 asymmetric alignment bug where oligomer alignment
 	       output depends occasionally on input file order
+   2026/07/06: Add -threads N to set number of threads for OpenMP parallel
+	       execution. For example, '-threads 4' uses 4 threads.
 ===============================================================================
 
 =========================
@@ -107,6 +109,10 @@ or
 
 The '-static' flag should be removed on Mac OS, which does not support
 building static executables. Compilation takes just a few seconds.
+
+The `make` command automatically includes the `-fopenmp` flag for OpenMP
+parallel acceleration. If compiling manually with g++, add `-fopenmp`:
+    g++ -static -O3 -ffast-math -fopenmp -lm -o USalign USalign.cpp
 
 USalign compiled on Linux, Mac OS and Linux Subsystem for Windows (WSL2) on
 Windows 10 onwards can read both uncompressed files and gz compressed
