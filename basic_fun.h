@@ -801,15 +801,20 @@ inline std::stringstream read_file_to_memory(const std::string& filename)
     if (buf.bad()) read_ok = false;
 
     if (compress_type >= COMPRESS_GZ) {
-#ifndef REDI_PSTREAM_H_SEEN
         fin_gz.close();
-#else
-        int exit_code = fin_gz.close();
-        if (exit_code != 0) {
-            std::cerr << "Warning! Decompression of " << filename
-                      << " failed (exit code " << exit_code << ")" << std::endl;
-            read_ok = false;
-            specific_warning = true;
+#ifdef REDI_PSTREAM_H_SEEN
+        {
+            // redi::ipstream::close() returns void. Get exit code from the
+            // underlying pstreambuf (via rdbuf()) to detect decompression failure.
+            const int ws = static_cast<redi::basic_pstreambuf<char>*>(
+                fin_gz.rdbuf())->status();
+            if (ws != 0) {
+                std::cerr << "Warning! Decompression of " << filename
+                          << " failed (exit code "
+                          << WEXITSTATUS(ws) << ")" << std::endl;
+                read_ok = false;
+                specific_warning = true;
+            }
         }
 #endif
     } else if (compress_type == COMPRESS_FILE) {
