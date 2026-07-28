@@ -3,6 +3,7 @@
 #include "MMalign.h"
 #include "SOIalign.h"
 #include "flexalign.h"
+#include "UPGMA.h"
 
 
 using namespace std;
@@ -160,6 +161,10 @@ void print_help(bool h_opt=false)
 "          4: MSTA, i.e., alignment of multiple monomeric chains into a\n"
 "             consensus alignment\n"
 "             $ USalign -dir chains/ list -suffix .pdb -mm 4\n"
+"             Output:\n"
+"               upgma_tree.txt     Phylogenetic tree in Newick format.\n"
+"               upgma_tree.svg     UPGMA tree visualization.\n"
+"               upgma_tree.dist    Pairwise distance matrix.\n"
 "          5: fully non-sequential (fNS) alignment\n"
 "          6: semi-non-sequential (sNS) alignment\n"
 "          To use -mm 1 or -mm 2, '-ter' option must be 0 or 1.\n"
@@ -2379,6 +2384,10 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     vector<string>xname_vec;
     for (i=0;i<chain_num;i++) xname_vec.push_back(
         chain_list[i].substr(dir_opt.size())+chainID_list[i]);
+
+    // build and output UPGMA phylogenetic tree
+    output_upgma_tree(xname_vec, TMave_mat, chain_num);
+
     vector<string>yname_vec;
     std::vector<double> TMave_list(chain_num);
 

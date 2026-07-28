@@ -246,14 +246,15 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
     
     int compress_type=0; // uncompressed file
     ifstream fin;
+#ifndef NO_PSTREAM
     redi::ipstream fin_gz; // if file is compressed
-    if (filename.size()>=3 && 
+    if (filename.size()>=3 &&
         filename.substr(filename.size()-3,3)==".gz")
     {
         fin_gz.open("gunzip -c '"+filename+"'");
         compress_type=1;
     }
-    else if (filename.size()>=4 && 
+    else if (filename.size()>=4 &&
         filename.substr(filename.size()-4,4)==".bz2")
     {
         fin_gz.open("bzcat '"+filename+"'");
@@ -264,6 +265,19 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
         if (filename=="-") compress_type=-1;
         else fin.open(filename.c_str());
     }
+#else
+    if (filename.size()>=3 &&
+        filename.substr(filename.size()-3,3)==".gz")
+        PrintErrorAndQuit("ERROR! gz file is not supported on this platform");
+    else if (filename.size()>=4 &&
+        filename.substr(filename.size()-4,4)==".bz2")
+        PrintErrorAndQuit("ERROR! bz2 file is not supported on this platform");
+    else
+    {
+        if (filename=="-") compress_type=-1;
+        else fin.open(filename.c_str());
+    }
+#endif
 
     bool loop_ = false; // not reading following content
     map<string,int> _atom_site;
@@ -282,10 +296,18 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
     stringstream i8_stream;
     map<string, string> alt_id_dict; // resi -> alt_id
     string resi_chain;
-    while ((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))
+    while (
+#ifndef NO_PSTREAM
+        (compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good())
+#else
+        (compress_type==-1)?cin.good():fin.good()
+#endif
+    )
     {
         if  (compress_type==-1) getline(cin, line);
+#ifndef NO_PSTREAM
         else if (compress_type) getline(fin_gz, line);
+#endif
         else                    getline(fin, line);
         if (line.size()==0) continue;
         if (loop_) loop_ = (line.size()>=2)?(line.compare(0,2,"# ")):(line.compare(0,1,"#"));
@@ -299,11 +321,13 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
                     if (cin.good()) getline(cin, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                 }
+#ifndef NO_PSTREAM
                 else if (compress_type)
                 {
                     if (fin_gz.good()) getline(fin_gz, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                 }
+#endif
                 else
                 {
                     if (fin.good()) getline(fin, line);
@@ -321,7 +345,9 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
             while(1)
             {
                 if  (compress_type==-1) getline(cin, line);
+#ifndef NO_PSTREAM
                 else if (compress_type) getline(fin_gz, line);
+#endif
                 else                    getline(fin, line);
                 if (line.size()==0) continue;
                 if (line.compare(0,11,"_atom_site.")) break;
@@ -468,8 +494,11 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
 
     if (compress_type>=0)
     {
+#ifndef NO_PSTREAM
         if (compress_type) fin_gz.close();
-        else               fin.close();
+        else
+#endif
+        fin.close();
     }
     line.clear();
     chainID_list.push_back("");
@@ -496,11 +525,11 @@ int main(int argc, char *argv[])
     {
         if ( string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=safe_stoi(argv[i + 1]); i++;
+            split_opt=stoi(argv[i + 1]); i++;
         }
         else if ( string(argv[i]) == "-mol" && i < (argc-1) )
         {
-            mol_opt=safe_stoi(argv[i + 1]); i++;
+            mol_opt=stoi(argv[i + 1]); i++;
         }
         else if ( string(argv[i]) == "-chain" && i < (argc-1) )
         {
@@ -508,7 +537,7 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=safe_stoi(argv[i + 1]); i++;
+            het_opt=stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];

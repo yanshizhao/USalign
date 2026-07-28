@@ -99,20 +99,29 @@
 =========================
  How to install US-align
 =========================
-To compile the program in your Linux computer, simply enter
+Note: The make command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration. 
+If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
+1. Linux / macOS
+    Compile with make (Recommended):
+        make clean
+        make
+    macOS does not support static linking. Remove the -static flag when compiling manually.
 
-    make
+    Manual compilation in bash:
+        g++ -static -O3 -ffast-math -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
 
-or
+2. Windows (MSYS2 / MinGW)
+    Compile with make:
+        mingw32-make clean
+        mingw32-make
 
-    g++ -static -O3 -ffast-math -lm -o USalign USalign.cpp
+    Manual compilation in PowerShell:
+       g++ -static -O3 -ffast-math -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
 
-The '-static' flag should be removed on Mac OS, which does not support
-building static executables. Compilation takes just a few seconds.
-
-The `make` command automatically includes the `-fopenmp` flag for OpenMP
-parallel acceleration. If compiling manually with g++, add `-fopenmp`:
-    g++ -static -O3 -ffast-math -fopenmp -lm -o USalign USalign.cpp
+Additional note:
+The -static flag enables static linking. 
+The compiled executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
+Remove -fopenmp from all manual compilation commands if parallel acceleration is not required.
 
 USalign compiled on Linux, Mac OS and Linux Subsystem for Windows (WSL2) on
 Windows 10 onwards can read both uncompressed files and gz compressed

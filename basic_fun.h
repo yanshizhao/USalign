@@ -1166,7 +1166,7 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
             }
             else
             {
-                std::cerr<<"WARNING! not a chain std::pair: "<<line<<std::endl;
+                std::cerr<<"WARNING! not a chain pair: "<<line<<std::endl;
                 for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
                 continue;
             }

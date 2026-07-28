@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 using namespace std;
 
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
         {
             start_pos=fin.tellg();
             getline(fin, line);
-            L=safe_stoi(line.c_str());
+            L=stoi(line);
             getline(fin, line);
             if (!fin.good()) break;
             for(i=0;i<line.size();i++) if(line[i]==' '||line[i]=='\t') break;
