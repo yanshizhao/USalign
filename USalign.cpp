@@ -2216,6 +2216,264 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     return 1;
 }
 
+// ============ Helper functions for ccTM-score ============
+
+//Build msa_to_res mapping: msa_to_res[i][l] = original residue index at MSA column l (-1=gap)
+static void build_msa_to_res(const vector<string>& msa_seqs, int chain_num, int msa_len, IntMatrix& msa_to_res) 
+{
+    msa_to_res.assign(chain_num, vector<int>(msa_len, -1));
+    for (int i = 0; i < chain_num; i++) 
+    {
+        int res_idx = 0;
+        for (int l = 0; l < msa_len; l++) {
+            if (msa_seqs[i][l] != '-') {
+                msa_to_res[i][l] = res_idx;
+                res_idx++;
+            }
+        }
+    }
+}
+
+//Find candidate columns: all structures have residues
+static void find_no_gap_cols(const IntMatrix& msa_to_res, int chain_num, int msa_len, vector<int>& no_gap_cols) 
+{
+    for (int l = 0; l < msa_len; l++) {
+        int count = 0;
+        for (int i = 0; i < chain_num; i++)
+            if (msa_to_res[i][l] != -1) count++;
+        if (count == chain_num)
+            no_gap_cols.push_back(l);
+    }
+}
+
+// Select reference structure (most shared columns)
+static int select_ref_struct(const IntMatrix& msa_to_res, int msa_len, int chain_num) 
+{
+    int ref_idx = 0, max_cnt = 0;
+    for (int i = 0; i < chain_num; i++) 
+    {
+        int cnt = 0;
+        for (int l = 0; l < msa_len; l++) 
+        {
+            if (msa_to_res[i][l] == -1) continue;
+            for (int k = 0; k < chain_num; k++)
+            {
+                if (k != i && msa_to_res[k][l] != -1) 
+                { 
+                    cnt++; 
+                    break; 
+                }
+            }
+        }
+        if (cnt > max_cnt) 
+        { 
+            max_cnt = cnt; 
+            ref_idx = i; 
+        }
+    }
+    return ref_idx;
+}
+
+// Coordinate re-alignment: from ua_vec to eliminate chain error
+static void align_to_ref(const DoubleCube& orig_coords, const IntMatrix& msa_to_res, const vector<int>& no_gap_cols, int chain_num, int ref_idx, vector<CoordArray>& aligned_coord) 
+{
+    aligned_coord.resize(chain_num);
+
+    // Pre-compute reference coordinates for all candidate columns
+    CoordArray ref_core_coords;
+    for (int k = 0; k < (int)no_gap_cols.size(); k++) 
+    {
+        int col_idx = no_gap_cols[k];
+        int ref_res_idx = msa_to_res[ref_idx][col_idx];
+        ref_core_coords.push_back({ { orig_coords[ref_idx][ref_res_idx][0], orig_coords[ref_idx][ref_res_idx][1], orig_coords[ref_idx][ref_res_idx][2] } });
+    }
+
+    for (int i = 0; i < chain_num; i++)
+    {
+        CoordArray cur_struct_coords;
+        for (int r = 0; r < (int)orig_coords[i].size(); r++)
+            cur_struct_coords.push_back({ { orig_coords[i][r][0], orig_coords[i][r][1], orig_coords[i][r][2] } });
+
+        if (i == ref_idx)
+        {
+            aligned_coord[i] = cur_struct_coords;
+            continue;
+        }
+
+        CoordArray cur_core_coords;
+        for (int k = 0; k < (int)no_gap_cols.size(); k++) {
+            int col_idx = no_gap_cols[k];
+            int cur_res_idx = msa_to_res[i][col_idx];
+            cur_core_coords.push_back({ { orig_coords[i][cur_res_idx][0], orig_coords[i][cur_res_idx][1], orig_coords[i][cur_res_idx][2] } });
+        }
+
+        if (cur_core_coords.size() < 4)
+        {
+            aligned_coord[i] = cur_struct_coords;
+            continue;
+        }
+        Vec3 t; RotMat u; double rms;
+        Kabsch(cur_core_coords, ref_core_coords, (int)cur_core_coords.size(), 1, rms, t, u);
+        CoordArray rotated_coords(cur_struct_coords.size());
+        do_rotation(cur_struct_coords, rotated_coords, (int)cur_struct_coords.size(), t, u);
+        aligned_coord[i] = rotated_coords;
+    }
+}
+
+//Calculate pairwise CA distances at each candidate column
+static void calc_pairwise_distances(const vector<CoordArray>& aligned_coord, const IntMatrix& msa_to_res, const vector<int>& no_gap_cols, int chain_num, int tot_num_pair, DoubleMatrix& ca_dist_matrix) 
+{
+    ca_dist_matrix.assign(tot_num_pair, vector<double>(no_gap_cols.size(), -1));
+    for (int p = 0, i = 0; i < chain_num; i++) 
+    {
+        for (int j = i + 1; j < chain_num; j++, p++) 
+        {
+            for (int k = 0; k < (int)no_gap_cols.size(); k++) 
+            {
+                int l = no_gap_cols[k];
+                if (msa_to_res[i][l] != -1 && msa_to_res[j][l] != -1) 
+                {
+                    double dx = aligned_coord[i][msa_to_res[i][l]][0] - aligned_coord[j][msa_to_res[j][l]][0];
+                    double dy = aligned_coord[i][msa_to_res[i][l]][1] - aligned_coord[j][msa_to_res[j][l]][1];
+                    double dz = aligned_coord[i][msa_to_res[i][l]][2] - aligned_coord[j][msa_to_res[j][l]][2];
+                    ca_dist_matrix[p][k] = sqrt(dx*dx + dy*dy + dz*dz);
+                }
+            }
+        }
+    }
+}
+
+//Filter Common Core columns: all pair distances <= 4.0 Å
+static void select_common_core_cols(const vector<vector<double>>& ca_dist_matrix, const vector<int>& no_gap_cols, int tot_num_pair, vector<int>& core_cols) 
+{
+    for (int k = 0; k < (int)no_gap_cols.size(); k++) 
+    {
+        bool col_pass = true;
+        for (int p = 0; p < tot_num_pair; p++) 
+        {
+            if (ca_dist_matrix[p][k] > 4.0) 
+            { 
+                col_pass = false; 
+                break; 
+            }
+        }
+        if (col_pass) core_cols.push_back(no_gap_cols[k]);
+    }
+}
+
+//Extract CC residue indices: core_res_idx[i][j] = msa_to_res[i][core_cols[j]]
+static void extract_common_core_res_idx(const IntMatrix& msa_to_res, const vector<int>& core_cols, int chain_num, IntMatrix& core_res_idx) 
+{
+    core_res_idx.assign(chain_num, vector<int>((int)core_cols.size(), -1));
+    for (int i = 0; i < chain_num; i++)
+    {
+        for (int j = 0; j < (int)core_cols.size(); j++)
+        {
+            core_res_idx[i][j] = msa_to_res[i][core_cols[j]];
+        }
+    }
+}
+
+//Calculate pairwise TM-score using only CC residues
+static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMatrix& core_res_idx, const vector<int>& core_cols, int chain_num, const vector<int>& len_vec, int mol_type) 
+{
+    double TM_sum = 0;
+    int simplify_step = 1;
+    int score_sum_method = 0;
+    double score_d8 = 0;
+    int core_col_count = (int)core_cols.size();
+
+    for (int i = 0; i < chain_num; i++) 
+    {
+        for (int j = 0; j < i; j++) 
+        {
+            CoordArray r1(core_col_count), r2(core_col_count), xtm(core_col_count), ytm(core_col_count), xt(core_col_count);
+            for (int k = 0; k < core_col_count; k++)
+            {
+                int ri = core_res_idx[i][k]; 
+                int rj = core_res_idx[j][k];
+                xtm[k][0] = orig_coords[i][ri][0]; 
+                xtm[k][1] = orig_coords[i][ri][1]; 
+                xtm[k][2] = orig_coords[i][ri][2];
+                ytm[k][0] = orig_coords[j][rj][0]; 
+                ytm[k][1] = orig_coords[j][rj][1]; 
+                ytm[k][2] = orig_coords[j][rj][2];
+            }
+
+            double pair_Lnorm = min(len_vec[i], len_vec[j]);
+            double D0_MIN, Lnorm_out, d0, d0_search;
+            parameter_set4final(pair_Lnorm, D0_MIN, Lnorm_out, d0, d0_search, mol_type);
+            Vec3 t0; 
+            RotMat u0; 
+            double rmsd;
+
+            double TM = TMscore8_search(r1, r2, xtm, ytm, xt, core_col_count,
+                t0, u0, simplify_step, score_sum_method, rmsd,
+                d0_search, pair_Lnorm, score_d8, d0);
+            TM_sum += TM;
+        }
+    }
+    return TM_sum;
+}
+
+// ============ ccTM-score calculation ============
+// Calculate average pairwise TM-score based on Common Core columns
+// @param  orig_coords     - original coordinates (for TM-score calculation)
+// @param  seqxA_mat  - pairwise alignment matrix (diagonal = MSA sequences)
+// @param  chain_num  - number of structures
+// @param  len_vec    - length of each structure
+// @param  mol_type   - molecule type (0=protein, >0=RNA)
+// @return ccTM-score (0 if no Common Core found)
+double calc_ccTM_score(
+    const DoubleCube& orig_coords,
+    const vector<vector<string>>& seqxA_mat,
+    int chain_num,
+    const vector<int>& len_vec,
+    int mol_type)
+{
+    // Extract MSA sequences from seqxA_mat diagonal
+    vector<string> msa_seqs(chain_num);
+    for (int i = 0; i < chain_num; i++) {
+        msa_seqs[i] = seqxA_mat[i][i];
+    }
+
+    // 1. Build msa_to_res: msa_to_res[struct][col] = original residue index (-1 = gap)
+    int msa_len = (int)msa_seqs[0].size();
+    IntMatrix msa_to_res;
+    build_msa_to_res(msa_seqs, chain_num, msa_len, msa_to_res);
+
+    // 2. Find no-gap columns: all structures have residues at these columns
+    vector<int> no_gap_cols;
+    find_no_gap_cols(msa_to_res, chain_num, msa_len, no_gap_cols);
+    if (no_gap_cols.empty()) return 0.0;
+
+    // 3. Re-align all structures from original coords to reference (eliminate chain error)
+    //    select_ref_struct => align_to_ref (Kabsch + do_rotation)
+    int ref_idx = select_ref_struct(msa_to_res, msa_len, chain_num);
+    vector<CoordArray> aligned_coord;
+    align_to_ref(orig_coords, msa_to_res, no_gap_cols, chain_num, ref_idx, aligned_coord);
+
+    // 4. Compute pairwise CA distances between every pair at no-gap columns
+    int tot_num_pair = chain_num * (chain_num - 1) / 2;
+    if(tot_num_pair == 0) return 0.0;
+    DoubleMatrix ca_dist_matrix;
+    calc_pairwise_distances(aligned_coord, msa_to_res, no_gap_cols, chain_num, tot_num_pair, ca_dist_matrix);
+
+    // 5. Select Common Core columns: all pairs have CA distance <= 4A
+    vector<int> core_cols;
+    select_common_core_cols(ca_dist_matrix, no_gap_cols, tot_num_pair, core_cols);
+    if (core_cols.empty()) return 0.0;
+
+    // 6. Extract original residue indices at Common Core columns
+    IntMatrix core_res_idx;
+    extract_common_core_res_idx(msa_to_res, core_cols, chain_num, core_res_idx);
+
+    // 7. Compute all pairwise TM-scores using ONLY Common Core residues, sum them
+    double TM_sum = calc_common_core_TM_sum(orig_coords, core_res_idx, core_cols, chain_num, len_vec, mol_type);
+    return TM_sum / tot_num_pair;
+}
+
+
 int mTMalign(string &xname, string &yname, const string &fname_super,
     const string &fname_matrix,
     vector<string> &sequence, double Lnorm_ass, const double d0_scale,
@@ -2253,7 +2511,8 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
         resi_vec, chain2parse, model2parse);
     int chain_num=a_vec.size();
     if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
-    if (m_opt||o_opt) for (i=0;i<chain_num;i++) ua_vec.push_back(a_vec[i]);
+    // Save original coordinates for ccTM-score calculation and -o/-m output
+    for (i=0;i<chain_num;i++) ua_vec.push_back(a_vec[i]);
     int mol_type=0;
     int total_len=0;
     xlen=0;
@@ -2906,16 +3165,19 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     buf.str(string());
     //MergeAlign(seqxA_mat,seqyA_mat,repr_idx,xname_vec,chain_num,seqM);
     if (outfmt_opt==0) print_version();
+    // calculate ccTM-score
+        double ccTM_score = calc_ccTM_score(
+            ua_vec, seqxA_mat, chain_num, len_vec, mol_type);
     output_mTMalign_results( xname,yname, "","",
-        xlen_total, ylen_total, t0, u0, TM1_total, TM2_total, 
+        xlen_total, ylen_total, t0, u0, TM1_total, TM2_total,
         TM3_total, TM4_total, TM5_total, rmsd0_total, d0_out_total,
         seqM, seqxA, seqyA, Liden_total,
         n_ali8_total, L_ali_total, TM_ali_total, rmsd_ali_total,
         TM_0_total, d0_0_total, d0A_total, d0B_total,
-        Lnorm_ass, d0_scale, d0a_total, d0u_total, 
+        Lnorm_ass, d0_scale, d0a_total, d0u_total,
         "", outfmt_opt, ter_opt, 0, split_opt, false,
         "", false, a_opt, u_opt, d_opt, false,
-        resi_vec, resi_vec );
+        resi_vec, resi_vec, ccTM_score );
 
     if (m_opt || o_opt)
     {

@@ -2814,6 +2814,7 @@ void output_mTMalign_results(const string xname, const string yname,
     const string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
     const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    const double ccTM_score,
     std::ostream& os = std::cout)
 {
     if (outfmt_opt<=0)
@@ -2829,6 +2830,8 @@ void output_mTMalign_results(const string xname, const string yname,
         if (d_opt)
             fcout(os,"Average TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
 
+        fcout(os,"ccTM-score= %6.5f\n", ccTM_score);
+
         //output alignment
         fcout(os,"In the following, seqID=n_identical/L.\n\n%s\n", seqM);
     }
@@ -2838,6 +2841,8 @@ void output_mTMalign_results(const string xname, const string yname,
 
         fcout(os,"# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
+
+        fcout(os,"# ccTM-score= %6.5f\n", ccTM_score);
 
         if (i_opt)
             fcout(os,"# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", TM_ali, L_ali, rmsd_ali);
@@ -2855,6 +2860,7 @@ void output_mTMalign_results(const string xname, const string yname,
     }
     else if (outfmt_opt==2)
     {
+        fcout(os,"# ccTM-score= %6.5f\n", ccTM_score);
         fcout(os,"%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname, chainID1, yname, chainID2,
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
