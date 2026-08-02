@@ -465,6 +465,9 @@ vector<string> clean_chain_names(const vector<string>& names)
         size_t pos = result[i].rfind(':');
         if (pos != string::npos)
             result[i] = result[i].substr(0, pos);
+        // remove leading path separator left by dir_opt="." (e.g. "/1d2na.atm")
+        if (!result[i].empty() && (result[i][0] == '/' || result[i][0] == '\\'))
+            result[i] = result[i].substr(1);
     }
     return result;
 }
