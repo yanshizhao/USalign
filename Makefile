@@ -1,6 +1,6 @@
 CC=g++
 MINGW=x86_64-w64-mingw32-g++
-CFLAGS=-O3 -ffast-math
+CFLAGS=-O3 -ffast-math -std=gnu++11
 OMPFLAGS=-fopenmp
 ifeq ($(OS),Windows_NT)
     # Windows (MSYS2, MinGW, PowerShell, cmd)

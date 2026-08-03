@@ -99,56 +99,53 @@
 =========================
  How to install US-align
 =========================
-Note: The make command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration. 
-If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 1. Linux / macOS
-    Compile with make (Recommended):
-        make clean
-        make
-    macOS does not support static linking. Remove the -static flag when compiling manually.
-
-    Manual compilation in bash:
-        g++ -static -O3 -ffast-math -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
+   1.1 Compile with make (Recommended):
+           make clean
+           make
+       macOS does not support static linking. Remove the -static flag when compiling manually.
+   1.2 Manual compilation in bash:
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
 
 2. Windows (MSYS2 / MinGW)
-    Compile with make:
-        mingw32-make clean
-        mingw32-make
+   2.1 Compile with make:
+           mingw32-make clean
+           mingw32-make
+   2.2 Manual compilation in PowerShell:
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
 
-    Manual compilation in PowerShell:
-       g++ -static -O3 -ffast-math -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
+3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
 Additional note:
-The -static flag enables static linking. 
-The compiled executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
-Remove -fopenmp from all manual compilation commands if parallel acceleration is not required.
+1. The -static flag enables static linking. A statically linked executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
+2. However, on Linux the "make" command does NOT pass -static: the resulting binary is dynamically linked and depends on the system libraries (e.g. libstdc++, libgomp and glibc), so copying it to another machine may fail if those libraries are missing or too old.
+3. On Windows, "mingw32-make" adds -static automatically.
+4. If you need a statically linked Linux binary, use the manual compilation command above (which includes -static).
+5. macOS does not support static linking.
+6. Remove -fopenmp from all manual compilation commands if parallel acceleration is not required.
 
-USalign compiled on Linux, Mac OS and Linux Subsystem for Windows (WSL2) on
-Windows 10 onwards can read both uncompressed files and gz compressed
-files, provided that the "gunzip" command is available. On the other hand, due
-to the lack of POSIX support on Windows, US-align natively compiled on Windows
-without WSL2 cannot parse gz compressed files.
+Compressed file support:
+1. US-align compiled on Linux, Mac OS and Linux Subsystem for Windows (WSL2) on Windows 10 onwards can read both uncompressed files and gz compressed files, provided that the "gunzip" command is available.
+2. Due to the lack of POSIX support on Windows, US-align natively compiled on Windows without WSL2 cannot parse gz compressed files.
 
-US-align is known to be compilable by g++ version 4.8.5 or later, clang++
-version 12.0.5 or later and mingw-w64 version 9.3 or later.
+Compiler requirements:
+1. US-align requires a compiler with C++11 support. It is known to be compilable by g++ version 6 or later (C++14 is the default standard since g++ 6), clang++ version 12.0.5 or later and mingw-w64 version 9.3 or later.
+2. The Makefile sets -std=gnu++11 explicitly, so the build always compiles in C++11 mode regardless of the compiler's default standard. g++ 4.8.x/5.x defaults to C++98, but it will still work as long as it supports the gnu++11 mode. If you compile manually, remember to include -std=gnu++11 (see the manual compilation commands above).
 
-It is also possible to install using package managers.
-
-If you are using Homebrew, run the following command.
-The executable is supposed to work on MacOS (x86_64, arm64) and Linux (x86_64).
+Install via package managers:
+1. If you are using Homebrew, run the following command. The executable is supposed to work on MacOS (x86_64, arm64) and Linux (x86_64).
 
 ```shell
 brew install brewsci/bio/usalign
 ```
 
-If you are using conda, run the following command.
-The executable is supposed to work on Linux (x86_64, aarch64) and MacOS (x86_64, arm64).
+2. If you are using conda, run the following command. The executable is supposed to work on Linux (x86_64, aarch64) and MacOS (x86_64, arm64).
 
 ```shell
 conda install -c bioconda usalign
 ```
 
-The Homebrew and conda packages may not have the most recent version of US-align.
+3. The Homebrew and conda packages may not have the most recent version of US-align.
 
 =====================
  How to use US-align
