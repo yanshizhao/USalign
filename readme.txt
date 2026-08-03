@@ -92,6 +92,7 @@
    2024/11/08: Add -chimerax for UCSF ChimeraX format output
    2026/03/28: Fix -mm 1 asymmetric alignment bug where oligomer alignment
 	       output depends occasionally on input file order
+   2026/05/27: Allow both -mm 1 and -dir/-dir1/-dir2
    2026/07/06: Add -threads N to set number of threads for OpenMP parallel
 	       execution. For example, '-threads 4' uses 4 threads.
 ===============================================================================

@@ -13,7 +13,7 @@ void print_version(std::ostream& os = std::cout)
     os <<
 "\n"
 " ********************************************************************\n"
-" * US-align (Version 20260329)                                      *\n"
+" * US-align (Version 20260527)                                      *\n"
 " * Universal Structure Alignment of Proteins and Nucleic Acids      *\n"
 " * Reference: C Zhang, L Freddolino, Y Zhang. (2026) Nat Protoc     *\n"
 " *            C Zhang, M Shine, AM Pyle, Y Zhang. (2022) Nat Methods*\n"
@@ -4478,7 +4478,7 @@ int main(int argc, char *argv[])
         if (i_opt) PrintErrorAndQuit("-mm cannot be used with -i or -I");
         if (u_opt) PrintErrorAndQuit("-mm cannot be used with -u or -L");
         //if (cp_opt) PrintErrorAndQuit("-mm cannot be used with -cp");
-        if (dir_opt.size() && (mm_opt==1||mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 cannot be used with -dir");
+        if (dir_opt.size() && mm_opt==2) PrintErrorAndQuit("-mm 2 cannot be used with -dir");
         if (byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
         if (ter_opt>=2 && (mm_opt==1 || mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");
         if (mm_opt==4 && (yname.size() || dir2_opt.size()))
@@ -4552,8 +4552,34 @@ int main(int argc, char *argv[])
         byresi_opt, chain1_list, chain2_list, se_opt, do_opt,
         parallel_threads);
     else if (mm_opt==1)
-    { 
-        if (dirpair_opt.size()==0) MMalign(xname, yname, fname_super,
+    {
+        if (dir_opt.size()>0 || dir1_opt.size()>0 || dir2_opt.size()>0)
+        {
+            // -mm 1 with -dir/-dir1/-dir2 (pylelab 2026/05/27)
+            for (int ii=0; ii<(int)chain1_list.size(); ii++)
+            {
+                xname = chain1_list[ii];
+                vector<string> tmp_vec1(1, xname);
+                for (int jj=0; jj<(int)chain2_list.size(); jj++)
+                {
+                    if (dir_opt.size()>0 && jj<=ii) continue;
+                    yname = chain2_list[jj];
+                    vector<string> tmp_vec2(1, yname);
+                    MMalign(xname, yname, fname_super,
+                        fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
+                        a_opt, d_opt, full_opt, TMcut, infmt1_opt, infmt2_opt,
+                        ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt,
+                        het_opt, atom_opt, autojustify, mol_opt,
+                        dir_opt+dir1_opt, dir_opt+dir2_opt,
+                        chain2parse1, chain2parse2, model2parse1, model2parse2,
+                        tmp_vec1, tmp_vec2, byresi_opt, chainmapfile, se_opt,
+                        parallel_threads);
+                    vector<string>().swap(tmp_vec2);
+                }
+                vector<string>().swap(tmp_vec1);
+            }
+        }
+        else if (dirpair_opt.size()==0) MMalign(xname, yname, fname_super,
             fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
             a_opt, d_opt, full_opt, TMcut, infmt1_opt, infmt2_opt,
             ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
