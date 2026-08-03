@@ -195,10 +195,14 @@ inline bool is_representative_atom(const std::string& atom_name,
             return atom_name == " P  " || atom_name == " C4'";
         else
             return atom_name == " CA ";
+    } else if (atom_opt == " CB ") {
+        if (res_name=="GLY") return atom_name == " CA ";
+        else return atom_name == " CB ";
     } else {
         return atom_name == atom_opt;
     }
 }
+
 
 // Alt location filter (mmCIF version, map<string,string>)
 inline bool accept_alt_conf_mmcif(const std::string& resi_chain,
