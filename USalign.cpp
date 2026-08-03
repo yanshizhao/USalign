@@ -4557,15 +4557,14 @@ int main(int argc, char *argv[])
     {
         if (dir_opt.size()>0 || dir1_opt.size()>0 || dir2_opt.size()>0)
         {
-            // -mm 1 with -dir/-dir1/-dir2 (pylelab 2026/05/27)
-            for (int ii=0; ii<(int)chain1_list.size(); ii++)
+            for (int chain1_idx=0; chain1_idx<(int)chain1_list.size(); chain1_idx++)
             {
-                xname = chain1_list[ii];
+                xname = chain1_list[chain1_idx];
                 vector<string> tmp_vec1(1, xname);
-                for (int jj=0; jj<(int)chain2_list.size(); jj++)
+                for (int chain2_idx=0; chain2_idx<(int)chain2_list.size(); chain2_idx++)
                 {
-                    if (dir_opt.size()>0 && jj<=ii) continue;
-                    yname = chain2_list[jj];
+                    if (dir_opt.size()>0 && chain2_idx<=chain1_idx) continue;
+                    yname = chain2_list[chain2_idx];
                     vector<string> tmp_vec2(1, yname);
                     MMalign(xname, yname, fname_super,
                         fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
