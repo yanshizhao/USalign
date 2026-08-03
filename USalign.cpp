@@ -4399,6 +4399,8 @@ int main(int argc, char *argv[])
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
     if ((dir_opt.size() || dirpair_opt.size() || dir1_opt.size() || dir2_opt.size()))
     {
+        if (chainmapfile.size())
+            PrintErrorAndQuit("-chainmap cannot be used with -dir, -dir1 or -dir2");
         if (mm_opt!=2 && mm_opt!=4)
         {
             if (o_opt)
