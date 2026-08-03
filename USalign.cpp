@@ -2450,7 +2450,22 @@ double calc_ccTM_score(
     // 2. Find no-gap columns: all structures have residues at these columns
     vector<int> no_gap_cols;
     find_no_gap_cols(msa_to_res, chain_num, msa_len, no_gap_cols);
-    if (no_gap_cols.empty()) return 0.0;
+    if (no_gap_cols.empty())
+    {
+        fcout(std::cerr, "Warning! No no-gap MSA columns in ccTM-score; "
+                         "the ccTM-score is 0.\n");
+        return 0.0;
+    }
+    // Kabsch re-alignment needs >= 4 non-colinear points; with fewer no-gap
+    // columns the alignment is degenerate, so the ccTM-score is set to 0.
+    if ((int)no_gap_cols.size() < 4)
+    {
+        fcout(std::cerr, "Warning! Only %d no-gap MSA column(s) (< 4) in "
+                         "ccTM-score: Kabsch re-alignment is degenerate; the "
+                         "ccTM-score is set to 0.\n",
+              (int)no_gap_cols.size());
+        return 0.0;
+    }
 
     // 3. Re-align all structures from original coords to reference (eliminate chain error)
     //    select_ref_struct => align_to_ref (Kabsch + do_rotation)
@@ -2467,7 +2482,14 @@ double calc_ccTM_score(
     // 5. Select Common Core columns: all pairs have CA distance <= 4A
     vector<int> core_cols;
     select_common_core_cols(ca_dist_matrix, no_gap_cols, tot_num_pair, core_cols);
-    if (core_cols.empty()) return 0.0;
+    if (core_cols.empty())
+    {
+        fcout(std::cerr, "Warning! No common core columns in ccTM-score (all "
+                         "pairs have CA distance > 4.0 A at every no-gap MSA "
+                         "column, usually caused by a distant structure); the "
+                         "ccTM-score is 0.\n");
+        return 0.0;
+    }
 
     // 6. Extract original residue indices at Common Core columns
     IntMatrix core_res_idx;
