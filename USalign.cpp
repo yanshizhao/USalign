@@ -1114,6 +1114,19 @@ struct ComplexData
     int total_len_na;
 };
 
+// ---- 全对全链级打分结果（环节B，跨流程通用）----
+struct PairwiseScore
+{
+    DoubleMatrix tm_matrix;                 // 链对 TM 分数矩阵（原 TMave_mat）
+    RotArray rotations;                     // 各链对旋转（原 ut_mat）
+    vector<vector<string> > aligned_seq1;   // 链对残基比对1（原 seqxA_mat）
+    vector<vector<string> > aligned_seq2;   // 链对残基比对2（原 seqyA_mat）
+    vector<vector<string> > aligned_consensus;  // 一致序列（原 seqM_mat）
+    double best_monomer_tm;                 // 最优单体链对 TM（原 maxTMmono）
+    int best_monomer_i;                     // 原 maxTMmono_i
+    int best_monomer_j;                     // 原 maxTMmono_j
+};
+
 // ---- MMalign 流程状态容器（第 2 层组合壳）----
 struct MMalignContext
 {
@@ -1156,6 +1169,9 @@ struct MMalignContext
     int len_aa;
     int len_na;
     map<int,int> chain_map;
+
+    // 比对状态（环节B/C）
+    PairwiseScore pairwise;
 };
 
 // ---- 收集 MMalign 签名参数到上下文（生产者函数）----
@@ -1544,6 +1560,188 @@ int run_monomer(MMalignContext& ctx)
     return 0;
 }
 
+// ---- 串行全对全循环（保持现有行为：含 chainmap continue 跳过）----
+void serial_pairwise_loop(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    string seqx;
+    string seqy;
+    string secx;
+    string secy;
+    CoordArray xa;
+    CoordArray ya;
+    int xlen;
+    int ylen;
+    int i;
+    int j;
+    int ui;
+    int uj;
+    int ut_idx;
+    for (i = 0; i < chain1_num; i++)
+    {
+        xlen = ctx.complex1.lengths[i];
+        if (xlen < 3)
+        {
+            for (j = 0; j < chain2_num; j++)
+            {
+                ctx.pairwise.tm_matrix[i][j] = -1;
+                if (j < chain1_num)
+                {
+                    ctx.pairwise.tm_matrix[j][i] = -1;
+                }
+            }
+            continue;
+        }
+        secx.resize(xlen + 1);
+        xa.resize(xlen);
+        copy_chain_data(ctx.complex1.coords[i], ctx.complex1.seqs[i],
+            ctx.complex1.secs[i], xlen, xa, seqx, secx);
+
+        for (j = 0; j < chain2_num; j++)
+        {
+            ut_idx = i * chain2_num + j;
+            for (ui = 0; ui < 4; ui++)
+            {
+                for (uj = 0; uj < 3; uj++)
+                {
+                    ctx.pairwise.rotations[ut_idx][ui*3+uj] = 0;
+                }
+            }
+            ctx.pairwise.rotations[ut_idx][0] = 1;
+            ctx.pairwise.rotations[ut_idx][4] = 1;
+            ctx.pairwise.rotations[ut_idx][8] = 1;
+
+            if (ctx.complex1.mol_types[i] * ctx.complex2.mol_types[j] < 0)
+            {
+                ctx.pairwise.tm_matrix[i][j] = -1;
+                if (j < chain1_num)
+                {
+                    ctx.pairwise.tm_matrix[j][i] = -1;
+                }
+                continue;
+            }
+            if (ctx.chain_map.size() && (!ctx.chain_map.count(i) || ctx.chain_map[i] != j))
+            {
+                ctx.pairwise.tm_matrix[i][j] = -1;
+                if (j < chain1_num)
+                {
+                    ctx.pairwise.tm_matrix[j][i] = -1;
+                }
+                continue;
+            }
+
+            ylen = ctx.complex2.lengths[j];
+            if (ylen < 3)
+            {
+                ctx.pairwise.tm_matrix[i][j] = -1;
+                if (j < chain1_num)
+                {
+                    ctx.pairwise.tm_matrix[j][i] = -1;
+                }
+                continue;
+            }
+            secy.resize(ylen + 1);
+            ya.resize(ylen);
+            copy_chain_data(ctx.complex2.coords[j], ctx.complex2.seqs[j],
+                ctx.complex2.secs[j], ylen, ya, seqy, secy);
+
+            int Lnorm_tmp = ctx.len_aa;
+            if (ctx.complex1.mol_types[i] + ctx.complex2.mol_types[j] > 0)
+            {
+                Lnorm_tmp = ctx.len_na;
+            }
+
+            if (ctx.byresi_opt)
+            {
+                int total_aln = extract_aln_from_resi(*ctx.opts.sequence, seqx, seqy,
+                    ctx.complex1.resi, ctx.complex2.resi, ctx.complex1.lengths,
+                    ctx.complex2.lengths, i, j, ctx.byresi_opt);
+                ctx.pairwise.aligned_seq1[i][j] = (*ctx.opts.sequence)[0];
+                ctx.pairwise.aligned_seq2[i][j] = (*ctx.opts.sequence)[1];
+                if (total_aln > xlen + ylen - 3)
+                {
+                    for (ui = 0; ui < 3; ui++)
+                    {
+                        for (uj = 0; uj < 3; uj++)
+                        {
+                            ctx.pairwise.rotations[ut_idx][ui*3+uj] = (ui==uj) ? 1 : 0;
+                        }
+                    }
+                    for (uj = 0; uj < 3; uj++)
+                    {
+                        ctx.pairwise.rotations[ut_idx][9+uj] = 0;
+                    }
+                    ctx.pairwise.tm_matrix[i][j] = 0;
+                    if (j < chain1_num)
+                    {
+                        ctx.pairwise.tm_matrix[j][i] = 0;
+                    }
+                    continue;
+                }
+            }
+
+            // entry function for structure alignment
+            ChainPairAlignResult result = align_chain_pair(
+                xa, ya, seqx, seqy, secx, secy, xlen, ylen,
+                ctx.complex1.mol_types[i] + ctx.complex2.mol_types[j], Lnorm_tmp,
+                ctx.opts, *ctx.opts.sequence, 0, 1, 0, ctx.parallel_threads);
+
+            // store result
+            store_pair_result(result, i, j, chain1_num, chain2_num, Lnorm_tmp,
+                ctx.pairwise.rotations, ctx.pairwise.aligned_seq1,
+                ctx.pairwise.aligned_seq2, ctx.pairwise.tm_matrix,
+                ctx.pairwise.best_monomer_tm, ctx.pairwise.best_monomer_i,
+                ctx.pairwise.best_monomer_j);
+        }
+    }
+}
+
+// ---- 全对全链级打分（编排：矩阵初始化 + 并行/串行选择）----
+void compute_pairwise_matrix(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    int chain_num = std::max(chain1_num, chain2_num);
+    vector<string> tmp_str_vec(chain2_num, "");
+    ctx.pairwise.tm_matrix.assign(chain_num, vector<double>(chain_num));
+    ctx.pairwise.rotations.resize(chain1_num * chain2_num);
+    ctx.pairwise.aligned_seq1.assign(chain1_num, tmp_str_vec);
+    ctx.pairwise.aligned_seq2.assign(chain1_num, tmp_str_vec);
+    ctx.pairwise.aligned_consensus.assign(chain1_num, tmp_str_vec);
+    ctx.pairwise.best_monomer_tm = -1;
+
+    bool parallel_done = false;
+#ifdef _OPENMP
+    if (ctx.parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1))
+    {
+        run_mmalign_parallel(
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.chain_map, *ctx.opts.sequence,
+            ctx.complex1.resi, ctx.complex2.resi,
+            ctx.pairwise.tm_matrix, ctx.pairwise.rotations,
+            ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_consensus,
+            ctx.pairwise.aligned_seq2,
+            ctx.pairwise.best_monomer_tm, ctx.pairwise.best_monomer_i,
+            ctx.pairwise.best_monomer_j,
+            chain1_num, chain2_num, ctx.len_aa, ctx.len_na,
+            ctx.opts.outfmt_opt, ctx.opts.i_opt, ctx.opts.TMcut, ctx.opts.d0_scale,
+            ctx.byresi_opt, ctx.opts.se_opt, ctx.opts.fast_opt,
+            ctx.parallel_threads);
+        parallel_done = true;
+    }
+#endif  // _OPENMP
+
+    if (!parallel_done)
+    {
+        serial_pairwise_loop(ctx);
+    }
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
@@ -1614,138 +1812,28 @@ int MMalign(const string &xname, const string &yname,
     }
 
     // declare TM-score tables
-    int chain1_num=xa_vec.size();
-    int chain2_num=ya_vec.size();
-    int chain_num =std::max(chain1_num,chain2_num);
-    vector<string> tmp_str_vec(chain2_num,"");
-    DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain_num,vector<double>(chain_num));
-    RotArray ut_mat; // rotation matrices for all-against-all alignment
-    int ui;
-    int uj;
-    int ut_idx;
-    ut_mat.resize(chain1_num*chain2_num);
-    vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
-    vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    vector<string> tmp_str_vec(chain2_num, "");   // 块⑨快照用
 
-    double maxTMmono=-1;
-    int maxTMmono_i;
-    int maxTMmono_j;
-
-    // get all-against-all alignment
-    if (len_aa+len_na>500) fast_opt=true;
-    bool parallel_done = false;
-#ifdef _OPENMP
-    if (parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1)) {
-        run_mmalign_parallel(
-            xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, xlen_vec, ylen_vec,
-            mol_vec1, mol_vec2, chainmap, sequence,
-            resi_vec1, resi_vec2, TMave_mat, ut_mat,
-            seqxA_mat, seqM_mat, seqyA_mat,
-            maxTMmono, maxTMmono_i, maxTMmono_j,
-            chain1_num, chain2_num, len_aa, len_na,
-            outfmt_opt, i_opt, TMcut, d0_scale,
-            byresi_opt, se_opt, fast_opt,
-            parallel_threads);
-        parallel_done = true;
-    }
-#endif  // _OPENMP
-
-    if (!parallel_done)
+    // get all-against-all alignment（fast_opt 强制开启逻辑保留在主体，行为不变）
+    if (len_aa + len_na > 500)
     {
-        for (i=0;i<chain1_num;i++)
-        {
-            xlen=xlen_vec[i];
-            if (xlen<3)
-            {
-                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-                continue;
-            }
-            secx.resize(xlen+1);
-            xa.resize(xlen);
-            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
-                xlen,xa,seqx,secx);
-
-            for (j=0;j<chain2_num;j++)
-            {
-                ut_idx=i*chain2_num+j;
-                for (ui=0;ui<4;ui++)
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
-                ut_mat[ut_idx][0]=1;
-                ut_mat[ut_idx][4]=1;
-                ut_mat[ut_idx][8]=1;
-
-                if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
-                {
-                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-                    continue;
-                }
-                if (chainmap.size() && (!chainmap.count(i) || chainmap[i]!=j))
-                {
-                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-                    continue;
-                }
-
-                ylen=ylen_vec[j];
-                if (ylen<3)
-                {
-                    TMave_mat[i][j]=-1; if (j<chain1_num) TMave_mat[j][i]=-1;
-                    continue;
-                }
-                secy.resize(ylen+1);
-                ya.resize(ylen);
-                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
-                    ylen,ya,seqy,secy);
-
-                int Lnorm_tmp = len_aa;
-                if (mol_vec1[i] + mol_vec2[j] > 0)
-                {
-                    Lnorm_tmp = len_na;
-                }
-
-                if (byresi_opt)
-                {
-                    int total_aln = extract_aln_from_resi(sequence, seqx, seqy,
-                        resi_vec1, resi_vec2, xlen_vec, ylen_vec, i, j, byresi_opt);
-                    seqxA_mat[i][j] = sequence[0];
-                    seqyA_mat[i][j] = sequence[1];
-                    if (total_aln > xlen + ylen - 3)
-                    {
-                        for (ui=0; ui<3; ui++)
-                        {
-                            for (uj=0; uj<3; uj++)
-                            {
-                                ut_mat[ut_idx][ui*3+uj] = (ui==uj) ? 1 : 0;
-                            }
-                        }
-                        for (uj=0; uj<3; uj++)
-                        {
-                            ut_mat[ut_idx][9+uj] = 0;
-                        }
-                        TMave_mat[i][j] = 0;
-                        if (j < chain1_num)
-                        {
-                            TMave_mat[j][i] = 0;
-                        }
-                        continue;
-                    }
-                }
-
-                // entry function for structure alignment
-                ChainPairAlignResult result = align_chain_pair(
-                    xa, ya, seqx, seqy, secx, secy, xlen, ylen,
-                    mol_vec1[i] + mol_vec2[j], Lnorm_tmp,
-                    ctx.opts, sequence, 0, 1, 0, parallel_threads);
-
-                // store result
-                store_pair_result(result, i, j, chain1_num, chain2_num, Lnorm_tmp,
-                    ut_mat, seqxA_mat, seqyA_mat, TMave_mat,
-                    maxTMmono, maxTMmono_i, maxTMmono_j);
-            }
-        }
+        fast_opt = true;
     }
+    ctx.opts.fast_opt = fast_opt;
+    compute_pairwise_matrix(ctx);
+    fast_opt = ctx.opts.fast_opt;
+
+    // 桥接：pairwise 数据 → 旧变量（后续步骤逐步消除）
+    DoubleMatrix& TMave_mat = ctx.pairwise.tm_matrix;
+    RotArray& ut_mat = ctx.pairwise.rotations;
+    vector<vector<string> >& seqxA_mat = ctx.pairwise.aligned_seq1;
+    vector<vector<string> >& seqM_mat = ctx.pairwise.aligned_consensus;
+    vector<vector<string> >& seqyA_mat = ctx.pairwise.aligned_seq2;
+    double& maxTMmono = ctx.pairwise.best_monomer_tm;
+    int& maxTMmono_i = ctx.pairwise.best_monomer_i;
+    int& maxTMmono_j = ctx.pairwise.best_monomer_j;
 
     // calculate initial chain-chain assignment
     std::vector<int> assign1_list(chain1_num);
