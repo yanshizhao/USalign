@@ -2160,81 +2160,24 @@ int MMalign(const string &xname, const string &yname,
     parse_inputs(ctx);
     read_chainmap(ctx);
 
-    // ---- 桥接：ctx 数据 → 旧局部变量（后续步骤逐步消除）----
-    DoubleCube& xa_vec = ctx.complex1.coords;
-    CharMatrix& seqx_vec = ctx.complex1.seqs;
-    CharMatrix& secx_vec = ctx.complex1.secs;
-    vector<int>& mol_vec1 = ctx.complex1.mol_types;
-    vector<int>& xlen_vec = ctx.complex1.lengths;
-    vector<string>& chainID_list1 = ctx.complex1.chain_ids;
-    vector<string>& resi_vec1 = ctx.complex1.resi;
-    DoubleCube& ya_vec = ctx.complex2.coords;
-    CharMatrix& seqy_vec = ctx.complex2.seqs;
-    CharMatrix& secy_vec = ctx.complex2.secs;
-    vector<int>& mol_vec2 = ctx.complex2.mol_types;
-    vector<int>& ylen_vec = ctx.complex2.lengths;
-    vector<string>& chainID_list2 = ctx.complex2.chain_ids;
-    vector<string>& resi_vec2 = ctx.complex2.resi;
-    int& len_aa = ctx.len_aa;
-    int& len_na = ctx.len_na;
-    int& i_opt = ctx.opts.i_opt;
-    map<int,int>& chainmap = ctx.chain_map;
-    // 注：a_opt / d_opt / outfmt_opt / fast_opt / se_opt / TMcut / d0_scale
-    //     继续直接使用 MMalign 签名参数（不桥接，参数本身可用）
-
-    // ---- 临时变量（单链数据，块④以后使用）----
-    int i;
-    int j;
-    int xlen;
-    int ylen;
-    string seqx;
-    string seqy;
-    CoordArray xa;
-    CoordArray ya;
-    string secx;
-    string secy;
-
     // perform monomer alignment if there is only one chain
     if (is_monomer(ctx.complex1, ctx.complex2))
     {
         return run_monomer(ctx);
     }
 
-    // declare TM-score tables
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
-    vector<string> tmp_str_vec(chain2_num, "");   // 块⑨快照用
-
     // get all-against-all alignment（fast_opt 强制开启逻辑保留在主体，行为不变）
-    if (len_aa + len_na > 500)
+    if (ctx.len_aa + ctx.len_na > 500)
     {
-        fast_opt = true;
+        ctx.opts.fast_opt = true;
     }
-    ctx.opts.fast_opt = fast_opt;
     compute_pairwise_matrix(ctx);
-    fast_opt = ctx.opts.fast_opt;
-
-    // 桥接：pairwise 数据 → 旧变量（后续步骤逐步消除）
-    DoubleMatrix& TMave_mat = ctx.pairwise.tm_matrix;
-    RotArray& ut_mat = ctx.pairwise.rotations;
-    vector<vector<string> >& seqxA_mat = ctx.pairwise.aligned_seq1;
-    vector<vector<string> >& seqM_mat = ctx.pairwise.aligned_consensus;
-    vector<vector<string> >& seqyA_mat = ctx.pairwise.aligned_seq2;
-    double& maxTMmono = ctx.pairwise.best_monomer_tm;
-    int& maxTMmono_i = ctx.pairwise.best_monomer_i;
-    int& maxTMmono_j = ctx.pairwise.best_monomer_j;
 
     // calculate initial chain-chain assignment
     assign_chains_greedily(ctx);
 
     // refine alignment for large oligomers
     refine_chain_assignment(ctx);
-
-    // 桥接：assignment → 旧变量（后续步骤逐步消除）
-    std::vector<int>& assign1_list = ctx.assignment.chain2_of_chain1;
-    std::vector<int>& assign2_list = ctx.assignment.chain1_of_chain2;
-    int& aln_chain_num = ctx.aln_chain_num;
-    bool& is_oligomer = ctx.is_oligomer;
 
     // store initial assignment
     snapshot_initial_assignment(ctx);
