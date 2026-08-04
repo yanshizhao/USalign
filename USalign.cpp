@@ -2078,6 +2078,59 @@ void run_cross_chain_alignment(MMalignContext& ctx)
     }
 }
 
+// ---- 最终输出（print_version + MMalign_final / MMalign_se_final 二选一）----
+void output_final_results(MMalignContext& ctx)
+{
+    if (ctx.opts.outfmt_opt == 0)
+    {
+        print_version();
+    }
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    if (ctx.opts.se_opt)
+    {
+        MMalign_se_final(ctx.xname.substr(ctx.dir1_opt.size()),
+            ctx.yname.substr(ctx.dir2_opt.size()),
+            ctx.complex1.chain_ids, ctx.complex2.chain_ids,
+            ctx.fname_super, ctx.fname_lign, ctx.fname_matrix,
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
+            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
+            ctx.pairwise.aligned_consensus, ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            *ctx.opts.sequence, ctx.opts.d0_scale,
+            ctx.m_opt, ctx.o_opt, ctx.opts.outfmt_opt, ctx.ter_opt, ctx.split_opt,
+            ctx.opts.a_opt, ctx.opts.d_opt, ctx.opts.fast_opt, ctx.full_opt,
+            ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+    }
+    else
+    {
+        MMalign_final(ctx.xname.substr(ctx.dir1_opt.size()),
+            ctx.yname.substr(ctx.dir2_opt.size()),
+            ctx.complex1.chain_ids, ctx.complex2.chain_ids,
+            ctx.fname_super, ctx.fname_lign, ctx.fname_matrix,
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
+            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
+            ctx.pairwise.aligned_consensus, ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            *ctx.opts.sequence, ctx.opts.d0_scale,
+            ctx.m_opt, ctx.o_opt, ctx.opts.outfmt_opt, ctx.ter_opt, ctx.split_opt,
+            ctx.opts.a_opt, ctx.opts.d_opt, ctx.opts.fast_opt, ctx.full_opt,
+            ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+    }
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
@@ -2199,55 +2252,10 @@ int MMalign(const string &xname, const string &yname,
      * in some cases, this leads to dramatic improvement, esp for homodimer */
     run_cross_chain_alignment(ctx);
 
-    // 桥接：迭代工作缓冲 → 旧变量（final 输出用）
-    string& sx = ctx.iter_seqx;
-    string& sy = ctx.iter_seqy;
-    string& scx = ctx.iter_secx;
-    string& scy = ctx.iter_secy;
-
     // final alignment
-    if (outfmt_opt==0) print_version();
-    if (se_opt) MMalign_se_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
-        chainID_list1, chainID_list2,
-        fname_super, fname_lign, fname_matrix,
-        xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        sx, sy, scx, scy, len_aa, len_na,
-        chain1_num, chain2_num, TMave_mat,
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
-        a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
-    else MMalign_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
-        chainID_list1, chainID_list2,
-        fname_super, fname_lign, fname_matrix,
-        xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        sx, sy, scx, scy, len_aa, len_na,
-        chain1_num, chain2_num, TMave_mat,
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
-        a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
+    output_final_results(ctx);
 
-    vector<vector<string> >().swap(seqxA_mat);
-    vector<vector<string> >().swap(seqM_mat);
-    vector<vector<string> >().swap(seqyA_mat);
-
-    DoubleCube().swap(xa_vec); // structure of complex1
-    DoubleCube().swap(ya_vec); // structure of complex2
-    CharMatrix().swap(seqx_vec); // sequence of complex1
-    CharMatrix().swap(seqy_vec); // sequence of complex2
-    CharMatrix().swap(secx_vec); // secondary structure of complex1
-    CharMatrix().swap(secy_vec); // secondary structure of complex2
-    mol_vec1.clear();       // molecule type of complex1, RNA if >0
-    mol_vec2.clear();       // molecule type of complex2, RNA if >0
-    vector<string>().swap(chainID_list1);  // list of chainID1
-    vector<string>().swap(chainID_list2);  // list of chainID2
-    xlen_vec.clear();       // length of complex1
-    ylen_vec.clear();       // length of complex2
-    vector<string> ().swap(resi_vec1);  // residue index for chain1
-    vector<string> ().swap(resi_vec2);  // residue index for chain2
-    map<int,int> ().swap(chainmap);
-    return 1;
+    return 1;   // 清理交给 ctx 析构（RAII）
 }
 
 // alignment individual chains to a complex.
