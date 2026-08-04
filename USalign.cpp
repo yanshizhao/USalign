@@ -1194,6 +1194,17 @@ struct MMalignContext
     ChainAssignment assignment;
     int aln_chain_num;
     bool is_oligomer;
+
+    // 优化域（环节D：快照/迭代/回退/交叉）
+    int init_pair_num;
+    ChainAssignment assignment_init;
+    PairwiseScore pairwise_init;
+    vector<string> sequence_init;
+    double iteration_score;         // 迭代总分（原 max_total_score）
+    string iter_seqx;               // 迭代工作缓冲（原 sx）
+    string iter_seqy;               // 原 sy
+    string iter_secx;               // 原 scx
+    string iter_secy;               // 原 scy
 };
 
 // ---- 收集 MMalign 签名参数到上下文（生产者函数）----
@@ -1865,6 +1876,208 @@ void refine_chain_assignment(MMalignContext& ctx)
     }
 }
 
+// ---- 保存初始分配快照（供回退与交叉比对使用）----
+void snapshot_initial_assignment(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    ctx.init_pair_num = ctx.assignment.pair_count();
+    ctx.pairwise_init.tm_matrix.assign(chain1_num, vector<double>(chain2_num));
+    vector<string> tmp_str_vec(chain2_num, "");
+    ctx.pairwise_init.aligned_seq1.assign(chain1_num, tmp_str_vec);
+    ctx.pairwise_init.aligned_seq2.assign(chain1_num, tmp_str_vec);
+    ctx.assignment_init.chain2_of_chain1.assign(chain1_num, -1);
+    ctx.assignment_init.chain1_of_chain2.assign(chain2_num, -1);
+    copy_chain_assign_data(chain1_num, chain2_num, ctx.sequence_init,
+        ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_seq2,
+        ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+        ctx.pairwise.tm_matrix,
+        ctx.pairwise_init.aligned_seq1, ctx.pairwise_init.aligned_seq2,
+        ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
+        ctx.pairwise_init.tm_matrix);
+}
+
+// ---- 迭代精化（MMalign_iter 调用）----
+void run_iterative_refinement(MMalignContext& ctx)
+{
+    ctx.iteration_score = 0;   // ignore old score from monomeric superpositions
+    int max_iter = 5 - static_cast<int>((ctx.len_aa + ctx.len_na) / 200);
+    if (max_iter < 2)
+    {
+        max_iter = 2;
+    }
+    if (!ctx.opts.se_opt)
+    {
+        MMalign_iter(ctx.iteration_score, max_iter,
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
+            ctx.len_aa, ctx.len_na,
+            (int)ctx.complex1.coords.size(), (int)ctx.complex2.coords.size(),
+            ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
+            ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            *ctx.opts.sequence, ctx.opts.d0_scale, ctx.opts.fast_opt,
+            ctx.chain_map, ctx.byresi_opt);
+    }
+}
+
+// ---- byresi 专属精修（-TMscore 6/7 的链级精化）----
+void run_byresi_refine(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    if (ctx.byresi_opt && ctx.aln_chain_num >= 4 && ctx.is_oligomer &&
+        ctx.chain_map.size() == 0 && !ctx.opts.se_opt)
+    {
+        MMalign_final(ctx.xname.substr(ctx.dir1_opt.size()),
+            ctx.yname.substr(ctx.dir2_opt.size()),
+            ctx.complex1.chain_ids, ctx.complex2.chain_ids,
+            ctx.fname_super, ctx.fname_lign, ctx.fname_matrix,
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
+            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
+            ctx.pairwise.aligned_consensus, ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            *ctx.opts.sequence, ctx.opts.d0_scale, 1, 0, 5,
+            ctx.ter_opt, ctx.split_opt, 0, 0, true, true,
+            ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+
+        // extract centroid coordinates
+        CoordArray xcentroids;
+        CoordArray ycentroids;
+        xcentroids.resize(chain1_num);
+        ycentroids.resize(chain2_num);
+        double d0MM = getmin(
+            calculate_centroids(ctx.complex1.coords, chain1_num, xcentroids),
+            calculate_centroids(ctx.complex2.coords, chain2_num, ycentroids));
+
+        // refine enhanced greedy search with centroid superposition
+        homo_refined_greedy_search(ctx.pairwise.tm_matrix,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            chain1_num, chain2_num, xcentroids, ycentroids,
+            d0MM, ctx.len_aa + ctx.len_na, ctx.pairwise.rotations);
+        hetero_refined_greedy_search(ctx.pairwise.tm_matrix,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            chain1_num, chain2_num, xcentroids, ycentroids,
+            d0MM, ctx.len_aa + ctx.len_na);
+    }
+}
+
+// ---- 回退保护（迭代不如单体最优时，只保留最优单体链对再迭代）----
+void recover_best_monomer_pair(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    if (ctx.byresi_opt == 0 && ctx.iteration_score < ctx.pairwise.best_monomer_tm)
+    {
+        copy_chain_assign_data(chain1_num, chain2_num, *ctx.opts.sequence,
+            ctx.pairwise_init.aligned_seq1, ctx.pairwise_init.aligned_seq2,
+            ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
+            ctx.pairwise_init.tm_matrix,
+            ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            ctx.pairwise.tm_matrix);
+        for (int i = 0; i < chain1_num; i++)
+        {
+            if (i != ctx.pairwise.best_monomer_i)
+            {
+                ctx.assignment.chain2_of_chain1[i] = -1;
+            }
+            else
+            {
+                ctx.assignment.chain2_of_chain1[i] = ctx.pairwise.best_monomer_j;
+            }
+        }
+        for (int j = 0; j < chain2_num; j++)
+        {
+            if (j != ctx.pairwise.best_monomer_j)
+            {
+                ctx.assignment.chain1_of_chain2[j] = -1;
+            }
+            else
+            {
+                ctx.assignment.chain1_of_chain2[j] = ctx.pairwise.best_monomer_i;
+            }
+        }
+        (*ctx.opts.sequence)[0] = ctx.pairwise.aligned_seq1[ctx.pairwise.best_monomer_i][ctx.pairwise.best_monomer_j];
+        (*ctx.opts.sequence)[1] = ctx.pairwise.aligned_seq2[ctx.pairwise.best_monomer_i][ctx.pairwise.best_monomer_j];
+        ctx.iteration_score = ctx.pairwise.best_monomer_tm;
+        int max_iter = 5 - static_cast<int>((ctx.len_aa + ctx.len_na) / 200);
+        if (max_iter < 2)
+        {
+            max_iter = 2;
+        }
+        MMalign_iter(ctx.iteration_score, max_iter,
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
+            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
+            ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            *ctx.opts.sequence, ctx.opts.d0_scale, ctx.opts.fast_opt, ctx.chain_map);
+    }
+}
+
+// ---- 交叉链整体比对（MMalign_dimer，同源二聚体改进）----
+void run_cross_chain_alignment(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    /* perform cross chain alignment
+     * in some cases, this leads to dramatic improvement, esp for homodimer */
+    int iter_pair_num = ctx.assignment.pair_count();
+    if (iter_pair_num >= ctx.init_pair_num)
+    {
+        copy_chain_assign_data(chain1_num, chain2_num, ctx.sequence_init,
+            ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_seq2,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            ctx.pairwise.tm_matrix,
+            ctx.pairwise_init.aligned_seq1, ctx.pairwise_init.aligned_seq2,
+            ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
+            ctx.pairwise_init.tm_matrix);
+    }
+    double cross_score = ctx.iteration_score;
+    if (ctx.byresi_opt == 0 && ctx.len_aa + ctx.len_na < 10000)
+    {
+        MMalign_dimer(cross_score,
+            ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.seqs, ctx.complex2.seqs,
+            ctx.complex1.secs, ctx.complex2.secs,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
+            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.pairwise_init.tm_matrix, ctx.pairwise_init.aligned_seq1,
+            ctx.pairwise_init.aligned_seq2,
+            ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
+            ctx.sequence_init, ctx.opts.d0_scale, ctx.opts.fast_opt);
+        if (cross_score > ctx.iteration_score)
+        {
+            ctx.iteration_score = cross_score;
+            copy_chain_assign_data(chain1_num, chain2_num, *ctx.opts.sequence,
+                ctx.pairwise_init.aligned_seq1, ctx.pairwise_init.aligned_seq2,
+                ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
+                ctx.pairwise_init.tm_matrix,
+                ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_seq2,
+                ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+                ctx.pairwise.tm_matrix);
+        }
+    }
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
@@ -1971,117 +2184,26 @@ int MMalign(const string &xname, const string &yname,
     bool& is_oligomer = ctx.is_oligomer;
 
     // store initial assignment
-    int init_pair_num=count_assign_pair(assign1_list,chain1_num);
-
-
-    std::vector<int> assign1_init(chain1_num);
-    std::vector<int> assign2_init(chain2_num);
-    DoubleMatrix TMave_init;
-    TMave_init.assign(chain1_num,vector<double>(chain2_num));
-    vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
-    vector<string> sequence_init;
-    copy_chain_assign_data(chain1_num, chain2_num, sequence_init,
-        seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat,
-        seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init);
+    snapshot_initial_assignment(ctx);
 
     // perform iterative alignment
-    double max_total_score=0; // ignore old total_score because previous
-                              // score was from monomeric chain superpositions
-    int max_iter=5-static_cast<int>((len_aa+len_na)/200);
-    if (max_iter<2) max_iter=2;
-    //if (byresi_opt==0)
-    // MMalign_iter/MMalign_final internally overwrite all work buffers
-    std::string sx, sy, scx, scy;
-    if (!se_opt)
-        MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
-        seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, sx, sy, scx, scy, len_aa, len_na, chain1_num,
-        chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
-        sequence, d0_scale, fast_opt, chainmap, byresi_opt);
+    run_iterative_refinement(ctx);
 
-    if (byresi_opt && aln_chain_num>=4 && is_oligomer && chainmap.size()==0 && !se_opt) // oligomer alignment
-    {
-        MMalign_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
-            chainID_list1, chainID_list2,
-            fname_super, fname_lign, fname_matrix,
-            xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            sx, sy, scx, scy, len_aa, len_na,
-            chain1_num, chain2_num, TMave_mat,
-            seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-            d0_scale, 1, 0, 5, ter_opt, split_opt,
-            0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
-
-        // extract centroid coordinates
-        CoordArray xcentroids;
-        CoordArray ycentroids;
-        xcentroids.resize(chain1_num);
-        ycentroids.resize(chain2_num);
-        double d0MM=getmin(
-            calculate_centroids(xa_vec, chain1_num, xcentroids),
-            calculate_centroids(ya_vec, chain2_num, ycentroids));
-
-        // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
-            ycentroids, d0MM, len_aa+len_na, ut_mat);
-
-        hetero_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
-            ycentroids, d0MM, len_aa+len_na);
-
-    }
+    // byresi 专属精修（-TMscore 6/7 链级精化）
+    run_byresi_refine(ctx);
 
     // sometime MMalign_iter is even worse than monomer alignment
-    if (byresi_opt==0 && max_total_score<maxTMmono)
-    {
-        copy_chain_assign_data(chain1_num, chain2_num, sequence,
-            seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
-            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
-        for (i=0;i<chain1_num;i++)
-        {
-            if (i!=maxTMmono_i) assign1_list[i]=-1;
-            else assign1_list[i]=maxTMmono_j;
-        }
-        for (j=0;j<chain2_num;j++)
-        {
-            if (j!=maxTMmono_j) assign2_list[j]=-1;
-            else assign2_list[j]=maxTMmono_i;
-        }
-        sequence[0]=seqxA_mat[maxTMmono_i][maxTMmono_j];
-        sequence[1]=seqyA_mat[maxTMmono_i][maxTMmono_j];
-        max_total_score=maxTMmono;
-        MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
-            TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-            d0_scale, fast_opt, chainmap);
-    }
+    recover_best_monomer_pair(ctx);
 
     /* perform cross chain alignment
      * in some cases, this leads to dramatic improvement, esp for homodimer */
-    int iter_pair_num=count_assign_pair(assign1_list,chain1_num);
-    if (iter_pair_num>=init_pair_num) copy_chain_assign_data(
-        chain1_num, chain2_num, sequence_init,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_init, seqyA_init, assign1_init,  assign2_init,  TMave_init);
-    double max_total_score_cross=max_total_score;
-    if (byresi_opt==0 && len_aa+len_na<10000)
-    {
-        MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
-            TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
-            sequence_init, d0_scale, fast_opt);
-        if (max_total_score_cross>max_total_score) 
-        {
-            max_total_score=max_total_score_cross;
-            copy_chain_assign_data(chain1_num, chain2_num, sequence,
-                seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
-                seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat);
-        }
-    } 
+    run_cross_chain_alignment(ctx);
+
+    // 桥接：迭代工作缓冲 → 旧变量（final 输出用）
+    string& sx = ctx.iter_seqx;
+    string& sy = ctx.iter_seqy;
+    string& scx = ctx.iter_secx;
+    string& scy = ctx.iter_secy;
 
     // final alignment
     if (outfmt_opt==0) print_version();
@@ -2109,9 +2231,6 @@ int MMalign(const string &xname, const string &yname,
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);
     vector<vector<string> >().swap(seqyA_mat);
-    vector<string>().swap(tmp_str_vec);
-    vector<vector<string> >().swap(seqxA_init);
-    vector<vector<string> >().swap(seqyA_init);
 
     DoubleCube().swap(xa_vec); // structure of complex1
     DoubleCube().swap(ya_vec); // structure of complex2
