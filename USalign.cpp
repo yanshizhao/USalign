@@ -1081,6 +1081,271 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     return 0;
 }
 
+// ===========================================================================
+// MMalign 重构（第 2 步）：输入域结构体与函数
+// 分步原则：每步小改动 + 回归通过后再继续（见 docs/MMalign重构/MMalign重构方案.md §9）
+// ===========================================================================
+
+// ---- 比对选项（跨流程通用，从命令行参数提炼）----
+struct InputOptions
+{
+    int i_opt;
+    int a_opt;
+    int outfmt_opt;
+    bool d_opt;
+    bool fast_opt;
+    bool se_opt;
+    double TMcut;
+    double d0_scale;
+    vector<string>* sequence;    // 引用外部调用方的 alignment（不拷贝）
+};
+
+// ---- 一个复合物/链集合的数据（与 parse_chain_list 输出同构，过渡期）----
+struct ComplexData
+{
+    DoubleCube coords;           // 各链坐标（原 xa_vec）
+    CharMatrix seqs;             // 各链序列（原 seqx_vec）
+    CharMatrix secs;             // 各链二级结构（原 secx_vec）
+    vector<int> mol_types;       // 各链分子类型（原 mol_vec）
+    vector<int> lengths;         // 各链长度（原 xlen_vec）
+    vector<string> chain_ids;    // 链ID（原 chainID_list）
+    vector<string> resi;         // 残基索引（原 resi_vec）
+    int total_len_aa;
+    int total_len_na;
+};
+
+// ---- MMalign 流程状态容器（第 2 层组合壳）----
+struct MMalignContext
+{
+    // 输入参数（来自 MMalign 签名）
+    string xname;
+    string yname;
+    string fname_super;
+    string fname_lign;
+    string fname_matrix;
+    int infmt1_opt;
+    int infmt2_opt;
+    int ter_opt;
+    int split_opt;
+    int mirror_opt;
+    int het_opt;
+    string atom_opt;
+    bool autojustify;
+    string mol_opt;
+    string dir1_opt;
+    string dir2_opt;
+    vector<string> chain2parse1;
+    vector<string> chain2parse2;
+    vector<string> model2parse1;
+    vector<string> model2parse2;
+    vector<string> chain1_list;
+    vector<string> chain2_list;
+    int byresi_opt;
+    string chainmapfile;
+    bool m_opt;
+    bool full_opt;
+    int o_opt;
+    int parallel_threads;
+
+    // 比对选项
+    InputOptions opts;
+
+    // 解析产物
+    ComplexData complex1;
+    ComplexData complex2;
+    int len_aa;
+    int len_na;
+    map<int,int> chain_map;
+};
+
+// ---- 收集 MMalign 签名参数到上下文（生产者函数）----
+MMalignContext make_context(const string &xname, const string &yname,
+    const string &fname_super, const string &fname_lign,
+    const string &fname_matrix, vector<string> &sequence,
+    const double d0_scale, const bool m_opt, const int o_opt,
+    const int a_opt, const bool d_opt, const bool full_opt,
+    const double TMcut, const int infmt1_opt, const int infmt2_opt,
+    const int ter_opt, const int split_opt, const int outfmt_opt,
+    bool fast_opt, const int mirror_opt, const int het_opt,
+    const string &atom_opt, const bool autojustify, const string &mol_opt,
+    const string &dir1_opt, const string &dir2_opt,
+    const vector<string> &chain2parse1, const vector<string> &chain2parse2,
+    const vector<string> &model2parse1, const vector<string> &model2parse2,
+    const vector<string> &chain1_list, const vector<string> &chain2_list,
+    const int byresi_opt, const string &chainmapfile, const bool se_opt,
+    int parallel_threads)
+{
+    MMalignContext ctx;
+    ctx.xname = xname;
+    ctx.yname = yname;
+    ctx.fname_super = fname_super;
+    ctx.fname_lign = fname_lign;
+    ctx.fname_matrix = fname_matrix;
+    ctx.infmt1_opt = infmt1_opt;
+    ctx.infmt2_opt = infmt2_opt;
+    ctx.ter_opt = ter_opt;
+    ctx.split_opt = split_opt;
+    ctx.mirror_opt = mirror_opt;
+    ctx.het_opt = het_opt;
+    ctx.atom_opt = atom_opt;
+    ctx.autojustify = autojustify;
+    ctx.mol_opt = mol_opt;
+    ctx.dir1_opt = dir1_opt;
+    ctx.dir2_opt = dir2_opt;
+    ctx.chain2parse1 = chain2parse1;
+    ctx.chain2parse2 = chain2parse2;
+    ctx.model2parse1 = model2parse1;
+    ctx.model2parse2 = model2parse2;
+    ctx.chain1_list = chain1_list;
+    ctx.chain2_list = chain2_list;
+    ctx.byresi_opt = byresi_opt;
+    ctx.chainmapfile = chainmapfile;
+    ctx.m_opt = m_opt;
+    ctx.full_opt = full_opt;
+    ctx.o_opt = o_opt;
+    ctx.parallel_threads = parallel_threads;
+    ctx.opts.i_opt = 0;
+    ctx.opts.a_opt = a_opt;
+    ctx.opts.outfmt_opt = outfmt_opt;
+    ctx.opts.d_opt = d_opt;
+    ctx.opts.fast_opt = fast_opt;
+    ctx.opts.se_opt = se_opt;
+    ctx.opts.TMcut = TMcut;
+    ctx.opts.d0_scale = d0_scale;
+    ctx.opts.sequence = &sequence;
+    ctx.len_aa = 0;
+    ctx.len_na = 0;
+    return ctx;
+}
+
+// ---- 解析两个复合物（生产者函数，内部调用不动的 parse_chain_list）----
+void parse_inputs(MMalignContext& ctx)
+{
+    parse_chain_list(ctx.chain1_list, ctx.complex1.coords, ctx.complex1.seqs,
+        ctx.complex1.secs, ctx.complex1.mol_types, ctx.complex1.lengths,
+        ctx.complex1.chain_ids, ctx.ter_opt, ctx.split_opt, ctx.mol_opt,
+        ctx.infmt1_opt, ctx.atom_opt, ctx.autojustify, ctx.mirror_opt,
+        ctx.het_opt, ctx.complex1.total_len_aa, ctx.complex1.total_len_na,
+        ctx.o_opt, ctx.complex1.resi, ctx.chain2parse1, ctx.model2parse1);
+    if (ctx.complex1.coords.size() == 0)
+    {
+        PrintErrorAndQuit("ERROR! 0 chain in complex 1");
+    }
+    parse_chain_list(ctx.chain2_list, ctx.complex2.coords, ctx.complex2.seqs,
+        ctx.complex2.secs, ctx.complex2.mol_types, ctx.complex2.lengths,
+        ctx.complex2.chain_ids, ctx.ter_opt, ctx.split_opt, ctx.mol_opt,
+        ctx.infmt2_opt, ctx.atom_opt, ctx.autojustify, 0,
+        ctx.het_opt, ctx.complex2.total_len_aa, ctx.complex2.total_len_na,
+        ctx.o_opt, ctx.complex2.resi, ctx.chain2parse2, ctx.model2parse2);
+    if (ctx.complex2.coords.size() == 0)
+    {
+        PrintErrorAndQuit("ERROR! 0 chain in complex 2");
+    }
+    ctx.len_aa = getmin(ctx.complex1.total_len_aa, ctx.complex2.total_len_aa);
+    ctx.len_na = getmin(ctx.complex1.total_len_na, ctx.complex2.total_len_na);
+    if (ctx.opts.a_opt)
+    {
+        ctx.len_aa = (ctx.complex1.total_len_aa + ctx.complex2.total_len_aa) / 2;
+        ctx.len_na = (ctx.complex1.total_len_na + ctx.complex2.total_len_na) / 2;
+    }
+    if (ctx.byresi_opt)
+    {
+        ctx.opts.i_opt = 3;
+    }
+}
+
+// ---- 把链名匹配为链索引（纯函数，复用×2）----
+int match_chain_id(const string& chain_name, const vector<string>& chain_ids)
+{
+    for (int i = 0; i < (int)chain_ids.size(); i++)
+    {
+        if (chain_name == chain_ids[i] ||
+            ":" + chain_name == chain_ids[i] ||
+            ":1," + chain_name == chain_ids[i])
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// ---- 读取链映射文件（生产者函数，行为与原块③完全一致）----
+void read_chainmap(MMalignContext& ctx)
+{
+    if (ctx.chainmapfile.size() == 0)
+    {
+        return;
+    }
+    string line;
+    vector<string> line_vec;
+    ifstream fin;
+    bool fromStdin = (ctx.chainmapfile == "-");
+    if (!fromStdin)
+    {
+        fin.open(ctx.chainmapfile.c_str());
+    }
+    while (fromStdin ? cin.good() : fin.good())
+    {
+        if (fromStdin)
+        {
+            getline(cin, line);
+        }
+        else
+        {
+            getline(fin, line);
+        }
+        if (line.size() == 0 || line[0] == '#')
+        {
+            continue;
+        }
+        split(line, line_vec, '\t');
+        if (line_vec.size() == 2)
+        {
+            int chainidx1 = match_chain_id(line_vec[0], ctx.complex1.chain_ids);
+            int chainidx2 = match_chain_id(line_vec[1], ctx.complex2.chain_ids);
+            if (chainidx1 >= 0 && chainidx2 >= 0)
+            {
+                if (ctx.chain_map.count(chainidx1))
+                {
+                    cerr << "ERROR! " << line_vec[0] << " already mapped" << endl;
+                }
+                ctx.chain_map[chainidx1] = chainidx2;
+            }
+            else
+            {
+                cerr << "ERROR! Cannot map " << line << endl;
+            }
+        }
+        else
+        {
+            cerr << "ERROR! Cannot map " << line << endl;
+        }
+        for (int i = 0; i < (int)line_vec.size(); i++)
+        {
+            line_vec[i].clear();
+        }
+        line_vec.clear();
+    }
+    if (!fromStdin)
+    {
+        fin.close();
+    }
+    if (ctx.chain_map.size() == 0)
+    {
+        cerr << "ERROR! cannot map any chain pair from " << ctx.chainmapfile << endl;
+    }
+}
+
+// ---- 单体判断（两个复合物各只有一条链）----
+bool is_monomer(const ComplexData& complex1, const ComplexData& complex2)
+{
+    if (complex1.coords.size() == 1 && complex2.coords.size() == 1)
+    {
+        return true;
+    }
+    return false;
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
@@ -1098,108 +1363,51 @@ int MMalign(const string &xname, const string &yname,
     const int byresi_opt,const string&chainmapfile, const bool se_opt,
     int parallel_threads = 1)
 {
-    // declare previously global variables
-    DoubleCube xa_vec; // structure of complex1
-    DoubleCube ya_vec; // structure of complex2
-    CharMatrix seqx_vec; // sequence of complex1
-    CharMatrix seqy_vec; // sequence of complex2
-    CharMatrix secx_vec; // secondary structure of complex1
-    CharMatrix secy_vec; // secondary structure of complex2
-    vector<int> mol_vec1;          // molecule type of complex1, RNA if >0
-    vector<int> mol_vec2;          // molecule type of complex2, RNA if >0
-    vector<string> chainID_list1;  // list of chainID1
-    vector<string> chainID_list2;  // list of chainID2
-    vector<int> xlen_vec;          // length of complex1
-    vector<int> ylen_vec;          // length of complex2
-    int    i,j;                    // chain index
-    int    xlen, ylen;             // chain length
-    string seqx, seqy;             // for the protein sequence
-    CoordArray xa;                     // structure of single chain
+    // ---- 输入域：收集参数 → 解析两个复合物 → 读取链映射 ----
+    MMalignContext ctx = make_context(xname, yname, fname_super, fname_lign,
+        fname_matrix, sequence, d0_scale, m_opt, o_opt, a_opt, d_opt,
+        full_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt,
+        outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt, autojustify,
+        mol_opt, dir1_opt, dir2_opt, chain2parse1, chain2parse2,
+        model2parse1, model2parse2, chain1_list, chain2_list,
+        byresi_opt, chainmapfile, se_opt, parallel_threads);
+
+    parse_inputs(ctx);
+    read_chainmap(ctx);
+
+    // ---- 桥接：ctx 数据 → 旧局部变量（后续步骤逐步消除）----
+    DoubleCube& xa_vec = ctx.complex1.coords;
+    CharMatrix& seqx_vec = ctx.complex1.seqs;
+    CharMatrix& secx_vec = ctx.complex1.secs;
+    vector<int>& mol_vec1 = ctx.complex1.mol_types;
+    vector<int>& xlen_vec = ctx.complex1.lengths;
+    vector<string>& chainID_list1 = ctx.complex1.chain_ids;
+    vector<string>& resi_vec1 = ctx.complex1.resi;
+    DoubleCube& ya_vec = ctx.complex2.coords;
+    CharMatrix& seqy_vec = ctx.complex2.seqs;
+    CharMatrix& secy_vec = ctx.complex2.secs;
+    vector<int>& mol_vec2 = ctx.complex2.mol_types;
+    vector<int>& ylen_vec = ctx.complex2.lengths;
+    vector<string>& chainID_list2 = ctx.complex2.chain_ids;
+    vector<string>& resi_vec2 = ctx.complex2.resi;
+    int& len_aa = ctx.len_aa;
+    int& len_na = ctx.len_na;
+    int& i_opt = ctx.opts.i_opt;
+    map<int,int>& chainmap = ctx.chain_map;
+    // 注：a_opt / d_opt / outfmt_opt / fast_opt / se_opt / TMcut / d0_scale
+    //     继续直接使用 MMalign 签名参数（不桥接，参数本身可用）
+
+    // ---- 临时变量（单链数据，块④以后使用）----
+    int i;
+    int j;
+    int xlen;
+    int ylen;
+    string seqx;
+    string seqy;
+    CoordArray xa;
     CoordArray ya;
-    string secx;                   // for the secondary structure
+    string secx;
     string secy;
-    int    xlen_aa,ylen_aa;        // total length of protein
-    int    xlen_na,ylen_na;        // total length of RNA/DNA
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
-
-    // parse complex
-    parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
-        xlen_vec, chainID_list1, ter_opt, split_opt, mol_opt, infmt1_opt,
-        atom_opt, autojustify, mirror_opt, het_opt, xlen_aa, xlen_na, o_opt,
-        resi_vec1, chain2parse1, model2parse1);
-    if (xa_vec.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 1");
-    parse_chain_list(chain2_list, ya_vec, seqy_vec, secy_vec, mol_vec2,
-        ylen_vec, chainID_list2, ter_opt, split_opt, mol_opt, infmt2_opt,
-        atom_opt, autojustify, 0, het_opt, ylen_aa, ylen_na, o_opt,
-        resi_vec2, chain2parse2, model2parse2);
-    if (ya_vec.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 2");
-    int len_aa=getmin(xlen_aa,ylen_aa);
-    int len_na=getmin(xlen_na,ylen_na);
-    if (a_opt)
-    {
-        len_aa=(xlen_aa+ylen_aa)/2;
-        len_na=(xlen_na+ylen_na)/2;
-    }
-    int i_opt=0;
-    if (byresi_opt) i_opt=3;
-
-    map<int,int> chainmap;
-    if (chainmapfile.size())
-    {
-        string line;
-        int chainidx1;
-        int chainidx2;
-        vector<string> line_vec;
-        ifstream fin;
-        bool fromStdin=(chainmapfile=="-");
-        if (!fromStdin) fin.open(chainmapfile.c_str());
-        while (fromStdin?cin.good():fin.good())
-        {
-            if (fromStdin) getline(cin,line);
-            else           getline(fin,line);
-            if (line.size()==0 || line[0]=='#') continue;
-            split(line,line_vec,'\t');
-            if (line_vec.size()==2)
-            {
-                chainidx1=-1;
-                chainidx2=-1;
-                
-                for (i=0;i<chainID_list1.size();i++)
-                {
-                    if (line_vec[0]==chainID_list1[i] ||
-                    ":"+line_vec[0]==chainID_list1[i] ||
-                  ":1,"+line_vec[0]==chainID_list1[i]) 
-                    {
-                        chainidx1=i;
-                        break;
-                    }
-                }
-                for (i=0;i<chainID_list2.size();i++)
-                {
-                    if (line_vec[1]==chainID_list2[i] ||
-                    ":"+line_vec[1]==chainID_list2[i] ||
-                  ":1,"+line_vec[1]==chainID_list2[i])
-                    {
-                        chainidx2=i;
-                        break;
-                    }
-                }
-                if (chainidx1>=0 && chainidx2>=0)
-                {
-                    if (chainmap.count(chainidx1))
-                        cerr<<"ERROR! "<<line_vec[0]<<" already mapped"<<endl;
-                    chainmap[chainidx1]=chainidx2;
-                }
-                else cerr<<"ERROR! Cannot map "<<line<<endl;
-            }
-            else     cerr<<"ERROR! Cannot map "<<line<<endl;
-            for (i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
-        }
-        if (!fromStdin) fin.close();
-        if (chainmap.size()==0)
-            cerr<<"ERROR! cannot map any chain pair from "<<chainmapfile<<endl;
-    }
 
     // perform monomer alignment if there is only one chain
     if (xa_vec.size()==1 && ya_vec.size()==1)
