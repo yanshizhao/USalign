@@ -1127,6 +1127,25 @@ struct PairwiseScore
     int best_monomer_j;                     // 原 maxTMmono_j
 };
 
+// ---- 链分配结果（环节C，跨流程通用）----
+struct ChainAssignment
+{
+    vector<int> chain2_of_chain1;   // 结构1链索引 → 结构2链索引（原 assign1_list）
+    vector<int> chain1_of_chain2;   // 结构2链索引 → 结构1链索引（原 assign2_list）
+    int pair_count() const
+    {
+        int pair_num = 0;
+        for (int i = 0; i < (int)chain2_of_chain1.size(); i++)
+        {
+            if (chain2_of_chain1[i] >= 0)
+            {
+                pair_num++;
+            }
+        }
+        return pair_num;
+    }
+};
+
 // ---- MMalign 流程状态容器（第 2 层组合壳）----
 struct MMalignContext
 {
@@ -1172,6 +1191,9 @@ struct MMalignContext
 
     // 比对状态（环节B/C）
     PairwiseScore pairwise;
+    ChainAssignment assignment;
+    int aln_chain_num;
+    bool is_oligomer;
 };
 
 // ---- 收集 MMalign 签名参数到上下文（生产者函数）----
@@ -1742,6 +1764,107 @@ void compute_pairwise_matrix(MMalignContext& ctx)
     }
 }
 
+// ---- 初始链分配（贪心 + 报错）----
+void assign_chains_greedily(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    ctx.assignment.chain2_of_chain1.assign(chain1_num, -1);
+    ctx.assignment.chain1_of_chain2.assign(chain2_num, -1);
+    double total_score = enhanced_greedy_search(ctx.pairwise.tm_matrix,
+        ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+        chain1_num, chain2_num);
+    if (total_score <= 0)
+    {
+        PrintErrorAndQuit("ERROR! No assignable chain");
+    }
+}
+
+// ---- 二聚体特判（纯二聚体/杂交二聚体，可能调整分配）----
+void refine_dimer_assignment(MMalignContext& ctx)
+{
+    int na_chain_num1 = 0;
+    int na_chain_num2 = 0;
+    int aa_chain_num1 = 0;
+    int aa_chain_num2 = 0;
+    count_na_aa_chain_num(na_chain_num1, aa_chain_num1, ctx.complex1.mol_types);
+    count_na_aa_chain_num(na_chain_num2, aa_chain_num2, ctx.complex2.mol_types);
+
+    // align protein-RNA hybrid dimer to another hybrid dimer
+    if (na_chain_num1 == 1 && na_chain_num2 == 1 &&
+        aa_chain_num1 == 1 && aa_chain_num2 == 1)
+    {
+        ctx.is_oligomer = false;
+    }
+    // align pure protein dimer or pure RNA dimer
+    else if ((getmin(na_chain_num1, na_chain_num2) == 0 &&
+              aa_chain_num1 == 2 && aa_chain_num2 == 2) ||
+             (getmin(aa_chain_num1, aa_chain_num2) == 0 &&
+              na_chain_num1 == 2 && na_chain_num2 == 2))
+    {
+        adjust_dimer_assignment(ctx.complex1.coords, ctx.complex2.coords,
+            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.complex1.mol_types, ctx.complex2.mol_types,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_seq2);
+        ctx.is_oligomer = false;   // cannot refine further
+    }
+    else
+    {
+        ctx.is_oligomer = true;    // align oligomers to dimer
+    }
+}
+
+// ---- 寡聚体质心精修（homo/hetero，可能重排分配）----
+void refine_oligomer_assignment(MMalignContext& ctx)
+{
+    int chain1_num = (int)ctx.complex1.coords.size();
+    int chain2_num = (int)ctx.complex2.coords.size();
+    CoordArray xcentroids;
+    CoordArray ycentroids;
+    xcentroids.resize(chain1_num);
+    ycentroids.resize(chain2_num);
+    double d0MM = getmin(
+        calculate_centroids(ctx.complex1.coords, chain1_num, xcentroids),
+        calculate_centroids(ctx.complex2.coords, chain2_num, ycentroids));
+
+    homo_refined_greedy_search(ctx.pairwise.tm_matrix,
+        ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+        chain1_num, chain2_num, xcentroids, ycentroids,
+        d0MM, ctx.len_aa + ctx.len_na, ctx.pairwise.rotations);
+
+    if (chain1_num <= chain2_num)
+    {
+        hetero_refined_greedy_search(ctx.pairwise.tm_matrix,
+            ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
+            chain1_num, chain2_num, xcentroids, ycentroids,
+            d0MM, ctx.len_aa + ctx.len_na);
+    }
+    else
+    {
+        hetero_refined_greedy_search(ctx.pairwise.tm_matrix,
+            ctx.assignment.chain1_of_chain2, ctx.assignment.chain2_of_chain1,
+            chain2_num, chain1_num, ycentroids, xcentroids,
+            d0MM, ctx.len_aa + ctx.len_na);
+    }
+}
+
+// ---- 精化链分配（编排：二聚体特判 + 寡聚体质心精修，含守卫条件）----
+void refine_chain_assignment(MMalignContext& ctx)
+{
+    ctx.aln_chain_num = ctx.assignment.pair_count();
+    ctx.is_oligomer = (ctx.aln_chain_num >= 3);
+    if (ctx.aln_chain_num == 2 && ctx.chain_map.size() == 0 && !ctx.opts.se_opt)
+    {
+        refine_dimer_assignment(ctx);
+    }
+    if ((ctx.aln_chain_num >= 3 || ctx.is_oligomer) &&
+        ctx.chain_map.size() == 0 && !ctx.opts.se_opt)
+    {
+        refine_oligomer_assignment(ctx);
+    }
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
@@ -1836,70 +1959,16 @@ int MMalign(const string &xname, const string &yname,
     int& maxTMmono_j = ctx.pairwise.best_monomer_j;
 
     // calculate initial chain-chain assignment
-    std::vector<int> assign1_list(chain1_num);
-    std::vector<int> assign2_list(chain2_num);
-    double total_score=enhanced_greedy_search(TMave_mat, assign1_list,
-        assign2_list, chain1_num, chain2_num);
-    if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
+    assign_chains_greedily(ctx);
 
     // refine alignment for large oligomers
-    int aln_chain_num=count_assign_pair(assign1_list,chain1_num);
-    bool is_oligomer=(aln_chain_num>=3);
-    if (aln_chain_num==2 && chainmap.size()==0 && !se_opt) // dimer alignment
-    {
-        int na_chain_num1;
-        int na_chain_num2;
-        int aa_chain_num1;
-        int aa_chain_num2;
-        count_na_aa_chain_num(na_chain_num1,aa_chain_num1,mol_vec1);
-        count_na_aa_chain_num(na_chain_num2,aa_chain_num2,mol_vec2);
+    refine_chain_assignment(ctx);
 
-        // align protein-RNA hybrid dimer to another hybrid dimer
-        if (na_chain_num1==1 && na_chain_num2==1 && 
-            aa_chain_num1==1 && aa_chain_num2==1) is_oligomer=false;
-        // align pure protein dimer or pure RNA dimer
-        else if ((getmin(na_chain_num1,na_chain_num2)==0 && 
-                    aa_chain_num1==2 && aa_chain_num2==2) ||
-                 (getmin(aa_chain_num1,aa_chain_num2)==0 && 
-                    na_chain_num1==2 && na_chain_num2==2))
-        {
-            adjust_dimer_assignment(xa_vec,ya_vec,xlen_vec,ylen_vec,mol_vec1,
-                mol_vec2,assign1_list,assign2_list,seqxA_mat,seqyA_mat);
-            is_oligomer=false; // cannot refiner further
-        }
-        else is_oligomer=true; /* align oligomers to dimer */
-    }
-
-    if ((aln_chain_num>=3 || is_oligomer) && chainmap.size()==0 && !se_opt) // oligomer alignment
-    {
-        // extract centroid coordinates
-        CoordArray xcentroids;
-        CoordArray ycentroids;
-        xcentroids.resize(chain1_num);
-        ycentroids.resize(chain2_num);
-        double d0MM=getmin(
-            calculate_centroids(xa_vec, chain1_num, xcentroids),
-            calculate_centroids(ya_vec, chain2_num, ycentroids));
-
-        // refine enhanced greedy search with centroid superposition
-        homo_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
-            ycentroids, d0MM, len_aa+len_na, ut_mat);
-
-        if (chain1_num<=chain2_num)
-        {
-            hetero_refined_greedy_search(TMave_mat, assign1_list,
-                assign2_list, chain1_num, chain2_num, xcentroids,
-                ycentroids, d0MM, len_aa+len_na);
-        }
-        else
-        {
-            hetero_refined_greedy_search(TMave_mat, assign2_list,
-                assign1_list, chain2_num, chain1_num, ycentroids,
-                xcentroids, d0MM, len_aa+len_na);
-        }
-
-    }
+    // 桥接：assignment → 旧变量（后续步骤逐步消除）
+    std::vector<int>& assign1_list = ctx.assignment.chain2_of_chain1;
+    std::vector<int>& assign2_list = ctx.assignment.chain1_of_chain2;
+    int& aln_chain_num = ctx.aln_chain_num;
+    bool& is_oligomer = ctx.is_oligomer;
 
     // store initial assignment
     int init_pair_num=count_assign_pair(assign1_list,chain1_num);
