@@ -1346,6 +1346,204 @@ bool is_monomer(const ComplexData& complex1, const ComplexData& complex2)
     return false;
 }
 
+// ===========================================================================
+// MMalign 重构（第 3 步）：链对比对样板提取
+// 公共逻辑: align_chain_pair（se/TMalign 二选一）+ store_pair_result
+// ===========================================================================
+
+// ---- 一次链对结构比对的结果（替代 20+ 个散落变量）----
+struct ChainPairAlignResult
+{
+    Vec3 t0;
+    RotMat u0;
+    double TM1;
+    double TM2;
+    double TM3;
+    double TM4;
+    double TM5;
+    double d0_0;
+    double TM_0;
+    double d0A;
+    double d0B;
+    double d0u;
+    double d0a;
+    double d0_out;
+    string seqM;
+    string seqxA;
+    string seqyA;
+    double rmsd0;
+    double Liden;
+    double TM_ali;
+    double rmsd_ali;
+    int L_ali;
+    int n_ali;
+    int n_ali8;
+    vector<double> do_vec;
+    vector<int> invmap;
+};
+
+// ---- 单链对结构比对（纯函数：se_main / TMalign_main 二选一 + outfmt 统计）----
+ChainPairAlignResult align_chain_pair(
+    CoordArray& xa,
+    CoordArray& ya,
+    const string& seqx,
+    const string& seqy,
+    const string& secx,
+    const string& secy,
+    int xlen,
+    int ylen,
+    int mol_type,
+    double norm_len,
+    const InputOptions& opts,
+    const vector<string>& sequence,
+    int a_opt_val,
+    int u_opt_val,
+    int d_opt_val,
+    int parallel_threads)
+{
+    ChainPairAlignResult r;
+    r.d0_out = 5.0;
+    r.rmsd0 = 0.0;
+    r.Liden = 0.0;
+    r.TM_ali = 0.0;
+    r.rmsd_ali = 0.0;
+    r.L_ali = 0;
+    r.n_ali = 0;
+    r.n_ali8 = 0;
+    if (opts.se_opt)
+    {
+        r.invmap.resize(ylen + 1);
+        r.u0[0][0] = r.u0[1][1] = r.u0[2][2] = 1;
+        r.u0[0][1] = r.u0[0][2] = r.u0[1][0] = r.u0[1][2] = r.u0[2][0] = r.u0[2][1] = 0;
+        r.t0[0] = r.t0[1] = r.t0[2] = 0;
+        se_main(xa, ya, seqx, seqy, r.TM1, r.TM2, r.TM3, r.TM4, r.TM5,
+            r.d0_0, r.TM_0, r.d0A, r.d0B, r.d0u, r.d0a, r.d0_out,
+            r.seqM, r.seqxA, r.seqyA, r.do_vec,
+            r.rmsd0, r.L_ali, r.Liden, r.TM_ali, r.rmsd_ali, r.n_ali, r.n_ali8,
+            xlen, ylen, sequence, norm_len, opts.d0_scale,
+            opts.i_opt, a_opt_val, u_opt_val, d_opt_val,
+            mol_type, opts.outfmt_opt, r.invmap);
+        if (opts.outfmt_opt >= 2)
+        {
+            r.Liden = 0.0;
+            r.L_ali = 0;
+            for (int r2 = 0; r2 < ylen; r2++)
+            {
+                int r1 = r.invmap[r2];
+                if (r1 < 0)
+                {
+                    continue;
+                }
+                r.L_ali += 1;
+                r.Liden += (seqx[r1] == seqy[r2]);
+            }
+        }
+    }
+    else
+    {
+        TMalign_main(xa, ya, seqx, seqy, secx, secy,
+            r.t0, r.u0, r.TM1, r.TM2, r.TM3, r.TM4, r.TM5,
+            r.d0_0, r.TM_0, r.d0A, r.d0B, r.d0u, r.d0a, r.d0_out,
+            r.seqM, r.seqxA, r.seqyA, r.do_vec,
+            r.rmsd0, r.L_ali, r.Liden, r.TM_ali, r.rmsd_ali, r.n_ali, r.n_ali8,
+            xlen, ylen, sequence, norm_len, opts.d0_scale,
+            opts.i_opt, a_opt_val, u_opt_val, d_opt_val, opts.fast_opt,
+            mol_type, opts.TMcut, parallel_threads);
+    }
+    return r;
+}
+
+// ---- 存储一次链对比对结果到全对全矩阵（纯函数）----
+void store_pair_result(const ChainPairAlignResult& result,
+    int i,
+    int j,
+    int chain1_num,
+    int chain2_num,
+    double norm_len,
+    RotArray& ut_mat,
+    vector<vector<string> >& seqxA_mat,
+    vector<vector<string> >& seqyA_mat,
+    DoubleMatrix& TMave_mat,
+    double& maxTMmono,
+    int& maxTMmono_i,
+    int& maxTMmono_j)
+{
+    int ut_idx = i * chain2_num + j;
+    for (int ui = 0; ui < 3; ui++)
+    {
+        for (int uj = 0; uj < 3; uj++)
+        {
+            ut_mat[ut_idx][ui * 3 + uj] = result.u0[ui][uj];
+        }
+    }
+    for (int uj = 0; uj < 3; uj++)
+    {
+        ut_mat[ut_idx][9 + uj] = result.t0[uj];
+    }
+    seqxA_mat[i][j] = result.seqxA;
+    seqyA_mat[i][j] = result.seqyA;
+    TMave_mat[i][j] = result.TM4 * norm_len;
+    if (i != j && j < chain1_num)
+    {
+        TMave_mat[j][i] = result.TM4 * norm_len;
+    }
+    if (TMave_mat[i][j] > maxTMmono)
+    {
+        maxTMmono = TMave_mat[i][j];
+        maxTMmono_i = i;
+        maxTMmono_j = j;
+    }
+}
+
+// ---- 单体退化分支（复用 align_chain_pair，输出后返回）----
+int run_monomer(MMalignContext& ctx)
+{
+    int xlen = ctx.complex1.lengths[0];
+    int ylen = ctx.complex2.lengths[0];
+    string seqx;
+    string seqy;
+    string secx;
+    string secy;
+    CoordArray xa;
+    CoordArray ya;
+    secx.resize(xlen + 1);
+    secy.resize(ylen + 1);
+    xa.resize(xlen);
+    ya.resize(ylen);
+    copy_chain_data(ctx.complex1.coords[0], ctx.complex1.seqs[0],
+        ctx.complex1.secs[0], xlen, xa, seqx, secx);
+    copy_chain_data(ctx.complex2.coords[0], ctx.complex2.seqs[0],
+        ctx.complex2.secs[0], ylen, ya, seqy, secy);
+
+    if (ctx.byresi_opt)
+    {
+        extract_aln_from_resi(*ctx.opts.sequence, seqx, seqy,
+            ctx.complex1.resi, ctx.complex2.resi, ctx.byresi_opt);
+    }
+
+    ChainPairAlignResult result = align_chain_pair(
+        xa, ya, seqx, seqy, secx, secy, xlen, ylen,
+        ctx.complex1.mol_types[0] + ctx.complex2.mol_types[0],
+        0, ctx.opts, *ctx.opts.sequence,
+        ctx.opts.a_opt, 0, ctx.opts.d_opt, 1);
+
+    output_results(
+        ctx.xname.substr(ctx.dir1_opt.size()),
+        ctx.yname.substr(ctx.dir2_opt.size()),
+        ctx.complex1.chain_ids[0], ctx.complex2.chain_ids[0],
+        xlen, ylen, result.t0, result.u0,
+        result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.rmsd0, result.d0_out, result.seqM, result.seqxA, result.seqyA,
+        result.Liden, result.n_ali8, result.L_ali,
+        result.TM_ali, result.rmsd_ali, result.TM_0, result.d0_0,
+        result.d0A, result.d0B, 0, ctx.opts.d0_scale,
+        result.d0a, result.d0u, (ctx.m_opt ? ctx.fname_matrix : "").c_str(),
+        ctx.opts.outfmt_opt, ctx.ter_opt, true, ctx.split_opt,
+        ctx.o_opt, ctx.fname_super, 0, ctx.opts.a_opt, false,
+        ctx.opts.d_opt, ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+    return 0;
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
@@ -1410,112 +1608,9 @@ int MMalign(const string &xname, const string &yname,
     string secy;
 
     // perform monomer alignment if there is only one chain
-    if (xa_vec.size()==1 && ya_vec.size()==1)
+    if (is_monomer(ctx.complex1, ctx.complex2))
     {
-        xlen = xlen_vec[0];
-        ylen = ylen_vec[0];
-        secx.resize(xlen+1);
-        secy.resize(ylen+1);
-        xa.resize(xlen);
-        ya.resize(ylen);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
-
-        // declare variable specific to this pair of TMalign
-        Vec3 t0;
-        RotMat u0;
-        double TM1;
-        double TM2;
-        double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-        double d0_0;
-        double TM_0;
-        double d0A;
-        double d0B;
-        double d0u;
-        double d0a;
-        double d0_out=5.0;
-        string seqM, seqxA, seqyA;// for output alignment
-        double rmsd0 = 0.0;
-        int L_ali;                // Aligned length in standard_TMscore
-        double Liden=0;
-        double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-        int n_ali=0;
-        int n_ali8=0;
-        vector<double> do_vec;
-
-        if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
-
-        // entry function for structure alignment
-        if (se_opt)
-        {
-            std::vector<int> invmap(ylen+1);
-            u0[0][0]=u0[1][1]=u0[2][2]=1;
-            u0[0][1]=         u0[0][2]=
-            u0[1][0]=         u0[1][2]=
-            u0[2][0]=         u0[2][1]=
-            t0[0]   =t0[1]   =t0[2]   =0;
-            se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, sequence, 0, d0_scale,
-                i_opt, a_opt, false, d_opt,
-                mol_vec1[0]+mol_vec2[0], outfmt_opt, invmap);
-            if (outfmt_opt>=2) 
-            {
-                Liden=L_ali=0;
-                int r1;
-                int r2;
-                for (r2=0;r2<ylen;r2++)
-                {
-                    r1=invmap[r2];
-                    if (r1<0) continue;
-                    L_ali+=1;
-                    Liden+=(seqx[r1]==seqy[r2]);
-                }
-            }
-
-        }
-        else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            t0, u0, TM1, TM2, TM3, TM4, TM5,
-            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-            seqM, seqxA, seqyA, do_vec,
-            rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, 0, d0_scale,
-            i_opt, a_opt, false, d_opt, fast_opt,
-            mol_vec1[0]+mol_vec2[0],TMcut);
-
-        // print result
-        output_results(
-            xname.substr(dir1_opt.size()),
-            yname.substr(dir2_opt.size()),
-            chainID_list1[0], chainID_list2[0],
-            xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
-            seqM, seqxA, seqyA, Liden,
-            n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0, d0A, d0B,
-            0, d0_scale, d0a, d0u, (m_opt?fname_matrix:"").c_str(),
-            outfmt_opt, ter_opt, true, split_opt, o_opt, fname_super,
-            0, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
-
-        // clean up
-        seqM.clear();
-        seqxA.clear();
-        seqyA.clear();
-        do_vec.clear();
-
-        DoubleCube().swap(xa_vec); // structure of complex1
-        DoubleCube().swap(ya_vec); // structure of complex2
-        CharMatrix().swap(seqx_vec); // sequence of complex1
-        CharMatrix().swap(seqy_vec); // sequence of complex2
-        CharMatrix().swap(secx_vec); // secondary structure of complex1
-        CharMatrix().swap(secy_vec); // secondary structure of complex2
-        mol_vec1.clear();       // molecule type of complex1, RNA if >0
-        mol_vec2.clear();       // molecule type of complex2, RNA if >0
-        chainID_list1.clear();  // list of chainID1
-        chainID_list2.clear();  // list of chainID2
-        xlen_vec.clear();       // length of complex1
-        ylen_vec.clear();       // length of complex2
-        return 0;
+        return run_monomer(ctx);
     }
 
     // declare TM-score tables
@@ -1604,111 +1699,50 @@ int MMalign(const string &xname, const string &yname,
                 copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                     ylen,ya,seqy,secy);
 
-                // declare variable specific to this pair of TMalign
-                Vec3 t0;
-                RotMat u0;
-                double TM1;
-                double TM2;
-                double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                double d0_0;
-                double TM_0;
-                double d0A;
-                double d0B;
-                double d0u;
-                double d0a;
-                double d0_out=5.0;
-                string seqM, seqxA, seqyA;// for output alignment
-                double rmsd0 = 0.0;
-                int L_ali;                // Aligned length in standard_TMscore
-                double Liden=0;
-                double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                int n_ali=0;
-                int n_ali8=0;
-                vector<double> do_vec;
+                int Lnorm_tmp = len_aa;
+                if (mol_vec1[i] + mol_vec2[j] > 0)
+                {
+                    Lnorm_tmp = len_na;
+                }
 
-                int Lnorm_tmp=len_aa;
-                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
-                
                 if (byresi_opt)
                 {
-                    int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
-                        resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
-                    seqxA_mat[i][j]=sequence[0];
-                    seqyA_mat[i][j]=sequence[1];
-                    if (total_aln>xlen+ylen-3)
+                    int total_aln = extract_aln_from_resi(sequence, seqx, seqy,
+                        resi_vec1, resi_vec2, xlen_vec, ylen_vec, i, j, byresi_opt);
+                    seqxA_mat[i][j] = sequence[0];
+                    seqyA_mat[i][j] = sequence[1];
+                    if (total_aln > xlen + ylen - 3)
                     {
-                        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) 
-                            ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
-                        for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                        TMave_mat[i][j]=0; if (j<chain1_num) TMave_mat[j][i]=0;
-                        seqM.clear();
-                        seqxA.clear();
-                        seqyA.clear();
-
-                        
+                        for (ui=0; ui<3; ui++)
+                        {
+                            for (uj=0; uj<3; uj++)
+                            {
+                                ut_mat[ut_idx][ui*3+uj] = (ui==uj) ? 1 : 0;
+                            }
+                        }
+                        for (uj=0; uj<3; uj++)
+                        {
+                            ut_mat[ut_idx][9+uj] = 0;
+                        }
+                        TMave_mat[i][j] = 0;
+                        if (j < chain1_num)
+                        {
+                            TMave_mat[j][i] = 0;
+                        }
                         continue;
                     }
                 }
 
                 // entry function for structure alignment
-                if (se_opt)
-                {
-                    std::vector<int> invmap(ylen+1);
-                    u0[0][0]=u0[1][1]=u0[2][2]=1;
-                    u0[0][1]=         u0[0][2]=
-                    u0[1][0]=         u0[1][2]=
-                    u0[2][0]=         u0[2][1]=
-                    t0[0]   =t0[1]   =t0[2]   =0;
-                    se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                        i_opt, false, true, false,
-                        mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
-                    if (outfmt_opt>=2) 
-                    {
-                        Liden=L_ali=0;
-                        int r1;
-                        int r2;
-                        for (r2=0;r2<ylen;r2++)
-                        {
-                            r1=invmap[r2];
-                            if (r1<0) continue;
-                            L_ali+=1;
-                            Liden+=(seqx[r1]==seqy[r2]);
-                        }
-                    }
-                }
-                else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                    seqM, seqxA, seqyA, do_vec,
-                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    i_opt, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
+                ChainPairAlignResult result = align_chain_pair(
+                    xa, ya, seqx, seqy, secx, secy, xlen, ylen,
+                    mol_vec1[i] + mol_vec2[j], Lnorm_tmp,
+                    ctx.opts, sequence, 0, 1, 0, parallel_threads);
 
                 // store result
-                for (ui=0;ui<3;ui++)
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
-                seqxA_mat[i][j]=seqxA;
-                seqyA_mat[i][j]=seqyA;
-                TMave_mat[i][j]=TM4*Lnorm_tmp;
-                    if (i != j && j < chain1_num) TMave_mat[j][i]=TM4*Lnorm_tmp;
-                if (TMave_mat[i][j]>maxTMmono)
-                {
-                    maxTMmono=TMave_mat[i][j];
-                    maxTMmono_i=i;
-                    maxTMmono_j=j;
-                }
-
-                // clean up
-                seqM.clear();
-                seqxA.clear();
-                seqyA.clear();
-                do_vec.clear();
+                store_pair_result(result, i, j, chain1_num, chain2_num, Lnorm_tmp,
+                    ut_mat, seqxA_mat, seqyA_mat, TMave_mat,
+                    maxTMmono, maxTMmono_i, maxTMmono_j);
             }
         }
     }
