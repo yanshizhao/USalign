@@ -1208,7 +1208,7 @@ struct MMalignContext
 };
 
 // ---- 收集 MMalign 签名参数到上下文（生产者函数）----
-MMalignContext make_context(const string &xname, const string &yname,
+MMalignContext build_context(const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
     const string &fname_matrix, vector<string> &sequence,
     const double d0_scale, const bool m_opt, const int o_opt,
@@ -2149,7 +2149,7 @@ int MMalign(const string &xname, const string &yname,
     int parallel_threads = 1)
 {
     // ---- 输入域：收集参数 → 解析两个复合物 → 读取链映射 ----
-    MMalignContext ctx = make_context(xname, yname, fname_super, fname_lign,
+    MMalignContext ctx = build_context(xname, yname, fname_super, fname_lign,
         fname_matrix, sequence, d0_scale, m_opt, o_opt, a_opt, d_opt,
         full_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt,
         outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt, autojustify,
