@@ -496,96 +496,204 @@ int run_batch_parallel(
     return 0;
 }
 
-void run_mmalign_parallel(
-    const DoubleCube& xa_vec, const DoubleCube& ya_vec,
-    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
-    const CharMatrix& secx_vec, const CharMatrix& secy_vec,
-    const vector<int>& xlen_vec, const vector<int>& ylen_vec,
-    const vector<int>& mol_vec1, const vector<int>& mol_vec2,
-    const map<int,int>& chainmap,
-    vector<string>& sequence,
-    vector<string>& resi_vec1, vector<string>& resi_vec2,
-    DoubleMatrix& TMave_mat, RotArray& ut_mat,
-    vector<vector<string>>& seqxA_mat,
-    vector<vector<string>>& seqM_mat,
-    vector<vector<string>>& seqyA_mat,
-    double& maxTMmono, int& maxTMmono_i, int& maxTMmono_j,
-    int chain1_num, int chain2_num,
-    int len_aa, int len_na,
-    int outfmt_opt, int i_opt,
-    double TMcut, double d0_scale,
-    bool byresi_opt, bool se_opt, bool fast_opt,
-    int parallel_threads = 1)
+// ---- 一个复合物/链集合的数据（与 parse_chain_list 输出同构，过渡期）----
+struct ComplexData
 {
+    DoubleCube coords;           // 各链坐标（原 xa_vec）
+    CharMatrix seqs;             // 各链序列（原 seqx_vec）
+    CharMatrix secs;             // 各链二级结构（原 secx_vec）
+    vector<int> mol_types;       // 各链分子类型（原 mol_vec）
+    vector<int> lengths;         // 各链长度（原 xlen_vec）
+    vector<string> chain_ids;    // 链ID（原 chainID_list）
+    vector<string> resi;         // 残基索引（原 resi_vec）
+    int total_len_aa;
+    int total_len_na;
+};
+
+// ---- 全对全链级打分结果（环节B，跨流程通用）----
+struct AllChainPairsResult
+{
+    DoubleMatrix tm_matrix;                 // 链对 TM 分数矩阵（原 TMave_mat）
+    RotArray rotations;                     // 各链对旋转（原 ut_mat）
+    vector<vector<string> > aligned_seq1;   // 链对残基比对1（原 seqxA_mat）
+    vector<vector<string> > aligned_seq2;   // 链对残基比对2（原 seqyA_mat）
+    vector<vector<string> > aligned_consensus;  // 一致序列（原 seqM_mat）
+    double best_monomer_tm;                 // 最优单体链对 TM（原 maxTMmono）
+    int best_monomer_i;                     // 原 maxTMmono_i
+    int best_monomer_j;                     // 原 maxTMmono_j
+};
+
+// ---- 链分配结果（环节C，跨流程通用）----
+struct ChainAssignment
+{
+    vector<int> chain2_of_chain1;   // 结构1链索引 → 结构2链索引（原 assign1_list）
+    vector<int> chain1_of_chain2;   // 结构2链索引 → 结构1链索引（原 assign2_list）
+    int pair_count() const
+    {
+        int pair_num = 0;
+        for (int i = 0; i < (int)chain2_of_chain1.size(); i++)
+        {
+            if (chain2_of_chain1[i] >= 0)
+            {
+                pair_num++;
+            }
+        }
+        return pair_num;
+    }
+};
+
+// ---- MMalign 流程状态容器（第 2 层组合壳）----
+// ---- 输入参数（build_context 从 MMalign 签名收集，流程中只读）----
+struct MMalignInputs
+{
+    string structure1_name;
+    string structure2_name;
+    string superposed_out;
+    string alignment_file;
+    string matrix_out;
+    int infmt1_opt;
+    int infmt2_opt;
+    int ter_opt;
+    int split_opt;
+    int mirror_opt;
+    int het_opt;
+    string atom_opt;
+    bool normalize_atom_name;
+    string mol_opt;
+    string dir1_opt;
+    string dir2_opt;
+    vector<string> parsed_chains1;
+    vector<string> chain2parse2;
+    vector<string> model2parse1;
+    vector<string> model2parse2;
+    vector<string> struct1_chain_list;
+    vector<string> chain2_list;
+    int byresi_opt;
+    string chain_map_file;
+    bool m_opt;
+    bool full_opt;
+    int o_opt;
+    int parallel_threads;
+    // 比对选项（展开，未封装；i_opt 由 byresi_opt 推导，非签名参数，不入 ctx）
+    int a_opt;
+    int outfmt_opt;
+    bool d_opt;
+    bool fast_opt;
+    bool se_opt;
+    double TMcut;
+    double d0_scale;
+    vector<string>* sequence;       // 引用外部调用方的 alignment（不拷贝）
+};
+
+// ---- 解析产物（parse_structures / read_chainmap 填充，后续只读）----
+struct MMalignParsed
+{
+    ComplexData complex1;
+    ComplexData complex2;
+    int protein_norm_len;             // 类内默认初始化
+    int na_norm_len;
+    map<int,int> chain_map;
+};
+
+struct MMalignContext
+{
+    MMalignInputs inputs;           // 输入参数
+    MMalignParsed parsed;           // 解析产物
+
+    // 比对状态（环节B/C，流程逐步产生）
+    AllChainPairsResult pairwise;
+    ChainAssignment assignment;
+    int aln_chain_num;
+    bool is_oligomer;
+
+    // 优化域（环节D：快照/迭代/回退/交叉）
+    int init_pair_num;
+    ChainAssignment assignment_init;
+    AllChainPairsResult pairwise_init;
+    vector<string> sequence_init;
+    double iteration_score;         // 迭代总分（原 max_total_score）
+    string iter_seqx;               // 迭代工作缓冲（原 sx）
+    string iter_seqy;               // 原 sy
+    string iter_secx;               // 原 scx
+    string iter_secy;               // 原 scy
+};
+
+void run_mmalign_parallel(const MMalignInputs& inputs,
+    const MMalignParsed& parsed,
+    AllChainPairsResult& pairwise)
+{
+    int chain1_num = (int)parsed.complex1.coords.size();
+    int chain2_num = (int)parsed.complex2.coords.size();
+    int i_opt = (inputs.byresi_opt ? 3 : 0);
     int i, j, ui, uj, ut_idx, xlen, ylen;
     string secx, secy, seqx, seqy;
     CoordArray xa, ya;
 
-#pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
+#pragma omp parallel for schedule(dynamic, 8) num_threads(inputs.parallel_threads) private(xa, ya, secx, secy, seqx, seqy, xlen, ylen, ut_idx, ui, uj)
     for (i=0;i<chain1_num;i++)
     {
             int Lnorm_tmp;
             string seqM, seqxA, seqyA;
             vector<double> do_vec;
-            xlen=xlen_vec[i];
+            xlen=parsed.complex1.lengths[i];
             if (xlen<3)
             {
-                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                for (j=0;j<chain2_num;j++) pairwise.tm_matrix[i][j]=pairwise.tm_matrix[j][i]=-1;
                 continue;
             }
             secx.resize(xlen+1);
             xa.resize(xlen);
-            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+            copy_chain_data(parsed.complex1.coords[i],parsed.complex1.seqs[i],parsed.complex1.secs[i],
                 xlen,xa,seqx,secx);
 
             for (j=0;j<chain2_num;j++)
             {
                 ut_idx=i*chain2_num+j;
                 for (ui=0;ui<4;ui++)
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=0;
-                ut_mat[ut_idx][0]=1;
-                ut_mat[ut_idx][4]=1;
-                ut_mat[ut_idx][8]=1;
+                    for (uj=0;uj<3;uj++) pairwise.rotations[ut_idx][ui*3+uj]=0;
+                pairwise.rotations[ut_idx][0]=1;
+                pairwise.rotations[ut_idx][4]=1;
+                pairwise.rotations[ut_idx][8]=1;
 
-                if (mol_vec1[i]*mol_vec2[j]<0)
+                if (parsed.complex1.mol_types[i]*parsed.complex2.mol_types[j]<0)
                 {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    pairwise.tm_matrix[i][j]=pairwise.tm_matrix[j][i]=-1;
                     continue;
                 }
-                if (chainmap.size() && (!chainmap.count(i) || chainmap.find(i)->second!=j))
+                if (parsed.chain_map.size() && (!parsed.chain_map.count(i) || parsed.chain_map.find(i)->second!=j))
                 {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    pairwise.tm_matrix[i][j]=pairwise.tm_matrix[j][i]=-1;
                     continue;
                 }
 
-                ylen=ylen_vec[j];
+                ylen=parsed.complex2.lengths[j];
                 if (ylen<3)
                 {
-                    TMave_mat[i][j]=TMave_mat[j][i]=-1;
+                    pairwise.tm_matrix[i][j]=pairwise.tm_matrix[j][i]=-1;
                     continue;
                 }
                 secy.resize(ylen+1);
                 ya.resize(ylen);
-                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                copy_chain_data(parsed.complex2.coords[j],parsed.complex2.seqs[j],parsed.complex2.secs[j],
                     ylen,ya,seqy,secy);
 
-                Lnorm_tmp=len_aa;
-                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+                Lnorm_tmp=parsed.protein_norm_len;
+                if (parsed.complex1.mol_types[i]+parsed.complex2.mol_types[j]>0) Lnorm_tmp=parsed.na_norm_len;
 
-                if (byresi_opt)
+                if (inputs.byresi_opt)
                 {
                     bool _byresi_skip = false;
                     {
-                        int total_aln=extract_aln_from_resi(sequence, seqx, seqy,
-                            resi_vec1,resi_vec2,xlen_vec,ylen_vec, i, j, byresi_opt);
-                        seqxA_mat[i][j]=sequence[0];
-                        seqyA_mat[i][j]=sequence[1];
+                        int total_aln=extract_aln_from_resi(*inputs.sequence, seqx, seqy,
+                            parsed.complex1.resi,parsed.complex2.resi,parsed.complex1.lengths,parsed.complex2.lengths, i, j, inputs.byresi_opt);
+                        pairwise.aligned_seq1[i][j]=(*inputs.sequence)[0];
+                        pairwise.aligned_seq2[i][j]=(*inputs.sequence)[1];
                         if (total_aln>xlen+ylen-3)
                         {
                             for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++)
-                                ut_mat[ut_idx][ui*3+uj]=(ui==uj)?1:0;
-                            for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=0;
-                            TMave_mat[i][j]=TMave_mat[j][i]=0;
+                                pairwise.rotations[ut_idx][ui*3+uj]=(ui==uj)?1:0;
+                            for (uj=0;uj<3;uj++) pairwise.rotations[ut_idx][9+uj]=0;
+                            pairwise.tm_matrix[i][j]=pairwise.tm_matrix[j][i]=0;
                             seqM.clear(); seqxA.clear(); seqyA.clear();
                             _byresi_skip = true;
                         }
@@ -601,7 +709,7 @@ void run_mmalign_parallel(
                 int L_ali = 0; double Liden = 0;
                 double TM_ali = 0, rmsd_ali = 0;
                 int n_ali = 0, n_ali8 = 0;
-                if (se_opt)
+                if (inputs.se_opt)
                 {
                     std::vector<int> invmap(ylen+1);
                     u0[0][0]=u0[1][1]=u0[2][2]=1;
@@ -611,10 +719,10 @@ void run_mmalign_parallel(
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        xlen, ylen, *inputs.sequence, Lnorm_tmp, inputs.d0_scale,
                         i_opt, false, true, false,
-                        mol_vec1[i]+mol_vec2[j], outfmt_opt, invmap);
-                    if (outfmt_opt>=2)
+                        parsed.complex1.mol_types[i]+parsed.complex2.mol_types[j], inputs.outfmt_opt, invmap);
+                    if (inputs.outfmt_opt>=2)
                     {
                         Liden=L_ali=0;
                         int r1; int r2;
@@ -632,23 +740,23 @@ void run_mmalign_parallel(
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-                    i_opt, false, true, false, fast_opt,
-                    mol_vec1[i]+mol_vec2[j],TMcut);
+                    xlen, ylen, *inputs.sequence, Lnorm_tmp, inputs.d0_scale,
+                    i_opt, false, true, false, inputs.fast_opt,
+                    parsed.complex1.mol_types[i]+parsed.complex2.mol_types[j],inputs.TMcut);
 
                 // store result
                 for (ui=0;ui<3;ui++)
-                    for (uj=0;uj<3;uj++) ut_mat[ut_idx][ui*3+uj]=u0[ui][uj];
-                for (uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=t0[uj];
-                seqxA_mat[i][j]=seqxA;
-                seqyA_mat[i][j]=seqyA;
-                TMave_mat[i][j]=TM4*Lnorm_tmp;
-                if (i != j) TMave_mat[j][i]=TM4*Lnorm_tmp;
-                if (TMave_mat[i][j]>maxTMmono)
+                    for (uj=0;uj<3;uj++) pairwise.rotations[ut_idx][ui*3+uj]=u0[ui][uj];
+                for (uj=0;uj<3;uj++) pairwise.rotations[ut_idx][9+uj]=t0[uj];
+                pairwise.aligned_seq1[i][j]=seqxA;
+                pairwise.aligned_seq2[i][j]=seqyA;
+                pairwise.tm_matrix[i][j]=TM4*Lnorm_tmp;
+                if (i != j) pairwise.tm_matrix[j][i]=TM4*Lnorm_tmp;
+                if (pairwise.tm_matrix[i][j]>pairwise.best_monomer_tm)
                 {
-                    maxTMmono=TMave_mat[i][j];
-                    maxTMmono_i=i;
-                    maxTMmono_j=j;
+                    pairwise.best_monomer_tm=pairwise.tm_matrix[i][j];
+                    pairwise.best_monomer_i=i;
+                    pairwise.best_monomer_j=j;
                 }
 
                 seqM.clear(); seqxA.clear(); seqyA.clear(); do_vec.clear();
@@ -1086,129 +1194,11 @@ int TMalign(string &xname, string &yname, const string &fname_super,
 // 分步原则：每步小改动 + 回归通过后再继续（见 docs/MMalign重构/MMalign重构方案.md §9）
 // ===========================================================================
 
-// ---- 比对选项（跨流程通用，从命令行参数提炼）----
-struct InputOptions
-{
-    int i_opt;
-    int a_opt;
-    int outfmt_opt;
-    bool d_opt;
-    bool fast_opt;
-    bool se_opt;
-    double TMcut;
-    double d0_scale;
-    vector<string>* sequence;    // 引用外部调用方的 alignment（不拷贝）
-};
 
-// ---- 一个复合物/链集合的数据（与 parse_chain_list 输出同构，过渡期）----
-struct ComplexData
-{
-    DoubleCube coords;           // 各链坐标（原 xa_vec）
-    CharMatrix seqs;             // 各链序列（原 seqx_vec）
-    CharMatrix secs;             // 各链二级结构（原 secx_vec）
-    vector<int> mol_types;       // 各链分子类型（原 mol_vec）
-    vector<int> lengths;         // 各链长度（原 xlen_vec）
-    vector<string> chain_ids;    // 链ID（原 chainID_list）
-    vector<string> resi;         // 残基索引（原 resi_vec）
-    int total_len_aa;
-    int total_len_na;
-};
 
-// ---- 全对全链级打分结果（环节B，跨流程通用）----
-struct PairwiseScore
-{
-    DoubleMatrix tm_matrix;                 // 链对 TM 分数矩阵（原 TMave_mat）
-    RotArray rotations;                     // 各链对旋转（原 ut_mat）
-    vector<vector<string> > aligned_seq1;   // 链对残基比对1（原 seqxA_mat）
-    vector<vector<string> > aligned_seq2;   // 链对残基比对2（原 seqyA_mat）
-    vector<vector<string> > aligned_consensus;  // 一致序列（原 seqM_mat）
-    double best_monomer_tm;                 // 最优单体链对 TM（原 maxTMmono）
-    int best_monomer_i;                     // 原 maxTMmono_i
-    int best_monomer_j;                     // 原 maxTMmono_j
-};
-
-// ---- 链分配结果（环节C，跨流程通用）----
-struct ChainAssignment
-{
-    vector<int> chain2_of_chain1;   // 结构1链索引 → 结构2链索引（原 assign1_list）
-    vector<int> chain1_of_chain2;   // 结构2链索引 → 结构1链索引（原 assign2_list）
-    int pair_count() const
-    {
-        int pair_num = 0;
-        for (int i = 0; i < (int)chain2_of_chain1.size(); i++)
-        {
-            if (chain2_of_chain1[i] >= 0)
-            {
-                pair_num++;
-            }
-        }
-        return pair_num;
-    }
-};
-
-// ---- MMalign 流程状态容器（第 2 层组合壳）----
-struct MMalignContext
-{
-    // 输入参数（来自 MMalign 签名）
-    string xname;
-    string yname;
-    string fname_super;
-    string fname_lign;
-    string fname_matrix;
-    int infmt1_opt;
-    int infmt2_opt;
-    int ter_opt;
-    int split_opt;
-    int mirror_opt;
-    int het_opt;
-    string atom_opt;
-    bool autojustify;
-    string mol_opt;
-    string dir1_opt;
-    string dir2_opt;
-    vector<string> chain2parse1;
-    vector<string> chain2parse2;
-    vector<string> model2parse1;
-    vector<string> model2parse2;
-    vector<string> chain1_list;
-    vector<string> chain2_list;
-    int byresi_opt;
-    string chainmapfile;
-    bool m_opt;
-    bool full_opt;
-    int o_opt;
-    int parallel_threads;
-
-    // 比对选项
-    InputOptions opts;
-
-    // 解析产物
-    ComplexData complex1;
-    ComplexData complex2;
-    int len_aa;
-    int len_na;
-    map<int,int> chain_map;
-
-    // 比对状态（环节B/C）
-    PairwiseScore pairwise;
-    ChainAssignment assignment;
-    int aln_chain_num;
-    bool is_oligomer;
-
-    // 优化域（环节D：快照/迭代/回退/交叉）
-    int init_pair_num;
-    ChainAssignment assignment_init;
-    PairwiseScore pairwise_init;
-    vector<string> sequence_init;
-    double iteration_score;         // 迭代总分（原 max_total_score）
-    string iter_seqx;               // 迭代工作缓冲（原 sx）
-    string iter_seqy;               // 原 sy
-    string iter_secx;               // 原 scx
-    string iter_secy;               // 原 scy
-};
-
-// ---- 收集 MMalign 签名参数到上下文（生产者函数）----
-MMalignContext build_context(const string &xname, const string &yname,
+// ---- 收集 MMalign 签名参数到上下文（生产者函数：声明在外、传入引用填充）----
+void build_context(MMalignInputs& inputs,
+    const string &xname, const string &yname,
     const string &fname_super, const string &fname_lign,
     const string &fname_matrix, vector<string> &sequence,
     const double d0_scale, const bool m_opt, const int o_opt,
@@ -1224,82 +1214,73 @@ MMalignContext build_context(const string &xname, const string &yname,
     const int byresi_opt, const string &chainmapfile, const bool se_opt,
     int parallel_threads)
 {
-    MMalignContext ctx;
-    ctx.xname = xname;
-    ctx.yname = yname;
-    ctx.fname_super = fname_super;
-    ctx.fname_lign = fname_lign;
-    ctx.fname_matrix = fname_matrix;
-    ctx.infmt1_opt = infmt1_opt;
-    ctx.infmt2_opt = infmt2_opt;
-    ctx.ter_opt = ter_opt;
-    ctx.split_opt = split_opt;
-    ctx.mirror_opt = mirror_opt;
-    ctx.het_opt = het_opt;
-    ctx.atom_opt = atom_opt;
-    ctx.autojustify = autojustify;
-    ctx.mol_opt = mol_opt;
-    ctx.dir1_opt = dir1_opt;
-    ctx.dir2_opt = dir2_opt;
-    ctx.chain2parse1 = chain2parse1;
-    ctx.chain2parse2 = chain2parse2;
-    ctx.model2parse1 = model2parse1;
-    ctx.model2parse2 = model2parse2;
-    ctx.chain1_list = chain1_list;
-    ctx.chain2_list = chain2_list;
-    ctx.byresi_opt = byresi_opt;
-    ctx.chainmapfile = chainmapfile;
-    ctx.m_opt = m_opt;
-    ctx.full_opt = full_opt;
-    ctx.o_opt = o_opt;
-    ctx.parallel_threads = parallel_threads;
-    ctx.opts.i_opt = 0;
-    ctx.opts.a_opt = a_opt;
-    ctx.opts.outfmt_opt = outfmt_opt;
-    ctx.opts.d_opt = d_opt;
-    ctx.opts.fast_opt = fast_opt;
-    ctx.opts.se_opt = se_opt;
-    ctx.opts.TMcut = TMcut;
-    ctx.opts.d0_scale = d0_scale;
-    ctx.opts.sequence = &sequence;
-    ctx.len_aa = 0;
-    ctx.len_na = 0;
-    return ctx;
+    inputs.structure1_name = xname;
+    inputs.structure2_name = yname;
+    inputs.superposed_out = fname_super;
+    inputs.alignment_file = fname_lign;
+    inputs.matrix_out = fname_matrix;
+    inputs.infmt1_opt = infmt1_opt;
+    inputs.infmt2_opt = infmt2_opt;
+    inputs.ter_opt = ter_opt;
+    inputs.split_opt = split_opt;
+    inputs.mirror_opt = mirror_opt;
+    inputs.het_opt = het_opt;
+    inputs.atom_opt = atom_opt;
+    inputs.normalize_atom_name = autojustify;
+    inputs.mol_opt = mol_opt;
+    inputs.dir1_opt = dir1_opt;
+    inputs.dir2_opt = dir2_opt;
+    inputs.parsed_chains1 = chain2parse1;
+    inputs.chain2parse2 = chain2parse2;
+    inputs.model2parse1 = model2parse1;
+    inputs.model2parse2 = model2parse2;
+    inputs.struct1_chain_list = chain1_list;
+    inputs.chain2_list = chain2_list;
+    inputs.byresi_opt = byresi_opt;
+    inputs.chain_map_file = chainmapfile;
+    inputs.m_opt = m_opt;
+    inputs.full_opt = full_opt;
+    inputs.o_opt = o_opt;
+    inputs.parallel_threads = parallel_threads;
+    inputs.a_opt = a_opt;
+    inputs.outfmt_opt = outfmt_opt;
+    inputs.d_opt = d_opt;
+    inputs.fast_opt = fast_opt;
+    inputs.se_opt = se_opt;
+    inputs.TMcut = TMcut;
+    inputs.d0_scale = d0_scale;
+    inputs.sequence = &sequence;
 }
 
 // ---- 解析两个复合物（生产者函数，内部调用不动的 parse_chain_list）----
-void parse_inputs(MMalignContext& ctx)
+void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
 {
-    parse_chain_list(ctx.chain1_list, ctx.complex1.coords, ctx.complex1.seqs,
-        ctx.complex1.secs, ctx.complex1.mol_types, ctx.complex1.lengths,
-        ctx.complex1.chain_ids, ctx.ter_opt, ctx.split_opt, ctx.mol_opt,
-        ctx.infmt1_opt, ctx.atom_opt, ctx.autojustify, ctx.mirror_opt,
-        ctx.het_opt, ctx.complex1.total_len_aa, ctx.complex1.total_len_na,
-        ctx.o_opt, ctx.complex1.resi, ctx.chain2parse1, ctx.model2parse1);
-    if (ctx.complex1.coords.size() == 0)
+    parse_chain_list(inputs.struct1_chain_list, parsed.complex1.coords, parsed.complex1.seqs,
+        parsed.complex1.secs, parsed.complex1.mol_types, parsed.complex1.lengths,
+        parsed.complex1.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
+        inputs.infmt1_opt, inputs.atom_opt, inputs.normalize_atom_name, inputs.mirror_opt,
+        inputs.het_opt, parsed.complex1.total_len_aa, parsed.complex1.total_len_na,
+        inputs.o_opt, parsed.complex1.resi, inputs.parsed_chains1, inputs.model2parse1);
+    if (parsed.complex1.coords.size() == 0)
     {
         PrintErrorAndQuit("ERROR! 0 chain in complex 1");
     }
-    parse_chain_list(ctx.chain2_list, ctx.complex2.coords, ctx.complex2.seqs,
-        ctx.complex2.secs, ctx.complex2.mol_types, ctx.complex2.lengths,
-        ctx.complex2.chain_ids, ctx.ter_opt, ctx.split_opt, ctx.mol_opt,
-        ctx.infmt2_opt, ctx.atom_opt, ctx.autojustify, 0,
-        ctx.het_opt, ctx.complex2.total_len_aa, ctx.complex2.total_len_na,
-        ctx.o_opt, ctx.complex2.resi, ctx.chain2parse2, ctx.model2parse2);
-    if (ctx.complex2.coords.size() == 0)
+    parse_chain_list(inputs.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
+        parsed.complex2.secs, parsed.complex2.mol_types, parsed.complex2.lengths,
+        parsed.complex2.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
+        inputs.infmt2_opt, inputs.atom_opt, inputs.normalize_atom_name, 0,
+        inputs.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
+        inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
+    if (parsed.complex2.coords.size() == 0)
     {
         PrintErrorAndQuit("ERROR! 0 chain in complex 2");
     }
-    ctx.len_aa = getmin(ctx.complex1.total_len_aa, ctx.complex2.total_len_aa);
-    ctx.len_na = getmin(ctx.complex1.total_len_na, ctx.complex2.total_len_na);
-    if (ctx.opts.a_opt)
+    parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
+    parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
+    if (inputs.a_opt)
     {
-        ctx.len_aa = (ctx.complex1.total_len_aa + ctx.complex2.total_len_aa) / 2;
-        ctx.len_na = (ctx.complex1.total_len_na + ctx.complex2.total_len_na) / 2;
-    }
-    if (ctx.byresi_opt)
-    {
-        ctx.opts.i_opt = 3;
+        parsed.protein_norm_len = (parsed.complex1.total_len_aa + parsed.complex2.total_len_aa) / 2;
+        parsed.na_norm_len = (parsed.complex1.total_len_na + parsed.complex2.total_len_na) / 2;
     }
 }
 
@@ -1319,19 +1300,22 @@ int match_chain_id(const string& chain_name, const vector<string>& chain_ids)
 }
 
 // ---- 读取链映射文件（生产者函数，行为与原块③完全一致）----
-void read_chainmap(MMalignContext& ctx)
+void read_chainmap(const string& chain_map_file,
+    const vector<string>& chain1_ids,
+    const vector<string>& chain2_ids,
+    map<int,int>& chain_map)
 {
-    if (ctx.chainmapfile.size() == 0)
+    if (chain_map_file.size() == 0)
     {
         return;
     }
     string line;
     vector<string> line_vec;
     ifstream fin;
-    bool fromStdin = (ctx.chainmapfile == "-");
+    bool fromStdin = (chain_map_file == "-");
     if (!fromStdin)
     {
-        fin.open(ctx.chainmapfile.c_str());
+        fin.open(chain_map_file.c_str());
     }
     while (fromStdin ? cin.good() : fin.good())
     {
@@ -1350,15 +1334,15 @@ void read_chainmap(MMalignContext& ctx)
         split(line, line_vec, '\t');
         if (line_vec.size() == 2)
         {
-            int chainidx1 = match_chain_id(line_vec[0], ctx.complex1.chain_ids);
-            int chainidx2 = match_chain_id(line_vec[1], ctx.complex2.chain_ids);
+            int chainidx1 = match_chain_id(line_vec[0], chain1_ids);
+            int chainidx2 = match_chain_id(line_vec[1], chain2_ids);
             if (chainidx1 >= 0 && chainidx2 >= 0)
             {
-                if (ctx.chain_map.count(chainidx1))
+                if (chain_map.count(chainidx1))
                 {
                     cerr << "ERROR! " << line_vec[0] << " already mapped" << endl;
                 }
-                ctx.chain_map[chainidx1] = chainidx2;
+                chain_map[chainidx1] = chainidx2;
             }
             else
             {
@@ -1379,20 +1363,16 @@ void read_chainmap(MMalignContext& ctx)
     {
         fin.close();
     }
-    if (ctx.chain_map.size() == 0)
+    if (chain_map.size() == 0)
     {
-        cerr << "ERROR! cannot map any chain pair from " << ctx.chainmapfile << endl;
+        cerr << "ERROR! cannot map any chain pair from " << chain_map_file << endl;
     }
 }
 
-// ---- 单体判断（两个复合物各只有一条链）----
-bool is_monomer(const ComplexData& complex1, const ComplexData& complex2)
+// ---- 单体判断（复合物各只有一条链）----
+bool is_monomer(int chain_num)
 {
-    if (complex1.coords.size() == 1 && complex2.coords.size() == 1)
-    {
-        return true;
-    }
-    return false;
+    return chain_num == 1;
 }
 
 // ===========================================================================
@@ -1432,7 +1412,7 @@ struct ChainPairAlignResult
 };
 
 // ---- 单链对结构比对（纯函数：se_main / TMalign_main 二选一 + outfmt 统计）----
-ChainPairAlignResult align_chain_pair(
+void align_chain_pair(ChainPairAlignResult& result,
     CoordArray& xa,
     CoordArray& ya,
     const string& seqx,
@@ -1443,63 +1423,51 @@ ChainPairAlignResult align_chain_pair(
     int ylen,
     int mol_type,
     double norm_len,
-    const InputOptions& opts,
-    const vector<string>& sequence,
-    int a_opt_val,
+    const MMalignInputs& inputs,
+    int i_opt_val,
     int u_opt_val,
-    int d_opt_val,
     int parallel_threads)
 {
-    ChainPairAlignResult r;
-    r.d0_out = 5.0;
-    r.rmsd0 = 0.0;
-    r.Liden = 0.0;
-    r.TM_ali = 0.0;
-    r.rmsd_ali = 0.0;
-    r.L_ali = 0;
-    r.n_ali = 0;
-    r.n_ali8 = 0;
-    if (opts.se_opt)
+    if (inputs.se_opt)
     {
-        r.invmap.resize(ylen + 1);
-        r.u0[0][0] = r.u0[1][1] = r.u0[2][2] = 1;
-        r.u0[0][1] = r.u0[0][2] = r.u0[1][0] = r.u0[1][2] = r.u0[2][0] = r.u0[2][1] = 0;
-        r.t0[0] = r.t0[1] = r.t0[2] = 0;
-        se_main(xa, ya, seqx, seqy, r.TM1, r.TM2, r.TM3, r.TM4, r.TM5,
-            r.d0_0, r.TM_0, r.d0A, r.d0B, r.d0u, r.d0a, r.d0_out,
-            r.seqM, r.seqxA, r.seqyA, r.do_vec,
-            r.rmsd0, r.L_ali, r.Liden, r.TM_ali, r.rmsd_ali, r.n_ali, r.n_ali8,
-            xlen, ylen, sequence, norm_len, opts.d0_scale,
-            opts.i_opt, a_opt_val, u_opt_val, d_opt_val,
-            mol_type, opts.outfmt_opt, r.invmap);
-        if (opts.outfmt_opt >= 2)
+        result.invmap.resize(ylen + 1);
+        result.u0[0][0] = result.u0[1][1] = result.u0[2][2] = 1;
+        result.u0[0][1] = result.u0[0][2] = result.u0[1][0] = result.u0[1][2] = result.u0[2][0] = result.u0[2][1] = 0;
+        result.t0[0] = result.t0[1] = result.t0[2] = 0;
+        se_main(xa, ya, seqx, seqy, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+            result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+            result.seqM, result.seqxA, result.seqyA, result.do_vec,
+            result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+            xlen, ylen, *inputs.sequence, norm_len, inputs.d0_scale,
+            i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt,
+            mol_type, inputs.outfmt_opt, result.invmap);
+        if (inputs.outfmt_opt >= 2)
         {
-            r.Liden = 0.0;
-            r.L_ali = 0;
-            for (int r2 = 0; r2 < ylen; r2++)
+            result.Liden = 0.0;
+            result.L_ali = 0;
+            for (int res_idx2 = 0; res_idx2 < ylen; res_idx2++)
             {
-                int r1 = r.invmap[r2];
-                if (r1 < 0)
+                int res_idx1 = result.invmap[res_idx2];
+                if (res_idx1 < 0)
                 {
                     continue;
                 }
-                r.L_ali += 1;
-                r.Liden += (seqx[r1] == seqy[r2]);
+                result.L_ali += 1;
+                result.Liden += (seqx[res_idx1] == seqy[res_idx2]);
             }
         }
     }
     else
     {
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            r.t0, r.u0, r.TM1, r.TM2, r.TM3, r.TM4, r.TM5,
-            r.d0_0, r.TM_0, r.d0A, r.d0B, r.d0u, r.d0a, r.d0_out,
-            r.seqM, r.seqxA, r.seqyA, r.do_vec,
-            r.rmsd0, r.L_ali, r.Liden, r.TM_ali, r.rmsd_ali, r.n_ali, r.n_ali8,
-            xlen, ylen, sequence, norm_len, opts.d0_scale,
-            opts.i_opt, a_opt_val, u_opt_val, d_opt_val, opts.fast_opt,
-            mol_type, opts.TMcut, parallel_threads);
+            result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+            result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+            result.seqM, result.seqxA, result.seqyA, result.do_vec,
+            result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+            xlen, ylen, *inputs.sequence, norm_len, inputs.d0_scale,
+            i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt, inputs.fast_opt,
+            mol_type, inputs.TMcut, parallel_threads);
     }
-    return r;
 }
 
 // ---- 存储一次链对比对结果到全对全矩阵（纯函数）----
@@ -1545,59 +1513,65 @@ void store_pair_result(const ChainPairAlignResult& result,
 }
 
 // ---- 单体退化分支（复用 align_chain_pair，输出后返回）----
-int run_monomer(MMalignContext& ctx)
+int align_monomers(const MMalignInputs& inputs,
+    const ComplexData& complex1, const ComplexData& complex2)
 {
-    int xlen = ctx.complex1.lengths[0];
-    int ylen = ctx.complex2.lengths[0];
-    string seqx;
-    string seqy;
-    string secx;
-    string secy;
-    CoordArray xa;
-    CoordArray ya;
-    secx.resize(xlen + 1);
-    secy.resize(ylen + 1);
-    xa.resize(xlen);
-    ya.resize(ylen);
-    copy_chain_data(ctx.complex1.coords[0], ctx.complex1.seqs[0],
-        ctx.complex1.secs[0], xlen, xa, seqx, secx);
-    copy_chain_data(ctx.complex2.coords[0], ctx.complex2.seqs[0],
-        ctx.complex2.secs[0], ylen, ya, seqy, secy);
+    int chain1_len = complex1.lengths[0];
+    int chain2_len = complex2.lengths[0];
+    string chain1_seq;
+    string chain2_seq;
+    string chain1_sec;
+    string chain2_sec;
+    CoordArray chain1_coords;
+    CoordArray chain2_coords;
+    chain1_sec.resize(chain1_len + 1);
+    chain2_sec.resize(chain2_len + 1);
+    chain1_coords.resize(chain1_len);
+    chain2_coords.resize(chain2_len);
+    copy_chain_data(complex1.coords[0], complex1.seqs[0],
+        complex1.secs[0], chain1_len, chain1_coords, chain1_seq, chain1_sec);
+    copy_chain_data(complex2.coords[0], complex2.seqs[0],
+        complex2.secs[0], chain2_len, chain2_coords, chain2_seq, chain2_sec);
 
-    if (ctx.byresi_opt)
+    if (inputs.byresi_opt)
     {
-        extract_aln_from_resi(*ctx.opts.sequence, seqx, seqy,
-            ctx.complex1.resi, ctx.complex2.resi, ctx.byresi_opt);
+        extract_aln_from_resi(*inputs.sequence, chain1_seq, chain2_seq,
+            complex1.resi, complex2.resi, inputs.byresi_opt);
     }
 
-    ChainPairAlignResult result = align_chain_pair(
-        xa, ya, seqx, seqy, secx, secy, xlen, ylen,
-        ctx.complex1.mol_types[0] + ctx.complex2.mol_types[0],
-        0, ctx.opts, *ctx.opts.sequence,
-        ctx.opts.a_opt, 0, ctx.opts.d_opt, 1);
+    int i_opt = (inputs.byresi_opt ? 3 : 0);
+    int mol_type = complex1.mol_types[0] + complex2.mol_types[0];
+    ChainPairAlignResult align_result = { 0};
+    align_result.d0_out = 5.0;
+    align_chain_pair(align_result,
+        chain1_coords, chain2_coords, chain1_seq, chain2_seq, 
+        chain1_sec, chain2_sec, chain1_len, chain2_len,
+        mol_type, 0, inputs, i_opt, 0, 1);
 
     output_results(
-        ctx.xname.substr(ctx.dir1_opt.size()),
-        ctx.yname.substr(ctx.dir2_opt.size()),
-        ctx.complex1.chain_ids[0], ctx.complex2.chain_ids[0],
-        xlen, ylen, result.t0, result.u0,
-        result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-        result.rmsd0, result.d0_out, result.seqM, result.seqxA, result.seqyA,
-        result.Liden, result.n_ali8, result.L_ali,
-        result.TM_ali, result.rmsd_ali, result.TM_0, result.d0_0,
-        result.d0A, result.d0B, 0, ctx.opts.d0_scale,
-        result.d0a, result.d0u, (ctx.m_opt ? ctx.fname_matrix : "").c_str(),
-        ctx.opts.outfmt_opt, ctx.ter_opt, true, ctx.split_opt,
-        ctx.o_opt, ctx.fname_super, 0, ctx.opts.a_opt, false,
-        ctx.opts.d_opt, ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+        inputs.structure1_name.substr(inputs.dir1_opt.size()),
+        inputs.structure2_name.substr(inputs.dir2_opt.size()),
+        complex1.chain_ids[0], complex2.chain_ids[0],
+        chain1_len, chain2_len, align_result.t0, align_result.u0,
+        align_result.TM1, align_result.TM2, align_result.TM3, align_result.TM4, align_result.TM5,
+        align_result.rmsd0, align_result.d0_out, align_result.seqM, align_result.seqxA, align_result.seqyA,
+        align_result.Liden, align_result.n_ali8, align_result.L_ali,
+        align_result.TM_ali, align_result.rmsd_ali, align_result.TM_0, align_result.d0_0,
+        align_result.d0A, align_result.d0B, 0, inputs.d0_scale,
+        align_result.d0a, align_result.d0u, (inputs.m_opt ? inputs.matrix_out : "").c_str(),
+        inputs.outfmt_opt, inputs.ter_opt, true, inputs.split_opt,
+        inputs.o_opt, inputs.superposed_out, 0, inputs.a_opt, false,
+        inputs.d_opt, inputs.mirror_opt, complex1.resi, complex2.resi);
     return 0;
 }
 
 // ---- 串行全对全循环（保持现有行为：含 chainmap continue 跳过）----
-void serial_pairwise_loop(MMalignContext& ctx)
+void serial_pairwise_loop(const MMalignInputs& inputs,
+    MMalignParsed& parsed,
+    AllChainPairsResult& pairwise)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
+    int chain1_num = (int)parsed.complex1.coords.size();
+    int chain2_num = (int)parsed.complex2.coords.size();
     string seqx;
     string seqy;
     string secx;
@@ -1613,23 +1587,23 @@ void serial_pairwise_loop(MMalignContext& ctx)
     int ut_idx;
     for (i = 0; i < chain1_num; i++)
     {
-        xlen = ctx.complex1.lengths[i];
+        xlen = parsed.complex1.lengths[i];
         if (xlen < 3)
         {
             for (j = 0; j < chain2_num; j++)
             {
-                ctx.pairwise.tm_matrix[i][j] = -1;
+                pairwise.tm_matrix[i][j] = -1;
                 if (j < chain1_num)
                 {
-                    ctx.pairwise.tm_matrix[j][i] = -1;
+                    pairwise.tm_matrix[j][i] = -1;
                 }
             }
             continue;
         }
         secx.resize(xlen + 1);
         xa.resize(xlen);
-        copy_chain_data(ctx.complex1.coords[i], ctx.complex1.seqs[i],
-            ctx.complex1.secs[i], xlen, xa, seqx, secx);
+        copy_chain_data(parsed.complex1.coords[i], parsed.complex1.seqs[i],
+            parsed.complex1.secs[i], xlen, xa, seqx, secx);
 
         for (j = 0; j < chain2_num; j++)
         {
@@ -1638,148 +1612,145 @@ void serial_pairwise_loop(MMalignContext& ctx)
             {
                 for (uj = 0; uj < 3; uj++)
                 {
-                    ctx.pairwise.rotations[ut_idx][ui*3+uj] = 0;
+                    pairwise.rotations[ut_idx][ui*3+uj] = 0;
                 }
             }
-            ctx.pairwise.rotations[ut_idx][0] = 1;
-            ctx.pairwise.rotations[ut_idx][4] = 1;
-            ctx.pairwise.rotations[ut_idx][8] = 1;
+            pairwise.rotations[ut_idx][0] = 1;
+            pairwise.rotations[ut_idx][4] = 1;
+            pairwise.rotations[ut_idx][8] = 1;
 
-            if (ctx.complex1.mol_types[i] * ctx.complex2.mol_types[j] < 0)
+            if (parsed.complex1.mol_types[i] * parsed.complex2.mol_types[j] < 0)
             {
-                ctx.pairwise.tm_matrix[i][j] = -1;
+                pairwise.tm_matrix[i][j] = -1;
                 if (j < chain1_num)
                 {
-                    ctx.pairwise.tm_matrix[j][i] = -1;
+                    pairwise.tm_matrix[j][i] = -1;
                 }
                 continue;
             }
-            if (ctx.chain_map.size() && (!ctx.chain_map.count(i) || ctx.chain_map[i] != j))
+            if (parsed.chain_map.size() && (!parsed.chain_map.count(i) || parsed.chain_map.at(i) != j))
             {
-                ctx.pairwise.tm_matrix[i][j] = -1;
+                pairwise.tm_matrix[i][j] = -1;
                 if (j < chain1_num)
                 {
-                    ctx.pairwise.tm_matrix[j][i] = -1;
+                    pairwise.tm_matrix[j][i] = -1;
                 }
                 continue;
             }
 
-            ylen = ctx.complex2.lengths[j];
+            ylen = parsed.complex2.lengths[j];
             if (ylen < 3)
             {
-                ctx.pairwise.tm_matrix[i][j] = -1;
+                pairwise.tm_matrix[i][j] = -1;
                 if (j < chain1_num)
                 {
-                    ctx.pairwise.tm_matrix[j][i] = -1;
+                    pairwise.tm_matrix[j][i] = -1;
                 }
                 continue;
             }
             secy.resize(ylen + 1);
             ya.resize(ylen);
-            copy_chain_data(ctx.complex2.coords[j], ctx.complex2.seqs[j],
-                ctx.complex2.secs[j], ylen, ya, seqy, secy);
+            copy_chain_data(parsed.complex2.coords[j], parsed.complex2.seqs[j],
+                parsed.complex2.secs[j], ylen, ya, seqy, secy);
 
-            int Lnorm_tmp = ctx.len_aa;
-            if (ctx.complex1.mol_types[i] + ctx.complex2.mol_types[j] > 0)
+            int Lnorm_tmp = parsed.protein_norm_len;
+            if (parsed.complex1.mol_types[i] + parsed.complex2.mol_types[j] > 0)
             {
-                Lnorm_tmp = ctx.len_na;
+                Lnorm_tmp = parsed.na_norm_len;
             }
 
-            if (ctx.byresi_opt)
+            if (inputs.byresi_opt)
             {
-                int total_aln = extract_aln_from_resi(*ctx.opts.sequence, seqx, seqy,
-                    ctx.complex1.resi, ctx.complex2.resi, ctx.complex1.lengths,
-                    ctx.complex2.lengths, i, j, ctx.byresi_opt);
-                ctx.pairwise.aligned_seq1[i][j] = (*ctx.opts.sequence)[0];
-                ctx.pairwise.aligned_seq2[i][j] = (*ctx.opts.sequence)[1];
+                int total_aln = extract_aln_from_resi(*inputs.sequence, seqx, seqy,
+                    parsed.complex1.resi, parsed.complex2.resi, parsed.complex1.lengths,
+                    parsed.complex2.lengths, i, j, inputs.byresi_opt);
+                pairwise.aligned_seq1[i][j] = (*inputs.sequence)[0];
+                pairwise.aligned_seq2[i][j] = (*inputs.sequence)[1];
                 if (total_aln > xlen + ylen - 3)
                 {
                     for (ui = 0; ui < 3; ui++)
                     {
                         for (uj = 0; uj < 3; uj++)
                         {
-                            ctx.pairwise.rotations[ut_idx][ui*3+uj] = (ui==uj) ? 1 : 0;
+                            pairwise.rotations[ut_idx][ui*3+uj] = (ui==uj) ? 1 : 0;
                         }
                     }
                     for (uj = 0; uj < 3; uj++)
                     {
-                        ctx.pairwise.rotations[ut_idx][9+uj] = 0;
+                        pairwise.rotations[ut_idx][9+uj] = 0;
                     }
-                    ctx.pairwise.tm_matrix[i][j] = 0;
+                    pairwise.tm_matrix[i][j] = 0;
                     if (j < chain1_num)
                     {
-                        ctx.pairwise.tm_matrix[j][i] = 0;
+                        pairwise.tm_matrix[j][i] = 0;
                     }
                     continue;
                 }
             }
 
             // entry function for structure alignment
-            ChainPairAlignResult result = align_chain_pair(
+            int i_opt = (inputs.byresi_opt ? 3 : 0);
+            ChainPairAlignResult result = { 0};
+            result.d0_out = 5.0;   // TMalign_main 仅在 -d 时覆盖 d0_out
+            int mol_types = parsed.complex1.mol_types[i] + parsed.complex2.mol_types[j];
+            align_chain_pair(result,
                 xa, ya, seqx, seqy, secx, secy, xlen, ylen,
-                ctx.complex1.mol_types[i] + ctx.complex2.mol_types[j], Lnorm_tmp,
-                ctx.opts, *ctx.opts.sequence, 0, 1, 0, ctx.parallel_threads);
+                mol_types, Lnorm_tmp,
+                inputs,
+                i_opt, 1, inputs.parallel_threads);
 
             // store result
             store_pair_result(result, i, j, chain1_num, chain2_num, Lnorm_tmp,
-                ctx.pairwise.rotations, ctx.pairwise.aligned_seq1,
-                ctx.pairwise.aligned_seq2, ctx.pairwise.tm_matrix,
-                ctx.pairwise.best_monomer_tm, ctx.pairwise.best_monomer_i,
-                ctx.pairwise.best_monomer_j);
+                pairwise.rotations, pairwise.aligned_seq1,
+                pairwise.aligned_seq2, pairwise.tm_matrix,
+                pairwise.best_monomer_tm, pairwise.best_monomer_i,
+                pairwise.best_monomer_j);
         }
     }
 }
 
-// ---- 全对全链级打分（编排：矩阵初始化 + 并行/串行选择）----
-void compute_pairwise_matrix(MMalignContext& ctx)
+// ---- 初始化全对全结果的数据结构（分配矩阵/旋转/序列内存 + 默认值）----
+void init_pairwise_results(AllChainPairsResult& pairwise, int chain1_num, int chain2_num)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
     int chain_num = std::max(chain1_num, chain2_num);
     vector<string> tmp_str_vec(chain2_num, "");
-    ctx.pairwise.tm_matrix.assign(chain_num, vector<double>(chain_num));
-    ctx.pairwise.rotations.resize(chain1_num * chain2_num);
-    ctx.pairwise.aligned_seq1.assign(chain1_num, tmp_str_vec);
-    ctx.pairwise.aligned_seq2.assign(chain1_num, tmp_str_vec);
-    ctx.pairwise.aligned_consensus.assign(chain1_num, tmp_str_vec);
-    ctx.pairwise.best_monomer_tm = -1;
+    pairwise.tm_matrix.assign(chain_num, vector<double>(chain_num));
+    pairwise.rotations.resize(chain1_num * chain2_num);
+    pairwise.aligned_seq1.assign(chain1_num, tmp_str_vec);
+    pairwise.aligned_seq2.assign(chain1_num, tmp_str_vec);
+    pairwise.aligned_consensus.assign(chain1_num, tmp_str_vec);
+    pairwise.best_monomer_tm = -1;
+}
+
+// ---- 全对全链级打分（编排：矩阵初始化 + 并行/串行选择）----
+void align_all_chain_pairs(const MMalignInputs& inputs,
+    MMalignParsed& parsed,
+    AllChainPairsResult& pairwise)
+{
+    int chain1_num = (int)parsed.complex1.coords.size();
+    int chain2_num = (int)parsed.complex2.coords.size();
+    init_pairwise_results(pairwise, chain1_num, chain2_num);
 
     bool parallel_done = false;
 #ifdef _OPENMP
-    if (ctx.parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1))
+    if (inputs.parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1))
     {
-        run_mmalign_parallel(
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.lengths, ctx.complex2.lengths,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.chain_map, *ctx.opts.sequence,
-            ctx.complex1.resi, ctx.complex2.resi,
-            ctx.pairwise.tm_matrix, ctx.pairwise.rotations,
-            ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_consensus,
-            ctx.pairwise.aligned_seq2,
-            ctx.pairwise.best_monomer_tm, ctx.pairwise.best_monomer_i,
-            ctx.pairwise.best_monomer_j,
-            chain1_num, chain2_num, ctx.len_aa, ctx.len_na,
-            ctx.opts.outfmt_opt, ctx.opts.i_opt, ctx.opts.TMcut, ctx.opts.d0_scale,
-            ctx.byresi_opt, ctx.opts.se_opt, ctx.opts.fast_opt,
-            ctx.parallel_threads);
+        run_mmalign_parallel(inputs, parsed, pairwise);
         parallel_done = true;
     }
 #endif  // _OPENMP
 
     if (!parallel_done)
     {
-        serial_pairwise_loop(ctx);
+        serial_pairwise_loop(inputs, parsed, pairwise);
     }
 }
 
 // ---- 初始链分配（贪心 + 报错）----
 void assign_chains_greedily(MMalignContext& ctx)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
     ctx.assignment.chain2_of_chain1.assign(chain1_num, -1);
     ctx.assignment.chain1_of_chain2.assign(chain2_num, -1);
     double total_score = enhanced_greedy_search(ctx.pairwise.tm_matrix,
@@ -1798,8 +1769,8 @@ void refine_dimer_assignment(MMalignContext& ctx)
     int na_chain_num2 = 0;
     int aa_chain_num1 = 0;
     int aa_chain_num2 = 0;
-    count_na_aa_chain_num(na_chain_num1, aa_chain_num1, ctx.complex1.mol_types);
-    count_na_aa_chain_num(na_chain_num2, aa_chain_num2, ctx.complex2.mol_types);
+    count_na_aa_chain_num(na_chain_num1, aa_chain_num1, ctx.parsed.complex1.mol_types);
+    count_na_aa_chain_num(na_chain_num2, aa_chain_num2, ctx.parsed.complex2.mol_types);
 
     // align protein-RNA hybrid dimer to another hybrid dimer
     if (na_chain_num1 == 1 && na_chain_num2 == 1 &&
@@ -1813,9 +1784,9 @@ void refine_dimer_assignment(MMalignContext& ctx)
              (getmin(aa_chain_num1, aa_chain_num2) == 0 &&
               na_chain_num1 == 2 && na_chain_num2 == 2))
     {
-        adjust_dimer_assignment(ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.lengths, ctx.complex2.lengths,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
+        adjust_dimer_assignment(ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
             ctx.pairwise.aligned_seq1, ctx.pairwise.aligned_seq2);
         ctx.is_oligomer = false;   // cannot refine further
@@ -1829,34 +1800,34 @@ void refine_dimer_assignment(MMalignContext& ctx)
 // ---- 寡聚体质心精修（homo/hetero，可能重排分配）----
 void refine_oligomer_assignment(MMalignContext& ctx)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
     CoordArray xcentroids;
     CoordArray ycentroids;
     xcentroids.resize(chain1_num);
     ycentroids.resize(chain2_num);
     double d0MM = getmin(
-        calculate_centroids(ctx.complex1.coords, chain1_num, xcentroids),
-        calculate_centroids(ctx.complex2.coords, chain2_num, ycentroids));
+        calculate_centroids(ctx.parsed.complex1.coords, chain1_num, xcentroids),
+        calculate_centroids(ctx.parsed.complex2.coords, chain2_num, ycentroids));
 
     homo_refined_greedy_search(ctx.pairwise.tm_matrix,
         ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
         chain1_num, chain2_num, xcentroids, ycentroids,
-        d0MM, ctx.len_aa + ctx.len_na, ctx.pairwise.rotations);
+        d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len, ctx.pairwise.rotations);
 
     if (chain1_num <= chain2_num)
     {
         hetero_refined_greedy_search(ctx.pairwise.tm_matrix,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
             chain1_num, chain2_num, xcentroids, ycentroids,
-            d0MM, ctx.len_aa + ctx.len_na);
+            d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len);
     }
     else
     {
         hetero_refined_greedy_search(ctx.pairwise.tm_matrix,
             ctx.assignment.chain1_of_chain2, ctx.assignment.chain2_of_chain1,
             chain2_num, chain1_num, ycentroids, xcentroids,
-            d0MM, ctx.len_aa + ctx.len_na);
+            d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len);
     }
 }
 
@@ -1865,12 +1836,12 @@ void refine_chain_assignment(MMalignContext& ctx)
 {
     ctx.aln_chain_num = ctx.assignment.pair_count();
     ctx.is_oligomer = (ctx.aln_chain_num >= 3);
-    if (ctx.aln_chain_num == 2 && ctx.chain_map.size() == 0 && !ctx.opts.se_opt)
+    if (ctx.aln_chain_num == 2 && ctx.parsed.chain_map.size() == 0 && !ctx.inputs.se_opt)
     {
         refine_dimer_assignment(ctx);
     }
     if ((ctx.aln_chain_num >= 3 || ctx.is_oligomer) &&
-        ctx.chain_map.size() == 0 && !ctx.opts.se_opt)
+        ctx.parsed.chain_map.size() == 0 && !ctx.inputs.se_opt)
     {
         refine_oligomer_assignment(ctx);
     }
@@ -1879,8 +1850,8 @@ void refine_chain_assignment(MMalignContext& ctx)
 // ---- 保存初始分配快照（供回退与交叉比对使用）----
 void snapshot_initial_assignment(MMalignContext& ctx)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
     ctx.init_pair_num = ctx.assignment.pair_count();
     ctx.pairwise_init.tm_matrix.assign(chain1_num, vector<double>(chain2_num));
     vector<string> tmp_str_vec(chain2_num, "");
@@ -1901,55 +1872,55 @@ void snapshot_initial_assignment(MMalignContext& ctx)
 void run_iterative_refinement(MMalignContext& ctx)
 {
     ctx.iteration_score = 0;   // ignore old score from monomeric superpositions
-    int max_iter = 5 - static_cast<int>((ctx.len_aa + ctx.len_na) / 200);
+    int max_iter = 5 - static_cast<int>((ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len) / 200);
     if (max_iter < 2)
     {
         max_iter = 2;
     }
-    if (!ctx.opts.se_opt)
+    if (!ctx.inputs.se_opt)
     {
         MMalign_iter(ctx.iteration_score, max_iter,
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
+            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.len_aa, ctx.len_na,
-            (int)ctx.complex1.coords.size(), (int)ctx.complex2.coords.size(),
+            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len,
+            (int)ctx.parsed.complex1.coords.size(), (int)ctx.parsed.complex2.coords.size(),
             ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
             ctx.pairwise.aligned_seq2,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
-            *ctx.opts.sequence, ctx.opts.d0_scale, ctx.opts.fast_opt,
-            ctx.chain_map, ctx.byresi_opt);
+            *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt,
+            ctx.parsed.chain_map, ctx.inputs.byresi_opt);
     }
 }
 
 // ---- byresi 专属精修（-TMscore 6/7 的链级精化）----
 void run_byresi_refine(MMalignContext& ctx)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
-    if (ctx.byresi_opt && ctx.aln_chain_num >= 4 && ctx.is_oligomer &&
-        ctx.chain_map.size() == 0 && !ctx.opts.se_opt)
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
+    if (ctx.inputs.byresi_opt && ctx.aln_chain_num >= 4 && ctx.is_oligomer &&
+        ctx.parsed.chain_map.size() == 0 && !ctx.inputs.se_opt)
     {
-        MMalign_final(ctx.xname.substr(ctx.dir1_opt.size()),
-            ctx.yname.substr(ctx.dir2_opt.size()),
-            ctx.complex1.chain_ids, ctx.complex2.chain_ids,
-            ctx.fname_super, ctx.fname_lign, ctx.fname_matrix,
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.complex1.lengths, ctx.complex2.lengths,
+        MMalign_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
+            ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size()),
+            ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
+            ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
+            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
+            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
             ctx.pairwise.aligned_consensus, ctx.pairwise.aligned_seq2,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
-            *ctx.opts.sequence, ctx.opts.d0_scale, 1, 0, 5,
-            ctx.ter_opt, ctx.split_opt, 0, 0, true, true,
-            ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+            *ctx.inputs.sequence, ctx.inputs.d0_scale, 1, 0, 5,
+            ctx.inputs.ter_opt, ctx.inputs.split_opt, 0, 0, true, true,
+            ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
 
         // extract centroid coordinates
         CoordArray xcentroids;
@@ -1957,29 +1928,29 @@ void run_byresi_refine(MMalignContext& ctx)
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM = getmin(
-            calculate_centroids(ctx.complex1.coords, chain1_num, xcentroids),
-            calculate_centroids(ctx.complex2.coords, chain2_num, ycentroids));
+            calculate_centroids(ctx.parsed.complex1.coords, chain1_num, xcentroids),
+            calculate_centroids(ctx.parsed.complex2.coords, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
         homo_refined_greedy_search(ctx.pairwise.tm_matrix,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
             chain1_num, chain2_num, xcentroids, ycentroids,
-            d0MM, ctx.len_aa + ctx.len_na, ctx.pairwise.rotations);
+            d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len, ctx.pairwise.rotations);
         hetero_refined_greedy_search(ctx.pairwise.tm_matrix,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
             chain1_num, chain2_num, xcentroids, ycentroids,
-            d0MM, ctx.len_aa + ctx.len_na);
+            d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len);
     }
 }
 
 // ---- 回退保护（迭代不如单体最优时，只保留最优单体链对再迭代）----
 void recover_best_monomer_pair(MMalignContext& ctx)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
-    if (ctx.byresi_opt == 0 && ctx.iteration_score < ctx.pairwise.best_monomer_tm)
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
+    if (ctx.inputs.byresi_opt == 0 && ctx.iteration_score < ctx.pairwise.best_monomer_tm)
     {
-        copy_chain_assign_data(chain1_num, chain2_num, *ctx.opts.sequence,
+        copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
             ctx.pairwise_init.aligned_seq1, ctx.pairwise_init.aligned_seq2,
             ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
             ctx.pairwise_init.tm_matrix,
@@ -2008,34 +1979,34 @@ void recover_best_monomer_pair(MMalignContext& ctx)
                 ctx.assignment.chain1_of_chain2[j] = ctx.pairwise.best_monomer_i;
             }
         }
-        (*ctx.opts.sequence)[0] = ctx.pairwise.aligned_seq1[ctx.pairwise.best_monomer_i][ctx.pairwise.best_monomer_j];
-        (*ctx.opts.sequence)[1] = ctx.pairwise.aligned_seq2[ctx.pairwise.best_monomer_i][ctx.pairwise.best_monomer_j];
+        (*ctx.inputs.sequence)[0] = ctx.pairwise.aligned_seq1[ctx.pairwise.best_monomer_i][ctx.pairwise.best_monomer_j];
+        (*ctx.inputs.sequence)[1] = ctx.pairwise.aligned_seq2[ctx.pairwise.best_monomer_i][ctx.pairwise.best_monomer_j];
         ctx.iteration_score = ctx.pairwise.best_monomer_tm;
-        int max_iter = 5 - static_cast<int>((ctx.len_aa + ctx.len_na) / 200);
+        int max_iter = 5 - static_cast<int>((ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len) / 200);
         if (max_iter < 2)
         {
             max_iter = 2;
         }
         MMalign_iter(ctx.iteration_score, max_iter,
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
+            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
             ctx.pairwise.aligned_seq2,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
-            *ctx.opts.sequence, ctx.opts.d0_scale, ctx.opts.fast_opt, ctx.chain_map);
+            *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt, ctx.parsed.chain_map);
     }
 }
 
 // ---- 交叉链整体比对（MMalign_dimer，同源二聚体改进）----
 void run_cross_chain_alignment(MMalignContext& ctx)
 {
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
     /* perform cross chain alignment
      * in some cases, this leads to dramatic improvement, esp for homodimer */
     int iter_pair_num = ctx.assignment.pair_count();
@@ -2050,24 +2021,24 @@ void run_cross_chain_alignment(MMalignContext& ctx)
             ctx.pairwise_init.tm_matrix);
     }
     double cross_score = ctx.iteration_score;
-    if (ctx.byresi_opt == 0 && ctx.len_aa + ctx.len_na < 10000)
+    if (ctx.inputs.byresi_opt == 0 && ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len < 10000)
     {
         MMalign_dimer(cross_score,
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.complex1.lengths, ctx.complex2.lengths,
+            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
+            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pairwise_init.tm_matrix, ctx.pairwise_init.aligned_seq1,
             ctx.pairwise_init.aligned_seq2,
             ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
-            ctx.sequence_init, ctx.opts.d0_scale, ctx.opts.fast_opt);
+            ctx.sequence_init, ctx.inputs.d0_scale, ctx.inputs.fast_opt);
         if (cross_score > ctx.iteration_score)
         {
             ctx.iteration_score = cross_score;
-            copy_chain_assign_data(chain1_num, chain2_num, *ctx.opts.sequence,
+            copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
                 ctx.pairwise_init.aligned_seq1, ctx.pairwise_init.aligned_seq2,
                 ctx.assignment_init.chain2_of_chain1, ctx.assignment_init.chain1_of_chain2,
                 ctx.pairwise_init.tm_matrix,
@@ -2081,53 +2052,53 @@ void run_cross_chain_alignment(MMalignContext& ctx)
 // ---- 最终输出（print_version + MMalign_final / MMalign_se_final 二选一）----
 void output_final_results(MMalignContext& ctx)
 {
-    if (ctx.opts.outfmt_opt == 0)
+    if (ctx.inputs.outfmt_opt == 0)
     {
         print_version();
     }
-    int chain1_num = (int)ctx.complex1.coords.size();
-    int chain2_num = (int)ctx.complex2.coords.size();
-    if (ctx.opts.se_opt)
+    int chain1_num = (int)ctx.parsed.complex1.coords.size();
+    int chain2_num = (int)ctx.parsed.complex2.coords.size();
+    if (ctx.inputs.se_opt)
     {
-        MMalign_se_final(ctx.xname.substr(ctx.dir1_opt.size()),
-            ctx.yname.substr(ctx.dir2_opt.size()),
-            ctx.complex1.chain_ids, ctx.complex2.chain_ids,
-            ctx.fname_super, ctx.fname_lign, ctx.fname_matrix,
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.complex1.lengths, ctx.complex2.lengths,
+        MMalign_se_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
+            ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size()),
+            ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
+            ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
+            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
+            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
             ctx.pairwise.aligned_consensus, ctx.pairwise.aligned_seq2,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
-            *ctx.opts.sequence, ctx.opts.d0_scale,
-            ctx.m_opt, ctx.o_opt, ctx.opts.outfmt_opt, ctx.ter_opt, ctx.split_opt,
-            ctx.opts.a_opt, ctx.opts.d_opt, ctx.opts.fast_opt, ctx.full_opt,
-            ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+            *ctx.inputs.sequence, ctx.inputs.d0_scale,
+            ctx.inputs.m_opt, ctx.inputs.o_opt, ctx.inputs.outfmt_opt, ctx.inputs.ter_opt, ctx.inputs.split_opt,
+            ctx.inputs.a_opt, ctx.inputs.d_opt, ctx.inputs.fast_opt, ctx.inputs.full_opt,
+            ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
     else
     {
-        MMalign_final(ctx.xname.substr(ctx.dir1_opt.size()),
-            ctx.yname.substr(ctx.dir2_opt.size()),
-            ctx.complex1.chain_ids, ctx.complex2.chain_ids,
-            ctx.fname_super, ctx.fname_lign, ctx.fname_matrix,
-            ctx.complex1.coords, ctx.complex2.coords,
-            ctx.complex1.seqs, ctx.complex2.seqs,
-            ctx.complex1.secs, ctx.complex2.secs,
-            ctx.complex1.mol_types, ctx.complex2.mol_types,
-            ctx.complex1.lengths, ctx.complex2.lengths,
+        MMalign_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
+            ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size()),
+            ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
+            ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
+            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
+            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
+            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
+            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
+            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.len_aa, ctx.len_na, chain1_num, chain2_num,
+            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pairwise.tm_matrix, ctx.pairwise.aligned_seq1,
             ctx.pairwise.aligned_consensus, ctx.pairwise.aligned_seq2,
             ctx.assignment.chain2_of_chain1, ctx.assignment.chain1_of_chain2,
-            *ctx.opts.sequence, ctx.opts.d0_scale,
-            ctx.m_opt, ctx.o_opt, ctx.opts.outfmt_opt, ctx.ter_opt, ctx.split_opt,
-            ctx.opts.a_opt, ctx.opts.d_opt, ctx.opts.fast_opt, ctx.full_opt,
-            ctx.mirror_opt, ctx.complex1.resi, ctx.complex2.resi);
+            *ctx.inputs.sequence, ctx.inputs.d0_scale,
+            ctx.inputs.m_opt, ctx.inputs.o_opt, ctx.inputs.outfmt_opt, ctx.inputs.ter_opt, ctx.inputs.split_opt,
+            ctx.inputs.a_opt, ctx.inputs.d_opt, ctx.inputs.fast_opt, ctx.inputs.full_opt,
+            ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
 }
 
@@ -2149,7 +2120,8 @@ int MMalign(const string &xname, const string &yname,
     int parallel_threads = 1)
 {
     // ---- 输入域：收集参数 → 解析两个复合物 → 读取链映射 ----
-    MMalignContext ctx = build_context(xname, yname, fname_super, fname_lign,
+    MMalignContext ctx = {};   // 声明即初始化（值初始化：成员默认构造/零初始化）
+    build_context(ctx.inputs, xname, yname, fname_super, fname_lign,
         fname_matrix, sequence, d0_scale, m_opt, o_opt, a_opt, d_opt,
         full_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt,
         outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt, autojustify,
@@ -2157,21 +2129,26 @@ int MMalign(const string &xname, const string &yname,
         model2parse1, model2parse2, chain1_list, chain2_list,
         byresi_opt, chainmapfile, se_opt, parallel_threads);
 
-    parse_inputs(ctx);
-    read_chainmap(ctx);
+    parse_structures(ctx.inputs, ctx.parsed);
+    read_chainmap(ctx.inputs.chain_map_file,
+        ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
+        ctx.parsed.chain_map);
 
     // perform monomer alignment if there is only one chain
-    if (is_monomer(ctx.complex1, ctx.complex2))
+    int complex1_chain_num = (int)ctx.parsed.complex1.coords.size();
+    int complex2_chain_num = (int)ctx.parsed.complex2.coords.size();
+    bool monomer = is_monomer(complex1_chain_num) && is_monomer(complex2_chain_num);
+    if (monomer)
     {
-        return run_monomer(ctx);
+        return align_monomers(ctx.inputs, ctx.parsed.complex1, ctx.parsed.complex2);
     }
 
     // get all-against-all alignment（fast_opt 强制开启逻辑保留在主体，行为不变）
-    if (ctx.len_aa + ctx.len_na > 500)
+    if (ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len > 500)
     {
-        ctx.opts.fast_opt = true;
+        ctx.inputs.fast_opt = true;
     }
-    compute_pairwise_matrix(ctx);
+    align_all_chain_pairs(ctx.inputs, ctx.parsed, ctx.pairwise);
 
     // calculate initial chain-chain assignment
     assign_chains_greedily(ctx);
