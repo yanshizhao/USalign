@@ -110,8 +110,11 @@ void print_extra_help()
 "           3: PDBx/mmCIF format\n"
 "\n"
 "-chainmap (only useful for -mm 1) use the final chain mapping 'chainmap.txt'\n"
-"          specified by user. 'chainmap.txt' is a tab-seperated text with two\n"
-"          columns, one for each complex\n"
+"          specified by user. 'chainmap.txt' is a tab-separated text with two\n"
+"          columns, one for each complex. Only the mapped chain pairs are\n"
+"          fixed (hard constraint); the remaining chains are matched\n"
+"          automatically by TM-score. Mapped chains must be of the same\n"
+"          molecule type, and each chain can be mapped at most once\n"
 "\n"
 "-chain1   Chains to parse in structure_1\n"
 "-chain2   Chains to parse in structure_2. Use _ for a chain without chain ID.\n"
@@ -1427,11 +1430,7 @@ void read_chainmap(const string& chain_map_file,
             }
             else if (chainidx1 < 0 && chainidx2 < 0)
             {
-                cerr << "Warning! Cannot map chain " << line_vec[0]
-                     << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
-                     << line_vec[0] << " does not exist in structure 1 (" << structure1_name
-                     << "), chain " << line_vec[1] << " does not exist in structure 2 ("
-                     << structure2_name << ")" << endl;
+                // 解析期零警告：无效映射明细统一由配对汇总展示（改动 14）
                 invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
                     + structure1_name + "), chain " + line_vec[1] + " does not exist in structure 2 ("
@@ -1439,18 +1438,12 @@ void read_chainmap(const string& chain_map_file,
             }
             else if (chainidx1 < 0)
             {
-                cerr << "Warning! Cannot map chain " << line_vec[0]
-                     << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
-                     << line_vec[0] << " does not exist in structure 1 (" << structure1_name << ")" << endl;
                 invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
                     + structure1_name + "))");
             }
             else
             {
-                cerr << "Warning! Cannot map chain " << line_vec[0]
-                     << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
-                     << line_vec[1] << " does not exist in structure 2 (" << structure2_name << ")" << endl;
                 invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[1] + " does not exist in structure 2 ("
                     + structure2_name + "))");
@@ -1470,12 +1463,8 @@ void read_chainmap(const string& chain_map_file,
     {
         fin.close();
     }
-    if (chain_map.size() == 0)
-    {
-        cerr << "Warning! no valid chain mapping found in " << chain_map_file << endl;
-        cerr << "Warning! The alignment will proceed as if no -chainmap was specified "
-                "(free matching by TM-score)" << endl;
-    }
+    // 解析期零警告：映射无效的提示（no valid mapping / free matching）统一由配对汇总
+    // 的 Chainmap 统计行（0 valid / free-matching pairs）展示（改动 14）
 }
 
 // ---- Monomer check (each complex has only one chain) ----
@@ -2164,6 +2153,187 @@ void run_cross_chain_alignment(MMalignContext& ctx,
 }
 
 // ---- Final output (print_version + MMalign_final / MMalign_se_final, one of the two) ----
+// ---- Print chain pairing summary: mapping stats + invalid mappings + paired/unpaired counts ----
+// Printed unconditionally for -mm 1 before MMalign_final; the Chainmap statistics
+// and Invalid-mappings details are shown only when a chainmap file was specified.
+void print_chain_pairing_summary(const MMalignContext& ctx,
+    int chain1_num,
+    int chain2_num)
+{
+    // ---- ① paired-pair counts by molecule type + free-matching pair count ----
+    int prot_pair_num = 0;
+    int na_pair_num = 0;
+    int free_pair_num = 0;
+    for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+    {
+        int chain2_idx = ctx.assign_result.chain2_of_chain1[chain1_idx];
+        if (chain2_idx < 0)
+        {
+            continue;
+        }
+        if (ctx.parsed.complex1.mol_types[chain1_idx] > 0)
+        {
+            na_pair_num++;
+        }
+        else
+        {
+            prot_pair_num++;
+        }
+        if (!ctx.parsed.chain_map.count(chain1_idx))
+        {
+            free_pair_num++;
+        }
+    }
+
+    string name1 = ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size());
+    string name2 = ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size());
+
+    // ---- ② summary header ----
+    cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
+         << name2 << " (structure 2)" << endl;
+
+    // ---- ③ Chainmap statistics (only when chainmap was specified) ----
+    if (ctx.inputs.chain_map_file.size() > 0)
+    {
+        cout << "#   Chainmap: " << ctx.parsed.chain_map_entries
+             << " entries specified, " << ctx.parsed.chain_map.size()
+             << " valid, " << free_pair_num << " free-matching pair(s)" << endl;
+        for (size_t k = 0; k < ctx.parsed.invalid_mappings.size(); k++)
+        {
+            cout << "#   Invalid mappings: " << ctx.parsed.invalid_mappings[k] << endl;
+        }
+    }
+
+    // ---- ④ paired-pair counts by molecule type ----
+    cout << "#   Protein: " << prot_pair_num << " pair(s) aligned" << endl;
+    cout << "#   RNA: " << na_pair_num << " pair(s) aligned" << endl;
+
+    // ---- ⑤ unpaired chains (structure 1 side then structure 2 side), one line each ----
+    bool has_unpaired = false;
+    for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+    {
+        if (ctx.assign_result.chain2_of_chain1[chain1_idx] >= 0)
+        {
+            continue;
+        }
+        if (!has_unpaired)
+        {
+            cout << "# Unpaired:" << endl;
+            has_unpaired = true;
+        }
+        string type = (ctx.parsed.complex1.mol_types[chain1_idx] > 0) ? "RNA" : "protein";
+        string reason;
+        if (ctx.parsed.complex1.lengths[chain1_idx] < 3)
+        {
+            reason = "too short (<3 residues)";
+        }
+        else
+        {
+            bool no_same_type_target = true;
+            for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+            {
+                if (ctx.pair_result.tm_matrix[chain1_idx][chain2_idx] > 0)
+                {
+                    no_same_type_target = false;
+                    break;
+                }
+            }
+            if (no_same_type_target)
+            {
+                reason = "no chain of the same molecule type in the other complex";
+            }
+            else if (ctx.parsed.chain_map.count(chain1_idx))
+            {
+                reason = "mapped but not paired (check chainmap)";
+            }
+            else
+            {
+                bool has_free_target = false;
+                for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+                {
+                    if (ctx.assign_result.chain1_of_chain2[chain2_idx] < 0)
+                    {
+                        has_free_target = true;
+                        break;
+                    }
+                }
+                if (has_free_target)
+                {
+                    reason = "removed by quality protection";
+                }
+                else
+                {
+                    reason = "more chains in structure 1 (" + std::to_string(chain1_num)
+                             + ") than in structure 2 (" + std::to_string(chain2_num) + ")";
+                }
+            }
+        }
+        cout << "#   " << name1 << ": " << ctx.parsed.complex1.chain_ids[chain1_idx]
+             << " (" << type << ") - " << reason << endl;
+    }
+    for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+    {
+        if (ctx.assign_result.chain1_of_chain2[chain2_idx] >= 0)
+        {
+            continue;
+        }
+        if (!has_unpaired)
+        {
+            cout << "# Unpaired:" << endl;
+            has_unpaired = true;
+        }
+        string type = (ctx.parsed.complex2.mol_types[chain2_idx] > 0) ? "RNA" : "protein";
+        string reason;
+        if (ctx.parsed.complex2.lengths[chain2_idx] < 3)
+        {
+            reason = "too short (<3 residues)";
+        }
+        else
+        {
+            bool no_same_type_target = true;
+            for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+            {
+                if (ctx.pair_result.tm_matrix[chain1_idx][chain2_idx] > 0)
+                {
+                    no_same_type_target = false;
+                    break;
+                }
+            }
+            if (no_same_type_target)
+            {
+                reason = "no chain of the same molecule type in the other complex";
+            }
+            else if (ctx.parsed.chain_map.count(chain2_idx))
+            {
+                reason = "mapped but not paired (check chainmap)";
+            }
+            else
+            {
+                bool has_free_target = false;
+                for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+                {
+                    if (ctx.assign_result.chain2_of_chain1[chain1_idx] < 0)
+                    {
+                        has_free_target = true;
+                        break;
+                    }
+                }
+                if (has_free_target)
+                {
+                    reason = "removed by quality protection";
+                }
+                else
+                {
+                    reason = "more chains in structure 2 (" + std::to_string(chain2_num)
+                             + ") than in structure 1 (" + std::to_string(chain1_num) + ")";
+                }
+            }
+        }
+        cout << "#   " << name2 << ": " << ctx.parsed.complex2.chain_ids[chain2_idx]
+             << " (" << type << ") - " << reason << endl;
+    }
+}
+
 void output_final_results(MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
@@ -2172,6 +2342,8 @@ void output_final_results(MMalignContext& ctx,
     {
         print_version();
     }
+    // 配对汇总：打印版本之后、详细比对输出之前（所有 -mm 1 输出）
+    print_chain_pairing_summary(ctx, chain1_num, chain2_num);
     if (ctx.inputs.se_opt)
     {
         MMalign_se_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
