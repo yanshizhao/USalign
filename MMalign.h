@@ -1075,6 +1075,32 @@ void parse_chain_list(const vector<string>&chain_list,
     for (i=0;i<chain_list.size();i++)
     {
         name=chain_list[i];
+        // ---- 混合分子预检：-mol 强制类型时，用 auto 原子模式预扫描检测被过滤的链 ----
+        // (-mol protein 时 atom_opt=" CA "，RNA 链无 CA 原子会被解析层整链过滤，
+        //  此处预扫描并警告，避免用户看到误导的 "Sequence is too short")
+        if (mol_opt=="RNA" || mol_opt=="protein")
+        {
+            vector<vector<string> > scan_lines;
+            vector<string> scan_chainIDs;
+            vector<int> scan_mol;
+            size_t scan_n = get_PDB_lines(name, scan_lines, scan_chainIDs, scan_mol,
+                ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
+                chain2parse, model2parse);
+            for (size_t sc=0; sc<scan_n; sc++)
+            {
+                bool is_na = scan_mol[sc] > 0;   // 与 auto 分支同一套判定（净计数符号）
+                if ((mol_opt=="RNA" && !is_na) || (mol_opt=="protein" && is_na))
+                {
+                    cerr << "Warning! Chain " << scan_chainIDs[sc] << " of " << name
+                         << " appears to be " << (is_na?"RNA":"protein")
+                         << ", but -mol " << mol_opt << " is set: "
+                         << (is_na?"RNA chains have no CA atoms":"protein chains have no C3' atoms")
+                         << " and will be filtered out (excluded from the alignment)" << endl;
+                }
+            }
+            for (size_t s=0;s<scan_lines.size();s++) scan_lines[s].clear();
+            scan_lines.clear(); scan_chainIDs.clear(); scan_mol.clear();
+        }
         chainnum=get_PDB_lines(name, PDB_lines, chainID_list, mol_vec,
             ter_opt, infmt_opt, atom_opt, autojustify, split_opt, het_opt,
             chain2parse, model2parse);
