@@ -595,6 +595,8 @@ struct MMalignParsed
     int protein_norm_len;             // default-initialized in class
     int na_norm_len;
     map<int,int> chain_map;
+    int chain_map_entries;            // specified mapping entries in chainmap file
+    vector<string> invalid_mappings;  // invalid mapping details (chain1 -> chain2 + reason)
 };
 
 struct MMalignContext
@@ -1361,8 +1363,11 @@ void read_chainmap(const string& chain_map_file,
     const vector<string>& chain2_ids,
     const string& structure1_name,
     const string& structure2_name,
+    int& specified_entries,
+    vector<string>& invalid_mappings,
     map<int,int>& chain_map)
 {
+    specified_entries = 0;
     if (chain_map_file.size() == 0)
     {
         return;
@@ -1392,6 +1397,7 @@ void read_chainmap(const string& chain_map_file,
         split(line, line_vec, '\t');
         if (line_vec.size() == 2)
         {
+            specified_entries++;
             int chainidx1 = match_chain_id(line_vec[0], chain1_ids);
             int chainidx2 = match_chain_id(line_vec[1], chain2_ids);
             if (chainidx1 >= 0 && chainidx2 >= 0)
@@ -1400,7 +1406,24 @@ void read_chainmap(const string& chain_map_file,
                 {
                     cerr << "ERROR! " << line_vec[0] << " already mapped" << endl;
                 }
-                chain_map[chainidx1] = chainidx2;
+                // chain2 重复映射防御：目标链2已被占用则拒绝写入（避免映射链丢失）
+                bool chain2_taken = false;
+                for (map<int,int>::const_iterator kv = chain_map.begin(); kv != chain_map.end(); ++kv)
+                {
+                    if (kv->second == chainidx2)
+                    {
+                        chain2_taken = true;
+                        break;
+                    }
+                }
+                if (chain2_taken)
+                {
+                    cerr << "Warning! " << line_vec[1] << " already mapped as a target chain" << endl;
+                }
+                else
+                {
+                    chain_map[chainidx1] = chainidx2;
+                }
             }
             else if (chainidx1 < 0 && chainidx2 < 0)
             {
@@ -1409,18 +1432,28 @@ void read_chainmap(const string& chain_map_file,
                      << line_vec[0] << " does not exist in structure 1 (" << structure1_name
                      << "), chain " << line_vec[1] << " does not exist in structure 2 ("
                      << structure2_name << ")" << endl;
+                invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
+                    + " (chain " + line_vec[0] + " does not exist in structure 1 ("
+                    + structure1_name + "), chain " + line_vec[1] + " does not exist in structure 2 ("
+                    + structure2_name + "))");
             }
             else if (chainidx1 < 0)
             {
                 cerr << "Warning! Cannot map chain " << line_vec[0]
                      << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
                      << line_vec[0] << " does not exist in structure 1 (" << structure1_name << ")" << endl;
+                invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
+                    + " (chain " + line_vec[0] + " does not exist in structure 1 ("
+                    + structure1_name + "))");
             }
             else
             {
                 cerr << "Warning! Cannot map chain " << line_vec[0]
                      << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
                      << line_vec[1] << " does not exist in structure 2 (" << structure2_name << ")" << endl;
+                invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
+                    + " (chain " + line_vec[1] + " does not exist in structure 2 ("
+                    + structure2_name + "))");
             }
         }
         else
@@ -2214,7 +2247,45 @@ int MMalign(const string &xname, const string &yname,
     read_chainmap(ctx.inputs.chain_map_file,
         ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
         ctx.inputs.structure1_name, ctx.inputs.structure2_name,
+        ctx.parsed.chain_map_entries, ctx.parsed.invalid_mappings,
         ctx.parsed.chain_map);
+
+    // ---- Mapped-pair molecule type check: remove type-mismatched mappings with warning ----
+    // (protein vs RNA cross-type pairing is forbidden; a mismatched mapping is
+    //  usually a user typo, so it is ignored and the chain pairs freely)
+    {
+        map<int,int> valid_chain_map;
+        for (map<int,int>::const_iterator kv = ctx.parsed.chain_map.begin();
+             kv != ctx.parsed.chain_map.end(); ++kv)
+        {
+            int mol1 = ctx.parsed.complex1.mol_types[kv->first];
+            int mol2 = ctx.parsed.complex2.mol_types[kv->second];
+            if (mol1 * mol2 < 0)
+            {
+                cerr << "Warning! Mapped chain " << ctx.parsed.complex1.chain_ids[kv->first]
+                     << " (" << (mol1 > 0 ? "RNA" : "protein") << ") of " << ctx.inputs.structure1_name
+                     << " cannot pair with chain " << ctx.parsed.complex2.chain_ids[kv->second]
+                     << " (" << (mol2 > 0 ? "RNA" : "protein") << ") of " << ctx.inputs.structure2_name
+                     << ": molecule type mismatch. This mapping is ignored; chain "
+                     << ctx.parsed.complex1.chain_ids[kv->first]
+                     << " will be paired automatically by TM-score." << endl;
+                ctx.parsed.invalid_mappings.push_back(
+                    ctx.parsed.complex1.chain_ids[kv->first] + " -> "
+                    + ctx.parsed.complex2.chain_ids[kv->second]
+                    + " (molecule type mismatch: " + (mol1 > 0 ? "RNA" : "protein")
+                    + " vs " + (mol2 > 0 ? "RNA" : "protein") + ")");
+            }
+            else
+            {
+                valid_chain_map[kv->first] = kv->second;
+            }
+        }
+        if (ctx.parsed.chain_map.size() > 0 && valid_chain_map.empty())
+        {
+            PrintErrorAndQuit("ERROR! All mapped chain pairs have molecule type mismatch. Please check the chainmap file.");
+        }
+        ctx.parsed.chain_map = valid_chain_map;
+    }
 
     // ---- Monomer branch: direct monomer alignment when both structures are single-chain ----
     int chain1_num = (int)ctx.parsed.complex1.coords.size();
