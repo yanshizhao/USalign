@@ -2114,7 +2114,8 @@ void run_cross_chain_alignment(MMalignContext& ctx,
             ctx.pair_result_origin.tm_matrix, ctx.pair_result_origin.aligned_seq1,
             ctx.pair_result_origin.aligned_seq2,
             ctx.assign_result_origin.chain2_of_chain1, ctx.assign_result_origin.chain1_of_chain2,
-            ctx.sequence_origin, ctx.inputs.d0_scale, ctx.inputs.fast_opt);
+            ctx.sequence_origin, ctx.inputs.d0_scale, ctx.inputs.fast_opt,
+            ctx.parsed.chain_map);
         if (cross_score > ctx.iteration_score)
         {
             ctx.iteration_score = cross_score;

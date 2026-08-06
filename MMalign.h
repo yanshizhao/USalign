@@ -2828,7 +2828,8 @@ void MMalign_dimer(double & total_score,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt)
+    double d0_scale, bool fast_opt,
+    const map<int,int>& chainmap = map<int,int>())
 {
     int i;
     int j;
@@ -2979,8 +2980,9 @@ void MMalign_dimer(double & total_score,
             TMave_mat[i][j]=TM4*Lnorm_ass;
             if (assign1_list[i]==j)
             {
-                if (TM4<=0) assign1_list[i]=assign2_list[j]=-1;
-                else        total_score+=TMave_mat[i][j];
+                // 映射链豁免剔除（用户硬约束：得分<=0 也保留配对并输出）
+                if (TM4<=0 && !chainmap.count(i)) assign1_list[i]=assign2_list[j]=-1;
+                else total_score+=TMave_mat[i][j];
             }
 
             // clean up
