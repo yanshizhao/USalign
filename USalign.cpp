@@ -1439,7 +1439,7 @@ void read_chainmap(const string& chain_map_file,
     }
     if (chain_map.size() == 0)
     {
-        cerr << "ERROR! cannot map any chain pair from " << chain_map_file << endl;
+        cerr << "ERROR! no valid chain mapping found in " << chain_map_file << endl;
     }
 }
 
