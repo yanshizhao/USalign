@@ -1838,6 +1838,7 @@ void optimize_dimer_assign(const ComplexData& complex1,
     const ComplexData& complex2,
     const AllChainPairsResult& pairwise,
     ChainAssignResult& assign_result,
+    const map<int,int>& chain_map,
     bool& is_oligomer)
 {
     int na_chain_num1 = 0;
@@ -1859,11 +1860,25 @@ void optimize_dimer_assign(const ComplexData& complex1,
              (getmin(aa_chain_num1, aa_chain_num2) == 0 &&
               na_chain_num1 == 2 && na_chain_num2 == 2))
     {
-        adjust_dimer_assignment(complex1.coords, complex2.coords,
-            complex1.lengths, complex2.lengths,
-            complex1.mol_types, complex2.mol_types,
-            assign_result.chain2_of_chain1, assign_result.chain1_of_chain2,
-            pairwise.aligned_seq1, pairwise.aligned_seq2);
+        // 保护映射链：adjust_dimer_assignment 不用 TM 矩阵、直接按 aligned_seq 算正反分
+        // 并交换链对，若已分配链1中含映射链则跳过（交换会破坏用户指定）
+        bool has_mapped_chain = false;
+        for (int chain1_idx = 0; chain1_idx < (int)assign_result.chain2_of_chain1.size(); chain1_idx++)
+        {
+            if (assign_result.chain2_of_chain1[chain1_idx] >= 0 && chain_map.count(chain1_idx))
+            {
+                has_mapped_chain = true;
+                break;
+            }
+        }
+        if (!has_mapped_chain)
+        {
+            adjust_dimer_assignment(complex1.coords, complex2.coords,
+                complex1.lengths, complex2.lengths,
+                complex1.mol_types, complex2.mol_types,
+                assign_result.chain2_of_chain1, assign_result.chain1_of_chain2,
+                pairwise.aligned_seq1, pairwise.aligned_seq2);
+        }
         is_oligomer = false;   // cannot refine further
     }
     else
@@ -1911,11 +1926,13 @@ void optimize_oligomer_assign(const ComplexData& complex1,
     }
 }
 
-// ---- Whether automatic assignment optimization is allowed (no chainmap constraint AND not se mode) ----
+// ---- Whether automatic assignment optimization is allowed (not se mode) ----
+// chainmap 不再禁用精修：局部约束下精修恢复执行，映射链由 TM 矩阵锁死(改动1)
+// + 显式保护(改动7) 保证不被重排
 bool is_optimize_assign(const map<int,int>& chain_map,
     bool se_opt)
 {
-    return chain_map.empty() && !se_opt;
+    return !se_opt;
 }
 
 // ---- Whether byresi (-TMscore) optimization is needed (byresi mode + enough chains + oligomer + optimization allowed) ----
@@ -1941,7 +1958,7 @@ void optimize_chain_assign(const AllChainPairsResult& pairwise,
     if (aln_chain_num == 2 && is_optimize_assign(parsed.chain_map, se_opt))
     {
         optimize_dimer_assign(parsed.complex1, parsed.complex2,
-            pairwise, assign_result, is_oligomer);
+            pairwise, assign_result, parsed.chain_map, is_oligomer);
     }
     if ((aln_chain_num >= 3 || is_oligomer) &&
         is_optimize_assign(parsed.chain_map, se_opt))
