@@ -1359,6 +1359,8 @@ int match_chain_id(const string& chain_name, const vector<string>& chain_ids)
 void read_chainmap(const string& chain_map_file,
     const vector<string>& chain1_ids,
     const vector<string>& chain2_ids,
+    const string& structure1_name,
+    const string& structure2_name,
     map<int,int>& chain_map)
 {
     if (chain_map_file.size() == 0)
@@ -1400,9 +1402,25 @@ void read_chainmap(const string& chain_map_file,
                 }
                 chain_map[chainidx1] = chainidx2;
             }
+            else if (chainidx1 < 0 && chainidx2 < 0)
+            {
+                cerr << "ERROR! Cannot map chain " << line_vec[0]
+                     << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
+                     << line_vec[0] << " does not exist in structure 1 (" << structure1_name
+                     << "), chain " << line_vec[1] << " does not exist in structure 2 ("
+                     << structure2_name << ")" << endl;
+            }
+            else if (chainidx1 < 0)
+            {
+                cerr << "ERROR! Cannot map chain " << line_vec[0]
+                     << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
+                     << line_vec[0] << " does not exist in structure 1 (" << structure1_name << ")" << endl;
+            }
             else
             {
-                cerr << "ERROR! Cannot map " << line << endl;
+                cerr << "ERROR! Cannot map chain " << line_vec[0]
+                     << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
+                     << line_vec[1] << " does not exist in structure 2 (" << structure2_name << ")" << endl;
             }
         }
         else
@@ -2149,6 +2167,7 @@ int MMalign(const string &xname, const string &yname,
     parse_structures(ctx.inputs, ctx.parsed);
     read_chainmap(ctx.inputs.chain_map_file,
         ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
+        ctx.inputs.structure1_name, ctx.inputs.structure2_name,
         ctx.parsed.chain_map);
 
     // ---- Monomer branch: direct monomer alignment when both structures are single-chain ----
