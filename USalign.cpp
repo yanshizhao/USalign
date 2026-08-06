@@ -1404,7 +1404,7 @@ void read_chainmap(const string& chain_map_file,
             }
             else if (chainidx1 < 0 && chainidx2 < 0)
             {
-                cerr << "ERROR! Cannot map chain " << line_vec[0]
+                cerr << "Warning! Cannot map chain " << line_vec[0]
                      << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
                      << line_vec[0] << " does not exist in structure 1 (" << structure1_name
                      << "), chain " << line_vec[1] << " does not exist in structure 2 ("
@@ -1412,13 +1412,13 @@ void read_chainmap(const string& chain_map_file,
             }
             else if (chainidx1 < 0)
             {
-                cerr << "ERROR! Cannot map chain " << line_vec[0]
+                cerr << "Warning! Cannot map chain " << line_vec[0]
                      << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
                      << line_vec[0] << " does not exist in structure 1 (" << structure1_name << ")" << endl;
             }
             else
             {
-                cerr << "ERROR! Cannot map chain " << line_vec[0]
+                cerr << "Warning! Cannot map chain " << line_vec[0]
                      << " of structure 1 to chain " << line_vec[1] << " of structure 2: chain "
                      << line_vec[1] << " does not exist in structure 2 (" << structure2_name << ")" << endl;
             }
@@ -1439,7 +1439,7 @@ void read_chainmap(const string& chain_map_file,
     }
     if (chain_map.size() == 0)
     {
-        cerr << "ERROR! no valid chain mapping found in " << chain_map_file << endl;
+        cerr << "Warning! no valid chain mapping found in " << chain_map_file << endl;
         cerr << "Warning! The alignment will proceed as if no -chainmap was specified "
                 "(free matching by TM-score)" << endl;
     }
