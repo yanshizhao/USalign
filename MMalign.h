@@ -2,6 +2,35 @@
 #include <cfloat>
 #include "se.h"
 
+// ---- Whether a chain pair is excluded by chainmap (local-constraint semantics) ----
+// Local-constraint rules:
+//   - a mapped chain1 must pair with its specified target chain2 (hard constraint)
+//   - a chain2 that is the target of a mapping cannot be paired by an unmapped chain1
+//   - unmapped chains pair freely, matched automatically by TM-score
+// An empty chain_map means no constraint at all.
+bool is_chain_pair_excluded(const map<int,int>& chain_map,
+    int chain1_idx,
+    int chain2_idx)
+{
+    if (chain_map.empty())
+    {
+        return false;
+    }
+    map<int,int>::const_iterator it = chain_map.find(chain1_idx);
+    if (it != chain_map.end())
+    {
+        return it->second != chain2_idx;
+    }
+    for (map<int,int>::const_iterator kv = chain_map.begin(); kv != chain_map.end(); ++kv)
+    {
+        if (kv->second == chain2_idx)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void print_assign_list(const std::vector<int>& assign1_list, const int chain1_num,
     const vector<string> &chainID_list1,
     const vector<string> &chainID_list2)
@@ -1195,7 +1224,8 @@ double MMalign_search(
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0)
+    double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0,
+    const map<int,int>& chainmap = map<int,int>())
 {
     double total_score=0;
     int i;
@@ -1282,6 +1312,13 @@ double MMalign_search(
         for (j=0;j<chain2_num;j++)
         {
             if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+            {
+                TMave_mat[i][j]=-1;
+                continue;
+            }
+            // chainmap 局部约束：跳过锁死对（映射链1的非目标列 / 未映射链1×映射目标）
+            // 未映射自由对照常计算（自动择优的数据基础）
+            if (is_chain_pair_excluded(chainmap, i, j))
             {
                 TMave_mat[i][j]=-1;
                 continue;
@@ -1876,27 +1913,42 @@ void MMalign_iter(double & max_total_score, const int max_iter,
             seqx, seqy, secx, secy, len_aa, len_na,
             chain1_num, chain2_num,
             TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
-            sequence, d0_scale, fast_opt, 3, byresi_opt);
+            sequence, d0_scale, fast_opt, 3, byresi_opt, chainmap);
         if (chainmap.size())
         {
             int i;
             int j;
-            for (i=0;i<chain1_num;i++) for (j=0;j<chain2_num;j++)
-                if (!chainmap.count(i) || chainmap[i]!=j) TMave_tmp[i][j]=-1;
+            for (i=0;i<chain1_num;i++)
+            {
+                for (j=0;j<chain2_num;j++)
+                {
+                    // 局部约束锁死段：映射链1的非目标列 / 未映射链1×映射目标 置 -1
+                    if (is_chain_pair_excluded(chainmap, i, j))
+                    {
+                        TMave_tmp[i][j]=-1;
+                    }
+                }
+            }
         }
         total_score=enhanced_greedy_search(TMave_tmp, assign1_tmp,
             assign2_tmp, chain1_num, chain2_num);
+        if (chainmap.size())
+        {
+            // 映射链强制保持配对（用户硬约束：即使重打分分数<=0 也保留）
+            for (map<int,int>::const_iterator kv=chainmap.begin(); kv!=chainmap.end(); ++kv)
+            {
+                assign1_tmp[kv->first]=kv->second;
+                assign2_tmp[kv->second]=kv->first;
+            }
+        }
         //if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
         if (total_score<=max_total_score) break;
         max_total_score=total_score;
-        if (chainmap.size())
-            copy_chain_assign_data(chain1_num, chain2_num, sequence,
-                seqxA_tmp, seqyA_tmp, assign1_list, assign2_list, TMave_tmp,
-                seqxA_mat, seqyA_mat, assign1_tmp,  assign2_tmp,  TMave_mat);
-        else
-            copy_chain_assign_data(chain1_num, chain2_num, sequence,
-                seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
-                seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
+        // 统一存储分支：新分配写回主状态
+        // 映射链分配由「锁死段 + 强制赋值」双重保证不变；未映射链分配随迭代演化
+        copy_chain_assign_data(chain1_num, chain2_num, sequence,
+            seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
+            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
     }
     vector<string>().swap(tmp_str_vec);
     vector<vector<string> >().swap(seqxA_tmp);
@@ -2974,7 +3026,7 @@ void MMalign_cross(double & max_total_score, const int max_iter,
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
         TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, sequence_tmp,
-        d0_scale, fast_opt, 1);
+        d0_scale, fast_opt, 1, 0, chainmap);
     if (total_score>max_total_score)
     {
         copy_chain_assign_data(chain1_num, chain2_num, sequence,

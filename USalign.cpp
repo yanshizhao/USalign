@@ -688,11 +688,6 @@ void save_pair_result(const ChainPairAlignResult& result,
     int chain2_num,
     double norm_len);
 
-// ---- Forward declaration of is_chain_pair_excluded (defined later in this file) ----
-bool is_chain_pair_excluded(const map<int,int>& chain_map,
-    int chain1_idx,
-    int chain2_idx);
-
 // ---- Forward declaration of align_chain_pair (defined later in this file; used first by run_mmalign_parallel) ----
 void align_chain_pair(ChainPairAlignResult& result,
     CoordArray& xa,
@@ -1674,26 +1669,6 @@ void run_mmalign_serial_pairwise(const MMalignInputs& inputs,
                 chain1_idx, chain2_idx, chain1_num, chain2_num, norm_len);
         }
     }
-}
-
-// ---- Whether a chain pair is excluded by chainmap constraints; mapped chains must pair with the specified target ----
-bool is_chain_pair_excluded(const map<int,int>& chain_map,
-    int chain1_idx,
-    int chain2_idx)
-{
-    if (chain_map.empty())
-    {
-        return false;
-    }
-    if (!chain_map.count(chain1_idx))
-    {
-        return true;
-    }
-    if (chain_map.at(chain1_idx) != chain2_idx)
-    {
-        return true;
-    }
-    return false;
 }
 
 // ---- Initialize chain-pair rotation matrix ----
