@@ -2018,30 +2018,56 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.pair_result.aligned_seq1, ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
             ctx.pair_result.tm_matrix);
+        // 保留所有映射链对 + 最优未映射单体对；其余解除（重新迭代时自动恢复）
+        const map<int,int>& chain_map = ctx.parsed.chain_map;
         for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
         {
-            if (chain1_idx != ctx.pair_result.best_pair_chain1_idx)
+            map<int,int>::const_iterator it = chain_map.find(chain1_idx);
+            if (it != chain_map.end())
             {
-                ctx.assign_result.chain2_of_chain1[chain1_idx] = -1;
+                ctx.assign_result.chain2_of_chain1[chain1_idx] = it->second;   // 映射链保持
+            }
+            else if (chain1_idx == ctx.pair_result.best_pair_chain1_idx)
+            {
+                ctx.assign_result.chain2_of_chain1[chain1_idx] = ctx.pair_result.best_pair_chain2_idx;
             }
             else
             {
-                ctx.assign_result.chain2_of_chain1[chain1_idx] = ctx.pair_result.best_pair_chain2_idx;
+                ctx.assign_result.chain2_of_chain1[chain1_idx] = -1;
             }
         }
         for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
         {
-            if (chain2_idx != ctx.pair_result.best_pair_chain2_idx)
+            int mapped_by = -1;
+            for (map<int,int>::const_iterator kv = chain_map.begin(); kv != chain_map.end(); ++kv)
             {
-                ctx.assign_result.chain1_of_chain2[chain2_idx] = -1;
+                if (kv->second == chain2_idx)
+                {
+                    mapped_by = kv->first;
+                    break;
+                }
             }
-            else
+            if (mapped_by >= 0)
+            {
+                ctx.assign_result.chain1_of_chain2[chain2_idx] = mapped_by;
+            }
+            else if (chain2_idx == ctx.pair_result.best_pair_chain2_idx)
             {
                 ctx.assign_result.chain1_of_chain2[chain2_idx] = ctx.pair_result.best_pair_chain1_idx;
             }
+            else
+            {
+                ctx.assign_result.chain1_of_chain2[chain2_idx] = -1;
+            }
         }
-        (*ctx.inputs.sequence)[0] = ctx.pair_result.aligned_seq1[ctx.pair_result.best_pair_chain1_idx][ctx.pair_result.best_pair_chain2_idx];
-        (*ctx.inputs.sequence)[1] = ctx.pair_result.aligned_seq2[ctx.pair_result.best_pair_chain1_idx][ctx.pair_result.best_pair_chain2_idx];
+        // 按新分配（映射链对 + 最优未映射单体对）重新拼接 sequence
+        copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
+            ctx.pair_result_origin.aligned_seq1, ctx.pair_result_origin.aligned_seq2,
+            ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
+            ctx.pair_result_origin.tm_matrix,
+            ctx.pair_result.aligned_seq1, ctx.pair_result.aligned_seq2,
+            ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
+            ctx.pair_result.tm_matrix);
         ctx.iteration_score = ctx.pair_result.best_pair_tm;
         MMalign_iter(ctx.iteration_score, max_iter,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
