@@ -1440,6 +1440,8 @@ void read_chainmap(const string& chain_map_file,
     if (chain_map.size() == 0)
     {
         cerr << "ERROR! no valid chain mapping found in " << chain_map_file << endl;
+        cerr << "Warning! The alignment will proceed as if no -chainmap was specified "
+                "(free matching by TM-score)" << endl;
     }
 }
 
