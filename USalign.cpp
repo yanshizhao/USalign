@@ -1313,9 +1313,88 @@ void build_context(MMalignInputs& inputs,
     inputs.sequence = &sequence;
 }
 
-// ---- Parse complexes ----
-void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
+// ---- Pre-scan structure files before formal parsing (MMalign flow only) ----
+// Uses the "auto" atom mode so both protein and RNA chains are visible, then
+// checks the detected chain types against -mol protein/RNA:
+//   - empty file:                 "contains 0 chain(s)"             -> stop
+//   - all chains type-conflict:   "contains N chain(s), all RNA, but -mol protein is set" -> stop
+//   - mixed (usable + filtered):  "contains N chain(s) (M protein, K RNA); ... excluded"  -> continue
+// Returns true when parsing can proceed (at least one usable chain, or auto mode).
+bool prescan_filtered_chains(const vector<string>& chain_list,
+    const string& mol_opt,
+    const int ter_opt,
+    const int infmt_opt,
+    const bool autojustify,
+    const int split_opt,
+    const int het_opt,
+    const vector<string>& chain2parse,
+    const vector<string>& model2parse)
 {
+    if (mol_opt != "RNA" && mol_opt != "protein")
+    {
+        return true;   // auto mode filters nothing, no pre-scan needed
+    }
+    int usable_count = 0;
+    for (size_t i = 0; i < chain_list.size(); i++)
+    {
+        vector<vector<string> > scan_lines;
+        vector<string> scan_chainIDs;
+        vector<int> scan_mol;
+        size_t scan_n = get_PDB_lines(chain_list[i], scan_lines, scan_chainIDs, scan_mol,
+            ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
+            chain2parse, model2parse);
+        if (scan_n == 0)
+        {
+            cerr << "Warning! " << get_basename(chain_list[i]) << " contains 0 chain(s)" << endl;
+            continue;   // empty file: nothing usable
+        }
+        int prot_count = 0;
+        int na_count = 0;
+        for (size_t sc = 0; sc < scan_n; sc++)
+        {
+            if (scan_mol[sc] > 0)
+            {
+                na_count++;
+            }
+            else
+            {
+                prot_count++;
+            }
+        }
+        int filtered_count = (mol_opt == "protein") ? na_count : prot_count;
+        int local_usable = (mol_opt == "protein") ? prot_count : na_count;
+        if (filtered_count == static_cast<int>(scan_n))
+        {
+            // all chains conflict with -mol: report and stop this structure
+            cerr << "Warning! " << get_basename(chain_list[i]) << " contains "
+                 << scan_n << " chain(s), all "
+                 << ((mol_opt == "protein") ? "RNA" : "protein")
+                 << ", but -mol " << mol_opt << " is set" << endl;
+        }
+        else if (filtered_count > 0)
+        {
+            // mixed: some chains usable, some excluded
+            cerr << "Warning! " << get_basename(chain_list[i]) << " contains "
+                 << scan_n << " chain(s) (" << prot_count << " protein, " << na_count
+                 << " RNA); -mol " << mol_opt << " is set, " << filtered_count
+                 << " chain(s) will be excluded from the alignment" << endl;
+        }
+        usable_count += local_usable;
+        for (size_t s = 0; s < scan_lines.size(); s++) scan_lines[s].clear();
+        scan_lines.clear(); scan_chainIDs.clear(); scan_mol.clear();
+    }
+    if (usable_count == 0)
+    {
+        // no usable chain after -mol filtering: stop the alignment flow
+        return false;
+    }
+    return true;
+}
+
+// ---- Parse complexes (pure parsing; pre-scan is done by MMalign before this) ----
+bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
+{
+
     parse_chain_list(inputs.struct1_chain_list, parsed.complex1.coords, parsed.complex1.seqs,
         parsed.complex1.secs, parsed.complex1.mol_types, parsed.complex1.lengths,
         parsed.complex1.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
@@ -1324,8 +1403,9 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         inputs.o_opt, parsed.complex1.resi, inputs.parsed_chains1, inputs.model2parse1);
     if (parsed.complex1.coords.size() == 0)
     {
-        PrintErrorAndQuit("ERROR! 0 chain in complex 1: the file may contain no chains, "
-            "or all chains may have been filtered out (e.g. by -mol or atom selection)");
+        // 防御：预检已拦截 0 链（提示由 prescan_filtered_chains 输出），
+        // 此处仅在预检与正式解析不一致时触发
+        return false;
     }
     parse_chain_list(inputs.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
         parsed.complex2.secs, parsed.complex2.mol_types, parsed.complex2.lengths,
@@ -1335,8 +1415,7 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
     if (parsed.complex2.coords.size() == 0)
     {
-        PrintErrorAndQuit("ERROR! 0 chain in complex 2: the file may contain no chains, "
-            "or all chains may have been filtered out (e.g. by -mol or atom selection)");
+        return false;   // 防御：同上
     }
     parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
     parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
@@ -1345,6 +1424,7 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         parsed.protein_norm_len = (parsed.complex1.total_len_aa + parsed.complex2.total_len_aa) / 2;
         parsed.na_norm_len = (parsed.complex1.total_len_na + parsed.complex2.total_len_na) / 2;
     }
+    return true;
 }
 
 // ---- Match chain names to chain indices ----
@@ -2461,7 +2541,27 @@ int MMalign(const string &xname, const string &yname,
         model2parse1, model2parse2, chain1_list, chain2_list,
         byresi_opt, chainmapfile, se_opt, parallel_threads);
 
-    parse_structures(ctx.inputs, ctx.parsed);
+    // ---- pre-scan before formal parsing (MMalign flow only) ----
+    // Detect structures with no usable chain after -mol filtering (e.g.
+    // -mol protein but only RNA chains): report and skip this pair.
+    if (!prescan_filtered_chains(ctx.inputs.struct1_chain_list, ctx.inputs.mol_opt,
+        ctx.inputs.ter_opt, ctx.inputs.infmt1_opt, ctx.inputs.normalize_atom_name,
+        ctx.inputs.split_opt, ctx.inputs.het_opt, ctx.inputs.parsed_chains1, ctx.inputs.model2parse1))
+    {
+        return 0;   // 已输出预检提示；不退出（批量模式继续下一对）
+    }
+    if (!prescan_filtered_chains(ctx.inputs.chain2_list, ctx.inputs.mol_opt,
+        ctx.inputs.ter_opt, ctx.inputs.infmt2_opt, ctx.inputs.normalize_atom_name,
+        ctx.inputs.split_opt, ctx.inputs.het_opt, ctx.inputs.chain2parse2, ctx.inputs.model2parse2))
+    {
+        return 0;
+    }
+
+    if (!parse_structures(ctx.inputs, ctx.parsed))
+    {
+        // 0 链防御：无法比对，提前返回（不退出——批量模式继续下一对）
+        return 0;
+    }
     read_chainmap(ctx.inputs.chain_map_file,
         ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
         ctx.inputs.structure1_name, ctx.inputs.structure2_name,
