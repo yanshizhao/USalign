@@ -1324,7 +1324,8 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         inputs.o_opt, parsed.complex1.resi, inputs.parsed_chains1, inputs.model2parse1);
     if (parsed.complex1.coords.size() == 0)
     {
-        PrintErrorAndQuit("ERROR! 0 chain in complex 1");
+        PrintErrorAndQuit("ERROR! 0 chain in complex 1: the file may contain no chains, "
+            "or all chains may have been filtered out (e.g. by -mol or atom selection)");
     }
     parse_chain_list(inputs.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
         parsed.complex2.secs, parsed.complex2.mol_types, parsed.complex2.lengths,
@@ -1334,7 +1335,8 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
     if (parsed.complex2.coords.size() == 0)
     {
-        PrintErrorAndQuit("ERROR! 0 chain in complex 2");
+        PrintErrorAndQuit("ERROR! 0 chain in complex 2: the file may contain no chains, "
+            "or all chains may have been filtered out (e.g. by -mol or atom selection)");
     }
     parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
     parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
@@ -2153,18 +2155,6 @@ void run_cross_chain_alignment(MMalignContext& ctx,
 }
 
 // ---- Final output (print_version + MMalign_final / MMalign_se_final, one of the two) ----
-// ---- Extract the bare file name from a possibly path-prefixed input name ----
-// e.g. "../4iaj.pdb1", "MSTATest/US7351924051.pdb", "D:\\data\\4iaj.pdb1" -> "4iaj.pdb1"
-string get_basename(const string& name)
-{
-    size_t path_sep = name.find_last_of("/\\");
-    if (path_sep != string::npos)
-    {
-        return name.substr(path_sep + 1);
-    }
-    return name;
-}
-
 // ---- Determine the unpaired reason for a chain (5-level priority) ----
 // is_structure1_side: true for a structure-1 chain, false for a structure-2 chain
 string get_unpaired_reason(const MMalignContext& ctx,

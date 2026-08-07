@@ -35,6 +35,18 @@ using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation mat
 // suppress -0.0000000000: values below %.10f display threshold normalize to +0.0
 inline double clean_fmt(double x) { return (std::abs(x) < 1e-10) ? +0.0 : x; }
 
+// Extract the bare file name from a possibly path-prefixed input name
+// e.g. "../4iaj.pdb1", "MSTATest/US7351924051.pdb", "D:\\data\\4iaj.pdb1" -> "4iaj.pdb1"
+inline std::string get_basename(const std::string& name)
+{
+    size_t path_sep = name.find_last_of("/\\");
+    if (path_sep != std::string::npos)
+    {
+        return name.substr(path_sep + 1);
+    }
+    return name;
+}
+
 void PrintErrorAndQuit(const std::string sErrorString)
 {
     std::cout << sErrorString << std::endl;

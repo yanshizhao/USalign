@@ -1091,11 +1091,11 @@ void parse_chain_list(const vector<string>&chain_list,
                 bool is_na = scan_mol[sc] > 0;   // 与 auto 分支同一套判定（净计数符号）
                 if ((mol_opt=="RNA" && !is_na) || (mol_opt=="protein" && is_na))
                 {
-                    cerr << "Warning! Chain " << scan_chainIDs[sc] << " of " << name
+                    cerr << "Warning! Chain " << scan_chainIDs[sc] << " of "
+                         << get_basename(name)
                          << " appears to be " << (is_na?"RNA":"protein")
-                         << ", but -mol " << mol_opt << " is set: "
-                         << (is_na?"RNA chains have no CA atoms":"protein chains have no C3' atoms")
-                         << " and will be filtered out (excluded from the alignment)" << endl;
+                         << ", but -mol " << mol_opt << " is set: the chain will be "
+                         << "excluded from the alignment" << endl;
                 }
             }
             for (size_t s=0;s<scan_lines.size();s++) scan_lines[s].clear();
@@ -1106,7 +1106,7 @@ void parse_chain_list(const vector<string>&chain_list,
             chain2parse, model2parse);
         if (!chainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<name
+            cerr<<"Warning! Cannot parse file: "<<get_basename(name)
                 <<". Chain number 0."<<endl;
             continue;
         }
