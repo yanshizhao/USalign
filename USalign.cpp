@@ -1391,8 +1391,30 @@ bool prescan_filtered_chains(const vector<string>& chain_list,
     return true;
 }
 
+// ---- Pre-scan both complexes before formal parsing (MMalign flow) ----
+// Wraps prescan_filtered_chains for structure 1 and structure 2; returns false
+// when either complex has no usable chain after -mol filtering (the per-chain
+// hints were already printed). The caller stops this pair without exiting,
+// so batch mode can continue with the next pair.
+bool prescan_complexes(const MMalignInputs& inputs)
+{
+    if (!prescan_filtered_chains(inputs.struct1_chain_list, inputs.mol_opt,
+        inputs.ter_opt, inputs.infmt1_opt, inputs.normalize_atom_name,
+        inputs.split_opt, inputs.het_opt, inputs.parsed_chains1, inputs.model2parse1))
+    {
+        return false;
+    }
+    if (!prescan_filtered_chains(inputs.chain2_list, inputs.mol_opt,
+        inputs.ter_opt, inputs.infmt2_opt, inputs.normalize_atom_name,
+        inputs.split_opt, inputs.het_opt, inputs.chain2parse2, inputs.model2parse2))
+    {
+        return false;
+    }
+    return true;
+}
+
 // ---- Parse complexes (pure parsing; pre-scan is done by MMalign before this) ----
-// 0-chain cases are intercepted by prescan_filtered_chains in the MMalign flow,
+// 0-chain cases are intercepted by prescan_complexes in the MMalign flow,
 // so this function can assume at least one usable chain per complex.
 void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
 {
@@ -2534,17 +2556,9 @@ int MMalign(const string &xname, const string &yname,
     // ---- pre-scan before formal parsing (MMalign flow only) ----
     // Detect structures with no usable chain after -mol filtering (e.g.
     // -mol protein but only RNA chains): report and skip this pair.
-    if (!prescan_filtered_chains(ctx.inputs.struct1_chain_list, ctx.inputs.mol_opt,
-        ctx.inputs.ter_opt, ctx.inputs.infmt1_opt, ctx.inputs.normalize_atom_name,
-        ctx.inputs.split_opt, ctx.inputs.het_opt, ctx.inputs.parsed_chains1, ctx.inputs.model2parse1))
+    if (!prescan_complexes(ctx.inputs))
     {
         return 0;   // 已输出预检提示；不退出（批量模式继续下一对）
-    }
-    if (!prescan_filtered_chains(ctx.inputs.chain2_list, ctx.inputs.mol_opt,
-        ctx.inputs.ter_opt, ctx.inputs.infmt2_opt, ctx.inputs.normalize_atom_name,
-        ctx.inputs.split_opt, ctx.inputs.het_opt, ctx.inputs.chain2parse2, ctx.inputs.model2parse2))
-    {
-        return 0;
     }
 
     parse_structures(ctx.inputs, ctx.parsed);
