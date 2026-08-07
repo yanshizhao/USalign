@@ -2358,9 +2358,10 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
 {
-    // ---- ① paired-pair counts by molecule type + free-matching pair count ----
+    // ---- ① paired-pair counts by molecule type + mapped/free-matching pair counts ----
     int prot_pair_num = 0;
     int na_pair_num = 0;
+    int mapped_pair_num = 0;
     int free_pair_num = 0;
     for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
@@ -2377,7 +2378,11 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
         {
             prot_pair_num++;
         }
-        if (!ctx.parsed.chain_map.count(chain1_idx))
+        if (ctx.parsed.chain_map.count(chain1_idx))
+        {
+            mapped_pair_num++;
+        }
+        else
         {
             free_pair_num++;
         }
@@ -2392,11 +2397,14 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
          << name2 << " (structure 2)" << endl;
 
     // ---- ③ Chainmap statistics (only when chainmap was specified) ----
+    // mapped + free-matching = total aligned pairs, matching Protein/RNA counts
     if (ctx.inputs.chain_map_file.size() > 0)
     {
         cout << "#   Chainmap: " << ctx.parsed.chain_map_entries
-             << " entries specified, " << ctx.parsed.chain_map.size()
-             << " valid, " << free_pair_num << " free-matching pair(s)" << endl;
+             << " entries specified, " << mapped_pair_num
+             << " mapped, " << free_pair_num
+             << " free-matching; total " << (mapped_pair_num + free_pair_num)
+             << " pair(s) aligned" << endl;
         for (size_t k = 0; k < ctx.parsed.invalid_mappings.size(); k++)
         {
             cout << "#   Invalid mappings: " << ctx.parsed.invalid_mappings[k] << endl;
