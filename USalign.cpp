@@ -2165,6 +2165,110 @@ string get_basename(const string& name)
     return name;
 }
 
+// ---- Determine the unpaired reason for a chain (5-level priority) ----
+// is_structure1_side: true for a structure-1 chain, false for a structure-2 chain
+string get_unpaired_reason(const MMalignContext& ctx,
+    int chain_idx,
+    bool is_structure1_side,
+    int chain1_num,
+    int chain2_num)
+{
+    // level 1: chain too short
+    int chain_len = is_structure1_side
+        ? ctx.parsed.complex1.lengths[chain_idx]
+        : ctx.parsed.complex2.lengths[chain_idx];
+    if (chain_len < 3)
+    {
+        return "too short (<3 residues)";
+    }
+    // level 2: no chain of the same molecule type (tm_matrix row/column all <= 0)
+    bool no_same_type_target = true;
+    if (is_structure1_side)
+    {
+        for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+        {
+            if (ctx.pair_result.tm_matrix[chain_idx][chain2_idx] > 0)
+            {
+                no_same_type_target = false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+        {
+            if (ctx.pair_result.tm_matrix[chain1_idx][chain_idx] > 0)
+            {
+                no_same_type_target = false;
+                break;
+            }
+        }
+    }
+    if (no_same_type_target)
+    {
+        return "no chain of the same molecule type in the other complex";
+    }
+    // level 3: mapped chain (or mapping target) that failed to pair
+    bool mapped_but_unpaired = false;
+    if (is_structure1_side)
+    {
+        mapped_but_unpaired = ctx.parsed.chain_map.count(chain_idx) > 0;
+    }
+    else
+    {
+        for (map<int,int>::const_iterator kv = ctx.parsed.chain_map.begin();
+             kv != ctx.parsed.chain_map.end(); ++kv)
+        {
+            if (kv->second == chain_idx)
+            {
+                // the mapping chain1 did not pair to this target
+                mapped_but_unpaired = ctx.assign_result.chain2_of_chain1[kv->first] != chain_idx;
+                break;
+            }
+        }
+    }
+    if (mapped_but_unpaired)
+    {
+        return "mapped but not paired (check chainmap)";
+    }
+    // level 4/5: distinguish quality protection from chain-number mismatch
+    bool has_free_target = false;
+    if (is_structure1_side)
+    {
+        for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+        {
+            if (ctx.assign_result.chain1_of_chain2[chain2_idx] < 0)
+            {
+                has_free_target = true;
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+        {
+            if (ctx.assign_result.chain2_of_chain1[chain1_idx] < 0)
+            {
+                has_free_target = true;
+                break;
+            }
+        }
+    }
+    if (has_free_target)
+    {
+        return "removed by quality protection";
+    }
+    if (is_structure1_side)
+    {
+        return "more chains in structure 1 (" + std::to_string(chain1_num)
+               + ") than in structure 2 (" + std::to_string(chain2_num) + ")";
+    }
+    return "more chains in structure 2 (" + std::to_string(chain2_num)
+           + ") than in structure 1 (" + std::to_string(chain1_num) + ")";
+}
+
 // ---- Print chain pairing summary: mapping stats + invalid mappings + paired/unpaired counts ----
 // Printed unconditionally for -mm 1 before MMalign_final; the Chainmap statistics
 // and Invalid-mappings details are shown only when a chainmap file was specified.
@@ -2221,68 +2325,31 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
     cout << "#   Protein: " << prot_pair_num << " pair(s) aligned" << endl;
     cout << "#   RNA: " << na_pair_num << " pair(s) aligned" << endl;
 
-    // ---- ⑤ unpaired chains (structure 1 side then structure 2 side), one line each ----
-    bool has_unpaired = false;
+    // ---- ⑤ unpaired chains: collect (file, type, reason) then group identical reasons ----
+    // Chains sharing the same (file, type, reason) are merged into one line
+    // to avoid redundant per-chain lines.
+    struct UnpairedGroup
+    {
+        string file;
+        string type;
+        string reason;
+    };
+    map<string, vector<string> > unpaired_groups;
+    map<string, UnpairedGroup> group_meta;
+
     for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
         if (ctx.assign_result.chain2_of_chain1[chain1_idx] >= 0)
         {
             continue;
         }
-        if (!has_unpaired)
-        {
-            cout << "# Unpaired:" << endl;
-            has_unpaired = true;
-        }
         string type = (ctx.parsed.complex1.mol_types[chain1_idx] > 0) ? "RNA" : "protein";
-        string reason;
-        if (ctx.parsed.complex1.lengths[chain1_idx] < 3)
-        {
-            reason = "too short (<3 residues)";
-        }
-        else
-        {
-            bool no_same_type_target = true;
-            for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
-            {
-                if (ctx.pair_result.tm_matrix[chain1_idx][chain2_idx] > 0)
-                {
-                    no_same_type_target = false;
-                    break;
-                }
-            }
-            if (no_same_type_target)
-            {
-                reason = "no chain of the same molecule type in the other complex";
-            }
-            else if (ctx.parsed.chain_map.count(chain1_idx))
-            {
-                reason = "mapped but not paired (check chainmap)";
-            }
-            else
-            {
-                bool has_free_target = false;
-                for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
-                {
-                    if (ctx.assign_result.chain1_of_chain2[chain2_idx] < 0)
-                    {
-                        has_free_target = true;
-                        break;
-                    }
-                }
-                if (has_free_target)
-                {
-                    reason = "removed by quality protection";
-                }
-                else
-                {
-                    reason = "more chains in structure 1 (" + std::to_string(chain1_num)
-                             + ") than in structure 2 (" + std::to_string(chain2_num) + ")";
-                }
-            }
-        }
-        cout << "#   " << name1 << ": " << ctx.parsed.complex1.chain_ids[chain1_idx]
-             << " (" << type << ") - " << reason << endl;
+        string reason = get_unpaired_reason(ctx, chain1_idx, true, chain1_num, chain2_num);
+        string group_key = name1 + "|" + type + "|" + reason;
+        unpaired_groups[group_key].push_back(ctx.parsed.complex1.chain_ids[chain1_idx]);
+        group_meta[group_key].file = name1;
+        group_meta[group_key].type = type;
+        group_meta[group_key].reason = reason;
     }
     for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
     {
@@ -2290,60 +2357,33 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
         {
             continue;
         }
-        if (!has_unpaired)
-        {
-            cout << "# Unpaired:" << endl;
-            has_unpaired = true;
-        }
         string type = (ctx.parsed.complex2.mol_types[chain2_idx] > 0) ? "RNA" : "protein";
-        string reason;
-        if (ctx.parsed.complex2.lengths[chain2_idx] < 3)
+        string reason = get_unpaired_reason(ctx, chain2_idx, false, chain1_num, chain2_num);
+        string group_key = name2 + "|" + type + "|" + reason;
+        unpaired_groups[group_key].push_back(ctx.parsed.complex2.chain_ids[chain2_idx]);
+        group_meta[group_key].file = name2;
+        group_meta[group_key].type = type;
+        group_meta[group_key].reason = reason;
+    }
+
+    if (!unpaired_groups.empty())
+    {
+        cout << "# Unpaired:" << endl;
+        for (map<string, vector<string> >::const_iterator group = unpaired_groups.begin();
+             group != unpaired_groups.end(); ++group)
         {
-            reason = "too short (<3 residues)";
+            const UnpairedGroup& meta = group_meta[group->first];
+            cout << "#   " << meta.file << ": ";
+            for (size_t k = 0; k < group->second.size(); k++)
+            {
+                if (k > 0)
+                {
+                    cout << ", ";
+                }
+                cout << group->second[k];
+            }
+            cout << " (" << meta.type << ") - " << meta.reason << endl;
         }
-        else
-        {
-            bool no_same_type_target = true;
-            for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
-            {
-                if (ctx.pair_result.tm_matrix[chain1_idx][chain2_idx] > 0)
-                {
-                    no_same_type_target = false;
-                    break;
-                }
-            }
-            if (no_same_type_target)
-            {
-                reason = "no chain of the same molecule type in the other complex";
-            }
-            else if (ctx.parsed.chain_map.count(chain2_idx))
-            {
-                reason = "mapped but not paired (check chainmap)";
-            }
-            else
-            {
-                bool has_free_target = false;
-                for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
-                {
-                    if (ctx.assign_result.chain2_of_chain1[chain1_idx] < 0)
-                    {
-                        has_free_target = true;
-                        break;
-                    }
-                }
-                if (has_free_target)
-                {
-                    reason = "removed by quality protection";
-                }
-                else
-                {
-                    reason = "more chains in structure 2 (" + std::to_string(chain2_num)
-                             + ") than in structure 1 (" + std::to_string(chain1_num) + ")";
-                }
-            }
-        }
-        cout << "#   " << name2 << ": " << ctx.parsed.complex2.chain_ids[chain2_idx]
-             << " (" << type << ") - " << reason << endl;
     }
 }
 
