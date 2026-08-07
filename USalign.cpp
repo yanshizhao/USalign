@@ -2485,8 +2485,6 @@ void output_final_results(MMalignContext& ctx,
     {
         print_version();
     }
-    // 配对汇总：打印版本之后、详细比对输出之前（所有 -mm 1 输出）
-    print_chain_pairing_summary(ctx, chain1_num, chain2_num);
     // Name of Structure 输出同样只显示文件名（剥离 ../、目录前缀等路径部分）
     string xname_bare = get_basename(ctx.inputs.structure1_name);
     string yname_bare = get_basename(ctx.inputs.structure2_name);
@@ -2532,6 +2530,8 @@ void output_final_results(MMalignContext& ctx,
             ctx.inputs.a_opt, ctx.inputs.d_opt, ctx.inputs.fast_opt, ctx.inputs.full_opt,
             ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
+    // 配对汇总：打印比对结果之后（所有 -mm 1 输出）——保证表格（表头+数据行）一体
+    print_chain_pairing_summary(ctx, chain1_num, chain2_num);
 }
 
 // MMalign if more than two chains. TMalign if only one chain
