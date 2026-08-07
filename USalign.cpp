@@ -1392,31 +1392,22 @@ bool prescan_filtered_chains(const vector<string>& chain_list,
 }
 
 // ---- Parse complexes (pure parsing; pre-scan is done by MMalign before this) ----
-bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
+// 0-chain cases are intercepted by prescan_filtered_chains in the MMalign flow,
+// so this function can assume at least one usable chain per complex.
+void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
 {
-
     parse_chain_list(inputs.struct1_chain_list, parsed.complex1.coords, parsed.complex1.seqs,
         parsed.complex1.secs, parsed.complex1.mol_types, parsed.complex1.lengths,
         parsed.complex1.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
         inputs.infmt1_opt, inputs.atom_opt, inputs.normalize_atom_name, inputs.mirror_opt,
         inputs.het_opt, parsed.complex1.total_len_aa, parsed.complex1.total_len_na,
         inputs.o_opt, parsed.complex1.resi, inputs.parsed_chains1, inputs.model2parse1);
-    if (parsed.complex1.coords.size() == 0)
-    {
-        // 防御：预检已拦截 0 链（提示由 prescan_filtered_chains 输出），
-        // 此处仅在预检与正式解析不一致时触发
-        return false;
-    }
     parse_chain_list(inputs.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
         parsed.complex2.secs, parsed.complex2.mol_types, parsed.complex2.lengths,
         parsed.complex2.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
         inputs.infmt2_opt, inputs.atom_opt, inputs.normalize_atom_name, 0,
         inputs.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
         inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
-    if (parsed.complex2.coords.size() == 0)
-    {
-        return false;   // 防御：同上
-    }
     parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
     parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
     if (inputs.a_opt)
@@ -1424,7 +1415,6 @@ bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         parsed.protein_norm_len = (parsed.complex1.total_len_aa + parsed.complex2.total_len_aa) / 2;
         parsed.na_norm_len = (parsed.complex1.total_len_na + parsed.complex2.total_len_na) / 2;
     }
-    return true;
 }
 
 // ---- Match chain names to chain indices ----
@@ -2557,11 +2547,7 @@ int MMalign(const string &xname, const string &yname,
         return 0;
     }
 
-    if (!parse_structures(ctx.inputs, ctx.parsed))
-    {
-        // 0 链防御：无法比对，提前返回（不退出——批量模式继续下一对）
-        return 0;
-    }
+    parse_structures(ctx.inputs, ctx.parsed);
     read_chainmap(ctx.inputs.chain_map_file,
         ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
         ctx.inputs.structure1_name, ctx.inputs.structure2_name,
