@@ -2153,6 +2153,18 @@ void run_cross_chain_alignment(MMalignContext& ctx,
 }
 
 // ---- Final output (print_version + MMalign_final / MMalign_se_final, one of the two) ----
+// ---- Extract the bare file name from a possibly path-prefixed input name ----
+// e.g. "../4iaj.pdb1", "MSTATest/US7351924051.pdb", "D:\\data\\4iaj.pdb1" -> "4iaj.pdb1"
+string get_basename(const string& name)
+{
+    size_t path_sep = name.find_last_of("/\\");
+    if (path_sep != string::npos)
+    {
+        return name.substr(path_sep + 1);
+    }
+    return name;
+}
+
 // ---- Print chain pairing summary: mapping stats + invalid mappings + paired/unpaired counts ----
 // Printed unconditionally for -mm 1 before MMalign_final; the Chainmap statistics
 // and Invalid-mappings details are shown only when a chainmap file was specified.
@@ -2186,18 +2198,8 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
     }
 
     // 配对汇总中只显示文件名（剥离 ../、目录前缀等路径部分）
-    string name1 = ctx.inputs.structure1_name;
-    string name2 = ctx.inputs.structure2_name;
-    size_t path_sep1 = name1.find_last_of("/\\");
-    size_t path_sep2 = name2.find_last_of("/\\");
-    if (path_sep1 != string::npos)
-    {
-        name1 = name1.substr(path_sep1 + 1);
-    }
-    if (path_sep2 != string::npos)
-    {
-        name2 = name2.substr(path_sep2 + 1);
-    }
+    string name1 = get_basename(ctx.inputs.structure1_name);
+    string name2 = get_basename(ctx.inputs.structure2_name);
 
     // ---- ② summary header ----
     cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
@@ -2355,10 +2357,13 @@ void output_final_results(MMalignContext& ctx,
     }
     // 配对汇总：打印版本之后、详细比对输出之前（所有 -mm 1 输出）
     print_chain_pairing_summary(ctx, chain1_num, chain2_num);
+    // Name of Structure 输出同样只显示文件名（剥离 ../、目录前缀等路径部分）
+    string xname_bare = get_basename(ctx.inputs.structure1_name);
+    string yname_bare = get_basename(ctx.inputs.structure2_name);
     if (ctx.inputs.se_opt)
     {
-        MMalign_se_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
-            ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size()),
+        MMalign_se_final(xname_bare,
+            yname_bare,
             ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
             ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
@@ -2378,8 +2383,8 @@ void output_final_results(MMalignContext& ctx,
     }
     else
     {
-        MMalign_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
-            ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size()),
+        MMalign_final(xname_bare,
+            yname_bare,
             ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
             ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
