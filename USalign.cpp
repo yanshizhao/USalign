@@ -2185,8 +2185,19 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
         }
     }
 
-    string name1 = ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size());
-    string name2 = ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size());
+    // 配对汇总中只显示文件名（剥离 ../、目录前缀等路径部分）
+    string name1 = ctx.inputs.structure1_name;
+    string name2 = ctx.inputs.structure2_name;
+    size_t path_sep1 = name1.find_last_of("/\\");
+    size_t path_sep2 = name2.find_last_of("/\\");
+    if (path_sep1 != string::npos)
+    {
+        name1 = name1.substr(path_sep1 + 1);
+    }
+    if (path_sep2 != string::npos)
+    {
+        name2 = name2.substr(path_sep2 + 1);
+    }
 
     // ---- ② summary header ----
     cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
