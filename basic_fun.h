@@ -36,7 +36,6 @@ using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation mat
 inline double clean_fmt(double x) { return (std::abs(x) < 1e-10) ? +0.0 : x; }
 
 // Extract the bare file name from a possibly path-prefixed input name
-// e.g. "../4iaj.pdb1", "MSTATest/US7351924051.pdb", "D:\\data\\4iaj.pdb1" -> "4iaj.pdb1"
 inline std::string get_basename(const std::string& name)
 {
     size_t path_sep = name.find_last_of("/\\");

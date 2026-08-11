@@ -2,26 +2,15 @@
 #include <cfloat>
 #include "se.h"
 
-// ---- Whether a chain pair is excluded by chainmap (local-constraint semantics) ----
-// Local-constraint rules:
-//   - a mapped chain1 must pair with its specified target chain2 (hard constraint)
-//   - a chain2 that is the target of a mapping cannot be paired by an unmapped chain1
-//   - unmapped chains pair freely, matched automatically by TM-score
-// An empty chain_map means no constraint at all.
-bool is_chain_pair_excluded(const map<int,int>& chain_map,
-    int chain1_idx,
+  inline bool is_chain_map_key(const map<int,int>& chain_pair_map, int struct1_chain_idx)
+  {
+      return chain_pair_map.find(struct1_chain_idx) != chain_pair_map.end();
+  }
+
+inline bool is_chain_map_value(const map<int,int>& chain_pair_map,
     int chain2_idx)
 {
-    if (chain_map.empty())
-    {
-        return false;
-    }
-    map<int,int>::const_iterator it = chain_map.find(chain1_idx);
-    if (it != chain_map.end())
-    {
-        return it->second != chain2_idx;
-    }
-    for (map<int,int>::const_iterator kv = chain_map.begin(); kv != chain_map.end(); ++kv)
+    for (map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
     {
         if (kv->second == chain2_idx)
         {
@@ -31,7 +20,27 @@ bool is_chain_pair_excluded(const map<int,int>& chain_map,
     return false;
 }
 
-void print_assign_list(const std::vector<int>& assign1_list, const int chain1_num,
+
+inline bool is_chain_pair_allowed(const map<int,int>& chain_pair_map,
+    int chain1_idx,
+    int chain2_idx)
+{
+    //是否是映射键
+    bool chain1_is_key = is_chain_map_key(chain_pair_map, chain1_idx);
+    //是否是映射值
+    bool chain2_is_value = is_chain_map_value(chain_pair_map, chain2_idx);
+
+    //是否是映射对
+    if (chain1_is_key && chain2_is_value)
+    {
+        return chain_pair_map.find(chain1_idx)->second == chain2_idx;
+    }
+
+    return !chain1_is_key && !chain2_is_value;
+}
+
+
+inline void print_assign_list(const std::vector<int>& assign1_list, const int chain1_num,
     const vector<string> &chainID_list1,
     const vector<string> &chainID_list2)
 {
@@ -47,7 +56,7 @@ void print_assign_list(const std::vector<int>& assign1_list, const int chain1_nu
 
 /* count the number of nucleic acid chains (na_chain_num) and
  * protein chains (aa_chain_num) in a complex */
-int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
+inline int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
     const vector<int>&mol_vec)
 {
     na_chain_num=0;
@@ -62,7 +71,7 @@ int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
 
 /* adjust chain assignment for dimer-dimer alignment 
  * return true if assignment is adjusted */
-bool adjust_dimer_assignment(        
+inline bool adjust_dimer_assignment(        
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
     const vector<int>&xlen_vec, const vector<int>&ylen_vec,
@@ -221,7 +230,7 @@ bool adjust_dimer_assignment(
 }
 
 // count how many chains are paired
-int count_assign_pair(const std::vector<int>& assign1_list,const int chain1_num)
+inline int count_assign_pair(const std::vector<int>& assign1_list,const int chain1_num)
 {
     int pair_num=0;
     int i;
@@ -231,7 +240,7 @@ int count_assign_pair(const std::vector<int>& assign1_list,const int chain1_num)
 
 
 // assign chain-chain correspondence
-double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+inline double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     std::vector<int>& assign2_list, const int chain1_num, const int chain2_num)
 {
     double total_score=0;
@@ -329,7 +338,7 @@ double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& as
 }
 
 
-double calculate_centroids(const DoubleCube&a_vec,
+inline double calculate_centroids(const DoubleCube&a_vec,
     const int chain_num, CoordArray& centroids)
 {
     int L=0;
@@ -435,7 +444,7 @@ inline double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1
  * return het_deg, which ranges from 0 to 1.
  * The larger the value, the more "hetero"; 
  * Tthe smaller the value, the more "homo" */
-double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
+inline double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
     const int chain2_num)
 {
     double het_deg=0;
@@ -456,7 +465,7 @@ double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
 }
 
 // reassign chain-chain correspondence, specific for homooligomer
-double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     std::vector<int>& assign2_list, const int chain1_num, const int chain2_num,
     CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM,
     const int L, const RotArray& ut_mat)
@@ -562,7 +571,7 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
 }
 
 // reassign chain-chain correspondence, specific for heterooligomer
-double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+inline double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     std::vector<int>& assign2_list, const int chain1_num, const int chain2_num,
     const CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM, const int L)
 {
@@ -646,7 +655,7 @@ double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<in
     return MMscore;
 }
 
-void copy_chain_data(const DoubleMatrix&a_vec_i,
+inline void copy_chain_data(const DoubleMatrix&a_vec_i,
     const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
     const int len,CoordArray& a,std::string &seq,std::string &sec)
 {
@@ -666,7 +675,7 @@ void copy_chain_data(const DoubleMatrix&a_vec_i,
 }
 
 // clear chains with L<3
-void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_opt)
+inline void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_opt)
 {
     int chain_i;
     int Lch;
@@ -698,7 +707,7 @@ void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_op
     line.clear();
 }
 
-size_t get_full_PDB_lines(const string filename,
+inline size_t get_full_PDB_lines(const string filename,
     vector<vector<string> >&PDB_lines, const int ter_opt,
     const int infmt_opt, const int split_opt, const int het_opt)
 {
@@ -981,7 +990,7 @@ size_t get_full_PDB_lines(const string filename,
     return PDB_lines.size();
 }
 
-void output_dock(const vector<string>&chain_list, const int ter_opt,
+inline void output_dock(const vector<string>&chain_list, const int ter_opt,
     const int split_opt, const int infmt_opt, const string atom_opt,
     const int mirror_opt, const RotArray& ut_mat, const string&fname_super)
 {
@@ -1046,7 +1055,7 @@ void output_dock(const vector<string>&chain_list, const int ter_opt,
     line.clear();
 }
 
-void parse_chain_list(const vector<string>&chain_list,
+inline void parse_chain_list(const vector<string>&chain_list,
     DoubleCube&a_vec, CharMatrix&seq_vec,
     CharMatrix&sec_vec, vector<int>&mol_vec, vector<int>&len_vec,
     vector<string>&chainID_list, const int ter_opt, const int split_opt,
@@ -1075,32 +1084,6 @@ void parse_chain_list(const vector<string>&chain_list,
     for (i=0;i<chain_list.size();i++)
     {
         name=chain_list[i];
-        // ---- 混合分子预检：-mol 强制类型时，用 auto 原子模式预扫描检测被过滤的链 ----
-        // (-mol protein 时 atom_opt=" CA "，RNA 链无 CA 原子会被解析层整链过滤，
-        //  此处预扫描并警告，避免用户看到误导的 "Sequence is too short")
-        if (mol_opt=="RNA" || mol_opt=="protein")
-        {
-            vector<vector<string> > scan_lines;
-            vector<string> scan_chainIDs;
-            vector<int> scan_mol;
-            size_t scan_n = get_PDB_lines(name, scan_lines, scan_chainIDs, scan_mol,
-                ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
-                chain2parse, model2parse);
-            for (size_t sc=0; sc<scan_n; sc++)
-            {
-                bool is_na = scan_mol[sc] > 0;   // 与 auto 分支同一套判定（净计数符号）
-                if ((mol_opt=="RNA" && !is_na) || (mol_opt=="protein" && is_na))
-                {
-                    cerr << "Warning! Chain " << scan_chainIDs[sc] << " of "
-                         << get_basename(name)
-                         << " appears to be " << (is_na?"RNA":"protein")
-                         << ", but -mol " << mol_opt << " is set: the chain will be "
-                         << "excluded from the alignment" << endl;
-                }
-            }
-            for (size_t s=0;s<scan_lines.size();s++) scan_lines[s].clear();
-            scan_lines.clear(); scan_chainIDs.clear(); scan_mol.clear();
-        }
         chainnum=get_PDB_lines(name, PDB_lines, chainID_list, mol_vec,
             ter_opt, infmt_opt, atom_opt, autojustify, split_opt, het_opt,
             chain2parse, model2parse);
@@ -1186,7 +1169,7 @@ void parse_chain_list(const vector<string>&chain_list,
     }
 }
 
-int copy_chain_pair_data(
+inline int copy_chain_pair_data(
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
@@ -1239,7 +1222,7 @@ int copy_chain_pair_data(
     return mol_type;
 }
 
-double MMalign_search(
+inline double MMalign_search(
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
@@ -1251,7 +1234,7 @@ double MMalign_search(
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0,
-    const map<int,int>& chainmap = map<int,int>())
+    const map<int,int>& chain_pair_map = map<int,int>())
 {
     double total_score=0;
     int i;
@@ -1327,7 +1310,7 @@ double MMalign_search(
             continue;
         }
         secx.resize(xlen+1);
-    xa.resize(xlen);
+        xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,secx);
 
@@ -1342,9 +1325,8 @@ double MMalign_search(
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            // chainmap 局部约束：跳过锁死对（映射链1的非目标列 / 未映射链1×映射目标）
-            // 未映射自由对照常计算（自动择优的数据基础）
-            if (is_chain_pair_excluded(chainmap, i, j))
+            // chainmap 局部约束：不允许配对的链对跳过
+            if (!is_chain_pair_allowed(chain_pair_map, i, j))
             {
                 TMave_mat[i][j]=-1;
                 continue;
@@ -1357,7 +1339,7 @@ double MMalign_search(
                 continue;
             }
             secy.resize(ylen+1);
-    ya.resize(ylen);
+            ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
@@ -1420,7 +1402,7 @@ double MMalign_search(
     }
     return total_score;
 }
-void MMalign_final(
+inline void MMalign_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
     string fname_super, string fname_lign, string fname_matrix,
@@ -1641,7 +1623,7 @@ void MMalign_final(
 }
 
 
-void MMalign_se_final(
+inline void MMalign_se_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
     string fname_super, string fname_lign, string fname_matrix,
@@ -1872,7 +1854,7 @@ void MMalign_se_final(
 }
 
 
-void copy_chain_assign_data(int chain1_num, int chain2_num,
+inline void copy_chain_assign_data(int chain1_num, int chain2_num,
     vector<string> &sequence,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, DoubleMatrix& TMave_mat,
@@ -1904,7 +1886,7 @@ void copy_chain_assign_data(int chain1_num, int chain2_num,
     return;
 }
 
-void MMalign_iter(double & max_total_score, const int max_iter,
+inline void MMalign_iter(double & max_total_score, const int max_iter,
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
@@ -1915,7 +1897,7 @@ void MMalign_iter(double & max_total_score, const int max_iter,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt, map<int,int> &chainmap,
+    double d0_scale, bool fast_opt, map<int,int> &chain_pair_map,
     const int byresi_opt=0)
 {
     // tmp assignment
@@ -1939,29 +1921,30 @@ void MMalign_iter(double & max_total_score, const int max_iter,
             seqx, seqy, secx, secy, len_aa, len_na,
             chain1_num, chain2_num,
             TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
-            sequence, d0_scale, fast_opt, 3, byresi_opt, chainmap);
-        if (chainmap.size())
+            sequence, d0_scale, fast_opt, 3, byresi_opt, chain_pair_map);
+        
+        if (chain_pair_map.size())
         {
-            int i;
-            int j;
-            for (i=0;i<chain1_num;i++)
+            int chain1_idx;
+            int chain2_idx;
+            for (chain1_idx =0;chain1_idx < chain1_num; chain1_idx++)
             {
-                for (j=0;j<chain2_num;j++)
+                for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
                 {
-                    // 局部约束锁死段：映射链1的非目标列 / 未映射链1×映射目标 置 -1
-                    if (is_chain_pair_excluded(chainmap, i, j))
+                    // 局部约
+                    if (!is_chain_pair_allowed(chain_pair_map, chain1_idx, chain2_idx))
                     {
-                        TMave_tmp[i][j]=-1;
+                        TMave_tmp[chain1_idx][chain2_idx]=-1;
                     }
                 }
             }
         }
         total_score=enhanced_greedy_search(TMave_tmp, assign1_tmp,
             assign2_tmp, chain1_num, chain2_num);
-        if (chainmap.size())
+        if (chain_pair_map.size())
         {
-            // 映射链强制保持配对（用户硬约束：即使重打分分数<=0 也保留）
-            for (map<int,int>::const_iterator kv=chainmap.begin(); kv!=chainmap.end(); ++kv)
+            // 映射链强制保持配对（用户指定强制约束，即使重打分分数<=0 也保留）
+            for (map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
             {
                 assign1_tmp[kv->first]=kv->second;
                 assign2_tmp[kv->second]=kv->first;
@@ -1970,8 +1953,6 @@ void MMalign_iter(double & max_total_score, const int max_iter,
         //if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
         if (total_score<=max_total_score) break;
         max_total_score=total_score;
-        // 统一存储分支：新分配写回主状态
-        // 映射链分配由「锁死段 + 强制赋值」双重保证不变；未映射链分配随迭代演化
         copy_chain_assign_data(chain1_num, chain2_num, sequence,
             seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
             seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
@@ -2843,7 +2824,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     return 0; // zero for no exception
 }
 
-void MMalign_dimer(double & total_score,
+inline void MMalign_dimer(double & total_score,
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
@@ -2855,7 +2836,7 @@ void MMalign_dimer(double & total_score,
     vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
     double d0_scale, bool fast_opt,
-    const map<int,int>& chainmap = map<int,int>())
+    const map<int,int>& chain_pair_map = map<int,int>())
 {
     int i;
     int j;
@@ -2953,7 +2934,7 @@ void MMalign_dimer(double & total_score,
             continue;
         }
         secx.resize(xlen+1);
-    xa.resize(xlen);
+        xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,secx);
 
@@ -2968,6 +2949,13 @@ void MMalign_dimer(double & total_score,
                 TMave_mat[i][j]=-1;
                 continue;
             }
+            // chainmap 局部约束：锁死对保持 -1（与全对全 / MMalign_search 一致），
+            // 不重打分、不覆写矩阵与对齐序列（映射链×非目标、自由链×映射目标）
+            if (!is_chain_pair_allowed(chain_pair_map, i, j))
+            {
+                TMave_mat[i][j]=-1;
+                continue;
+            }
 
             ylen=ylen_vec[j];
             if (ylen<3)
@@ -2976,7 +2964,7 @@ void MMalign_dimer(double & total_score,
                 continue;
             }
             secy.resize(ylen+1);
-    ya.resize(ylen);
+            ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
@@ -3006,9 +2994,16 @@ void MMalign_dimer(double & total_score,
             TMave_mat[i][j]=TM4*Lnorm_ass;
             if (assign1_list[i]==j)
             {
-                // 映射链豁免剔除（用户硬约束：得分<=0 也保留配对并输出）
-                if (TM4<=0 && !chainmap.count(i)) assign1_list[i]=assign2_list[j]=-1;
-                else total_score+=TMave_mat[i][j];
+                if ((TM4 <= 0) && (!is_chain_map_key(chain_pair_map, i)))
+                {
+                    // 未映射链 TM4≤0：质量保护剔除（映射链豁免，用户硬约束得分≤0 也保留配对）
+                    assign1_list[i]=assign2_list[j]=-1;
+                }
+                else
+                {
+                    // 保留链对：映射链或未映射链（TM4>0），计入总得分一次
+                    total_score+=TMave_mat[i][j];
+                }
             }
 
             // clean up
@@ -3024,60 +3019,8 @@ void MMalign_dimer(double & total_score,
 }
 
 
-void MMalign_cross(double & max_total_score, const int max_iter,
-    const DoubleCube&xa_vec,
-    const DoubleCube&ya_vec,
-    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
-    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
-    std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
-    int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt, map<int,int> &chainmap)
-{
-    // tmp assignment
-    std::vector<int> assign1_tmp(chain1_num);
-    std::vector<int> assign2_tmp(chain2_num);
-    DoubleMatrix TMave_tmp;
-    TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
-    vector<string> tmp_str_vec(chain2_num,"");
-    vector<vector<string> >seqxA_tmp(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_tmp(chain1_num,tmp_str_vec);
-    vector<string> sequence_tmp;
-    copy_chain_assign_data(chain1_num, chain2_num, sequence_tmp,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp);
-
-    double total_score=MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
-        TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp, sequence_tmp,
-        d0_scale, fast_opt, 1, 0, chainmap);
-    if (total_score>max_total_score)
-    {
-        copy_chain_assign_data(chain1_num, chain2_num, sequence,
-            seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
-            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
-        max_total_score=total_score;
-    }
-
-    if (max_iter) MMalign_iter(
-        max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
-        TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, fast_opt, chainmap);
-    vector<string>().swap(tmp_str_vec);
-    vector<vector<string> >().swap(seqxA_tmp);
-    vector<vector<string> >().swap(seqyA_tmp);
-    vector<string>().swap(sequence_tmp);
-    return;
-}
-
 // return the number of chains that are trimmed
-int trimComplex(DoubleCube&a_trim_vec,
+inline int trimComplex(DoubleCube&a_trim_vec,
     CharMatrix&seq_trim_vec, CharMatrix&sec_trim_vec,
     vector<int>&len_trim_vec,
     const DoubleCube&a_vec,
@@ -3167,7 +3110,7 @@ int trimComplex(DoubleCube&a_trim_vec,
     return trim_chain_count;
 }
 
-void writeTrimComplex(DoubleCube&a_trim_vec,
+inline void writeTrimComplex(DoubleCube&a_trim_vec,
     CharMatrix&seq_trim_vec, vector<int>&len_trim_vec,
     vector<string>&chainID_list, vector<int>&mol_vec,
     const string &atom_opt, string filename)
@@ -3206,7 +3149,7 @@ void writeTrimComplex(DoubleCube&a_trim_vec,
     return;
 }
 
-void output_dock_rotation_matrix(const std::string& fname_matrix,
+inline void output_dock_rotation_matrix(const std::string& fname_matrix,
     const vector<string>&xname_vec, const vector<string>&yname_vec,
     const RotArray& ut_mat, const std::vector<int>& assign1_list)
 {

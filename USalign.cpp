@@ -267,6 +267,7 @@ void print_help(bool h_opt=false)
     exit(EXIT_SUCCESS);
 }
 
+#define MINI_RESIDUES_NUM   (3)
 // ---------------------------------------------------------------------------
 // Per-chain pre-parsed data (used by parallel batch mode)
 // ---------------------------------------------------------------------------
@@ -277,7 +278,7 @@ struct ParsedChain {
     vector<string> resi_vec;     // residue index (for -do output)
     int            xlen;         // length
     string         chainID;      // chain ID
-    int            mol_type;     // molecule type (-1=protein, 1=RNA)
+    int            cur_complex_mol_list;     // molecule type (-1=protein, 1=RNA)
     string         filename;     // source filename (for output)
     vector<string> pdb_lines;    // raw PDB lines (for -do output)
 };
@@ -368,7 +369,7 @@ int run_batch_parallel(
             all_chains.emplace_back();
             auto& chain = all_chains.back();
             chain.filename = fname; chain.xlen = len;
-            chain.chainID = chainID_list[c]; chain.mol_type = mol_vec[c];
+            chain.chainID = chainID_list[c]; chain.cur_complex_mol_list = mol_vec[c];
             chain.xa.reserve(len);
             string seq;
             chain.xlen = read_PDB(PDB_lines[c], chain.xa, seq,
@@ -428,7 +429,7 @@ int run_batch_parallel(
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
                 i_opt, a_opt, u_opt, d_opt, force_fast,
-                c1.mol_type + c2.mol_type, TMcut);
+                c1.cur_complex_mol_list + c2.cur_complex_mol_list, TMcut);
         } else if (se_opt) {
             vector<int> invmap(c2.xlen + 1, -1);
             u0[0][0]=u0[1][1]=u0[2][2]=1;
@@ -441,7 +442,7 @@ int run_batch_parallel(
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
                 i_opt, a_opt, u_opt, d_opt,
-                c1.mol_type + c2.mol_type, outfmt_opt, invmap);
+                c1.cur_complex_mol_list + c2.cur_complex_mol_list, outfmt_opt, invmap);
             if (outfmt_opt >= 2) {
                 Liden = L_ali = 0;
                 for (int r2 = 0; r2 < c2.xlen; r2++) {
@@ -457,7 +458,7 @@ int run_batch_parallel(
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 c1.xlen, c2.xlen, sequence, Lnorm_ass, d0_scale,
                 i_opt, a_opt, u_opt, d_opt, force_fast,
-                c1.mol_type + c2.mol_type, TMcut);
+                c1.cur_complex_mol_list + c2.cur_complex_mol_list, TMcut);
         }
 
         stringstream ss;
@@ -548,7 +549,6 @@ int count_assign_pair(const ChainAssignResult& assign_result)
 }
 
 // ---- State container for the MMalign flow (2nd-level composition shell) ----
-// ---- Input parameters (collected by build_context from the MMalign signature, read-only during the flow) ----
 struct MMalignInputs
 {
     string structure1_name;
@@ -597,8 +597,8 @@ struct MMalignParsed
     ComplexData complex2;
     int protein_norm_len;             // default-initialized in class
     int na_norm_len;
-    map<int,int> chain_map;
-    int chain_map_entries;            // specified mapping entries in chainmap file
+    map<int,int> chain_pair_map;
+    int chain_map_num;            // specified mapping count in chainmap file
     vector<string> invalid_mappings;  // invalid mapping details (chain1 -> chain2 + reason)
 };
 
@@ -703,7 +703,7 @@ void align_chain_pair(ChainPairAlignResult& result,
     const string& secy,
     int xlen,
     int ylen,
-    int mol_type,
+    int cur_complex_mol_list,
     double norm_len,
     const MMalignInputs& inputs,
     int i_opt_val,
@@ -741,7 +741,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
 
     // ---- Outer loop: iterate over each chain of structure 1 (OpenMP parallel, private work variables per thread) ----
 #pragma omp parallel for schedule(dynamic, 8) num_threads(inputs.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, pair_idx, rot_row, rot_col)
-    for (chain1_idx=0; chain1_idx<chain1_num; chain1_idx++)
+    for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
             int norm_len;
             chain1_len=parsed.complex1.lengths[chain1_idx];
@@ -761,7 +761,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                 chain1_len, chain1_coords, chain1_seq,chain1_sec);
 
             // ---- Inner loop: iterate over each chain of structure 2 ----
-            for (chain2_idx=0;chain2_idx<chain2_num;chain2_idx++)
+            for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
             {
                 pair_idx=chain1_idx*chain2_num+chain2_idx;
                 // initialize this chain pair's rotation matrix (identity + zero translation)
@@ -773,8 +773,8 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                     mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
                     continue;
                 }
-                // chain pair excluded by chainmap constraints (mapped chains must pair with the specified target): set to -1
-                if (is_chain_pair_excluded(parsed.chain_map, chain1_idx, chain2_idx))
+                // chainmap 局部约束：不满足约束的链对置为无效
+                if (!is_chain_pair_allowed(parsed.chain_pair_map, chain1_idx, chain2_idx))
                 {
                     mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
                     continue;
@@ -1313,14 +1313,34 @@ void build_context(MMalignInputs& inputs,
     inputs.sequence = &sequence;
 }
 
-// ---- Pre-scan structure files before formal parsing (MMalign flow only) ----
-// Uses the "auto" atom mode so both protein and RNA chains are visible, then
-// checks the detected chain types against -mol protein/RNA:
-//   - empty file:                 "contains 0 chain(s)"             -> stop
-//   - all chains type-conflict:   "contains N chain(s), all RNA, but -mol protein is set" -> stop
-//   - mixed (usable + filtered):  "contains N chain(s) (M protein, K RNA); ... excluded"  -> continue
-// Returns true when parsing can proceed (at least one usable chain, or auto mode).
-bool prescan_filtered_chains(const vector<string>& chain_list,
+void output_mol_filter_warning(const string& file_path,
+    int chain_num,
+    int prot_count,
+    int na_count,
+    int filtered_count,
+    const string& mol_opt)
+{
+    if (filtered_count == chain_num)
+    {
+        // all chains conflict with -mol: report and stop this structure
+        cerr << endl;   // 警告前空一行，与前面输出分隔
+        cerr << "Warning! " << get_basename(file_path) << " contains "
+             << chain_num << " chain(s), all "
+             << ((mol_opt == "protein") ? "RNA" : "protein")
+             << ", but -mol " << mol_opt << " is set" << endl;
+    }
+    else if (filtered_count > 0)
+    {
+        // mixed: some chains usable, some excluded
+        cerr << endl;   // 警告前空一行，与前面输出分隔
+        cerr << "Warning! " << get_basename(file_path) << " contains "
+             << chain_num << " chain(s) (" << prot_count << " protein, " << na_count
+             << " RNA); -mol " << mol_opt << " is set, " << filtered_count
+             << " chain(s) will be excluded from the alignment" << endl;
+    }
+}
+
+bool detect_filtered_chains(const vector<string>& pdb_file_list,
     const string& mol_opt,
     const int ter_opt,
     const int infmt_opt,
@@ -1334,25 +1354,27 @@ bool prescan_filtered_chains(const vector<string>& chain_list,
     {
         return true;   // auto mode filters nothing, no pre-scan needed
     }
-    int usable_count = 0;
-    for (size_t i = 0; i < chain_list.size(); i++)
+    
+    int total_mol_opt_chain = 0;
+    for (size_t file_idx = 0; file_idx < pdb_file_list.size(); file_idx++)
     {
-        vector<vector<string> > scan_lines;
-        vector<string> scan_chainIDs;
-        vector<int> scan_mol;
-        size_t scan_n = get_PDB_lines(chain_list[i], scan_lines, scan_chainIDs, scan_mol,
+        vector<vector<string> > chain_atom_lines;   // 当前 PDB 文件中所有链的原子行内容
+        vector<string> chain_id_list;               // 当前 PDB 文件中各链的 ID 列表
+        vector<int> chain_mol_types;                // 当前 PDB 文件中各链的分子类型（>0 = RNA，<=0 = 蛋白）
+        size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types,
             ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
             chain2parse, model2parse);
-        if (scan_n == 0)
+        if (chain_num == 0)
         {
-            cerr << "Warning! " << get_basename(chain_list[i]) << " contains 0 chain(s)" << endl;
+            cerr << endl;
+            cerr << "Warning! " << get_basename(pdb_file_list[file_idx]) << " contains 0 chain(s)" << endl;
             continue;   // empty file: nothing usable
         }
-        int prot_count = 0;
+        int prot_count = 0;   // 当前 PDB 文件中的蛋白链条数（预扫描统计）
         int na_count = 0;
-        for (size_t sc = 0; sc < scan_n; sc++)
+        for (size_t chain_idx = 0; chain_idx < chain_num; chain_idx++)
         {
-            if (scan_mol[sc] > 0)
+            if (chain_mol_types[chain_idx] > 0)
             {
                 na_count++;
             }
@@ -1361,29 +1383,33 @@ bool prescan_filtered_chains(const vector<string>& chain_list,
                 prot_count++;
             }
         }
-        int filtered_count = (mol_opt == "protein") ? na_count : prot_count;
-        int local_usable = (mol_opt == "protein") ? prot_count : na_count;
-        if (filtered_count == static_cast<int>(scan_n))
+
+        int filtered_count = 0;
+        int mol_opt_chain_num = 0; 
+        if (mol_opt == "protein")
         {
-            // all chains conflict with -mol: report and stop this structure
-            cerr << "Warning! " << get_basename(chain_list[i]) << " contains "
-                 << scan_n << " chain(s), all "
-                 << ((mol_opt == "protein") ? "RNA" : "protein")
-                 << ", but -mol " << mol_opt << " is set" << endl;
+            filtered_count = na_count;
+            mol_opt_chain_num = prot_count;
         }
-        else if (filtered_count > 0)
+        else   // mol_opt == "RNA"
         {
-            // mixed: some chains usable, some excluded
-            cerr << "Warning! " << get_basename(chain_list[i]) << " contains "
-                 << scan_n << " chain(s) (" << prot_count << " protein, " << na_count
-                 << " RNA); -mol " << mol_opt << " is set, " << filtered_count
-                 << " chain(s) will be excluded from the alignment" << endl;
+            filtered_count = prot_count;
+            mol_opt_chain_num = na_count;
         }
-        usable_count += local_usable;
-        for (size_t s = 0; s < scan_lines.size(); s++) scan_lines[s].clear();
-        scan_lines.clear(); scan_chainIDs.clear(); scan_mol.clear();
+
+        output_mol_filter_warning(pdb_file_list[file_idx], static_cast<int>(chain_num),
+            prot_count, na_count, filtered_count, mol_opt);
+        
+        total_mol_opt_chain += mol_opt_chain_num;
+        for (size_t line_idx = 0; line_idx < chain_atom_lines.size(); line_idx++)
+        {
+            chain_atom_lines[line_idx].clear();
+        }
+        chain_atom_lines.clear();
+        chain_id_list.clear();
+        chain_mol_types.clear();
     }
-    if (usable_count == 0)
+    if (total_mol_opt_chain == 0)
     {
         // no usable chain after -mol filtering: stop the alignment flow
         return false;
@@ -1391,20 +1417,16 @@ bool prescan_filtered_chains(const vector<string>& chain_list,
     return true;
 }
 
-// ---- Pre-scan both complexes before formal parsing (MMalign flow) ----
-// Wraps prescan_filtered_chains for structure 1 and structure 2; returns false
-// when either complex has no usable chain after -mol filtering (the per-chain
-// hints were already printed). The caller stops this pair without exiting,
-// so batch mode can continue with the next pair.
-bool prescan_complexes(const MMalignInputs& inputs)
+bool detect_complex_filtered_chains(const MMalignInputs& inputs)
 {
-    if (!prescan_filtered_chains(inputs.struct1_chain_list, inputs.mol_opt,
+    if (!detect_filtered_chains(inputs.struct1_chain_list, inputs.mol_opt,
         inputs.ter_opt, inputs.infmt1_opt, inputs.normalize_atom_name,
         inputs.split_opt, inputs.het_opt, inputs.parsed_chains1, inputs.model2parse1))
     {
         return false;
     }
-    if (!prescan_filtered_chains(inputs.chain2_list, inputs.mol_opt,
+    
+    if (!detect_filtered_chains(inputs.chain2_list, inputs.mol_opt,
         inputs.ter_opt, inputs.infmt2_opt, inputs.normalize_atom_name,
         inputs.split_opt, inputs.het_opt, inputs.chain2parse2, inputs.model2parse2))
     {
@@ -1414,9 +1436,7 @@ bool prescan_complexes(const MMalignInputs& inputs)
 }
 
 // ---- Parse complexes (pure parsing; pre-scan is done by MMalign before this) ----
-// 0-chain cases are intercepted by prescan_complexes in the MMalign flow,
-// so this function can assume at least one usable chain per complex.
-void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
+bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
 {
     parse_chain_list(inputs.struct1_chain_list, parsed.complex1.coords, parsed.complex1.seqs,
         parsed.complex1.secs, parsed.complex1.mol_types, parsed.complex1.lengths,
@@ -1430,6 +1450,21 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         inputs.infmt2_opt, inputs.atom_opt, inputs.normalize_atom_name, 0,
         inputs.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
         inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
+
+    /*
+      0 链校验：批量模式（-dir/-dir1/-dir2/-dirpair）警告后跳过该对（main 循环继续下一对）；
+      单对模式报错退出（exit 1）
+    */
+    if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
+    {
+        if (inputs.dir1_opt.size() || inputs.dir2_opt.size())
+        {
+            cerr << "Warning! Cannot align: one of the structures contains 0 chain" << endl;
+            return false;
+        }
+        PrintErrorAndQuit("ERROR! one of the structures contains 0 chain");
+    }
+
     parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
     parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
     if (inputs.a_opt)
@@ -1437,10 +1472,11 @@ void parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         parsed.protein_norm_len = (parsed.complex1.total_len_aa + parsed.complex2.total_len_aa) / 2;
         parsed.na_norm_len = (parsed.complex1.total_len_na + parsed.complex2.total_len_na) / 2;
     }
+    return true;
 }
 
 // ---- Match chain names to chain indices ----
-int match_chain_id(const string& chain_name, const vector<string>& chain_ids)
+int chain_name_to_index(const string& chain_name, const vector<string>& chain_ids)
 {
     for (int i = 0; i < (int)chain_ids.size(); i++)
     {
@@ -1454,28 +1490,77 @@ int match_chain_id(const string& chain_name, const vector<string>& chain_ids)
     return -1;
 }
 
-// ---- Read the chain mapping file ----
-void read_chainmap(const string& chain_map_file,
-    const vector<string>& chain1_ids,
-    const vector<string>& chain2_ids,
-    const string& structure1_name,
-    const string& structure2_name,
-    int& specified_entries,
-    vector<string>& invalid_mappings,
-    map<int,int>& chain_map)
+// ---- Reverse lookup: find the map key (chain1 index) for a given chain2 value ----
+// (value-duplicate detection: e.g. A->B, C->B, look up who maps to B); returns -1 if chain2 is free
+int find_chain_map_key(const map<int,int>& chain_pair_map, int complex2_chain_idx)
 {
-    specified_entries = 0;
-    if (chain_map_file.size() == 0)
+    for (map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
     {
-        return;
+        if (kv->second == complex2_chain_idx)
+        {
+            return kv->first;
+        }
     }
+    return -1;
+}
+
+
+void check_chain_map(const MMalignInputs& inputs,
+    MMalignParsed& parsed,
+    int complex1_chain_idx,
+    int complex2_chain_idx,
+    const string& chain1_name,
+    const string& chain2_name)
+{
+    // 键重复检测：chain1 已作为映射键出现过（如 A→B, A→C）
+    bool chain1_already_mapped = is_chain_map_key(parsed.chain_pair_map, complex1_chain_idx);
+    if (chain1_already_mapped)
+    {
+        fcout(std::cerr, "Warning! chain %s of %s is already mapped to chain %s; "
+                         "mapping %s -> %s is ignored (the first mapping is kept)\n",
+            chain1_name, get_basename(inputs.structure1_name),
+            parsed.complex2.chain_ids[parsed.chain_pair_map[complex1_chain_idx]],
+            chain1_name, chain2_name);
+    }
+    // 值重复检测：chain2 已作为映射目标被占用（如 A→B, C→B）
+    int chain_map_key = find_chain_map_key(parsed.chain_pair_map, complex2_chain_idx);
+    if (chain_map_key >= 0)
+    {
+        fcout(std::cerr, "Warning! chain %s of %s is already the target of mapping "
+                         "%s -> %s; mapping %s -> %s is ignored (chain %s will be "
+                         "paired automatically by TM-score)\n",
+            chain2_name, get_basename(inputs.structure2_name),
+            parsed.complex1.chain_ids[chain_map_key], chain2_name,
+            chain1_name, chain2_name, chain1_name);
+    }
+    // 两检测都通过，写入.保证严格一对一
+    if (!chain1_already_mapped && chain_map_key < 0)
+    {
+        parsed.chain_pair_map[complex1_chain_idx] = complex2_chain_idx;
+    }
+}
+
+
+// ---- Read the chain mapping file ----
+void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
+{
+    if (inputs.chain_map_file.size() == 0) return;
+
     string line;
     vector<string> line_vec;
     ifstream fin;
-    bool fromStdin = (chain_map_file == "-");
+    bool fromStdin = (inputs.chain_map_file == "-");
     if (!fromStdin)
     {
-        fin.open(chain_map_file.c_str());
+        fin.open(inputs.chain_map_file.c_str());
+        if (!fin)
+        {
+            // 文件打开失败：警告后按无映射自由配对继续（配对汇总 Chainmap 统计行 0 entries 佐证）
+            fcout(std::cerr, "Warning! Cannot open chainmap file: %s; chains will be "
+                             "paired automatically by TM-score\n",
+                inputs.chain_map_file);
+            return;
+        }
     }
     while (fromStdin ? cin.good() : fin.good())
     {
@@ -1487,78 +1572,104 @@ void read_chainmap(const string& chain_map_file,
         {
             getline(fin, line);
         }
-        if (line.size() == 0 || line[0] == '#')
-        {
-            continue;
-        }
+
+        if (line.size() == 0 || line[0] == '#')  continue;
         split(line, line_vec, '\t');
+
         if (line_vec.size() == 2)
         {
-            specified_entries++;
-            int chainidx1 = match_chain_id(line_vec[0], chain1_ids);
-            int chainidx2 = match_chain_id(line_vec[1], chain2_ids);
-            if (chainidx1 >= 0 && chainidx2 >= 0)
+            parsed.chain_map_num++;
+            int complex1_chain_idx = chain_name_to_index(line_vec[0], parsed.complex1.chain_ids);
+            int complex2_chain_idx = chain_name_to_index(line_vec[1], parsed.complex2.chain_ids);
+            if (complex1_chain_idx >= 0 && complex2_chain_idx >= 0)
             {
-                if (chain_map.count(chainidx1))
-                {
-                    cerr << "ERROR! " << line_vec[0] << " already mapped" << endl;
-                }
-                // chain2 重复映射防御：目标链2已被占用则拒绝写入（避免映射链丢失）
-                bool chain2_taken = false;
-                for (map<int,int>::const_iterator kv = chain_map.begin(); kv != chain_map.end(); ++kv)
-                {
-                    if (kv->second == chainidx2)
-                    {
-                        chain2_taken = true;
-                        break;
-                    }
-                }
-                if (chain2_taken)
-                {
-                    cerr << "Warning! " << line_vec[1] << " already mapped as a target chain" << endl;
-                }
-                else
-                {
-                    chain_map[chainidx1] = chainidx2;
-                }
+
+                check_chain_map(inputs, parsed, complex1_chain_idx, complex2_chain_idx,
+                    line_vec[0], line_vec[1]);
             }
-            else if (chainidx1 < 0 && chainidx2 < 0)
+            else if (complex1_chain_idx < 0 && complex2_chain_idx < 0)
             {
-                // 解析期零警告：无效映射明细统一由配对汇总展示（改动 14）
-                invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
+                //结构1和结构2都无效
+                parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
-                    + structure1_name + "), chain " + line_vec[1] + " does not exist in structure 2 ("
-                    + structure2_name + "))");
+                    + get_basename(inputs.structure1_name) + "), chain " + line_vec[1] + " does not exist in structure 2 ("
+                    + get_basename(inputs.structure2_name) + "))");
             }
-            else if (chainidx1 < 0)
-            {
-                invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
+            else if (complex1_chain_idx < 0)
+            {   
+                //结构1无效
+                parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
-                    + structure1_name + "))");
+                    + get_basename(inputs.structure1_name) + "))");
             }
             else
             {
-                invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
+                //结构2无效
+                parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[1] + " does not exist in structure 2 ("
-                    + structure2_name + "))");
+                    + get_basename(inputs.structure2_name) + "))");
             }
         }
         else
         {
             cerr << "ERROR! Cannot map " << line << endl;
         }
+
         for (int i = 0; i < (int)line_vec.size(); i++)
         {
             line_vec[i].clear();
         }
+        
         line_vec.clear();
     }
-    if (!fromStdin)
+
+    if (!fromStdin) fin.close();
+}
+
+void build_vaild_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
+{
+    map<int,int> valid_chain_map;
+    for (map<int,int>::const_iterator kv = parsed.chain_pair_map.begin(); kv != parsed.chain_pair_map.end(); ++kv)
     {
-        fin.close();
+        int key_mol_type = parsed.complex1.mol_types[kv->first];
+        int value_mol_type = parsed.complex2.mol_types[kv->second];
+        if (key_mol_type * value_mol_type < 0)
+        {
+            const char* key_mol_name = (key_mol_type > 0) ? "RNA" : "protein";
+            const char* value_mol_name = (value_mol_type > 0) ? "RNA" : "protein";
+            const string key_chain_name = parsed.complex1.chain_ids[kv->first];
+            const string value_chain_name = parsed.complex2.chain_ids[kv->second];
+            const string struct1_name = get_basename(inputs.structure1_name);
+            const string struct2_name = get_basename(inputs.structure2_name);
+
+            // 完整上下文警告
+            fcout(std::cerr, "\nWarning! Mapped chain %s (%s) of %s cannot pair with chain "
+                             "%s (%s) of %s: molecule type mismatch. This mapping is ignored; "
+                             "chain %s will be paired automatically by TM-score.\n",
+                            key_chain_name, key_mol_name, struct1_name,
+                            value_chain_name, value_mol_name, struct2_name,
+                            key_chain_name);
+                            
+            // 无效映射明细收集
+            parsed.invalid_mappings.push_back(
+                key_chain_name + " -> "
+                + value_chain_name
+                + " (molecule type mismatch: " + key_mol_name
+                + " vs " + value_mol_name + ")");
+        }
+        else
+        {
+            valid_chain_map[kv->first] = kv->second;
+        }
     }
-    // 解析期零警告：映射无效的提示（no valid mapping / free matching）统一由配对汇总
-    // 的 Chainmap 统计行（0 valid / free-matching pairs）展示（改动 14）
+
+    if (parsed.chain_pair_map.size() > 0 && valid_chain_map.empty())
+    {
+        // 全部映射无效,报错退出
+        cout << endl;
+        PrintErrorAndQuit("Warning! All mapped chain pairs have molecule type mismatch. Please check the chainmap file.");
+    }
+    parsed.chain_pair_map = valid_chain_map;
 }
 
 // ---- Monomer check (each complex has only one chain) ----
@@ -1577,7 +1688,7 @@ void align_chain_pair(ChainPairAlignResult& result,
     const string& secy,
     int xlen,
     int ylen,
-    int mol_type,
+    int cur_complex_mol_list,
     double norm_len,
     const MMalignInputs& inputs,
     int i_opt_val,
@@ -1596,7 +1707,7 @@ void align_chain_pair(ChainPairAlignResult& result,
             result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
             xlen, ylen, *inputs.sequence, norm_len, inputs.d0_scale,
             i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt,
-            mol_type, inputs.outfmt_opt, result.invmap);
+            cur_complex_mol_list, inputs.outfmt_opt, result.invmap);
         if (inputs.outfmt_opt >= 2)
         {
             result.Liden = 0.0;
@@ -1622,7 +1733,7 @@ void align_chain_pair(ChainPairAlignResult& result,
             result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
             xlen, ylen, *inputs.sequence, norm_len, inputs.d0_scale,
             i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt, inputs.fast_opt,
-            mol_type, inputs.TMcut, parallel_threads);
+            cur_complex_mol_list, inputs.TMcut, parallel_threads);
     }
 }
 
@@ -1690,13 +1801,13 @@ int align_monomers(const MMalignInputs& inputs,
     }
 
     int i_opt = (inputs.byresi_opt ? 3 : 0);
-    int mol_type = complex1.mol_types[0] + complex2.mol_types[0];
+    int cur_complex_mol_list = complex1.mol_types[0] + complex2.mol_types[0];
     ChainPairAlignResult align_result = { 0};
     align_result.d0_out = 5.0;
     align_chain_pair(align_result,
         chain1_coords, chain2_coords, chain1_seq, chain2_seq, 
         chain1_sec, chain2_sec, chain1_len, chain2_len,
-        mol_type, 0, inputs, i_opt, 0, 1);
+        cur_complex_mol_list, 0, inputs, i_opt, 0, 1);
 
     output_results(
         inputs.structure1_name.substr(inputs.dir1_opt.size()),
@@ -1759,7 +1870,7 @@ void run_mmalign_serial_pairwise(const MMalignInputs& inputs,
                 mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
                 continue;
             }
-            if (is_chain_pair_excluded(parsed.chain_map, chain1_idx, chain2_idx))
+            if (!is_chain_pair_allowed(parsed.chain_pair_map, chain1_idx, chain2_idx))
             {
                 mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
                 continue;
@@ -1949,12 +2060,34 @@ void assign_initial_chains_greedily(const AllChainPairsResult& pairwise,
     }
 }
 
+// ---- Whether both complexes are protein-RNA hybrid dimers (1 protein + 1 RNA each) ----
+bool is_hybrid_dimer(int na_chain_num1,
+    int na_chain_num2,
+    int aa_chain_num1,
+    int aa_chain_num2)
+{
+    return na_chain_num1 == 1 && na_chain_num2 == 1
+        && aa_chain_num1 == 1 && aa_chain_num2 == 1;
+}
+
+// ---- Whether both complexes are pure dimers (pure protein 2+2 or pure RNA 2+2) ----
+bool is_pure_dimer(int na_chain_num1,
+    int na_chain_num2,
+    int aa_chain_num1,
+    int aa_chain_num2)
+{
+    return (getmin(na_chain_num1, na_chain_num2) == 0
+            && aa_chain_num1 == 2 && aa_chain_num2 == 2)
+        || (getmin(aa_chain_num1, aa_chain_num2) == 0
+            && na_chain_num1 == 2 && na_chain_num2 == 2);
+}
+
 // ---- Dimer assignment optimization: classify dimers by protein/RNA chain counts, adjust pairing for pure dimers, and set whether oligomer refinement is needed ----
 void optimize_dimer_assign(const ComplexData& complex1,
     const ComplexData& complex2,
     const AllChainPairsResult& pairwise,
     ChainAssignResult& assign_result,
-    const map<int,int>& chain_map,
+    const map<int,int>& chain_pair_map,
     bool& is_oligomer)
 {
     int na_chain_num1 = 0;
@@ -1965,23 +2098,18 @@ void optimize_dimer_assign(const ComplexData& complex1,
     count_na_aa_chain_num(na_chain_num2, aa_chain_num2, complex2.mol_types);
 
     // align protein-RNA hybrid dimer to another hybrid dimer
-    if (na_chain_num1 == 1 && na_chain_num2 == 1 &&
-        aa_chain_num1 == 1 && aa_chain_num2 == 1)
+    if (is_hybrid_dimer(na_chain_num1, na_chain_num2, aa_chain_num1, aa_chain_num2))
     {
         is_oligomer = false;
     }
     // align pure protein dimer or pure RNA dimer
-    else if ((getmin(na_chain_num1, na_chain_num2) == 0 &&
-              aa_chain_num1 == 2 && aa_chain_num2 == 2) ||
-             (getmin(aa_chain_num1, aa_chain_num2) == 0 &&
-              na_chain_num1 == 2 && na_chain_num2 == 2))
+    else if (is_pure_dimer(na_chain_num1, na_chain_num2, aa_chain_num1, aa_chain_num2))
     {
-        // 保护映射链：adjust_dimer_assignment 不用 TM 矩阵、直接按 aligned_seq 算正反分
-        // 并交换链对，若已分配链1中含映射链则跳过（交换会破坏用户指定）
+
         bool has_mapped_chain = false;
         for (int chain1_idx = 0; chain1_idx < (int)assign_result.chain2_of_chain1.size(); chain1_idx++)
         {
-            if (assign_result.chain2_of_chain1[chain1_idx] >= 0 && chain_map.count(chain1_idx))
+            if (assign_result.chain2_of_chain1[chain1_idx] >= 0 && is_chain_map_key(chain_pair_map, chain1_idx))
             {
                 has_mapped_chain = true;
                 break;
@@ -2043,23 +2171,20 @@ void optimize_oligomer_assign(const ComplexData& complex1,
 }
 
 // ---- Whether automatic assignment optimization is allowed (not se mode) ----
-// chainmap 不再禁用精修：局部约束下精修恢复执行，映射链由 TM 矩阵锁死(改动1)
-// + 显式保护(改动7) 保证不被重排
-bool is_optimize_assign(const map<int,int>& chain_map,
-    bool se_opt)
+bool is_optimize_assign(const map<int,int>& chain_pair_map, bool se_opt)
 {
     return !se_opt;
 }
 
 // ---- Whether byresi (-TMscore) optimization is needed (byresi mode + enough chains + oligomer + optimization allowed) ----
-bool need_byresi_optimize(int byresi_opt,
+bool is_need_byresi_optimize(int byresi_opt,
     int aln_chain_num,
     bool is_oligomer,
-    const map<int,int>& chain_map,
+    const map<int,int>& chain_pair_map,
     bool se_opt)
 {
     return byresi_opt && aln_chain_num >= 4 && is_oligomer &&
-        is_optimize_assign(chain_map, se_opt);
+        is_optimize_assign(chain_pair_map, se_opt);
 }
 
 void optimize_chain_assign(const AllChainPairsResult& pairwise,
@@ -2071,17 +2196,14 @@ void optimize_chain_assign(const AllChainPairsResult& pairwise,
 {
     aln_chain_num = count_assign_pair(assign_result);
     is_oligomer = (aln_chain_num >= 3);
-    if (aln_chain_num == 2 && is_optimize_assign(parsed.chain_map, se_opt))
+
+    if (aln_chain_num == 2 && is_optimize_assign(parsed.chain_pair_map, se_opt))
     {
-        optimize_dimer_assign(parsed.complex1, parsed.complex2,
-            pairwise, assign_result, parsed.chain_map, is_oligomer);
+        optimize_dimer_assign(parsed.complex1, parsed.complex2, pairwise, assign_result, parsed.chain_pair_map, is_oligomer);
     }
-    if ((aln_chain_num >= 3 || is_oligomer) &&
-        is_optimize_assign(parsed.chain_map, se_opt))
+    if ((aln_chain_num >= 3 || is_oligomer) && is_optimize_assign(parsed.chain_pair_map, se_opt))
     {
-        optimize_oligomer_assign(parsed.complex1, parsed.complex2,
-            pairwise, assign_result,
-            parsed.protein_norm_len, parsed.na_norm_len);
+        optimize_oligomer_assign(parsed.complex1, parsed.complex2, pairwise, assign_result, parsed.protein_norm_len, parsed.na_norm_len);
     }
 }
 
@@ -2122,6 +2244,40 @@ bool need_monomer_fallback(int byresi_opt,
 }
 
 // ---- Fallback protection: when the iteration score is below the monomer best, restore from the initial snapshot, keep only the best monomer chain pair, and iterate again ----
+// ---- Get the pairing partner of a chain: mapped partner (hard constraint) first, else the best monomer pair, else -1 ----
+// is_struct1_chain: true = chain_idx is a structure-1 chain (returns a chain2 index);
+//                   false = chain_idx is a structure-2 chain (returns a chain1 index)
+int get_assign_partner(const map<int,int>& chain_pair_map,
+    int chain_idx,
+    bool is_struct1_chain,
+    const AllChainPairsResult& pair_result)
+{
+    if (is_struct1_chain)
+    {
+        map<int,int>::const_iterator map_iter = chain_pair_map.find(chain_idx);
+        if (map_iter != chain_pair_map.end())
+        {
+            return map_iter->second;   // 映射链：用户指定目标（硬约束）
+        }
+        if (chain_idx == pair_result.best_pair_chain1_idx)
+        {
+            return pair_result.best_pair_chain2_idx;   // 最优未映射单体对
+        }
+        return -1;   // 其余解除
+    }
+
+    int chain_map_key = find_chain_map_key(chain_pair_map, chain_idx);
+    if (chain_map_key >= 0)
+    {
+        return chain_map_key;   // 映射目标：映射它的 chain1（硬约束）
+    }
+    if (chain_idx == pair_result.best_pair_chain2_idx)
+    {
+        return pair_result.best_pair_chain1_idx;   // 最优未映射单体对
+    }
+    return -1;   // 其余解除
+}
+
 void recover_best_monomer_pair(MMalignContext& ctx,
     int chain1_num,
     int chain2_num,
@@ -2134,48 +2290,20 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.pair_result.aligned_seq1, ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
             ctx.pair_result.tm_matrix);
-        // 保留所有映射链对 + 最优未映射单体对；其余解除（重新迭代时自动恢复）
-        const map<int,int>& chain_map = ctx.parsed.chain_map;
+
+        // 保留所有映射链对 和 最优未映射单体对；其余解除
+        const map<int,int>& chain_pair_map = ctx.parsed.chain_pair_map;
         for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
         {
-            map<int,int>::const_iterator it = chain_map.find(chain1_idx);
-            if (it != chain_map.end())
-            {
-                ctx.assign_result.chain2_of_chain1[chain1_idx] = it->second;   // 映射链保持
-            }
-            else if (chain1_idx == ctx.pair_result.best_pair_chain1_idx)
-            {
-                ctx.assign_result.chain2_of_chain1[chain1_idx] = ctx.pair_result.best_pair_chain2_idx;
-            }
-            else
-            {
-                ctx.assign_result.chain2_of_chain1[chain1_idx] = -1;
-            }
+            ctx.assign_result.chain2_of_chain1[chain1_idx] =
+                get_assign_partner(chain_pair_map, chain1_idx, true, ctx.pair_result);
         }
         for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
         {
-            int mapped_by = -1;
-            for (map<int,int>::const_iterator kv = chain_map.begin(); kv != chain_map.end(); ++kv)
-            {
-                if (kv->second == chain2_idx)
-                {
-                    mapped_by = kv->first;
-                    break;
-                }
-            }
-            if (mapped_by >= 0)
-            {
-                ctx.assign_result.chain1_of_chain2[chain2_idx] = mapped_by;
-            }
-            else if (chain2_idx == ctx.pair_result.best_pair_chain2_idx)
-            {
-                ctx.assign_result.chain1_of_chain2[chain2_idx] = ctx.pair_result.best_pair_chain1_idx;
-            }
-            else
-            {
-                ctx.assign_result.chain1_of_chain2[chain2_idx] = -1;
-            }
+            ctx.assign_result.chain1_of_chain2[chain2_idx] =
+                get_assign_partner(chain_pair_map, chain2_idx, false, ctx.pair_result);
         }
+
         // 按新分配（映射链对 + 最优未映射单体对）重新拼接 sequence
         copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
             ctx.pair_result_origin.aligned_seq1, ctx.pair_result_origin.aligned_seq2,
@@ -2196,10 +2324,14 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt, ctx.parsed.chain_map);
+            *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt, ctx.parsed.chain_pair_map);
 }
 
-// ---- Cross-chain whole-complex alignment: redo the whole-complex alignment on the initial snapshot with mask constraints to prevent cross-pairing ambiguity between chains of homodimers; adopt only if the result is better ----
+/* 
+Cross-chain whole-complex alignment: 
+redo the whole-complex alignment on the initial snapshot with mask constraints to prevent cross-pairing ambiguity between chains of homodimers; 
+adopt only if the result is better
+*/
 void run_cross_chain_alignment(MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
@@ -2231,7 +2363,7 @@ void run_cross_chain_alignment(MMalignContext& ctx,
             ctx.pair_result_origin.aligned_seq2,
             ctx.assign_result_origin.chain2_of_chain1, ctx.assign_result_origin.chain1_of_chain2,
             ctx.sequence_origin, ctx.inputs.d0_scale, ctx.inputs.fast_opt,
-            ctx.parsed.chain_map);
+            ctx.parsed.chain_pair_map);
         if (cross_score > ctx.iteration_score)
         {
             ctx.iteration_score = cross_score;
@@ -2246,164 +2378,188 @@ void run_cross_chain_alignment(MMalignContext& ctx,
     }
 }
 
-// ---- Final output (print_version + MMalign_final / MMalign_se_final, one of the two) ----
+// ---- Level 1: whether the chain is too short to align (<3 residues, Kabsch lower bound) ----
+bool is_chain_too_short(const MMalignContext& ctx, int chain_idx, bool is_struct1_chain)
+{
+    int chain_len = is_struct1_chain ? ctx.parsed.complex1.lengths[chain_idx] : ctx.parsed.complex2.lengths[chain_idx];
+    return chain_len < MINI_RESIDUES_NUM;
+}
+
+// ---- Level 2: whether the other complex has no chain of the same molecule type ----
+bool has_no_same_type_partner(const MMalignContext& ctx,
+    int chain_idx,
+    bool is_struct1_chain,
+    int chain1_num,
+    int chain2_num)
+{
+    
+    const vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
+    const vector<int>& partner_mol_types = is_struct1_chain? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
+    int partner_chain_num = is_struct1_chain ? chain2_num : chain1_num;
+    int cur_chain_mol = cur_complex_mol_list[chain_idx];
+
+    for (int partner_idx = 0; partner_idx < partner_chain_num; partner_idx++)
+    {
+   
+        if (partner_mol_types[partner_idx] * cur_chain_mol >= 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+// ---- Level 3: whether the chain is mapped (or a mapping target) but failed to pair ----
+bool is_mapped_but_unpaired(const MMalignContext& ctx,
+    int chain_idx,
+    bool is_struct1_chain)
+{
+    if (is_struct1_chain)
+    {
+        return is_chain_map_key(ctx.parsed.chain_pair_map, chain_idx);
+    }
+    // the mapping chain1 did not pair to this target
+    int chain_map_key = find_chain_map_key(ctx.parsed.chain_pair_map, chain_idx);
+    if (chain_map_key < 0)
+    {
+        return false;   // not a mapping target
+    }
+    return ctx.assign_result.chain2_of_chain1[chain_map_key] != chain_idx;
+}
+
+// ---- Level 4: whether the other complex has an unpaired chain that is still available ----
+bool has_unpaired_chain(const MMalignContext& ctx,
+    int chain_idx,
+    bool is_struct1_chain,
+    int chain1_num,
+    int chain2_num)
+{
+    // 被检查链（chain_idx）所在复合物的分子类型
+    const vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
+    // 对方复合物的分子类型
+    const vector<int>& partner_mol_types = is_struct1_chain ? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
+    // 对方复合物的分配表：partner_idx 链是否空闲
+    const vector<int>& cur_partner_assign = is_struct1_chain ? ctx.assign_result.chain1_of_chain2 : ctx.assign_result.chain2_of_chain1;
+    int partner_chain_num = is_struct1_chain ? chain2_num : chain1_num;
+    int chain_mol_type = cur_complex_mol_list[chain_idx];
+
+    for (int partner_idx = 0; partner_idx < partner_chain_num; partner_idx++)
+    {
+        //   is_struct1_chain == true : 被检查链在结构1（chain_idx），伙伴链在结构2（partner_idx）
+        //   is_struct1_chain == false: 被检查链在结构2（chain_idx），伙伴链在结构1（partner_idx）
+        int chain1_idx = is_struct1_chain ? chain_idx : partner_idx;
+        int chain2_idx = is_struct1_chain ? partner_idx : chain_idx;
+
+        // 同类型 && 未被 chainmap 锁死（该配对被约束允许） && 伙伴链空闲
+        if (partner_mol_types[partner_idx] * chain_mol_type >= 0
+            && is_chain_pair_allowed(ctx.parsed.chain_pair_map, chain1_idx, chain2_idx)
+            && cur_partner_assign[partner_idx] < 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// ---- Level 5: chain-number mismatch reason (reached when no available target remains) ----
+string get_chain_mismatch_reason(bool is_struct1_chain,
+    int chain1_num,
+    int chain2_num)
+{
+    
+    int more_chain_num = is_struct1_chain ? chain1_num : chain2_num;
+    int less_chain_num = is_struct1_chain ? chain2_num : chain1_num;
+    string more_chain_struct = is_struct1_chain ? "structure 1" : "structure 2";
+    string less_chain_struct = is_struct1_chain ? "structure 2" : "structure 1";
+
+    // 链数不足报 mismatch；否则目标全被占用或 chainmap 锁定
+    if (more_chain_num > less_chain_num)
+    {
+        return "more chains in " + more_chain_struct + " (" + std::to_string(more_chain_num)
+               + ") than in " + less_chain_struct + " (" + std::to_string(less_chain_num) + ")";
+    }
+    return "no available chain of the same molecule type in the other complex";
+}
+
 // ---- Determine the unpaired reason for a chain (5-level priority) ----
-// is_structure1_side: true for a structure-1 chain, false for a structure-2 chain
 string get_unpaired_reason(const MMalignContext& ctx,
     int chain_idx,
-    bool is_structure1_side,
+    bool is_struct1_chain,
     int chain1_num,
     int chain2_num)
 {
     // level 1: chain too short
-    int chain_len = is_structure1_side
-        ? ctx.parsed.complex1.lengths[chain_idx]
-        : ctx.parsed.complex2.lengths[chain_idx];
-    if (chain_len < 3)
+    if (is_chain_too_short(ctx, chain_idx, is_struct1_chain))
     {
         return "too short (<3 residues)";
     }
-    // level 2: no chain of the same molecule type (tm_matrix row/column all <= 0)
-    bool no_same_type_target = true;
-    if (is_structure1_side)
-    {
-        for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
-        {
-            if (ctx.pair_result.tm_matrix[chain_idx][chain2_idx] > 0)
-            {
-                no_same_type_target = false;
-                break;
-            }
-        }
-    }
-    else
-    {
-        for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
-        {
-            if (ctx.pair_result.tm_matrix[chain1_idx][chain_idx] > 0)
-            {
-                no_same_type_target = false;
-                break;
-            }
-        }
-    }
-    if (no_same_type_target)
+    // level 2: no chain of the same molecule type
+    if (has_no_same_type_partner(ctx, chain_idx, is_struct1_chain, chain1_num, chain2_num))
     {
         return "no chain of the same molecule type in the other complex";
     }
     // level 3: mapped chain (or mapping target) that failed to pair
-    bool mapped_but_unpaired = false;
-    if (is_structure1_side)
-    {
-        mapped_but_unpaired = ctx.parsed.chain_map.count(chain_idx) > 0;
-    }
-    else
-    {
-        for (map<int,int>::const_iterator kv = ctx.parsed.chain_map.begin();
-             kv != ctx.parsed.chain_map.end(); ++kv)
-        {
-            if (kv->second == chain_idx)
-            {
-                // the mapping chain1 did not pair to this target
-                mapped_but_unpaired = ctx.assign_result.chain2_of_chain1[kv->first] != chain_idx;
-                break;
-            }
-        }
-    }
-    if (mapped_but_unpaired)
+    if (is_mapped_but_unpaired(ctx, chain_idx, is_struct1_chain))
     {
         return "mapped but not paired (check chainmap)";
     }
-    // level 4/5: distinguish quality protection from chain-number mismatch
-    bool has_free_target = false;
-    if (is_structure1_side)
-    {
-        for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
-        {
-            if (ctx.assign_result.chain1_of_chain2[chain2_idx] < 0)
-            {
-                has_free_target = true;
-                break;
-            }
-        }
-    }
-    else
-    {
-        for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
-        {
-            if (ctx.assign_result.chain2_of_chain1[chain1_idx] < 0)
-            {
-                has_free_target = true;
-                break;
-            }
-        }
-    }
-    if (has_free_target)
+    // level 4: removed by quality protection
+    if (has_unpaired_chain(ctx, chain_idx, is_struct1_chain, chain1_num, chain2_num))
     {
         return "removed by quality protection";
     }
-    if (is_structure1_side)
-    {
-        return "more chains in structure 1 (" + std::to_string(chain1_num)
-               + ") than in structure 2 (" + std::to_string(chain2_num) + ")";
-    }
-    return "more chains in structure 2 (" + std::to_string(chain2_num)
-           + ") than in structure 1 (" + std::to_string(chain1_num) + ")";
+    // level 5: chain-number mismatch
+    return get_chain_mismatch_reason(is_struct1_chain, chain1_num, chain2_num);
 }
 
-// ---- Print chain pairing summary: mapping stats + invalid mappings + paired/unpaired counts ----
-// Printed unconditionally for -mm 1 before MMalign_final; the Chainmap statistics
-// and Invalid-mappings details are shown only when a chainmap file was specified.
-void print_chain_pairing_summary(const MMalignContext& ctx,
-    int chain1_num,
-    int chain2_num)
+struct PairingCounts
 {
-    // ---- ① paired-pair counts by molecule type + mapped/free-matching pair counts ----
-    int prot_pair_num = 0;
-    int na_pair_num = 0;
-    int mapped_pair_num = 0;
-    int free_pair_num = 0;
+    int prot_pair_num;
+    int na_pair_num;
+    int mapped_pair_num;
+    int free_pair_num;
+};
+
+// ---- ① Count paired pairs: molecule type (RNA/protein) + mapping origin (mapped/free) ----
+PairingCounts calc_paired_pairs_count(const MMalignContext& ctx,
+    int chain1_num)
+{
+    PairingCounts counts = { 0 };
     for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
         int chain2_idx = ctx.assign_result.chain2_of_chain1[chain1_idx];
-        if (chain2_idx < 0)
-        {
-            continue;
-        }
-        if (ctx.parsed.complex1.mol_types[chain1_idx] > 0)
-        {
-            na_pair_num++;
-        }
-        else
-        {
-            prot_pair_num++;
-        }
-        if (ctx.parsed.chain_map.count(chain1_idx))
-        {
-            mapped_pair_num++;
-        }
-        else
-        {
-            free_pair_num++;
-        }
+        if (chain2_idx < 0) { continue; }
+
+        if (ctx.parsed.complex1.mol_types[chain1_idx] > 0) { counts.na_pair_num++; }
+        else { counts.prot_pair_num++; }
+
+        if (is_chain_map_key(ctx.parsed.chain_pair_map, chain1_idx)) { counts.mapped_pair_num++; }
+        else { counts.free_pair_num++; }
     }
+    return counts;
+}
 
-    // 配对汇总中只显示文件名（剥离 ../、目录前缀等路径部分）
-    string name1 = get_basename(ctx.inputs.structure1_name);
-    string name2 = get_basename(ctx.inputs.structure2_name);
-
-    // ---- ② summary header ----
+// ---- ② Print summary header + Chainmap statistics + paired counts by molecule type ----
+void out_pairing_counts(const MMalignContext& ctx,
+    const string& name1,
+    const string& name2,
+    const PairingCounts& counts)
+{
+    // summary header
+    if (ctx.inputs.outfmt_opt == 2)
+    {
+        cout << endl;
+    }
     cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
          << name2 << " (structure 2)" << endl;
 
-    // ---- ③ Chainmap statistics (only when chainmap was specified) ----
-    // mapped + free-matching = total aligned pairs, matching Protein/RNA counts
+    // Chainmap statistics (only when chainmap was specified)
     if (ctx.inputs.chain_map_file.size() > 0)
     {
-        cout << "#   Chainmap: " << ctx.parsed.chain_map_entries
-             << " entries specified, " << mapped_pair_num
-             << " mapped, " << free_pair_num
-             << " free-matching; total " << (mapped_pair_num + free_pair_num)
+        cout << "#   Chainmap: " << ctx.parsed.chain_map_num
+             << " entries specified, " << counts.mapped_pair_num
+             << " mapped, " << counts.free_pair_num
+             << " free-matching; total " << (counts.mapped_pair_num + counts.free_pair_num)
              << " pair(s) aligned" << endl;
         for (size_t k = 0; k < ctx.parsed.invalid_mappings.size(); k++)
         {
@@ -2411,70 +2567,107 @@ void print_chain_pairing_summary(const MMalignContext& ctx,
         }
     }
 
-    // ---- ④ paired-pair counts by molecule type ----
-    cout << "#   Protein: " << prot_pair_num << " pair(s) aligned" << endl;
-    cout << "#   RNA: " << na_pair_num << " pair(s) aligned" << endl;
+    // paired-pair counts by molecule type
+    cout << "#   Protein: " << counts.prot_pair_num << " pair(s) aligned" << endl;
+    cout << "#   RNA: " << counts.na_pair_num << " pair(s) aligned" << endl;
+}
 
-    // ---- ⑤ unpaired chains: collect (file, type, reason) then group identical reasons ----
-    // Chains sharing the same (file, type, reason) are merged into one line
-    // to avoid redundant per-chain lines.
-    struct UnpairedGroup
-    {
-        string file;
-        string type;
-        string reason;
-    };
-    map<string, vector<string> > unpaired_groups;
-    map<string, UnpairedGroup> group_meta;
+// ---- Unpaired-chain group: chains sharing the same (file, type, reason) ----
+struct UnpairedGroup
+{
+    string file;
+    string type;
+    string reason;
+};
 
-    for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+void collect_unpaired_chains_complex(const MMalignContext& ctx,
+    int chain1_num,
+    int chain2_num,
+    bool is_struct1_chain,
+    const string& my_name,
+    map<string, vector<string> >& unpaired_groups,
+    map<string, UnpairedGroup>& group_info)
+{
+  
+    const vector<int>& assign = is_struct1_chain ? ctx.assign_result.chain2_of_chain1 : ctx.assign_result.chain1_of_chain2;
+    const vector<int>& mol_types = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
+    const vector<string>& chain_ids = is_struct1_chain ? ctx.parsed.complex1.chain_ids : ctx.parsed.complex2.chain_ids;
+    int chain_num = is_struct1_chain ? chain1_num : chain2_num;
+
+    for (int chain_idx = 0; chain_idx < chain_num; chain_idx++)
     {
-        if (ctx.assign_result.chain2_of_chain1[chain1_idx] >= 0)
+        if (assign[chain_idx] >= 0)
         {
-            continue;
+            continue;   // already paired
         }
-        string type = (ctx.parsed.complex1.mol_types[chain1_idx] > 0) ? "RNA" : "protein";
-        string reason = get_unpaired_reason(ctx, chain1_idx, true, chain1_num, chain2_num);
-        string group_key = name1 + "|" + type + "|" + reason;
-        unpaired_groups[group_key].push_back(ctx.parsed.complex1.chain_ids[chain1_idx]);
-        group_meta[group_key].file = name1;
-        group_meta[group_key].type = type;
-        group_meta[group_key].reason = reason;
+        string type = (mol_types[chain_idx] > 0) ? "RNA" : "protein";
+        string reason = get_unpaired_reason(ctx, chain_idx, is_struct1_chain, chain1_num, chain2_num);
+        string group_key = my_name + "|" + type + "|" + reason;
+        unpaired_groups[group_key].push_back(chain_ids[chain_idx]);
+        group_info[group_key].file = my_name;
+        group_info[group_key].type = type;
+        group_info[group_key].reason = reason;
     }
-    for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
-    {
-        if (ctx.assign_result.chain1_of_chain2[chain2_idx] >= 0)
-        {
-            continue;
-        }
-        string type = (ctx.parsed.complex2.mol_types[chain2_idx] > 0) ? "RNA" : "protein";
-        string reason = get_unpaired_reason(ctx, chain2_idx, false, chain1_num, chain2_num);
-        string group_key = name2 + "|" + type + "|" + reason;
-        unpaired_groups[group_key].push_back(ctx.parsed.complex2.chain_ids[chain2_idx]);
-        group_meta[group_key].file = name2;
-        group_meta[group_key].type = type;
-        group_meta[group_key].reason = reason;
-    }
+}
 
-    if (!unpaired_groups.empty())
+// ---- Collect unpaired chains of both complexes, grouped by (file, type, reason) ----
+void collect_unpaired_chains(const MMalignContext& ctx,
+    int chain1_num,
+    int chain2_num,
+    const string& name1,
+    const string& name2,
+    map<string, vector<string> >& unpaired_groups,
+    map<string, UnpairedGroup>& group_info)
+{
+    collect_unpaired_chains_complex(ctx, chain1_num, chain2_num, true, name1, unpaired_groups, group_info);
+
+    collect_unpaired_chains_complex(ctx, chain1_num, chain2_num, false, name2, unpaired_groups, group_info);
+}
+
+// ---- Print the Unpaired block grouped by (file, type, reason) ----
+void out_unpaired_chain_info(const map<string, vector<string> >& unpaired_groups, const map<string, UnpairedGroup>& group_info)
+{
+    if (unpaired_groups.empty()) return;
+
+    cout << "# Unpaired:" << endl;
+    for (map<string, vector<string> >::const_iterator group = unpaired_groups.begin(); group != unpaired_groups.end(); ++group)
     {
-        cout << "# Unpaired:" << endl;
-        for (map<string, vector<string> >::const_iterator group = unpaired_groups.begin();
-             group != unpaired_groups.end(); ++group)
+        const UnpairedGroup& info = group_info.find(group->first)->second;
+        cout << "#   " << info.file << ": ";
+        for (size_t k = 0; k < group->second.size(); k++)
         {
-            const UnpairedGroup& meta = group_meta[group->first];
-            cout << "#   " << meta.file << ": ";
-            for (size_t k = 0; k < group->second.size(); k++)
+            if (k > 0)
             {
-                if (k > 0)
-                {
-                    cout << ", ";
-                }
-                cout << group->second[k];
+                cout << ", ";
             }
-            cout << " (" << meta.type << ") - " << meta.reason << endl;
+            cout << group->second[k];
         }
+        cout << " (" << info.type << ") - " << info.reason << endl;
     }
+}
+
+// ---- Print chain pairing summary: mapping stats + invalid mappings + paired/unpaired counts ----
+void output_chain_pairing_summary(const MMalignContext& ctx,
+    int chain1_num,
+    int chain2_num)
+{
+    // 配对统计
+    PairingCounts counts = calc_paired_pairs_count(ctx, chain1_num);
+
+    // 文件名
+    string name1 = get_basename(ctx.inputs.structure1_name);
+    string name2 = get_basename(ctx.inputs.structure2_name);
+    
+    // summary 头 + Chainmap 统计 + 类型配对数
+    out_pairing_counts(ctx, name1, name2, counts);
+
+    //收集未配对链分组
+    map<string, vector<string> > unpaired_groups;
+    map<string, UnpairedGroup> group_info;
+    collect_unpaired_chains(ctx, chain1_num, chain2_num, name1, name2, unpaired_groups, group_info);
+    
+    // 输出 Unpaired
+    out_unpaired_chain_info(unpaired_groups, group_info);
 }
 
 void output_final_results(MMalignContext& ctx,
@@ -2485,13 +2678,13 @@ void output_final_results(MMalignContext& ctx,
     {
         print_version();
     }
-    // Name of Structure 输出同样只显示文件名（剥离 ../、目录前缀等路径部分）
-    string xname_bare = get_basename(ctx.inputs.structure1_name);
-    string yname_bare = get_basename(ctx.inputs.structure2_name);
+    
+    string xname = get_basename(ctx.inputs.structure1_name);
+    string yname = get_basename(ctx.inputs.structure2_name);
     if (ctx.inputs.se_opt)
     {
-        MMalign_se_final(xname_bare,
-            yname_bare,
+        MMalign_se_final(xname,
+            yname,
             ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
             ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
@@ -2511,8 +2704,8 @@ void output_final_results(MMalignContext& ctx,
     }
     else
     {
-        MMalign_final(xname_bare,
-            yname_bare,
+        MMalign_final(xname,
+            yname,
             ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
             ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
@@ -2530,8 +2723,9 @@ void output_final_results(MMalignContext& ctx,
             ctx.inputs.a_opt, ctx.inputs.d_opt, ctx.inputs.fast_opt, ctx.inputs.full_opt,
             ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
-    // 配对汇总：打印比对结果之后（所有 -mm 1 输出）——保证表格（表头+数据行）一体
-    print_chain_pairing_summary(ctx, chain1_num, chain2_num);
+
+    // 配对汇总输出
+    output_chain_pairing_summary(ctx, chain1_num, chain2_num);
 }
 
 // MMalign if more than two chains. TMalign if only one chain
@@ -2561,62 +2755,24 @@ int MMalign(const string &xname, const string &yname,
         model2parse1, model2parse2, chain1_list, chain2_list,
         byresi_opt, chainmapfile, se_opt, parallel_threads);
 
-    // ---- pre-scan before formal parsing (MMalign flow only) ----
-    // Detect structures with no usable chain after -mol filtering (e.g.
-    // -mol protein but only RNA chains): report and skip this pair.
-    if (!prescan_complexes(ctx.inputs))
-    {
-        return 0;   // 已输出预检提示；不退出（批量模式继续下一对）
-    }
+    if (!detect_complex_filtered_chains(ctx.inputs)) return 0;
+    if (!parse_structures(ctx.inputs, ctx.parsed)) return 0;
 
-    parse_structures(ctx.inputs, ctx.parsed);
-    read_chainmap(ctx.inputs.chain_map_file,
-        ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-        ctx.inputs.structure1_name, ctx.inputs.structure2_name,
-        ctx.parsed.chain_map_entries, ctx.parsed.invalid_mappings,
-        ctx.parsed.chain_map);
+    read_chainmap(ctx.inputs, ctx.parsed);
+    build_vaild_chain_map(ctx.inputs, ctx.parsed);
 
-    // ---- Mapped-pair molecule type check: remove type-mismatched mappings with warning ----
-    // (protein vs RNA cross-type pairing is forbidden; a mismatched mapping is
-    //  usually a user typo, so it is ignored and the chain pairs freely)
+    if (ctx.inputs.outfmt_opt == 2 && ctx.inputs.dir1_opt.size() == 0
+        && ctx.inputs.dir2_opt.size() == 0)
     {
-        map<int,int> valid_chain_map;
-        for (map<int,int>::const_iterator kv = ctx.parsed.chain_map.begin();
-             kv != ctx.parsed.chain_map.end(); ++kv)
-        {
-            int mol1 = ctx.parsed.complex1.mol_types[kv->first];
-            int mol2 = ctx.parsed.complex2.mol_types[kv->second];
-            if (mol1 * mol2 < 0)
-            {
-                cerr << "Warning! Mapped chain " << ctx.parsed.complex1.chain_ids[kv->first]
-                     << " (" << (mol1 > 0 ? "RNA" : "protein") << ") of " << ctx.inputs.structure1_name
-                     << " cannot pair with chain " << ctx.parsed.complex2.chain_ids[kv->second]
-                     << " (" << (mol2 > 0 ? "RNA" : "protein") << ") of " << ctx.inputs.structure2_name
-                     << ": molecule type mismatch. This mapping is ignored; chain "
-                     << ctx.parsed.complex1.chain_ids[kv->first]
-                     << " will be paired automatically by TM-score." << endl;
-                ctx.parsed.invalid_mappings.push_back(
-                    ctx.parsed.complex1.chain_ids[kv->first] + " -> "
-                    + ctx.parsed.complex2.chain_ids[kv->second]
-                    + " (molecule type mismatch: " + (mol1 > 0 ? "RNA" : "protein")
-                    + " vs " + (mol2 > 0 ? "RNA" : "protein") + ")");
-            }
-            else
-            {
-                valid_chain_map[kv->first] = kv->second;
-            }
-        }
-        if (ctx.parsed.chain_map.size() > 0 && valid_chain_map.empty())
-        {
-            PrintErrorAndQuit("ERROR! All mapped chain pairs have molecule type mismatch. Please check the chainmap file.");
-        }
-        ctx.parsed.chain_map = valid_chain_map;
+        cout << endl;
+        cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+             << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
     }
 
     // ---- Monomer branch: direct monomer alignment when both structures are single-chain ----
-    int chain1_num = (int)ctx.parsed.complex1.coords.size();
-    int chain2_num = (int)ctx.parsed.complex2.coords.size();
-    bool monomer = is_monomer(chain1_num) && is_monomer(chain2_num);
+    int struct1_chain_num = (int)ctx.parsed.complex1.coords.size();
+    int struct2_chain_num = (int)ctx.parsed.complex2.coords.size();
+    bool monomer = is_monomer(struct1_chain_num) && is_monomer(struct2_chain_num);
     if (monomer)
     {
         return align_monomers(ctx.inputs, ctx.parsed.complex1, ctx.parsed.complex2);
@@ -2627,17 +2783,17 @@ int MMalign(const string &xname, const string &yname,
     {
         ctx.inputs.fast_opt = true;
     }
-    align_all_chain_pairs(ctx.inputs, ctx.parsed, ctx.pair_result, chain1_num, chain2_num);
+    align_all_chain_pairs(ctx.inputs, ctx.parsed, ctx.pair_result, struct1_chain_num, struct2_chain_num);
 
     // ---- Initial greedy assignment + assignment optimization (dimer/oligomer) + initial snapshot ----
-    assign_initial_chains_greedily(ctx.pair_result, ctx.parsed, ctx.assign_result, chain1_num, chain2_num);
+    assign_initial_chains_greedily(ctx.pair_result, ctx.parsed, ctx.assign_result, struct1_chain_num, struct2_chain_num);
 
     optimize_chain_assign(ctx.pair_result, ctx.parsed, ctx.assign_result,
         ctx.inputs.se_opt, ctx.aln_chain_num, ctx.is_oligomer);
 
     save_initial_assign_result(ctx.pair_result, ctx.assign_result, ctx.parsed,
         ctx.pair_result_origin, ctx.assign_result_origin, ctx.sequence_origin,
-        ctx.origin_pair_num, chain1_num, chain2_num);
+        ctx.origin_pair_num, struct1_chain_num, struct2_chain_num);
 
     // ---- Iterative refinement: overall alignment -> re-scoring -> re-assignment (up to max_iter rounds) ----
     int max_iter = 5 - static_cast<int>((ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len) / 200);
@@ -2654,17 +2810,17 @@ int MMalign(const string &xname, const string &yname,
             ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len,
-            chain1_num, chain2_num,
+            struct1_chain_num, struct2_chain_num,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
             *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt,
-            ctx.parsed.chain_map, ctx.inputs.byresi_opt);
+            ctx.parsed.chain_pair_map, ctx.inputs.byresi_opt);
     }
 
     // byresi optimization (-TMscore 6/7 chain-level refinement)
-    bool is_byresi_optimize = need_byresi_optimize(ctx.inputs.byresi_opt, ctx.aln_chain_num, 
-        ctx.is_oligomer, ctx.parsed.chain_map, ctx.inputs.se_opt);
+    bool is_byresi_optimize = is_need_byresi_optimize(ctx.inputs.byresi_opt, ctx.aln_chain_num, 
+        ctx.is_oligomer, ctx.parsed.chain_pair_map, ctx.inputs.se_opt);
     if (is_byresi_optimize)
     {
             MMalign_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
@@ -2677,7 +2833,7 @@ int MMalign(const string &xname, const string &yname,
                     ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
                     ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
                     ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-                    ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
+                    ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, struct1_chain_num, struct2_chain_num,
                     ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
                     ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
                     ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
@@ -2688,20 +2844,20 @@ int MMalign(const string &xname, const string &yname,
                 // extract centroid coordinates
                 CoordArray xcentroids;
                 CoordArray ycentroids;
-                xcentroids.resize(chain1_num);
-                ycentroids.resize(chain2_num);
+                xcentroids.resize(struct1_chain_num);
+                ycentroids.resize(struct2_chain_num);
                 double d0MM = getmin(
-                    calculate_centroids(ctx.parsed.complex1.coords, chain1_num, xcentroids),
-                    calculate_centroids(ctx.parsed.complex2.coords, chain2_num, ycentroids));
+                    calculate_centroids(ctx.parsed.complex1.coords, struct1_chain_num, xcentroids),
+                    calculate_centroids(ctx.parsed.complex2.coords, struct2_chain_num, ycentroids));
 
                 // refine enhanced greedy search with centroid superposition
                 homo_refined_greedy_search(ctx.pair_result.tm_matrix,
                     ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-                    chain1_num, chain2_num, xcentroids, ycentroids,
+                    struct1_chain_num, struct2_chain_num, xcentroids, ycentroids,
                     d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len, ctx.pair_result.rotations);
                 hetero_refined_greedy_search(ctx.pair_result.tm_matrix,
                     ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-                    chain1_num, chain2_num, xcentroids, ycentroids,
+                    struct1_chain_num, struct2_chain_num, xcentroids, ycentroids,
                     d0MM, ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len);
     }
 
@@ -2710,14 +2866,14 @@ int MMalign(const string &xname, const string &yname,
         ctx.pair_result.best_pair_tm);
     if (is_fallback)
     {
-        recover_best_monomer_pair(ctx, chain1_num, chain2_num, max_iter);
+        recover_best_monomer_pair(ctx, struct1_chain_num, struct2_chain_num, max_iter);
     }
 
     // ---- Cross-chain alignment (mask-constrained intra-chain pairing, homodimer improvement) ----
-    run_cross_chain_alignment(ctx, chain1_num, chain2_num);
+    run_cross_chain_alignment(ctx, struct1_chain_num, struct2_chain_num);
 
     // ---- Final output (MMalign_final / MMalign_se_final) ----
-    output_final_results(ctx, chain1_num, chain2_num);
+    output_final_results(ctx, struct1_chain_num, struct2_chain_num);
 
     return 1; 
 }
@@ -3368,7 +3524,7 @@ static void extract_common_core_res_idx(const IntMatrix& msa_to_res, const vecto
 }
 
 //Calculate pairwise TM-score using only CC residues
-static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMatrix& core_res_idx, const vector<int>& core_cols, int chain_num, const vector<int>& len_vec, int mol_type) 
+static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMatrix& core_res_idx, const vector<int>& core_cols, int chain_num, const vector<int>& len_vec, int cur_complex_mol_list) 
 {
     double TM_sum = 0;
     int simplify_step = 1;
@@ -3395,7 +3551,7 @@ static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMa
 
             double pair_Lnorm = min(len_vec[i], len_vec[j]);
             double D0_MIN, Lnorm_out, d0, d0_search;
-            parameter_set4final(pair_Lnorm, D0_MIN, Lnorm_out, d0, d0_search, mol_type);
+            parameter_set4final(pair_Lnorm, D0_MIN, Lnorm_out, d0, d0_search, cur_complex_mol_list);
             Vec3 t0; 
             RotMat u0; 
             double rmsd;
@@ -3415,14 +3571,14 @@ static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMa
 // @param  seqxA_mat  - pairwise alignment matrix (diagonal = MSA sequences)
 // @param  chain_num  - number of structures
 // @param  len_vec    - length of each structure
-// @param  mol_type   - molecule type (0=protein, >0=RNA)
+// @param  cur_complex_mol_list   - molecule type (0=protein, >0=RNA)
 // @return ccTM-score (0 if no Common Core found)
 double calc_ccTM_score(
     const DoubleCube& orig_coords,
     const vector<vector<string>>& seqxA_mat,
     int chain_num,
     const vector<int>& len_vec,
-    int mol_type)
+    int cur_complex_mol_list)
 {
     // Extract MSA sequences from seqxA_mat diagonal
     vector<string> msa_seqs(chain_num);
@@ -3484,7 +3640,7 @@ double calc_ccTM_score(
     extract_common_core_res_idx(msa_to_res, core_cols, chain_num, core_res_idx);
 
     // 7. Compute all pairwise TM-scores using ONLY Common Core residues, sum them
-    double TM_sum = calc_common_core_TM_sum(orig_coords, core_res_idx, core_cols, chain_num, len_vec, mol_type);
+    double TM_sum = calc_common_core_TM_sum(orig_coords, core_res_idx, core_cols, chain_num, len_vec, cur_complex_mol_list);
     return TM_sum / tot_num_pair;
 }
 
@@ -3497,7 +3653,7 @@ static void run_mTMalign_pairwise_parallel(
     vector<vector<string>>& seqxA_mat, vector<vector<string>>& seqyA_mat,
     DoubleMatrix& TMave_mat, const vector<string>& resi_vec,
     int chain_num, double Lnorm_ass, double d0_scale,
-    bool u_opt, int mol_type, int outfmt_opt, bool fast_opt, double TMcut,
+    bool u_opt, int cur_complex_mol_list, int outfmt_opt, bool fast_opt, double TMcut,
     bool full_opt, bool se_opt, int ter_opt, int split_opt, int o_opt, int a_opt, bool d_opt,
     int parallel_threads)
 {
@@ -3545,7 +3701,7 @@ static void run_mTMalign_pairwise_parallel(
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, local_seq, Lnorm_ass, d0_scale,
-                0, false, u_opt, false, mol_type, outfmt_opt, invmap);
+                0, false, u_opt, false, cur_complex_mol_list, outfmt_opt, invmap);
                 if (outfmt_opt >= 2)
                 {
                     Liden = L_ali = 0;
@@ -3566,7 +3722,7 @@ static void run_mTMalign_pairwise_parallel(
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, local_seq, Lnorm_ass, d0_scale,
                     0, false, u_opt, false, fast_opt,
-                    mol_type, TMcut);
+                    cur_complex_mol_list, TMcut);
 
             TMave_mat[chain_i][chain_j] = TM4; TMave_mat[chain_j][chain_i] = TM4;
             seqxA_mat[chain_i][chain_j] = seqyA_mat[chain_j][chain_i] = seqxA;
@@ -3637,14 +3793,14 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
     // Save original coordinates for ccTM-score calculation and -o/-m output
     for (i=0;i<chain_num;i++) ua_vec.push_back(a_vec[i]);
-    int mol_type=0;
+    int cur_complex_mol_list=0;
     int total_len=0;
     xlen=0;
     for (i=0; i<chain_num; i++)
     {
         if (len_vec[i]>xlen) xlen=len_vec[i];
         total_len+=len_vec[i];
-        mol_type+=mol_vec[i];
+        cur_complex_mol_list+=mol_vec[i];
     }
     if (!u_opt) Lnorm_ass=total_len/chain_num;
     u_opt=true;
@@ -3665,7 +3821,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
             a_vec, seq_vec, sec_vec, len_vec,
             chain_list, chainID_list, seqxA_mat, seqyA_mat,
             TMave_mat, resi_vec, chain_num, Lnorm_ass, d0_scale,
-            u_opt, mol_type, outfmt_opt, fast_opt, TMcut,
+            u_opt, cur_complex_mol_list, outfmt_opt, fast_opt, TMcut,
             full_opt, se_opt, ter_opt, split_opt, o_opt, a_opt, d_opt,
             parallel_threads);
         pair_parallel_done = true;
@@ -3730,7 +3886,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    0, false, u_opt, false, mol_type, outfmt_opt, invmap);
+                    0, false, u_opt, false, cur_complex_mol_list, outfmt_opt, invmap);
                     if (outfmt_opt>=2) 
                     {
                         Liden=L_ali=0;
@@ -3753,7 +3909,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
                     0, false, u_opt, false, fast_opt,
-                    mol_type,TMcut);
+                    cur_complex_mol_list,TMcut);
 
                 // store result
                 TMave_mat[i][j]=TM4; TMave_mat[j][i]=TM4;
@@ -3935,7 +4091,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    2, a_opt, u_opt, d_opt, mol_type, outfmt_opt, invmap);
+                    2, a_opt, u_opt, d_opt, cur_complex_mol_list, outfmt_opt, invmap);
                 if (outfmt_opt>=2) 
                 {
                     Liden=L_ali=0;
@@ -3957,7 +4113,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 seqM, seqxA, seqyA, do_vec,
                 rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                2,  a_opt, u_opt, d_opt, fast_opt, mol_type, TMcut, parallel_threads);
+                2,  a_opt, u_opt, d_opt, fast_opt, cur_complex_mol_list, TMcut, parallel_threads);
 
             if (outfmt_opt<0) output_results(
                 xname_vec[i].c_str(), xname_vec[j].c_str(), "", "",
@@ -4043,7 +4199,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                 d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                 do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                 xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                0, a_opt, u_opt, d_opt, mol_type, 1, invmap);
+                0, a_opt, u_opt, d_opt, cur_complex_mol_list, 1, invmap);
 
             int rx=0;
             int ry=0;
@@ -4198,7 +4354,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                     do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
                     xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    true, a_opt, u_opt, d_opt, mol_type, 1, invmap);
+                    true, a_opt, u_opt, d_opt, cur_complex_mol_list, 1, invmap);
 
                 if (xlen<=ylen)
                 {
@@ -4308,7 +4464,7 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
     //MergeAlign(seqxA_mat,seqyA_mat,repr_idx,xname_vec,chain_num,seqM);
     if (outfmt_opt==0) print_version();
     // calculate ccTM-score
-    double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, mol_type);
+    double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
     output_mTMalign_results( xname,yname, "","",
         xlen_total, ylen_total, t0, u0, TM1_total, TM2_total,
         TM3_total, TM4_total, TM5_total, rmsd0_total, d0_out_total,
@@ -4994,6 +5150,27 @@ int flexalign(string &xname, string &yname, const string &fname_super,
     return 0;
 }
 
+void normalize_dir_options(const string& dir_opt,
+    const string& dir1_opt,
+    const string& dir2_opt,
+    string& out_dir1_opt,
+    string& out_dir2_opt)
+{
+    out_dir1_opt = dir_opt + dir1_opt;
+    out_dir2_opt = dir_opt + dir2_opt;
+}
+
+bool is_single_mm1_align(int mm_opt,
+    const string& dir_opt,
+    const string& dir1_opt,
+    const string& dir2_opt,
+    const string& dirpair_opt)
+{
+    return mm_opt == 1 && dir_opt.size() == 0
+        && dir1_opt.size() == 0 && dir2_opt.size() == 0
+        && dirpair_opt.size() == 0;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -5524,11 +5701,20 @@ int main(int argc, char *argv[])
         else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
     }
 
-    if (outfmt_opt==2)
+
+    bool single_mm1_align = is_single_mm1_align(mm_opt, dir_opt, dir1_opt, dir2_opt, dirpair_opt);
+    if (outfmt_opt == 2 && !single_mm1_align)
     {
-        if (mm_opt==2) cout<<"#Query\tTemplate\tTM"<<endl;
-        else cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
+        if (mm_opt == 2)
+        {
+            cout << "#Query\tTemplate\tTM" << endl;
+        }
+        else
+        {
+            if (mm_opt == 1) cout << endl;   // -mm 1 表头前空一行（单对时由 MMalign 内部负责）
+            cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+                << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
+        }
     }
 
     /* real alignment. entry functions are MMalign_main and 
@@ -5554,12 +5740,15 @@ int main(int argc, char *argv[])
                     if (dir_opt.size()>0 && chain2_idx<=chain1_idx) continue;
                     yname = chain2_list[chain2_idx];
                     vector<string> tmp_vec2(1, yname);
+                    string norm_dir1;
+                    string norm_dir2;
+                    normalize_dir_options(dir_opt, dir1_opt, dir2_opt, norm_dir1, norm_dir2);
                     MMalign(xname, yname, fname_super,
                         fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
                         a_opt, d_opt, full_opt, TMcut, infmt1_opt, infmt2_opt,
                         ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt,
                         het_opt, atom_opt, autojustify, mol_opt,
-                        dir_opt+dir1_opt, dir_opt+dir2_opt,
+                        norm_dir1, norm_dir2,
                         chain2parse1, chain2parse2, model2parse1, model2parse2,
                         tmp_vec1, tmp_vec2, byresi_opt, chainmapfile, se_opt,
                         parallel_threads);
