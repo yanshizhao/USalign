@@ -593,13 +593,13 @@ struct MMalignInputs
 // ---- Parsed products (filled by parse_structures / read_chainmap, read-only afterwards) ----
 struct MMalignParsed
 {
-    ComplexData complex1;
-    ComplexData complex2;
-    int protein_norm_len;             // default-initialized in class
-    int na_norm_len;
-    map<int,int> chain_pair_map;
-    int chain_map_num;            // specified mapping count in chainmap file
+    ComplexData complex1;             // parsed data of complex 1
+    ComplexData complex2;             // parsed data of complex 2
+    map<int,int> chain_pair_map;      // chain mapping table (complex 1 chain index -> complex 2 chain index)
     vector<string> invalid_mappings;  // invalid mapping details (chain1 -> chain2 + reason)
+    int protein_norm_len;             // protein normalization length (default-initialized in class)
+    int na_norm_len;                  // RNA normalization length
+    int chain_map_num;                // count of entries specified in the chainmap file
 };
 
 struct MMalignContext
@@ -1313,6 +1313,12 @@ void build_context(MMalignInputs& inputs,
     inputs.sequence = &sequence;
 }
 
+// Output the check warning for the forced molecule type from -mol
+// Params: file_path - structure file path
+//         chain_num - total number of chains
+//         prot_count, na_count - protein / RNA chain counts
+//         filtered_count - number of filtered chains
+//         mol_opt - value of the -mol option (protein / RNA)
 void output_mol_filter_warning(const string& file_path,
     int chain_num,
     int prot_count,
@@ -1323,7 +1329,7 @@ void output_mol_filter_warning(const string& file_path,
     if (filtered_count == chain_num)
     {
         // all chains conflict with -mol: report and stop this structure
-        cerr << endl;   // 警告前空一行，与前面输出分隔
+        cerr << endl;
         cerr << "Warning! " << get_basename(file_path) << " contains "
              << chain_num << " chain(s), all "
              << ((mol_opt == "protein") ? "RNA" : "protein")
@@ -1332,7 +1338,7 @@ void output_mol_filter_warning(const string& file_path,
     else if (filtered_count > 0)
     {
         // mixed: some chains usable, some excluded
-        cerr << endl;   // 警告前空一行，与前面输出分隔
+        cerr << endl;
         cerr << "Warning! " << get_basename(file_path) << " contains "
              << chain_num << " chain(s) (" << prot_count << " protein, " << na_count
              << " RNA); -mol " << mol_opt << " is set, " << filtered_count
@@ -1340,6 +1346,12 @@ void output_mol_filter_warning(const string& file_path,
     }
 }
 
+// Check the molecule type of chains for the -mol forced type: scan the file list and count protein / RNA chains
+// Params: pdb_file_list - structure file list
+//         mol_opt - value of the -mol option (protein / RNA; auto returns true directly)
+//         ter_opt, infmt_opt, autojustify, split_opt, het_opt - parsing parameters
+//         chain2parse, model2parse - chain / model filtering
+// Return: false means the accumulated count of chains satisfying the -mol type in the files is 0
 bool detect_filtered_chains(const vector<string>& pdb_file_list,
     const string& mol_opt,
     const int ter_opt,
@@ -1417,6 +1429,9 @@ bool detect_filtered_chains(const vector<string>& pdb_file_list,
     return true;
 }
 
+// Check the chain counts of structure 1 / structure 2 filtered out by the -mol option
+// Params: inputs - MMalign input parameters
+// Return: false means the structure cannot be parsed
 bool detect_complex_filtered_chains(const MMalignInputs& inputs)
 {
     if (!detect_filtered_chains(inputs.struct1_chain_list, inputs.mol_opt,
@@ -1505,6 +1520,12 @@ int find_chain_map_key(const map<int,int>& chain_pair_map, int complex2_chain_id
 }
 
 
+// Check the chainmap file and extract the valid chain pairs separately
+// Params: inputs - MMalign input parameters
+//         parsed - parsing result (contains the mapping table and invalid mapping details)
+//         complex1_chain_idx, complex2_chain_idx - chain indices of both mapping sides
+//         chain1_name, chain2_name - chain names of both mapping sides
+// Note: on duplicate key or value a warning is printed and the chain pair is ignored in the later flow; only chain pairs passing both checks are saved
 void check_chain_map(const MMalignInputs& inputs,
     MMalignParsed& parsed,
     int complex1_chain_idx,
@@ -1626,6 +1647,10 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
     if (!fromStdin) fin.close();
 }
 
+// Chain-pair type check: remove mappings with mismatched molecule types
+// Params: inputs - MMalign input parameters
+//         parsed - parsing result (mapping table filtered in place: type-valid ones are kept)
+// Note: exits with an error when all mappings are invalid
 void build_vaild_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
 {
     map<int,int> valid_chain_map;
@@ -2580,6 +2605,12 @@ struct UnpairedGroup
     string reason;
 };
 
+// Collect the unpaired chains of a complex, grouped by (file, type, reason)
+// Params: ctx - MMalign context
+//         chain1_num, chain2_num - chain counts of both sides
+//         is_struct1_chain - true means collecting unpaired chains of structure 1
+//         my_name - file name of the current complex
+//         unpaired_groups, group_info - grouping result output
 void collect_unpaired_chains_complex(const MMalignContext& ctx,
     int chain1_num,
     int chain2_num,
@@ -5160,6 +5191,10 @@ void normalize_dir_options(const string& dir_opt,
     out_dir2_opt = dir_opt + dir2_opt;
 }
 
+// Determine whether this is a single-pair -mm 1 alignment
+// Params: mm_opt - multimer mode option
+//         dir_opt, dir1_opt, dir2_opt, dirpair_opt - batch mode options
+// Return: true means single-pair -mm 1 alignment
 bool is_single_mm1_align(int mm_opt,
     const string& dir_opt,
     const string& dir1_opt,

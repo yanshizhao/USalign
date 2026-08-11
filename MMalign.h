@@ -2,11 +2,19 @@
 #include <cfloat>
 #include "se.h"
 
+// Determine whether the chain of structure 1 is a mapping key (whether the user has specified its pairing target)
+// Params: chain_pair_map - chain mapping table (structure 1 chain index maps to structure 2 chain index)
+//         struct1_chain_idx - structure 1 chain index
+// Return: true means this chain is a mapping key
   inline bool is_chain_map_key(const map<int,int>& chain_pair_map, int struct1_chain_idx)
   {
       return chain_pair_map.find(struct1_chain_idx) != chain_pair_map.end();
   }
 
+// Determine whether the chain of structure 2 is a mapping target (whether it has been occupied by some structure 1 chain)
+// Params: chain_pair_map - chain mapping table (structure 1 chain index maps to structure 2 chain index)
+//         chain2_idx - structure 2 chain index
+// Return: true means this chain is a mapping target
 inline bool is_chain_map_value(const map<int,int>& chain_pair_map,
     int chain2_idx)
 {
@@ -21,6 +29,12 @@ inline bool is_chain_map_value(const map<int,int>& chain_pair_map,
 }
 
 
+// Determine whether chain chain1_idx of structure 1 and chain chain2_idx of structure 2 are allowed to pair
+// Rule: user-specified pairs (from chainmap.txt) and pairs where neither chain is in the constraint file chainmap.txt are allowed
+// Params: chain_pair_map - chain mapping table
+//         chain1_idx - chain index of structure 1
+//         chain2_idx - chain index of structure 2
+// Return: true means this chain pair is allowed to pair
 inline bool is_chain_pair_allowed(const map<int,int>& chain_pair_map,
     int chain1_idx,
     int chain2_idx)
@@ -1931,7 +1945,7 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
             {
                 for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
                 {
-                    // 局部约
+                                        // Local constraint: set chain pairs that do not satisfy the constraint to -1
                     if (!is_chain_pair_allowed(chain_pair_map, chain1_idx, chain2_idx))
                     {
                         TMave_tmp[chain1_idx][chain2_idx]=-1;
