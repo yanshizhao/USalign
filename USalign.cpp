@@ -773,7 +773,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                     mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
                     continue;
                 }
-                // chainmap 局部约束：不满足约束的链对置为无效
+                // Chainmap local constraint: mark chain pairs that violate the constraint as invalid
                 if (!is_chain_pair_allowed(parsed.chain_pair_map, chain1_idx, chain2_idx))
                 {
                     mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
@@ -1370,9 +1370,9 @@ bool detect_filtered_chains(const vector<string>& pdb_file_list,
     int total_mol_opt_chain = 0;
     for (size_t file_idx = 0; file_idx < pdb_file_list.size(); file_idx++)
     {
-        vector<vector<string> > chain_atom_lines;   // 当前 PDB 文件中所有链的原子行内容
-        vector<string> chain_id_list;               // 当前 PDB 文件中各链的 ID 列表
-        vector<int> chain_mol_types;                // 当前 PDB 文件中各链的分子类型（>0 = RNA，<=0 = 蛋白）
+        vector<vector<string> > chain_atom_lines;   // atom lines of every chain in the current PDB file
+        vector<string> chain_id_list;               // chain ID list of the current PDB file
+        vector<int> chain_mol_types;                // molecule type of each chain in the current PDB file (>0 = RNA, <=0 = protein)
         size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types,
             ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
             chain2parse, model2parse);
@@ -1382,7 +1382,7 @@ bool detect_filtered_chains(const vector<string>& pdb_file_list,
             cerr << "Warning! " << get_basename(pdb_file_list[file_idx]) << " contains 0 chain(s)" << endl;
             continue;   // empty file: nothing usable
         }
-        int prot_count = 0;   // 当前 PDB 文件中的蛋白链条数（预扫描统计）
+        int prot_count = 0;   // protein chain count in the current PDB file (prescan statistics)
         int na_count = 0;
         for (size_t chain_idx = 0; chain_idx < chain_num; chain_idx++)
         {
@@ -1466,10 +1466,6 @@ bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
         inputs.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
         inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
 
-    /*
-      0 链校验：批量模式（-dir/-dir1/-dir2/-dirpair）警告后跳过该对（main 循环继续下一对）；
-      单对模式报错退出（exit 1）
-    */
     if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
     {
         if (inputs.dir1_opt.size() || inputs.dir2_opt.size())
@@ -1533,7 +1529,7 @@ void check_chain_map(const MMalignInputs& inputs,
     const string& chain1_name,
     const string& chain2_name)
 {
-    // 键重复检测：chain1 已作为映射键出现过（如 A→B, A→C）
+    // Duplicate-key check: chain1 has already appeared as a mapping key (e.g. A->B, A->C)
     bool chain1_already_mapped = is_chain_map_key(parsed.chain_pair_map, complex1_chain_idx);
     if (chain1_already_mapped)
     {
@@ -1543,7 +1539,7 @@ void check_chain_map(const MMalignInputs& inputs,
             parsed.complex2.chain_ids[parsed.chain_pair_map[complex1_chain_idx]],
             chain1_name, chain2_name);
     }
-    // 值重复检测：chain2 已作为映射目标被占用（如 A→B, C→B）
+    // Duplicate-value check: chain2 is already occupied as a mapping target (e.g. A->B, C->B)
     int chain_map_key = find_chain_map_key(parsed.chain_pair_map, complex2_chain_idx);
     if (chain_map_key >= 0)
     {
@@ -1554,7 +1550,7 @@ void check_chain_map(const MMalignInputs& inputs,
             parsed.complex1.chain_ids[chain_map_key], chain2_name,
             chain1_name, chain2_name, chain1_name);
     }
-    // 两检测都通过，写入.保证严格一对一
+    // Written only when both checks pass, guaranteeing a strict one-to-one mapping
     if (!chain1_already_mapped && chain_map_key < 0)
     {
         parsed.chain_pair_map[complex1_chain_idx] = complex2_chain_idx;
@@ -1576,7 +1572,6 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
         fin.open(inputs.chain_map_file.c_str());
         if (!fin)
         {
-            // 文件打开失败：警告后按无映射自由配对继续（配对汇总 Chainmap 统计行 0 entries 佐证）
             fcout(std::cerr, "Warning! Cannot open chainmap file: %s; chains will be "
                              "paired automatically by TM-score\n",
                 inputs.chain_map_file);
@@ -1610,7 +1605,7 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
             }
             else if (complex1_chain_idx < 0 && complex2_chain_idx < 0)
             {
-                //结构1和结构2都无效
+                // both chain1 and chain2 are invalid
                 parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
                     + get_basename(inputs.structure1_name) + "), chain " + line_vec[1] + " does not exist in structure 2 ("
@@ -1618,14 +1613,14 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
             }
             else if (complex1_chain_idx < 0)
             {   
-                //结构1无效
+                // chain1 is invalid (does not exist in structure 1)
                 parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
                     + get_basename(inputs.structure1_name) + "))");
             }
             else
             {
-                //结构2无效
+                // chain2 is invalid (does not exist in structure 2)
                 parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[1] + " does not exist in structure 2 ("
                     + get_basename(inputs.structure2_name) + "))");
@@ -1651,7 +1646,7 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
 // Params: inputs - MMalign input parameters
 //         parsed - parsing result (mapping table filtered in place: type-valid ones are kept)
 // Note: exits with an error when all mappings are invalid
-void build_vaild_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
+void build_valid_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
 {
     map<int,int> valid_chain_map;
     for (map<int,int>::const_iterator kv = parsed.chain_pair_map.begin(); kv != parsed.chain_pair_map.end(); ++kv)
@@ -1667,7 +1662,7 @@ void build_vaild_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
             const string struct1_name = get_basename(inputs.structure1_name);
             const string struct2_name = get_basename(inputs.structure2_name);
 
-            // 完整上下文警告
+            // Full-context warning
             fcout(std::cerr, "\nWarning! Mapped chain %s (%s) of %s cannot pair with chain "
                              "%s (%s) of %s: molecule type mismatch. This mapping is ignored; "
                              "chain %s will be paired automatically by TM-score.\n",
@@ -1675,7 +1670,7 @@ void build_vaild_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
                             value_chain_name, value_mol_name, struct2_name,
                             key_chain_name);
                             
-            // 无效映射明细收集
+            // Collect details of invalid mappings
             parsed.invalid_mappings.push_back(
                 key_chain_name + " -> "
                 + value_chain_name
@@ -1690,7 +1685,7 @@ void build_vaild_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
 
     if (parsed.chain_pair_map.size() > 0 && valid_chain_map.empty())
     {
-        // 全部映射无效,报错退出
+        // All mappings are invalid: error out
         cout << endl;
         PrintErrorAndQuit("Warning! All mapped chain pairs have molecule type mismatch. Please check the chainmap file.");
     }
@@ -2282,25 +2277,25 @@ int get_assign_partner(const map<int,int>& chain_pair_map,
         map<int,int>::const_iterator map_iter = chain_pair_map.find(chain_idx);
         if (map_iter != chain_pair_map.end())
         {
-            return map_iter->second;   // 映射链：用户指定目标（硬约束）
+            return map_iter->second;   // mapped chain: user-specified target (hard constraint)
         }
         if (chain_idx == pair_result.best_pair_chain1_idx)
         {
-            return pair_result.best_pair_chain2_idx;   // 最优未映射单体对
+            return pair_result.best_pair_chain2_idx;   // best unpaired monomer pair
         }
-        return -1;   // 其余解除
+        return -1;   // unmap the rest
     }
 
     int chain_map_key = find_chain_map_key(chain_pair_map, chain_idx);
     if (chain_map_key >= 0)
     {
-        return chain_map_key;   // 映射目标：映射它的 chain1（硬约束）
+        return chain_map_key;   // mapping target: the chain1 that maps to it (hard constraint)
     }
     if (chain_idx == pair_result.best_pair_chain2_idx)
     {
-        return pair_result.best_pair_chain1_idx;   // 最优未映射单体对
+        return pair_result.best_pair_chain1_idx;   // best unpaired monomer pair
     }
-    return -1;   // 其余解除
+    return -1;   // unmap the rest
 }
 
 void recover_best_monomer_pair(MMalignContext& ctx,
@@ -2316,7 +2311,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
             ctx.pair_result.tm_matrix);
 
-        // 保留所有映射链对 和 最优未映射单体对；其余解除
+        // Keep all mapped chain pairs and the best unpaired monomer pair; unmap the rest
         const map<int,int>& chain_pair_map = ctx.parsed.chain_pair_map;
         for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
         {
@@ -2329,7 +2324,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
                 get_assign_partner(chain_pair_map, chain2_idx, false, ctx.pair_result);
         }
 
-        // 按新分配（映射链对 + 最优未映射单体对）重新拼接 sequence
+        // Rebuild the sequence from the new assignment (mapped chain pairs + best unpaired monomer pair)
         copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
             ctx.pair_result_origin.aligned_seq1, ctx.pair_result_origin.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
@@ -2459,23 +2454,23 @@ bool has_unpaired_chain(const MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
 {
-    // 被检查链（chain_idx）所在复合物的分子类型
+    // Molecule type of the complex containing the checked chain (chain_idx)
     const vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
-    // 对方复合物的分子类型
+    // Molecule type of the partner complex
     const vector<int>& partner_mol_types = is_struct1_chain ? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
-    // 对方复合物的分配表：partner_idx 链是否空闲
+    // Assignment table of the partner complex: whether chain partner_idx is free
     const vector<int>& cur_partner_assign = is_struct1_chain ? ctx.assign_result.chain1_of_chain2 : ctx.assign_result.chain2_of_chain1;
     int partner_chain_num = is_struct1_chain ? chain2_num : chain1_num;
     int chain_mol_type = cur_complex_mol_list[chain_idx];
 
     for (int partner_idx = 0; partner_idx < partner_chain_num; partner_idx++)
     {
-        //   is_struct1_chain == true : 被检查链在结构1（chain_idx），伙伴链在结构2（partner_idx）
-        //   is_struct1_chain == false: 被检查链在结构2（chain_idx），伙伴链在结构1（partner_idx）
+        //   is_struct1_chain == true : checked chain in structure 1 (chain_idx), partner chain in structure 2 (partner_idx)
+        //   is_struct1_chain == false: checked chain in structure 2 (chain_idx), partner chain in structure 1 (partner_idx)
         int chain1_idx = is_struct1_chain ? chain_idx : partner_idx;
         int chain2_idx = is_struct1_chain ? partner_idx : chain_idx;
 
-        // 同类型 && 未被 chainmap 锁死（该配对被约束允许） && 伙伴链空闲
+        // Same molecule type && not locked by chainmap (pair allowed by the constraint) && partner chain is free
         if (partner_mol_types[partner_idx] * chain_mol_type >= 0
             && is_chain_pair_allowed(ctx.parsed.chain_pair_map, chain1_idx, chain2_idx)
             && cur_partner_assign[partner_idx] < 0)
@@ -2497,7 +2492,7 @@ string get_chain_mismatch_reason(bool is_struct1_chain,
     string more_chain_struct = is_struct1_chain ? "structure 1" : "structure 2";
     string less_chain_struct = is_struct1_chain ? "structure 2" : "structure 1";
 
-    // 链数不足报 mismatch；否则目标全被占用或 chainmap 锁定
+    // Report mismatch when the chain count is insufficient; otherwise all targets are taken or locked by chainmap
     if (more_chain_num > less_chain_num)
     {
         return "more chains in " + more_chain_struct + " (" + std::to_string(more_chain_num)
@@ -2682,22 +2677,22 @@ void output_chain_pairing_summary(const MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
 {
-    // 配对统计
+    // Pairing statistics
     PairingCounts counts = calc_paired_pairs_count(ctx, chain1_num);
 
-    // 文件名
+    // File names
     string name1 = get_basename(ctx.inputs.structure1_name);
     string name2 = get_basename(ctx.inputs.structure2_name);
     
-    // summary 头 + Chainmap 统计 + 类型配对数
+    // Summary header + Chainmap statistics + paired counts by molecule type
     out_pairing_counts(ctx, name1, name2, counts);
 
-    //收集未配对链分组
+    // Collect unpaired-chain groups
     map<string, vector<string> > unpaired_groups;
     map<string, UnpairedGroup> group_info;
     collect_unpaired_chains(ctx, chain1_num, chain2_num, name1, name2, unpaired_groups, group_info);
     
-    // 输出 Unpaired
+    // Print the Unpaired block
     out_unpaired_chain_info(unpaired_groups, group_info);
 }
 
@@ -2755,7 +2750,7 @@ void output_final_results(MMalignContext& ctx,
             ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
 
-    // 配对汇总输出
+    // Print the chain pairing summary
     output_chain_pairing_summary(ctx, chain1_num, chain2_num);
 }
 
@@ -2790,7 +2785,7 @@ int MMalign(const string &xname, const string &yname,
     if (!parse_structures(ctx.inputs, ctx.parsed)) return 0;
 
     read_chainmap(ctx.inputs, ctx.parsed);
-    build_vaild_chain_map(ctx.inputs, ctx.parsed);
+    build_valid_chain_map(ctx.inputs, ctx.parsed);
 
     if (ctx.inputs.outfmt_opt == 2 && ctx.inputs.dir1_opt.size() == 0
         && ctx.inputs.dir2_opt.size() == 0)
@@ -5746,7 +5741,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            if (mm_opt == 1) cout << endl;   // -mm 1 表头前空一行（单对时由 MMalign 内部负责）
+            if (mm_opt == 1) cout << endl;
             cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
                 << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
         }
