@@ -3614,6 +3614,8 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         cout << "There is no alignment between the two structures! "
              << "Program stop with no result!" << endl;
         TM1=TM2=TM3=TM4=TM5=0;
+        t0 = {0, 0, 0};                            // zero translation
+        u0 = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};  // identity rotation
         return 1;
     }
 
