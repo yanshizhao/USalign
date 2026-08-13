@@ -1569,7 +1569,7 @@ inline void MMalign_final(
     {
         xlen=xlen_vec[i];
         secx.resize(xlen+1);
-    xa.resize(xlen);
+        xa.resize(xlen);
         copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
             xlen,xa,seqx,secx);
 
@@ -1586,7 +1586,7 @@ inline void MMalign_final(
                 continue;
             }
             secy.resize(ylen+1);
-    ya.resize(ylen);
+            ya.resize(ylen);
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
@@ -1672,6 +1672,7 @@ inline void MMalign_se_final(
     std::string secy;
     CoordArray xa;
     CoordArray ya;
+    secx.resize(xlen+1);
     xa.resize(xlen);
     secy.resize(ylen+1);
     ya.resize(ylen);
@@ -2906,8 +2907,8 @@ inline void MMalign_dimer(double & total_score,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    Vec3 t0;
-    RotMat u0;
+    Vec3 t0 = {};    // zero-init
+    RotMat u0 = {};
     double TM1;
     double TM2;
     double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
@@ -2928,12 +2929,15 @@ inline void MMalign_dimer(double & total_score,
 
     double Lnorm_ass=len_aa+len_na;
 
-    TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy,
+    if (TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
         xlen, ylen, mask, sequence, Lnorm_ass, d0_scale,
-        1, false, true, false, fast_opt, mol_type, -1);
+        1, false, true, false, fast_opt, mol_type, -1) != 0)
+    {
+        return;   // no alignment: skip re-scoring, keep total_score unchanged
+    }
 
     // clean up TM-align
 

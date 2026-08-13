@@ -682,7 +682,8 @@ bool handle_byresi_pair(const MMalignInputs& inputs,
     int chain2_len,
     int chain1_num,
     const string& chain1_seq,
-    const string& chain2_seq);
+    const string& chain2_seq,
+    vector<string>& sequence);
 
 // ---- Forward declaration of save_pair_result (defined later in this file) ----
 void save_pair_result(const ChainPairAlignResult& result,
@@ -708,7 +709,8 @@ void align_chain_pair(ChainPairAlignResult& result,
     const MMalignInputs& inputs,
     int i_opt_val,
     int u_opt_val,
-    int parallel_threads);
+    int parallel_threads,
+    vector<string>& sequence);
 
 // ===========================================================================
 // All-against-all chain-level alignment (OpenMP parallel path).
@@ -740,10 +742,11 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
     CoordArray chain2_coords;
 
     // ---- Outer loop: iterate over each chain of structure 1 (OpenMP parallel, private work variables per thread) ----
-#pragma omp parallel for schedule(dynamic, 8) num_threads(inputs.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, pair_idx, rot_row, rot_col)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(inputs.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, chain2_idx, pair_idx, rot_row, rot_col)
     for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
             int norm_len;
+            vector<string> pair_sequence(2, "");
             chain1_len=parsed.complex1.lengths[chain1_idx];
 
             // chain too short (<3 residues) to align: set the entire row to -1
@@ -804,7 +807,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                 if (handle_byresi_pair(inputs, parsed, pairwise,
                     chain1_idx, chain2_idx, pair_idx,
                     chain1_len, chain2_len, chain1_num,
-                    chain1_seq, chain2_seq))
+                    chain1_seq, chain2_seq, pair_sequence))
                 {
                     continue;
                 }
@@ -814,10 +817,11 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                 align_result.d0_out = 5.0;
                 int mol_types = parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx];
                 align_chain_pair(align_result,
-                    chain1_coords, chain2_coords, chain1_seq, 
+                    chain1_coords, chain2_coords, chain1_seq,
                     chain2_seq, chain1_sec, chain2_sec,
                     chain1_len, chain2_len, mol_types,
-                    norm_len, inputs, i_opt, 1, inputs.parallel_threads);
+                    norm_len, inputs, i_opt, 1, inputs.parallel_threads,
+                    pair_sequence);
 
                 // save align_result (reuses the common function save_pair_result)
                 save_pair_result(align_result, pairwise,
@@ -834,7 +838,6 @@ inline void run_mmdock_parallel(
     const CharMatrix& secx_vec, const CharMatrix& secy_vec,
     const vector<int>& xlen_vec, const vector<int>& ylen_vec,
     const vector<int>& mol_vec1, const vector<int>& mol_vec2,
-    vector<string>& sequence,
     vector<string>& resi_vec1, vector<string>& resi_vec2,
     DoubleMatrix& TMave_mat,
     vector<vector<string>>& seqxA_mat,
@@ -860,6 +863,8 @@ inline void run_mmdock_parallel(
                 TMave_mat[i][j] = -1;   // no symmetric write
             continue;
         }
+
+        vector<string> pair_sequence(2, "");
 
         CoordArray xa(xlen);
         string seqx, secx;
@@ -918,7 +923,7 @@ inline void run_mmdock_parallel(
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
+                    xlen, ylen_trim, pair_sequence, Lnorm_tmp, d0_scale,
                     0, false, true, false, fast_opt,
                     mol_vec1[i] + mol_vec2[j], TMcut);
                 seqxA.clear();
@@ -931,20 +936,20 @@ inline void run_mmdock_parallel(
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    xlen, ylen, pair_sequence, Lnorm_tmp, d0_scale,
                     0, false, 2, false, mol_vec1[i] + mol_vec2[j], 1, invmap);
 
-                if (sequence.size() < 2) sequence.push_back("");
-                if (sequence.size() < 2) sequence.push_back("");
-                sequence[0] = seqxA;
-                sequence[1] = seqyA;
+                if (pair_sequence.size() < 2) pair_sequence.push_back("");
+                if (pair_sequence.size() < 2) pair_sequence.push_back("");
+                pair_sequence[0] = seqxA;
+                pair_sequence[1] = seqyA;
 
                 TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
                     t0, u0, TM1, TM2, TM3, TM4, TM5,
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    xlen, ylen, pair_sequence, Lnorm_tmp, d0_scale,
                     2, false, true, false, fast_opt,
                     mol_vec1[i] + mol_vec2[j], TMcut);
             }
@@ -955,7 +960,7 @@ inline void run_mmdock_parallel(
                     d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                     seqM, seqxA, seqyA, do_vec,
                     rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                    xlen, ylen, pair_sequence, Lnorm_tmp, d0_scale,
                     0, false, true, false, fast_opt,
                     mol_vec1[i] + mol_vec2[j], TMcut);
             }
@@ -1713,7 +1718,8 @@ void align_chain_pair(ChainPairAlignResult& result,
     const MMalignInputs& inputs,
     int i_opt_val,
     int u_opt_val,
-    int parallel_threads)
+    int parallel_threads,
+    vector<string>& sequence)
 {
     if (inputs.se_opt)
     {
@@ -1725,7 +1731,7 @@ void align_chain_pair(ChainPairAlignResult& result,
             result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
             result.seqM, result.seqxA, result.seqyA, result.do_vec,
             result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, *inputs.sequence, norm_len, inputs.d0_scale,
+            xlen, ylen, sequence, norm_len, inputs.d0_scale,
             i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt,
             cur_complex_mol_list, inputs.outfmt_opt, result.invmap);
         if (inputs.outfmt_opt >= 2)
@@ -1751,7 +1757,7 @@ void align_chain_pair(ChainPairAlignResult& result,
             result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
             result.seqM, result.seqxA, result.seqyA, result.do_vec,
             result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, *inputs.sequence, norm_len, inputs.d0_scale,
+            xlen, ylen, sequence, norm_len, inputs.d0_scale,
             i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt, inputs.fast_opt,
             cur_complex_mol_list, inputs.TMcut, parallel_threads);
     }
@@ -1781,15 +1787,27 @@ void save_pair_result(const ChainPairAlignResult& result,
     pairwise.aligned_seq1[chain1_idx][chain2_idx] = result.seqxA;
     pairwise.aligned_seq2[chain1_idx][chain2_idx] = result.seqyA;
     pairwise.tm_matrix[chain1_idx][chain2_idx] = result.TM4 * norm_len;
-    if (chain1_idx != chain2_idx && chain2_idx < chain1_num)
+}
+
+// ---- Compute the best monomer chain pair by a serial scan over the TM-score matrix ----
+void update_best_pair(AllChainPairsResult& pairwise,
+    int chain1_num,
+    int chain2_num)
+{
+    pairwise.best_pair_tm = -1;
+    pairwise.best_pair_chain1_idx = -1;
+    pairwise.best_pair_chain2_idx = -1;
+    for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
-        pairwise.tm_matrix[chain2_idx][chain1_idx] = result.TM4 * norm_len;
-    }
-    if (pairwise.tm_matrix[chain1_idx][chain2_idx] > pairwise.best_pair_tm)
-    {
-        pairwise.best_pair_tm = pairwise.tm_matrix[chain1_idx][chain2_idx];
-        pairwise.best_pair_chain1_idx = chain1_idx;
-        pairwise.best_pair_chain2_idx = chain2_idx;
+        for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+        {
+            if (pairwise.tm_matrix[chain1_idx][chain2_idx] > pairwise.best_pair_tm)
+            {
+                pairwise.best_pair_tm = pairwise.tm_matrix[chain1_idx][chain2_idx];
+                pairwise.best_pair_chain1_idx = chain1_idx;
+                pairwise.best_pair_chain2_idx = chain2_idx;
+            }
+        }
     }
 }
 
@@ -1825,9 +1843,10 @@ int align_monomers(const MMalignInputs& inputs,
     ChainPairAlignResult align_result = { 0};
     align_result.d0_out = 5.0;
     align_chain_pair(align_result,
-        chain1_coords, chain2_coords, chain1_seq, chain2_seq, 
+        chain1_coords, chain2_coords, chain1_seq, chain2_seq,
         chain1_sec, chain2_sec, chain1_len, chain2_len,
-        cur_complex_mol_list, 0, inputs, i_opt, 0, 1);
+        cur_complex_mol_list, 0, inputs, i_opt, 0, 1,
+        *inputs.sequence);
 
     output_results(
         inputs.structure1_name.substr(inputs.dir1_opt.size()),
@@ -1915,7 +1934,7 @@ void run_mmalign_serial_pairwise(const MMalignInputs& inputs,
 
             if (handle_byresi_pair(inputs, parsed, pairwise,
                 chain1_idx, chain2_idx, pair_idx, chain1_len, chain2_len, chain1_num,
-                chain1_seq, chain2_seq))
+                chain1_seq, chain2_seq, *inputs.sequence))
             {
                 continue;
             }
@@ -1926,10 +1945,11 @@ void run_mmalign_serial_pairwise(const MMalignInputs& inputs,
             align_result.d0_out = 5.0;   // TMalign_main overrides d0_out only with -d
             int mol_types = parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx];
             align_chain_pair(align_result,
-                chain1_coords, chain2_coords, chain1_seq, chain2_seq, 
+                chain1_coords, chain2_coords, chain1_seq, chain2_seq,
                 chain1_sec, chain2_sec, chain1_len, chain2_len,
                 mol_types, norm_len, inputs,
-                i_opt, 1, inputs.parallel_threads);
+                i_opt, 1, inputs.parallel_threads,
+                *inputs.sequence);
 
             // save align_result
             save_pair_result(align_result, pairwise,
@@ -1961,10 +1981,6 @@ void mark_pair_invalid(AllChainPairsResult& pairwise,
     int chain1_num)
 {
     pairwise.tm_matrix[chain1_idx][chain2_idx] = -1;
-    if (chain2_idx < chain1_num)
-    {
-        pairwise.tm_matrix[chain2_idx][chain1_idx] = -1;
-    }
 }
 
 // ---- Chain of structure 1 too short to align: set the whole TM-score row of that chain to -1 (including symmetric positions) ----
@@ -1990,17 +2006,18 @@ bool handle_byresi_pair(const MMalignInputs& inputs,
     int chain2_len,
     int chain1_num,
     const string& chain1_seq,
-    const string& chain2_seq)
+    const string& chain2_seq,
+    vector<string>& sequence)
 {
     if (!inputs.byresi_opt)
     {
         return false;
     }
-    int total_aln = extract_aln_from_resi(*inputs.sequence, chain1_seq, chain2_seq,
+    int total_aln = extract_aln_from_resi(sequence, chain1_seq, chain2_seq,
         parsed.complex1.resi, parsed.complex2.resi, parsed.complex1.lengths,
         parsed.complex2.lengths, chain1_idx, chain2_idx, inputs.byresi_opt);
-    pairwise.aligned_seq1[chain1_idx][chain2_idx] = (*inputs.sequence)[0];
-    pairwise.aligned_seq2[chain1_idx][chain2_idx] = (*inputs.sequence)[1];
+    pairwise.aligned_seq1[chain1_idx][chain2_idx] = sequence[0];
+    pairwise.aligned_seq2[chain1_idx][chain2_idx] = sequence[1];
     if (total_aln > chain1_len + chain2_len - 3)
     {
         for (int row = 0; row < 3; row++)
@@ -2060,6 +2077,8 @@ void align_all_chain_pairs(const MMalignInputs& inputs,
     {
         run_mmalign_serial_pairwise(inputs, parsed, pairwise, chain1_num, chain2_num, i_opt);
     }
+
+    update_best_pair(pairwise, chain1_num, chain2_num);
 }
 
 // ---- Initial chain assignment ----
@@ -2191,7 +2210,7 @@ void optimize_oligomer_assign(const ComplexData& complex1,
 }
 
 // ---- Whether automatic assignment optimization is allowed (not se mode) ----
-bool is_optimize_assign(const map<int,int>& chain_pair_map, bool se_opt)
+bool is_optimize_assign(bool se_opt)
 {
     return !se_opt;
 }
@@ -2200,11 +2219,10 @@ bool is_optimize_assign(const map<int,int>& chain_pair_map, bool se_opt)
 bool is_need_byresi_optimize(int byresi_opt,
     int aln_chain_num,
     bool is_oligomer,
-    const map<int,int>& chain_pair_map,
     bool se_opt)
 {
     return byresi_opt && aln_chain_num >= 4 && is_oligomer &&
-        is_optimize_assign(chain_pair_map, se_opt);
+        is_optimize_assign(se_opt);
 }
 
 void optimize_chain_assign(const AllChainPairsResult& pairwise,
@@ -2217,11 +2235,11 @@ void optimize_chain_assign(const AllChainPairsResult& pairwise,
     aln_chain_num = count_assign_pair(assign_result);
     is_oligomer = (aln_chain_num >= 3);
 
-    if (aln_chain_num == 2 && is_optimize_assign(parsed.chain_pair_map, se_opt))
+    if (aln_chain_num == 2 && is_optimize_assign(se_opt))
     {
         optimize_dimer_assign(parsed.complex1, parsed.complex2, pairwise, assign_result, parsed.chain_pair_map, is_oligomer);
     }
-    if ((aln_chain_num >= 3 || is_oligomer) && is_optimize_assign(parsed.chain_pair_map, se_opt))
+    if ((aln_chain_num >= 3 || is_oligomer) && is_optimize_assign(se_opt))
     {
         optimize_oligomer_assign(parsed.complex1, parsed.complex2, pairwise, assign_result, parsed.protein_norm_len, parsed.na_norm_len);
     }
@@ -2845,8 +2863,8 @@ int MMalign(const string &xname, const string &yname,
     }
 
     // byresi optimization (-TMscore 6/7 chain-level refinement)
-    bool is_byresi_optimize = is_need_byresi_optimize(ctx.inputs.byresi_opt, ctx.aln_chain_num, 
-        ctx.is_oligomer, ctx.parsed.chain_pair_map, ctx.inputs.se_opt);
+    bool is_byresi_optimize = is_need_byresi_optimize(ctx.inputs.byresi_opt, ctx.aln_chain_num,
+        ctx.is_oligomer, ctx.inputs.se_opt);
     if (is_byresi_optimize)
     {
             MMalign_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
@@ -2888,15 +2906,18 @@ int MMalign(const string &xname, const string &yname,
     }
 
     // ---- Fallback: recover the best monomer pair when iteration score is below monomer best ----
-    bool is_fallback = need_monomer_fallback(ctx.inputs.byresi_opt, ctx.iteration_score,
-        ctx.pair_result.best_pair_tm);
+    bool is_fallback = !ctx.inputs.se_opt && need_monomer_fallback(ctx.inputs.byresi_opt,
+        ctx.iteration_score, ctx.pair_result.best_pair_tm);
     if (is_fallback)
     {
         recover_best_monomer_pair(ctx, struct1_chain_num, struct2_chain_num, max_iter);
     }
 
     // ---- Cross-chain alignment (mask-constrained intra-chain pairing, homodimer improvement) ----
-    run_cross_chain_alignment(ctx, struct1_chain_num, struct2_chain_num);
+    if (!ctx.inputs.se_opt)
+    {
+        run_cross_chain_alignment(ctx, struct1_chain_num, struct2_chain_num);
+    }
 
     // ---- Final output (MMalign_final / MMalign_se_final) ----
     output_final_results(ctx, struct1_chain_num, struct2_chain_num);
@@ -2955,8 +2976,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         ylen_vec, chainID_list2, ter_opt, split_opt, mol_opt, infmt2_opt,
         atom_opt, autojustify, 0, het_opt, ylen_aa, ylen_na, o_opt, resi_vec2,
         chain2parse2, model2parse2);
-    if (xa_vec.size()>ya_vec.size()) PrintErrorAndQuit(
-        "ERROR! more individual chains to align than number of chains in complex template");
+    if (xa_vec.size()>ya_vec.size()) 
+        PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
     int len_aa=getmin(xlen_aa,ylen_aa);
     int len_na=getmin(xlen_na,ylen_na);
     if (a_opt)
@@ -3089,7 +3110,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         run_mmdock_parallel(
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, xlen_vec, ylen_vec,
-            mol_vec1, mol_vec2, sequence,
+            mol_vec1, mol_vec2,
             resi_vec1, resi_vec2, TMave_mat,
             seqxA_mat, seqyA_mat,
             chain1_num, chain2_num, len_aa, len_na,
