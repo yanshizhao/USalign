@@ -1561,8 +1561,7 @@ inline void MMalign_final(
 
     if (!full_opt) return;
 
-    if (outfmt_opt<=2)
-    cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<endl;
+    if (outfmt_opt<=2) cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<endl;
 
     // re-compute chain level alignment
     for (i=0;i<chain1_num;i++)
