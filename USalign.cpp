@@ -1848,6 +1848,8 @@ int align_monomers(const MMalignInputs& inputs,
         cur_complex_mol_list, 0, inputs, i_opt, 0, 1,
         *inputs.sequence);
 
+    if (inputs.outfmt_opt == 0) print_version();
+    
     output_results(
         inputs.structure1_name.substr(inputs.dir1_opt.size()),
         inputs.structure2_name.substr(inputs.dir2_opt.size()),
