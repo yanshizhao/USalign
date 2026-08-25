@@ -178,6 +178,14 @@ void print_help(bool h_opt=false)
 "          6: semi-non-sequential (sNS) alignment\n"
 "          To use -mm 1 or -mm 2, '-ter' option must be 0 or 1.\n"
 "\n"
+"  -hinge  Maximum number of hinge allowed in flexible alignment.\n"
+"          Only functional with '-mm 7'. default: 9\n"
+"\n"
+"    -afp  Enable AFP-enhancement mechanism. Only functional with '-mm 7'.\n"
+"\n"
+" -TMpass  Early stopping threshold for AFP-enhancement mechanism.\n"
+"          Only functional with '-mm 7 -afp'. default: 0.85\n"
+"\n"
 "    -ter  Number of chains to align.\n"
 "          0: align all chains from all models (recommended for aligning\n"
 "             biological assemblies, i.e. biounits)\n"
@@ -5224,6 +5232,268 @@ bool is_single_mm1_align(int mm_opt,
         && dirpair_opt.size() == 0;
 }
 
+// =======================================================================
+// Unified engine replacing flexalign_greedy and flexalign_usbcat
+// （从 master 迁入，适配 beta 的 C++ 风格：CoordArray/string，
+//   内部调用已 C++ 化的 execute_flexalign_with_fallback / flexalign_usbcat_main）
+// =======================================================================
+int flexalign_unified(string &xname, string &yname, const string &fname_super,
+                      const string &fname_lign, const string &fname_matrix,
+                      vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
+                      const bool m_opt, const int i_opt, const int o_opt, const int a_opt,
+                      const bool u_opt, const bool d_opt, const double TMcut,
+                      const int infmt1_opt, const int infmt2_opt, const int ter_opt,
+                      const int split_opt, const int outfmt_opt, const bool fast_opt,
+                      const int mirror_opt, const int het_opt, const string &atom_opt,
+                      const bool autojustify, const string &mol_opt, const string &dir_opt,
+                      const string &dirpair_opt, const string &dir1_opt, const string &dir2_opt,
+                      const vector<string> &chain2parse1, const vector<string> &chain2parse2,
+                      const vector<string> &model2parse1, const vector<string> &model2parse2,
+                      const int byresi_opt, const vector<string> &chain1_list,
+                      const vector<string> &chain2_list, const int hinge_opt, const int ss_opt,
+                      FlexAlignMode mode = FLEX_STANDARD, bool hinge_set = false, double TMpass = 0.85)
+{
+    vector<vector<string> > PDB_lines1; // text of chain1
+    vector<vector<string> > PDB_lines2; // text of chain2
+    vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    vector<string> chainID_list1;      // list of chainID1
+    vector<string> chainID_list2;      // list of chainID2
+    int    i,j;                // file index
+    int    chain_i,chain_j;    // chain index
+    int    r;                  // residue index
+    int    xlen, ylen;         // chain length
+    int    xchainnum,ychainnum;// number of chains in a PDB file
+    string secx;                // for the secondary structure
+    string secy;
+    CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray ya;
+                               // ya[0...ylen-1][0..2], in general,
+                               // ya is regarded as native structure
+                               // --> superpose xa onto ya
+    vector<string> resi_vec1;  // residue index for chain1
+    vector<string> resi_vec2;  // residue index for chain2
+    int read_resi=byresi_opt;  // whether to read residue index
+    if (byresi_opt==0 && o_opt) read_resi=2;
+
+    // loop over file names
+    for (i=0;i<chain1_list.size();i++)
+    {
+        // parse chain 1
+        xname=chain1_list[i];
+        xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1,
+            mol_vec1, ter_opt, infmt1_opt, atom_opt, autojustify,
+            split_opt, het_opt, chain2parse1, model2parse1);
+        if (!xchainnum)
+        {
+            cerr<<"Warning! Cannot parse file: "<<xname
+                <<". Chain number 0."<<endl;
+            continue;
+        }
+        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        {
+            xlen=PDB_lines1[chain_i].size();
+            if (mol_opt=="RNA") mol_vec1[chain_i]=1;
+            else if (mol_opt=="protein") mol_vec1[chain_i]=-1;
+            if (!xlen)
+            {
+                cerr<<"Warning! Cannot parse file: "<<xname
+                    <<". Chain length 0."<<endl;
+                continue;
+            }
+            else if (xlen<3)
+            {
+                cerr<<"Sequence is too short <3!: "<<xname<<endl;
+                continue;
+            }
+            xa.clear();
+            xa.reserve(xlen);
+            string seqx;
+            secx.resize(xlen + 1);
+            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
+                resi_vec1, read_resi);
+            if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
+            if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, atom_opt);
+            else make_sec(xa, xlen, secx); // secondary structure assignment
+
+            for (j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
+            {
+                if (dirpair_opt.size() && i!=j) continue;
+                // parse chain 2
+                if (PDB_lines2.size()==0)
+                {
+                    yname=chain2_list[j];
+                    ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2,
+                        mol_vec2, ter_opt, infmt2_opt, atom_opt, autojustify,
+                        split_opt, het_opt, chain2parse2, model2parse2);
+                    if (!ychainnum)
+                    {
+                        cerr<<"Warning! Cannot parse file: "<<yname
+                            <<". Chain number 0."<<endl;
+                        continue;
+                    }
+                }
+                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                {
+                    ylen=PDB_lines2[chain_j].size();
+                    if (mol_opt=="RNA") mol_vec2[chain_j]=1;
+                    else if (mol_opt=="protein") mol_vec2[chain_j]=-1;
+                    if (!ylen)
+                    {
+                        cerr<<"Warning! Cannot parse file: "<<yname
+                            <<". Chain length 0."<<endl;
+                        continue;
+                    }
+                    else if (ylen<3)
+                    {
+                        cerr<<"Sequence is too short <3!: "<<yname<<endl;
+                        continue;
+                    }
+                    ya.clear();
+                    ya.reserve(ylen);
+                    string seqy;
+                    secy.resize(ylen + 1);
+                    ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
+                        resi_vec2, read_resi);
+                    if (mol_vec2[chain_j]>0)
+                         make_sec(seqy, ya, ylen, secy, atom_opt);
+                    else make_sec(ya, ylen, secy);
+
+                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
+
+                    // --- CORE DISPATCH LOGIC START ---
+                    if (mode == FLEX_USBCAT)
+                    {
+                        FlexAlignResult usbcat_res;
+                        bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:fast_opt;
+
+                        usbcat_res.hingeNum = flexalign_usbcat_main(
+                            xa, ya, seqx, seqy, secx, secy,
+                            usbcat_res.t0, usbcat_res.u0, usbcat_res.tu_vec,
+                            usbcat_res.TM1, usbcat_res.TM2, usbcat_res.TM3, usbcat_res.TM4, usbcat_res.TM5,
+                            usbcat_res.d0_0, usbcat_res.TM_0,
+                            usbcat_res.d0A, usbcat_res.d0B, usbcat_res.d0u, usbcat_res.d0a, usbcat_res.d0_out,
+                            usbcat_res.seqM, usbcat_res.seqxA, usbcat_res.seqyA, usbcat_res.do_vec,
+                            usbcat_res.rmsd0, usbcat_res.L_ali, usbcat_res.Liden,
+                            usbcat_res.TM_ali, usbcat_res.rmsd_ali, usbcat_res.n_ali, usbcat_res.n_ali8,
+                            xlen, ylen, sequence, Lnorm_ass, d0_scale,
+                            i_opt, a_opt, u_opt, d_opt, force_fast_opt,
+                            mol_vec1[chain_i]+mol_vec2[chain_j], hinge_opt, ss_opt, 0, hinge_set, TMpass);
+
+                        Vec3 t0_out = usbcat_res.t0;
+                        RotMat u0_out = usbcat_res.u0;
+
+                        if (outfmt_opt==0) print_version();
+                        output_flexalign_results(
+                            xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
+                            yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
+                            chainID_list1[chain_i], chainID_list2[chain_j],
+                            xlen, ylen, t0_out, u0_out, usbcat_res.tu_vec,
+                            usbcat_res.TM1, usbcat_res.TM2, usbcat_res.TM3, usbcat_res.TM4, usbcat_res.TM5,
+                            usbcat_res.rmsd0, usbcat_res.d0_out, usbcat_res.seqM,
+                            usbcat_res.seqxA, usbcat_res.seqyA, usbcat_res.Liden,
+                            usbcat_res.n_ali8, usbcat_res.L_ali, usbcat_res.TM_ali, usbcat_res.rmsd_ali,
+                            usbcat_res.TM_0, usbcat_res.d0_0,
+                            usbcat_res.d0A, usbcat_res.d0B, Lnorm_ass, d0_scale, usbcat_res.d0a, usbcat_res.d0u,
+                            (m_opt?fname_matrix:"").c_str(),
+                            outfmt_opt, ter_opt, false, split_opt, o_opt,
+                            fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                            resi_vec1, resi_vec2);
+                    }
+                    else
+                    {
+                        // === Standard & Best specific logic ===
+                        FlexAlignResult best_res;
+                        double global_max_TM = -1.0;
+
+                        int start_ss = (mode == FLEX_BEST) ? 0 : ss_opt;
+                        int end_ss = (mode == FLEX_BEST) ? 1 : ss_opt;
+
+                        bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:fast_opt;
+
+                        for (int cur_ss_opt = start_ss; cur_ss_opt <= end_ss; cur_ss_opt++)
+                        {
+                            FlexAlignResult cur_res;
+                            execute_flexalign_with_fallback(
+                                xa, ya, seqx, seqy, secx, secy, xlen, ylen, sequence, Lnorm_ass, d0_scale,
+                                i_opt, a_opt, u_opt, d_opt, force_fast_opt,
+                                mol_vec1[chain_i]+mol_vec2[chain_j],
+                                hinge_opt, cur_ss_opt, cur_res);
+
+                            double cur_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
+                            if (cur_max_TM > global_max_TM)
+                            {
+                                global_max_TM = cur_max_TM;
+                                best_res = cur_res;
+                            }
+                        }
+
+                        Vec3 t0_out = best_res.t0;
+                        RotMat u0_out = best_res.u0;
+
+                        if (outfmt_opt==0) print_version();
+                        output_flexalign_results(
+                            xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
+                            yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
+                            chainID_list1[chain_i], chainID_list2[chain_j],
+                            xlen, ylen, t0_out, u0_out, best_res.tu_vec,
+                            best_res.TM1, best_res.TM2, best_res.TM3, best_res.TM4, best_res.TM5,
+                            best_res.rmsd0, best_res.d0_out, best_res.seqM,
+                            best_res.seqxA, best_res.seqyA, best_res.Liden,
+                            best_res.n_ali8, best_res.L_ali, best_res.TM_ali, best_res.rmsd_ali,
+                            best_res.TM_0, best_res.d0_0,
+                            best_res.d0A, best_res.d0B, Lnorm_ass, d0_scale, best_res.d0a, best_res.d0u,
+                            (m_opt?fname_matrix:"").c_str(),
+                            outfmt_opt, ter_opt, false, split_opt, o_opt,
+                            fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                            resi_vec1, resi_vec2);
+                    }
+                    // --- CORE DISPATCH LOGIC END ---
+
+                    resi_vec2.clear();
+                } // chain_j
+                if (chain2_list.size()>1)
+                {
+                    yname.clear();
+                    for (chain_j=0;chain_j<ychainnum;chain_j++)
+                        PDB_lines2[chain_j].clear();
+                    PDB_lines2.clear();
+                    chainID_list2.clear();
+                    mol_vec2.clear();
+                }
+            } // j
+            PDB_lines1[chain_i].clear();
+            resi_vec1.clear();
+        } // chain_i
+        xname.clear();
+        PDB_lines1.clear();
+        chainID_list1.clear();
+        mol_vec1.clear();
+    } // i
+    if (chain2_list.size()==1)
+    {
+        yname.clear();
+        for (chain_j=0;chain_j<ychainnum;chain_j++)
+            PDB_lines2[chain_j].clear();
+        PDB_lines2.clear();
+        resi_vec2.clear();
+        chainID_list2.clear();
+        mol_vec2.clear();
+    }
+    return 0;
+}
+
+// Direct Drop-in Wrappers
+int flexalign_greedy(string &xname, string &yname, const string &fname_super, const string &fname_lign, const string &fname_matrix, vector<string> &sequence, const double Lnorm_ass, const double d0_scale, const bool m_opt, const int i_opt, const int o_opt, const int a_opt, const bool u_opt, const bool d_opt, const double TMcut, const int infmt1_opt, const int infmt2_opt, const int ter_opt, const int split_opt, const int outfmt_opt, const bool fast_opt, const int mirror_opt, const int het_opt, const string &atom_opt, const bool autojustify, const string &mol_opt, const string &dir_opt, const string &dirpair_opt, const string &dir1_opt, const string &dir2_opt, const vector<string> &chain2parse1, const vector<string> &chain2parse2, const vector<string> &model2parse1, const vector<string> &model2parse2, const int byresi_opt, const vector<string> &chain1_list, const vector<string> &chain2_list, const int hinge_opt)
+{
+    return flexalign_unified(xname, yname, fname_super, fname_lign, fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt, dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2, byresi_opt, chain1_list, chain2_list, hinge_opt, 0 /* ss_opt is ignored in BEST mode */, FLEX_BEST);
+}
+
+int flexalign_usbcat(string &xname, string &yname, const string &fname_super, const string &fname_lign, const string &fname_matrix, vector<string> &sequence, const double Lnorm_ass, const double d0_scale, const bool m_opt, const int i_opt, const int o_opt, const int a_opt, const bool u_opt, const bool d_opt, const double TMcut, const int infmt1_opt, const int infmt2_opt, const int ter_opt, const int split_opt, const int outfmt_opt, const bool fast_opt, const int mirror_opt, const int het_opt, const string &atom_opt, const bool autojustify, const string &mol_opt, const string &dir_opt, const string &dirpair_opt, const string &dir1_opt, const string &dir2_opt, const vector<string> &chain2parse1, const vector<string> &chain2parse2, const vector<string> &model2parse1, const vector<string> &model2parse2, const int byresi_opt, const vector<string> &chain1_list, const vector<string> &chain2_list, const int hinge_opt, bool hinge_set = false, double TMpass = 0.85)
+{
+    return flexalign_unified(xname, yname, fname_super, fname_lign, fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt, dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2, byresi_opt, chain1_list, chain2_list, hinge_opt, 0 /* ss_opt ignore */, FLEX_USBCAT, hinge_set, TMpass);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -5266,6 +5536,9 @@ int main(int argc, char *argv[])
     int    closeK_opt=-1;    // number of atoms for SOI initial alignment.
                              // 5 and 0 for -mm 5 and 6
     int    hinge_opt =9;     // maximum number of hinge allowed for flexible
+    bool   hinge_set =false; // whether -hinge is explicitly set by user
+    double TMpass_opt=0.85;  // early stopping threshold for -afp (USBCAT) mode
+    bool   usbcat_opt=false; // flag for -afp, only valid with -mm 7
     int    mirror_opt=0;     // do not align mirror
     int    het_opt=0;        // do not read HETATM residues
     int    mm_opt=0;         // do not perform MM-align
@@ -5379,8 +5652,9 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-hinge" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -hinge");
+            hinge_set = true;
             hinge_opt = safe_stoi(argv[i + 1]); i++;
         }
         else if ( string(argv[i]) == "-v" )
@@ -5586,9 +5860,19 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-mm" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -mm");
             mm_opt=safe_stoi(argv[i + 1]); i++;
+        }
+        else if ( string(argv[i]) == "-afp" )
+        {
+            usbcat_opt = true;
+        }
+        else if ( string(argv[i]) == "-TMpass" )
+        {
+            if (i>=(argc-1))
+                PrintErrorAndQuit("ERROR! Missing value for -TMpass");
+            TMpass_opt = safe_stod(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
@@ -5725,6 +6009,9 @@ int main(int argc, char *argv[])
 
     if (mm_opt==7 && hinge_opt>=10)
         PrintErrorAndQuit("ERROR! -hinge must be <10");
+
+    if (usbcat_opt && mm_opt != 7)
+        PrintErrorAndQuit("ERROR! -afp parameter can only be used when -mm 7 is set");
 
     if (chainmapfile.size() && mm_opt!=1)
         PrintErrorAndQuit("ERROR! -chainmap must be used with -mm 1");
@@ -5866,14 +6153,25 @@ int main(int argc, char *argv[])
         dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
         chain1_list, chain2_list, se_opt, closeK_opt, mm_opt,
         parallel_threads);
-    else if (mm_opt==7) flexalign(xname, yname, fname_super, fname_lign,
-        fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
-        a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
-        split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
-        atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
-        dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-        byresi_opt, chain1_list, chain2_list, hinge_opt,
-        parallel_threads);
+    else if (mm_opt==7)
+    {
+        if (usbcat_opt)
+            flexalign_usbcat(xname, yname, fname_super, fname_lign,
+                fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
+                a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
+                split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
+                atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
+                dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
+                byresi_opt, chain1_list, chain2_list, hinge_opt, hinge_set, TMpass_opt);
+        else
+            flexalign_greedy(xname, yname, fname_super, fname_lign,
+                fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
+                a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
+                split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
+                atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
+                dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
+                byresi_opt, chain1_list, chain2_list, hinge_opt);
+    }
     else cerr<<"WARNING! -mm "<<mm_opt<<" not implemented"<<endl;
 
     // clean up

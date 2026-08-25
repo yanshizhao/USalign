@@ -3034,7 +3034,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0, int parallel_threads = 1)
+    Vec3& t0, RotMat& u0, int parallel_threads = 1, const int ss_opt = 0)
 {
     int i;
     double TM;
@@ -3066,24 +3066,27 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
         }
     }
 
+    // ----------------------------------------------------
     // ---- Strategy 2: secondary structure ----
-    get_initial_ss(path, val, secx, secy, xlen, ylen, invmap);
-    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
-        t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-        score_d8, d0);
-    if (TM > TMmax) {
-        TMmax = TM;
-        for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
-        if (TMcut > 0) copy_t_u(t, u, t0, u0);
-    }
-    if (TM > TMmax * 0.2) {
-        TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
-            t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-            D0_MIN, Lnorm, d0, score_d8);
+    if (ss_opt != 1) {
+        get_initial_ss(path, val, secx, secy, xlen, ylen, invmap);
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+            t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
+            score_d8, d0);
         if (TM > TMmax) {
             TMmax = TM;
             for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
             if (TMcut > 0) copy_t_u(t, u, t0, u0);
+        }
+        if (TM > TMmax * 0.2) {
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
+                t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
+                D0_MIN, Lnorm, d0, score_d8);
+            if (TM > TMmax) {
+                TMmax = TM;
+                for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
+                if (TMcut > 0) copy_t_u(t, u, t0, u0);
+            }
         }
     }
     if (TMcut > 0) {
@@ -3096,29 +3099,32 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     }
 
     // ---- Strategy 3: local superposition ----
-    if (get_initial5(r1, r2, xtm, ytm, path, val, xa_c, ya_c, xlen, ylen,
-        invmap, d0, d0_search, fast_opt, D0_MIN))
+    if (ss_opt != 1)
     {
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-            invmap, t, u, simplify_step, score_sum_method, local_d0_search,
-            Lnorm, score_d8, d0);
-        if (TM > TMmax) {
-            TMmax = TM;
-            for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
-            if (TMcut > 0) copy_t_u(t, u, t0, u0);
-        }
-        if (TM > TMmax * ddcc) {
-            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
-                t, u, invmap, 0, 2, 2, local_d0_search,
-                D0_MIN, Lnorm, d0, score_d8);
+        if (get_initial5(r1, r2, xtm, ytm, path, val, xa_c, ya_c, xlen, ylen,
+            invmap, d0, d0_search, fast_opt, D0_MIN))
+        {
+            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+                invmap, t, u, simplify_step, score_sum_method, local_d0_search,
+                Lnorm, score_d8, d0);
             if (TM > TMmax) {
                 TMmax = TM;
                 for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
                 if (TMcut > 0) copy_t_u(t, u, t0, u0);
             }
+            if (TM > TMmax * ddcc) {
+                TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
+                    t, u, invmap, 0, 2, 2, local_d0_search,
+                    D0_MIN, Lnorm, d0, score_d8);
+                if (TM > TMmax) {
+                    TMmax = TM;
+                    for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
+                    if (TMcut > 0) copy_t_u(t, u, t0, u0);
+                }
+            }
         }
+        else cerr << "\n\nWarning: initial5 fail\n\n";
     }
-    else cerr << "\n\nWarning: initial5 fail\n\n";
     if (TMcut > 0) {
         double TMtmp = approx_TM(xlen, ylen, a_opt,
             xa_c, ya_c, t0, u0, invmap0, mol_type);
@@ -3129,33 +3135,35 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     }
 
     // ---- Strategy 4: SS + distance ----
-    get_initial_ssplus(r1, r2, score, path, val, secx, secy,
-        xa_c, ya_c, xlen, ylen, invmap0, invmap, D0_MIN, d0);
-    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
-        t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-        score_d8, d0);
-    if (TM > TMmax) {
-        TMmax = TM;
-        for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
-        if (TMcut > 0) copy_t_u(t, u, t0, u0);
-    }
-    if (TM > TMmax * ddcc) {
-        TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
-            t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-            D0_MIN, Lnorm, d0, score_d8);
+    if (ss_opt != 1) {
+        get_initial_ssplus(r1, r2, score, path, val, secx, secy,
+            xa_c, ya_c, xlen, ylen, invmap0, invmap, D0_MIN, d0);
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+            t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
+            score_d8, d0);
         if (TM > TMmax) {
             TMmax = TM;
-            for (i = 0; i < ylen; i++) 
-                invmap0[i] = invmap[i];
+            for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
             if (TMcut > 0) copy_t_u(t, u, t0, u0);
         }
-    }
-    if (TMcut > 0) {
-        double TMtmp = approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0, mol_type);
-        if (TMtmp < 0.56 * TMcut) {
-            TM1 = TM2 = TM3 = TM4 = TM5 = TMtmp;
-            return 5;
+        if (TM > TMmax * ddcc) {
+            TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
+                t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
+                D0_MIN, Lnorm, d0, score_d8);
+            if (TM > TMmax) {
+                TMmax = TM;
+                for (i = 0; i < ylen; i++)
+                    invmap0[i] = invmap[i];
+                if (TMcut > 0) copy_t_u(t, u, t0, u0);
+            }
+        }
+        if (TMcut > 0) {
+            double TMtmp = approx_TM(xlen, ylen, a_opt,
+                xa_c, ya_c, t0, u0, invmap0, mol_type);
+            if (TMtmp < 0.56 * TMcut) {
+                TM1 = TM2 = TM3 = TM4 = TM5 = TMtmp;
+                return 5;
+            }
         }
     }
 
@@ -3217,7 +3225,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0, int parallel_threads = 1)
+    Vec3& t0, RotMat& u0, int parallel_threads = 1, const int ss_opt = 0)
 {
     double TM;
 
@@ -3404,7 +3412,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const vector<string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1, int parallel_threads = 1)
+    const int mol_type, const double TMcut=-1, int parallel_threads = 1, const int ss_opt = 0)
 {
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
@@ -3522,7 +3530,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
 	            invmap0, invmap, t, u, TMmax,
 	            score, path, val, xtm, ytm, xt, r1, r2,
 	            TM1, TM2, TM3, TM4, TM5, t0, u0,
-	            parallel_threads);
+	            parallel_threads, ss_opt);
 	        if (ret) { return ret; }
 	    } else
 #endif
@@ -3535,7 +3543,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
 	            invmap0, invmap, t, u, TMmax,
 	            score, path, val, xtm, ytm, xt, r1, r2,
 	            TM1, TM2, TM3, TM4, TM5, t0, u0,
-	            parallel_threads);
+	            parallel_threads, ss_opt);
 	        if (ret) { return ret; }
 	    }
 	}
