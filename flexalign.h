@@ -1190,7 +1190,7 @@ inline void output_flexalign_results(const string xname, const string yname,
         cout << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
-        cout << "\n([0-9] denote different aligned fragment pairs separated by different hinges)\n";
+        cout << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
         cout << seqxA << "\n";
         cout << seqM << "\n";
         cout << seqyA << "\n";
@@ -1278,7 +1278,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     int i;
     int j;
     int r;
-std::vector<int> invmap(ylen+1);
+std::vector<int> invmap(ylen+1, -1);
 
     CoordArray xt;
     xt.resize(xlen);
@@ -1366,7 +1366,7 @@ std::vector<int> invmap(ylen+1);
         do_rotation(xa, xt, xlen, t0, u0);
         t_u2tu(t0,u0,tu_vec[0]);
         
-std::vector<int> invmap_h(ylen+1);
+std::vector<int> invmap_h(ylen+1, -1);
 
         TM1_h= TM2_h= TM3_h= TM4_h= TM5_h=rmsd0_h=0;
         seqM_h="";
@@ -1555,7 +1555,7 @@ std::vector<int> invmap_h(ylen+1);
         rmsd0_h=rmsd0;
         n_ali_h=n_ali;
         n_ali8_h=n_ali8;
-std::vector<int> invmap_h(ylen+1);
+std::vector<int> invmap_h(ylen+1, -1);
         for (j=0;j<ylen+1;j++) invmap_h[j]=invmap[j];
         se_main(xt, ya, seqx, seqy, TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0, TM_0,
             d0A, d0B, d0u, d0a, d0_out, seqM_h, seqxA_h, seqyA_h, do_vec,

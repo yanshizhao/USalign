@@ -13,7 +13,7 @@ void print_version(std::ostream& os = std::cout)
     os <<
 "\n"
 " ********************************************************************\n"
-" * US-align (Version 20260527)                                      *\n"
+" * US-align (Version 20260819)                                      *\n"
 " * Universal Structure Alignment of Proteins and Nucleic Acids      *\n"
 " * Reference: C Zhang, L Freddolino, Y Zhang. (2026) Nat Protoc     *\n"
 " *            C Zhang, M Shine, AM Pyle, Y Zhang. (2022) Nat Methods*\n"
