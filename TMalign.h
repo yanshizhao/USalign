@@ -3198,8 +3198,6 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     }
 
     return 0;
-
-    return 0; // continue
 }
 
 
