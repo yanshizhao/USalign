@@ -1994,7 +1994,7 @@ inline int flexalign_with_usbcat_main(
     const double Lnorm_ass, const double d0_scale,
     const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool force_fast_opt,
     const int mol_type, const int hinge_opt,
-    const FlexAlignResult& flexalign_main_res, double best_global_max_TM, // 最优 max(TM1,TM2) 阈值（min_resid_num 剪枝共用）
+    const FlexAlignResult& flexalign_main_res, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     bool hinge_set, const double TMpass,
     FlexAlignResult& res);
 
@@ -2045,7 +2045,7 @@ inline int flexalign_usbcat_main(
     const int mol_type,
     const int hinge_opt,
     const FlexAlignResult& flexalign_main_res,
-    double best_global_max_TM, // 最优 max(TM1,TM2) 阈值（min_resid_num 剪枝共用）
+    double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     int sparse_val,
     bool hinge_set,
     const double TMpass);
@@ -2090,7 +2090,7 @@ inline void run_flexalign(
         Lnorm_ass, d0_scale,
         i_opt, a_opt, u_opt, d_opt, force_fast_opt_global,
         mol_type, hinge_opt, flexalign_main_res);
-    double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // 最优 max(TM1,TM2) 阈值（min_resid_num 剪枝共用）
+    double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
 
     switch (mode)
     {
@@ -2127,7 +2127,7 @@ inline int flexalign_with_usbcat_main(
     const double Lnorm_ass, const double d0_scale,
     const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool force_fast_opt,
     const int mol_type, const int hinge_opt,
-    const FlexAlignResult& flexalign_main_res, double best_global_max_TM, // 最优 max(TM1,TM2) 阈值（min_resid_num 剪枝共用）
+    const FlexAlignResult& flexalign_main_res, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     bool hinge_set, const double TMpass,
     FlexAlignResult& res)
 {
@@ -2189,12 +2189,12 @@ inline void fill_usbcat_params(USBCATParams& usb_cat_para, int hinge_opt)
     usb_cat_para.max_hinge_num   = hinge_opt;
 }
 
-// 局部距离表：两链各一张，tbl[a][d] = 残基 a 与 a+d 的欧氏距离（d ≤ max_residue_gap）
+// Local distance table: one per chain; tbl[a][d] = Euclidean distance between residue a and a+d (d <= max_residue_gap)
 struct LocalDistTables
 {
-    int    max_residue_gap;      // 最大残基间隔（局部窗口，= max_gap+2*fragLen+1 = 65）
-    std::vector<std::vector<double> > chain1_dist_table;   // 链1(xa) 局部距离表
-    std::vector<std::vector<double> > chain2_dist_table;   // 链2(ya) 局部距离表
+    int    max_residue_gap;      // Max residue offset (local window, = max_gap+2*fragLen+1 = 65)
+    std::vector<std::vector<double> > chain1_dist_table;   // Local distance table for chain 1 (xa)
+    std::vector<std::vector<double> > chain2_dist_table;   // Local distance table for chain 2 (ya)
 };
 
 inline void build_local_dist_tables(const CoordArray& xa, const CoordArray& ya,
@@ -2244,21 +2244,21 @@ inline double cal_twist_penalty(double drmsd, const USBCATParams& usb_cat_para)
     return usb_cat_para.twist_pen * std::sqrt((drmsd - usb_cat_para.disCut + usb_cat_para.disSmooth) / usb_cat_para.disSmooth);
 }
 
-// 硬扭转边的 drmsd 哨兵值：drmsd_sq 已达 afp_dis_cut（等价于 drmsd >= disCut），
-// 仅作"必计铰链/必切块"标记，不参与数值运算
+// Sentinel dRMSD value for a hard twist edge: drmsd_sq has reached afp_dis_cut (equivalent to drmsd >= disCut);
+// only marks "must count as hinge / must cut block" and is not used in numeric calculations
 static const double INF_DRMSD = 1e9;
 
-// 一次相邻 AFP 边评估的结果（update_dp_state 与 build_candidate_blocks_list 共用，
-// 保证 DP 铰链计数与回溯切块阈值同源）
+// Result of evaluating a single adjacent AFP edge (shared by update_dp_state and build_candidate_blocks_list,
+// ensuring the DP hinge count and backtrack cut threshold share the same source)
 struct AfpEdgeInfo
 {
-    double drmsd;      // 归一化 dRMSD（硬扭转边为 INF_DRMSD）
-    int    hinge_inc;  // 该边是否计入 1 个铰链（仅硬扭转边）
-    double penalty;    // DP 惩罚：0 / 软扭转惩罚 / twist_pen
+    double drmsd;      // Normalized dRMSD (INF_DRMSD for hard twist edges)
+    int    hinge_inc;  // Whether this edge counts as 1 hinge (only for hard twist edges)
+    double penalty;    // DP penalty: 0 / soft twist penalty / twist_pen
 };
 
-// 边评估：dRMSD >= disCut 记 1 个铰链并罚 twist_pen；
-// (disCut-disSmooth, disCut) 区间内施加连续软惩罚（不计铰链）；其余为刚性延续
+// Edge evaluation: dRMSD >= disCut counts as 1 hinge and penalizes twist_pen;
+// continuous soft penalty in (disCut-disSmooth, disCut] (not counting as hinge); rigid continuation otherwise
 inline AfpEdgeInfo eval_cur_afp_edge(const USBCAT_AFP& prv, const USBCAT_AFP& cur,
                               const LocalDistTables& tables,
                               const USBCATParams& usb_cat_para)
@@ -2349,10 +2349,10 @@ inline bool region_meta_drmsd_desc(const RegionMeta& a, const RegionMeta& b)
 
 struct RegionBoundsAllChain
 {
-    // 铰链切点列表：chain1 = 链1(xa) 各域边界，chain2 = 链2(ya) 各域边界
+    // Hinge cut points: chain1 = domain boundaries of chain 1 (xa), chain2 = domain boundaries of chain 2 (ya)
     // size: chain1_bounds.size() == chain2_bounds.size()
     std::vector<int> chain1_bounds, chain2_bounds;
-    // 各域元数据（dRMSD、长度等）；显式 resize，大小固定为 chain1_bounds.size() - 1
+    // Per-domain metadata (dRMSD, lengths, etc.); explicitly resized, fixed size = chain1_bounds.size() - 1
     std::vector<RegionMeta> region_meta;
 };
 
@@ -2446,7 +2446,7 @@ struct RegionBounds
 struct RegionAlignResult
 {
     bool valid = false;
-    FlexAlignResult align_re;  // 完整结果
+    FlexAlignResult align_re;  // Full result
 };
 
 
@@ -2456,7 +2456,7 @@ inline double afp_score(double resScore, int len, double rmsd, double badRmsd)
     return resScore * len * (1.0 - t * t);
 }
 
-// 经过片段起点 (i, j) 的对角对齐最大可能覆盖残基数
+// Maximum number of residues a diagonal alignment starting at (i, j) can cover
 inline int cur_diag_resid_num(int i, int j, int xlen, int ylen, int fragLen)
 {
     return std::min(i, j)
@@ -2489,16 +2489,16 @@ inline std::vector<USBCAT_AFP> extract_initial_afps(
             for (int j = 0; j <= ylen - usb_cat_para.fragLen; j += step)
             {
                 
-                //节点覆盖的残基数
+                //Number of residues covered by this node
                 int cur_resid_num = cur_diag_resid_num(i, j, xlen, ylen, usb_cat_para.fragLen);
                 if (cur_resid_num < min_resid_num)
                     continue;
 
-                //当前apf片段内部的首尾残基的距离
+                //Distance between the first and last residue within the current AFP fragment
                 double dist1 = tables.chain1_dist_table[i][usb_cat_para.fragLen - 1];
                 double dist2 = tables.chain2_dist_table[j][usb_cat_para.fragLen - 1];
-                
-                //近似衡量两个片段的构象相似性
+
+                //Approximate measure of conformational similarity between two fragments
                 if (std::fabs(dist1 - dist2) > 2.0 * cur_rmsdCut)
                     continue;
 
@@ -2534,9 +2534,9 @@ inline std::vector<USBCAT_AFP> extract_initial_afps(
     return initial_afps;
 }
 
-// 贪心合并一条对角线上所有 AFP
-// 输入：cur_group（同对角线、按 i 升序的 AFP 列表）
-// 输出：合并后的 AFP 列表
+// Greedy merge of all AFPs along one diagonal
+// Input: cur_group (AFPs on the same diagonal, sorted ascending by i)
+// Output: merged AFP list
 inline std::vector<USBCAT_AFP> merge_cur_afps_group(
     const std::vector<USBCAT_AFP>& cur_group,
     const CoordArray& xa,
@@ -2551,7 +2551,7 @@ inline std::vector<USBCAT_AFP> merge_cur_afps_group(
     int afp_num = cur_group.size();
     std::vector<bool> merged_status(afp_num, false);
 
-    // 预分配合并缓冲
+    // Pre-allocate merge buffers
     int max_merge_len = std::min(xlen, ylen);
     CoordArray r1_merge(max_merge_len), r2_merge(max_merge_len);
 
@@ -2564,7 +2564,7 @@ inline std::vector<USBCAT_AFP> merge_cur_afps_group(
         {
             USBCAT_AFP nxt_afp = cur_group[nxt_idx];
             if (nxt_afp.i > curr_afp.i + curr_afp.len)
-                break;  // 已按 i 排序，后续 nxt 必不重叠
+                break;  // Sorted by i, subsequent nxt entries cannot overlap
 
             if (nxt_afp.i + nxt_afp.len > curr_afp.i + curr_afp.len)
             {
@@ -2598,7 +2598,7 @@ inline std::vector<USBCAT_AFP> merge_cur_afps_group(
     return merged_afps;
 }
 
-// Step 2: 按对角线分桶后逐桶合并
+// Step 2: Bucket by diagonal and merge within each bucket
 inline std::vector<USBCAT_AFP> merge_afps_group(
     const std::vector<USBCAT_AFP>& initial_afps,
     const CoordArray& xa,
@@ -2609,7 +2609,7 @@ inline std::vector<USBCAT_AFP> merge_afps_group(
     const double cur_rmsdCut,
     const double cur_badRmsd)
 {
-    // 对角线索引范围：[-ylen, xlen]，加 ylen 偏移映射到 [0, xlen+ylen]
+    // Diagonal index range: [-ylen, xlen]; offset by ylen to map to [0, xlen+ylen]
     int max_diagonal_idx = xlen + ylen + 1;
     std::vector<std::vector<USBCAT_AFP>> afps_groups(max_diagonal_idx);
     for (size_t k = 0; k < initial_afps.size(); k++)
@@ -2639,9 +2639,6 @@ inline std::vector<USBCAT_AFP> merge_afps_group(
     return merged_afps;
 }
 
-// Propagate non-(-1) values across each row of a 2D index table.
-//   direction > 0: left-to-right (fills "rightmost seen" for bef-style queries)
-//   direction < 0: right-to-left (fills "leftmost seen"  for aft-style queries)
 inline void propagate_index_table(std::vector<int>& table, int xlen, int ylen, int direction)
 {
     for (int idx_x = 0; idx_x < xlen; idx_x++)
@@ -2668,10 +2665,6 @@ inline void propagate_index_table(std::vector<int>& table, int xlen, int ylen, i
     }
 }
 
-// Build two 2D lookup tables (xlen × ylen) from the xchain_idx_map_afp grouping:
-//   afp_bef_index[i*ylen+j] = rightmost AFP idx at j' ≤ j in row i  (or -1)
-//   afp_aft_index[i*ylen+j] = leftmost  AFP idx at j' ≥ j in row i  (or -1)
-// Empty positions in each row are filled by left-to-right (bef) / right-to-left (aft) propagation.
 inline void build_index_tables(
     const std::vector<std::vector<std::pair<int, int>>>& xchain_idx_map_afp,
     std::vector<int>& afp_aft_index,
@@ -2693,10 +2686,6 @@ inline void build_index_tables(
     propagate_index_table(afp_aft_index, xlen, ylen, -1);
 }
 
-// Collect all candidate predecessor AFPs of cur_afp by scanning two search windows:
-// st=0 (x loose, y tight) and st=1 (x tight, y loose), via the aft/bef lookup tables.
-// Appends to candidate_prevs; the caller clears and reuses the buffer across AFPs.
-// (The two windows are disjoint in y, so no candidate is ever collected twice.)
 inline void find_candidate_prevs(const USBCAT_AFP& cur_afp,
                                  const std::vector<int>& afp_aft_index,
                                  const std::vector<int>& afp_bef_index,
@@ -2730,7 +2719,7 @@ inline void find_candidate_prevs(const USBCAT_AFP& cur_afp,
             y_right_b = std::min(y_left2 - 1, ylen - 1);
         }
 
-        //窗口是否与合法范围 [0, ylen-1] 有重叠
+        //Check whether the window overlaps the valid range [0, ylen-1]
         if (y_left >= ylen || y_right_b < 0) continue;
 
         for (int prev_i = x_left; prev_i <= x_right_b; prev_i++)
@@ -2744,8 +2733,6 @@ inline void find_candidate_prevs(const USBCAT_AFP& cur_afp,
     }
 }
 
-// Per-AFP DP state of the chaining DP
-// (replaces the former parallel arrays afp_score / final_prevs / afp_hinge_num)
 struct DpState
 {
     double score;      // best chain score ending at this AFP (inclusive)
@@ -2753,7 +2740,7 @@ struct DpState
     int    hinge_num;  // hinges consumed along the best chain
 };
 
-// 为当前节点在合法候选里选一个最优前驱，作为回溯路径
+// Pick the optimal predecessor among valid candidates for the current node, for backtracking
 inline void update_dp_state(int afp_idx,
                             const std::vector<int>& candidate_prevs,
                             const std::vector<USBCAT_AFP>& merged_afps,
@@ -2774,7 +2761,7 @@ inline void update_dp_state(int afp_idx,
         hinge_num += cur_edge.hinge_inc;
 
         if (hinge_num > usb_cat_para.max_hinge_num) continue;
-        //把当前 AFP 接到 prev的最优链后面，这条链的总得分
+        //Append current AFP to prev's optimal chain, the total score of this chain
         double cur_score = dp[prev_afp].score + curr_afp_score + cur_edge.penalty + gp;
         if (cur_score > dp[afp_idx].score)
         {
@@ -2798,12 +2785,12 @@ inline std::vector<int> find_best_path(
         return std::vector<int>();
 
     std::vector<DpState> dp(n_afps);
-    //初始化dp表
+    //Initialize DP table
     for (int afp_idx = 0; afp_idx < n_afps; afp_idx++)
         dp[afp_idx] = {merged_afps[afp_idx].score, -1, 0};
 
-    //为每个afp从各自的候选afp中找到一个最优链
-    std::vector<int> candidate_prevs; 
+    //For each AFP, find the optimal chain among its candidate predecessors
+    std::vector<int> candidate_prevs;
     for (int afp_idx = 0; afp_idx < n_afps; afp_idx++)
     {
         candidate_prevs.clear();
@@ -2812,14 +2799,14 @@ inline std::vector<int> find_best_path(
         update_dp_state(afp_idx, candidate_prevs, merged_afps, tables,
                         usb_cat_para, dp);
     }
-    
-    //从每个afp的最优链中，找到得分最高链的尾部节点值
+
+    //Find the tail node of the highest-scoring chain among every AFP's optimal chain
     int best_end_idx = 0;
     for (int afp_idx = 1; afp_idx < n_afps; afp_idx++)
         if (dp[afp_idx].score > dp[best_end_idx].score)
             best_end_idx = afp_idx;
-    
-    //通过得分最高链的尾部节点值，开始回溯整条最优路径
+
+    //Backtrack the entire optimal path starting from the highest-scoring chain's tail node
     std::vector<int> best_afp_path;
     for (int cur_idx = best_end_idx; cur_idx != -1; cur_idx = dp[cur_idx].prev)
         best_afp_path.push_back(cur_idx);
@@ -2848,7 +2835,7 @@ inline std::vector<AFPBlock> build_candidate_blocks_list(
         double drmsd = eval_cur_afp_edge(prv, curr_afp, tables, usb_cat_para).drmsd;
 
         if (drmsd >= usb_cat_para.disCut)
-        {  //开启新块
+        {  //Open a new block
             candidate_blocks.push_back(curr_block);
             curr_block.afps.clear();
             curr_block.drmsd.clear();
@@ -2888,15 +2875,15 @@ inline void split_candidate_blocks(
     const USBCATParams& usb_cat_para,
     const double cur_local_badRmsd)
 {
-    //块数上限：max_hinge_num+1（N 个块内禀消耗 N-1 个切点）
+    //Upper bound on number of blocks: max_hinge_num+1 (N blocks intrinsically consume N-1 cut points)
     const size_t max_blocks = (size_t)(usb_cat_para.max_hinge_num + 1);
-    bool can_split_more = candidate_blocks.size() < max_blocks; //首轮 splitted 恒为 true，等价于只看块数
+    bool can_split_more = candidate_blocks.size() < max_blocks; //First round: splitted is always true, equivalent to only checking block count
     while (can_split_more)
     {
-        bool splitted = false; //本轮是否发生拆分
+        bool splitted = false; //Whether a split occurred in this round
         double max_rmsd = 0.0;
         int target_b = -1;
-        //找到满足切分条件的候选块
+        //Find the candidate block that satisfies the split condition
         for (size_t block_idx = 0; block_idx < candidate_blocks.size(); block_idx++)
         {
             if (candidate_blocks[block_idx].afps.size() > 2)
@@ -2910,10 +2897,10 @@ inline void split_candidate_blocks(
             }
         }
         
-        //找到待切分块中，drmsd最大的那对afp
+        //Find the AFP pair with the largest drmsd in the block to be split
         if (max_rmsd >= cur_local_badRmsd && target_b != -1)
         {
-            AFPBlock& target_blk = candidate_blocks[target_b]; //待拆块引用
+            AFPBlock& target_blk = candidate_blocks[target_b]; //Reference to the block to split
             double max_drmsd = 0;
             int cut_afp_idx = 0;
             for (size_t idx = 1; idx < target_blk.afps.size(); idx++)
@@ -2925,7 +2912,7 @@ inline void split_candidate_blocks(
                 }
             }
             
-            //从最大应变边处切块：[cut_afp_idx, end) 移入新块插到本块之后，本块保留前段，块数+1
+            //Cut block at the max strain edge: move [cut_afp_idx, end) to a new block inserted after this block, keep the prefix in this block, block count+1
             if (cut_afp_idx > 0)
             {
                 AFPBlock right_blk;
@@ -2963,16 +2950,12 @@ inline void remove_single_elem_block(
             if (span < 2 * usb_cat_para.fragLen)
             {
                 candidate_blocks.erase(candidate_blocks.begin() + block_idx);
-                block_idx--; //删除后元素左移，回退一格重查同一下标
+                block_idx--; //Element shifts left after erase; step back one to re-check the same index
             }
         }
     }
 }
 
-// Step 5-③: greedy merge of adjacent consistent blocks
-// Finds the best adjacent pair each round (min Kabsch RMSD after merging),
-// merges it if RMSD < cur_local_badRmsd threshold, repeats until no candidate.
-// Uses same threshold as Stage ① split — the same ruler for "compatible".
 inline void merge_adjacent_blocks(
     std::vector<AFPBlock>& candidate_blocks,
     const CoordArray& xa,
@@ -3060,8 +3043,6 @@ inline void build_usbcat_regions(
     }
 }
 
-// Step 5: iterative split / singleton removal / merge -> domain bounds
-// (extracted from generate_bounds)
 inline void fill_region_meta(
     const std::vector<int>& chain1_bounds,
     const std::vector<int>& chain2_bounds,
@@ -3095,7 +3076,7 @@ inline void build_domains_bounds(
         return;
     }
 
-    //铰链间的切点，按残基位置升序
+    //Hinge cut points between regions, sorted ascending by residue position
     std::vector<int> chain1_bounds, chain2_bounds;
     chain1_bounds.push_back(0);
     chain2_bounds.push_back(0);
@@ -3178,7 +3159,7 @@ struct RegionPdbData
     std::string seqx, secx, seqy, secy;
 };
 
-// 时序拼接结果
+// Temporal concatenation result
 struct GlobalAlignResult
 {
     std::string seqM, seqxA, seqyA;
@@ -3223,7 +3204,7 @@ inline void get_cur_region_pdb_data(
     }
 }
 
-// 区域内所有残基对的两链距离差平方和（rms_sq）与配对计数（count）
+// Sum of squared inter-residue distance differences between two chains within a region (rms_sq) and the pair count (count)
 inline void calc_region_rms_sq(
     const LocalDistTables& tables,
     const int region_x_start,
@@ -3246,7 +3227,7 @@ inline void calc_region_rms_sq(
     }
 }
 
-// 计算每个区域的 dRMSD，填充 bounds.region_meta（按索引覆盖式；要求 bounds.region_meta 已被 resize 为 region_num）
+// Compute the dRMSD of each region, fill bounds.region_meta (index-overwrite style; requires bounds.region_meta to be resized to region_num)
 inline void fill_region_meta(
     const std::vector<int>& chain1_bounds,
     const std::vector<int>& chain2_bounds,
@@ -3400,7 +3381,7 @@ inline void run_region_align(
     }
 }
 
-// 时序拼接：按空间顺序把各块结果重组为全局比对
+// Temporal concatenation: reassemble per-block results into a global alignment in spatial order
 inline void build_gloabal_align_result(
     std::vector<RegionAlignResult>& region_align_res,
     const std::vector<int>& chain1_bounds,
@@ -3612,7 +3593,7 @@ inline FlexAlignResult recompute_global_metrics(
     res.d0u = cur_d0u;
     if (!res.tu_vec.empty())
         tu2t_u(res.tu_vec[0], res.t0, res.u0);
-    // 与原 best 更新处语义一致
+    // Consistent with the semantics of the original best update site
     res.TM_ali = res.TM1;
     res.rmsd_ali = res.rmsd0;
     res.L_ali = res.n_ali;
@@ -3743,7 +3724,7 @@ int flexalign_usbcat_main(
     LocalDistTables dist_tables;
     build_local_dist_tables(xa, ya, usb_cat_para, dist_tables);
 
-    //达到 est_global_max_TM 分数，至少需要的残基个数
+    //Minimum number of residues required to reach est_global_max_TM score
     double min_resid_num = best_global_max_TM * std::min(xlen, ylen);
 
     RegionBoundsAllChain bounds_default;
