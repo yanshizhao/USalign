@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build debug",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-O0",
+                "-ffast-math",
+                "-Imtm-align/src",
+                "USalign.cpp",
+                "mtm-align/src/TMM.cpp",
+                "mtm-align/src/UPGMA.cpp",
+                "-o", "USalign_dbg.exe",
+                "-static",
+                "-lm"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build se debug",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-O0",
+                "-ffast-math",
+                "se.cpp",
+                "-o", "se_dbg.exe",
+                "-static",
+                "-lm"
+            ],
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}

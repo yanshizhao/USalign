@@ -1848,7 +1848,9 @@ enum FlexAlignMode
 };
 struct USBCAT_AFP
 {
-    int i, j, len;
+    int i; 
+    int j; 
+    int len;
     double score;
 };
 
@@ -2338,7 +2340,8 @@ struct RegionMeta
 {
     int original_region_idx;
     double drmsd;
-    int region_x_len, region_y_len;
+    int region_x_len; 
+    int region_y_len;
 };
 
 inline bool region_meta_drmsd_desc(const RegionMeta& a, const RegionMeta& b)
@@ -2433,7 +2436,10 @@ struct AFPBlock
 
 struct RegionBounds
 {
-    int region_x_start, region_x_end, region_y_start, region_y_end;
+    int region_x_start; 
+    int region_x_end;
+    int region_y_start; 
+    int region_y_end;
 };
 
 
@@ -2779,10 +2785,6 @@ inline void update_dp_state(int afp_idx,
     }
 }
 
-// Chaining DP over merged_afps: relax every AFP against its candidate
-// predecessors (merged_afps must be sorted by (i,j) so that all potential
-// predecessors precede their successors), then backtrack from the
-// best-scoring AFP. Returns the best AFP path in chain order.
 inline std::vector<int> find_best_path(
     const std::vector<USBCAT_AFP>& merged_afps,
     const std::vector<int>& afp_aft_index,
@@ -2825,10 +2827,6 @@ inline std::vector<int> find_best_path(
     return best_afp_path;
 }
 
-// Split the chained AFP path into candidate blocks: an edge whose drmsd reaches
-// disCut (the hard-twist case of eval_cur_afp_edge) starts a new block.
-// drmsd[k] stores the edge drmsd between afps[k-1] and afps[k] (drmsd[0] = 0);
-// build_domains_bounds later consumes drmsd to pick split points.
 inline std::vector<AFPBlock> build_candidate_blocks_list(
     const std::vector<int>& path,
     const std::vector<USBCAT_AFP>& merged_afps,
@@ -2868,9 +2866,6 @@ inline std::vector<AFPBlock> build_candidate_blocks_list(
     return candidate_blocks;
 }
 
-// Build the two (xlen × ylen) AFP lookup tables used for predecessor queries:
-// group merged_afps by row i, then run the aft/bef propagation of build_index_tables.
-// (extracted from the former solve_dual_dp wrapper)
 inline void build_prev_lookup_tables(
     const std::vector<USBCAT_AFP>& merged_afps,
     std::vector<int>& afp_aft_index,
@@ -2886,10 +2881,6 @@ inline void build_prev_lookup_tables(
     build_index_tables(xchain_idx_map_afp, afp_aft_index, afp_bef_index, xlen, ylen);
 }
 
-// Step 5-①: iteratively split the most strained block (max Kabsch RMSD among
-// blocks with >2 AFPs) at its max-drmsd internal edge, until no block exceeds
-// cur_local_badRmsd or the block-count budget (max_hinge_num+1) is reached.
-// (extracted from build_domains_bounds; refines candidate_blocks in place)
 inline void split_candidate_blocks(
     std::vector<AFPBlock>& candidate_blocks,
     const CoordArray& xa,
@@ -2951,10 +2942,6 @@ inline void split_candidate_blocks(
     }
 }
 
-// Step 5-②: drop single-AFP blocks whose surrounding gap is too narrow
-// (< 2*fragLen) to sustain an independent domain.
-// (extracted from build_domains_bounds; refines candidate_blocks in place)
-// 注意：正序遍历有语义——每次删除会改变后续块的左邻居，不可改倒序或一次性 filter
 inline void remove_single_elem_block(
     std::vector<AFPBlock>& candidate_blocks,
     const USBCATParams& usb_cat_para,
@@ -3022,12 +3009,6 @@ inline void merge_adjacent_blocks(
     }
 }
 
-// Step 5-④ (per-block): calculate a single RegionBounds from a single AFPBlock
-// - Collapses block's AFP sequence (may contain inter-AFP gaps/overlaps) into one RegionBounds
-// - resi_idx_x/y are persistent across blocks: they track the last accepted AFP's
-//   chain coordinate so that inter-block gaps are handled in the next call
-// - When the block has no valid AFP, out_region is filled with {-1, -1, -1, -1};
-//   caller checks region_x_start == -1 to skip
 inline void calc_region_from_block(
     const AFPBlock& block,
     int& resi_idx_x,
@@ -3060,10 +3041,6 @@ inline void calc_region_from_block(
     out_region = {region_x_start, region_x_end, region_y_start, region_y_end};
 }
 
-// Step 5-④: walk all blocks, build RegionBounds list (regions)
-// - resi_idx_x/y are persistent across blocks (carried via reference)
-// - Each block contributes at most one RegionBounds; blocks with no valid AFP
-//   or whose merged span is < 4 residues on either chain are dropped
 inline void build_usbcat_regions(
     const std::vector<AFPBlock>& candidate_blocks,
     std::vector<RegionBounds>& usbcat_regions_list)
@@ -3106,13 +3083,10 @@ inline void build_domains_bounds(
 {
     std::vector<AFPBlock> candidate_blocks = candidate_blocks_list;
 
-    // Step 5-①: iterative split of strained blocks
     split_candidate_blocks(candidate_blocks, xa, ya, usb_cat_para, cur_local_badRmsd);
 
-    // Step 5-②: drop singleton blocks in narrow gaps
     remove_single_elem_block(candidate_blocks, usb_cat_para, xlen, ylen);
 
-    // Step 5-④: blocks -> RegionBounds list (regions)
     std::vector<RegionBounds> usbcat_regions_list;
     build_usbcat_regions(candidate_blocks, usbcat_regions_list);
     if (usbcat_regions_list.empty())

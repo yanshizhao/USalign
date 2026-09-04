@@ -1,0 +1,81 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug USalign -mm 4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/USalign_dbg.exe",
+            "args": [
+                "-dir", "${input:pdbDir}/",
+                "${input:listFile}",
+                "-suffix", ".pdb",
+                "-mm", "4",
+                "-full", "T",
+                "-fast",
+                "-threads", "1",
+                "-o", "${input:outputName}"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build debug"
+        },
+        {
+            "name": "Debug USalign pair",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/USalign_dbg.exe",
+            "args": [
+                "${input:pdb1}",
+                "${input:pdb2}",
+                "-o", "sup"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "preLaunchTask": "build debug"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "pdbDir",
+            "type": "promptString",
+            "description": "PDB directory path"
+        },
+        {
+            "id": "listFile",
+            "type": "promptString",
+            "description": "List file path"
+        },
+        {
+            "id": "outputName",
+            "type": "promptString",
+            "description": "Output prefix name",
+            "default": "result"
+        },
+        {
+            "id": "pdb1",
+            "type": "promptString",
+            "description": "First PDB file path"
+        },
+        {
+            "id": "pdb2",
+            "type": "promptString",
+            "description": "Second PDB file path"
+        }
+    ]
+}
