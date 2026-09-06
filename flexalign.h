@@ -1246,6 +1246,267 @@ inline void output_flexalign_results(const string xname, const string yname,
 }
 
 
+inline void reassign_segments_by_distance(CoordArray& xa, CoordArray& ya,
+    CoordArray& xt, std::vector<int>& invmap, DoubleMatrix& tu_vec,
+    Vec3& t0, RotMat& u0, const int xlen, const int ylen,
+    string &seqM, const string &seqyA,
+    vector<char>& seqM_char, vector<double>& di_vec)
+{
+    int i;
+    int j;
+    int r;
+    int hinge;
+    double d;
+    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
+    {
+        tu2t_u(tu_vec[hinge],t0,u0);
+        do_rotation(xa, xt, xlen, t0, u0);
+        for (j=0;j<ylen;j++)
+        {
+            i=invmap[j];
+            if (i<0) continue;
+            d=sqrt(dist(xt[i], ya[j]));
+            if (di_vec[j]<0 || d<=di_vec[j])
+            {
+                di_vec[j]=d;
+                seqM_char[j]=hinge+'0';
+            }
+        }
+    }
+    j=-1;
+    for (r=0;r<seqM.size();r++)
+    {
+        if (seqyA[r]=='-') continue;
+        j++;
+        seqM[r]=seqM_char[j];
+    }
+}
+
+inline void smooth_singleton_insert(string &seqM, vector<char>& seqM_char,
+    const string &seqyA, const int n_segments)
+{
+    int j;
+    int r;
+    int hinge;
+    // smooth out AFP assignment: remove singleton insert
+    for (hinge=n_segments-1;hinge>=0;hinge--)
+    {
+        j=-1;
+        for (r=0;r<seqM.size();r++)
+        {
+            if (seqyA[r]=='-') continue;
+            j++;
+            if (seqM_char[j]!=hinge+'0') continue;
+            if (r<seqM.size()-1 && (seqM[r+1]==hinge+'0' || seqM[r+1]==' '))
+                continue;
+            if (r>0 && (seqM[r-1]==hinge+'0' || seqM[r-1]==' ')) continue;
+            if (r<seqM.size()-1 && r>0 && seqM[r-1]!=seqM[r+1]) continue;
+            if (r>0) seqM[r]=seqM_char[j]=seqM[r-1];
+            else     seqM[r]=seqM_char[j]=seqM[r+1];
+        }
+    }
+}
+
+inline void smooth_singleton_at_end(string &seqM, vector<char>& seqM_char,
+    const string &seqyA, const int n_segments)
+{
+    int i;
+    int j;
+    int r;
+    int hinge;
+    char left_hinge=' ';
+    char right_hinge=' ';
+    // smooth out AFP assignment: remove singleton at the end of fragment
+    for (hinge=n_segments-1;hinge>=0;hinge--)
+    {
+        j=-1;
+        for (r=0;r<seqM.size();r++)
+        {
+            if (seqyA[r]=='-') continue;
+            j++;
+            if (seqM[r]!=hinge+'0') continue;
+            if (r>0 && seqM[r-1]==' ' && r<seqM.size()-1 && seqM[r+1]==' ')
+                continue;
+            left_hinge=' ';
+            for (i=r-1;i>=0;i--)
+            {
+                if (seqM[i]==' ') continue;
+                left_hinge=seqM[i];
+                break;
+            }
+            if (left_hinge==hinge+'0') continue;
+            right_hinge=' ';
+            for (i=r+1;i<seqM.size();i++)
+            {
+                if (seqM[i]==' ') continue;
+                right_hinge=seqM[i];
+                break;
+            }
+            if (right_hinge==hinge+'0') continue;
+            if (left_hinge!=right_hinge && left_hinge!=' ' && right_hinge!=' ')
+                continue;
+            if     (right_hinge!=' ') seqM[r]=seqM_char[j]=right_hinge;
+            else if (left_hinge!=' ') seqM[r]=seqM_char[j]=left_hinge;
+        }
+    }
+}
+
+inline void smooth_dimer_insert(string &seqM, vector<char>& seqM_char,
+    const string &seqyA, const int n_segments)
+{
+    int j;
+    int r;
+    int hinge;
+    // smooth out AFP assignment: remove dimer insert
+    for (hinge=n_segments-1;hinge>=0;hinge--)
+    {
+        j=-1;
+        for (r=0;r<seqM.size()-1;r++)
+        {
+            if (seqyA[r]=='-') continue;
+            j++;
+            if (seqM[r]  !=hinge+'0'|| seqM[r+1]!=hinge+'0') continue;
+            if (r<seqM.size()-2 && (seqM[r+2]==' ' || seqM[r+2]==hinge+'0'))
+                continue;
+            if (r>0 && (seqM[r-1]==' ' || seqM[r-1]==hinge+'0')) continue;
+            if (r<seqM.size()-2 && r>0 && seqM[r-1]!=seqM[r+2]) continue;
+            if (r>0) seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r-1];
+            else     seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r+2];
+        }
+    }
+}
+
+inline void smooth_disconnected_singleton(string &seqM, vector<char>& seqM_char,
+    const string &seqyA, const int n_segments)
+{
+    int i;
+    int j;
+    int r;
+    int i1;
+    int i2;
+    int hinge;
+    char left_hinge=' ';
+    char right_hinge=' ';
+    // smooth out AFP assignment: remove disconnected singleton
+    for (hinge=n_segments-1;hinge>=0;hinge--)
+    {
+        j=-1;
+        for (r=0;r<seqM.size();r++)
+        {
+            if (seqyA[r]=='-') continue;
+            j++;
+            if (seqM[r]!=hinge+'0') continue;
+            left_hinge=' ';
+            for (i=r-1;i>=0;i--)
+            {
+                if (seqM[i]==' ') continue;
+                left_hinge=seqM[i];
+                i1=(r-i);
+                break;
+            }
+            if (left_hinge==hinge+'0') continue;
+            right_hinge=' ';
+            for (i=r+1;i<seqM.size();i++)
+            {
+                if (seqM[i]==' ') continue;
+                right_hinge=seqM[i];
+                i2=(i-r);
+                break;
+            }
+            if (right_hinge==hinge+'0') continue;
+            if (right_hinge==' ') seqM[r]=seqM_char[j]=left_hinge;
+            else if (left_hinge==' ') seqM[r]=seqM_char[j]=right_hinge;
+            else
+            {
+                if (i1<i2) seqM[r]=seqM_char[j]=left_hinge;
+                else       seqM[r]=seqM_char[j]=right_hinge;
+            }
+        }
+    }
+}
+
+inline void smooth_segment_assignment(string &seqM, vector<char>& seqM_char,
+    const string &seqyA, const int n_segments)
+{
+    smooth_singleton_insert(seqM, seqM_char, seqyA, n_segments);
+    smooth_singleton_at_end(seqM, seqM_char, seqyA, n_segments);
+    smooth_dimer_insert(seqM, seqM_char, seqyA, n_segments);
+    smooth_disconnected_singleton(seqM, seqM_char, seqyA, n_segments);
+}
+
+inline void recompute_flexalign_scores(const string &seqM, const string &seqxA,
+    const string &seqyA, vector<char>& seqM_char, vector<double>& di_vec,
+    const std::vector<int>& invmap, DoubleMatrix& tu_vec, CoordArray& xa,
+    CoordArray& ya, CoordArray& xt, Vec3& t0, RotMat& u0,
+    const int xlen, const int ylen,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &rmsd0, double &Liden,
+    const double d0A, const double d0B, const double d0a, const double d0u,
+    const double d0_scale, const double Lnorm_ass,
+    const int a_opt, const bool u_opt, const bool d_opt, const int n_ali8)
+{
+    int i;
+    int j;
+    int r;
+    int hinge;
+    double d;
+    // recalculate all scores
+    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
+    {
+        tu2t_u(tu_vec[hinge],t0,u0);
+        do_rotation(xa, xt, xlen, t0, u0);
+        for (j=0;j<ylen;j++)
+        {
+            i=invmap[j];
+            if (i<0) continue;
+            if (seqM_char[j]!=hinge+'0') continue;
+            d=sqrt(dist(xt[i], ya[j]));
+            if (di_vec[j]<0 || d<=di_vec[j])
+            {
+                di_vec[j]=d;
+                seqM_char[j]=hinge+'0';
+            }
+        }
+    }
+    rmsd0=TM1=TM2=TM3=TM4=TM5=0;
+    Liden=0;
+    for (r=0;r<seqM.size();r++) if (seqM[r]!=' ') Liden+=seqxA[r]==seqyA[r];
+    for(j=0; j<ylen; j++)
+    {
+        i=invmap[j];
+        if(i<0) continue;
+        {
+            d=di_vec[j];
+            TM2+=1/(1+(d/d0B)*(d/d0B)); // chain_1
+            TM1+=1/(1+(d/d0A)*(d/d0A)); // chain_2
+            if (a_opt) TM3+=1/(1+(d/d0a)*(d/d0a)); // -a
+            if (u_opt) TM4+=1/(1+(d/d0u)*(d/d0u)); // -u
+            if (d_opt) TM5+=1/(1+(d/d0_scale)*(d/d0_scale)); // -d
+            rmsd0+=d*d;
+        }
+    }
+    TM2/=xlen;
+    TM1/=ylen;
+    TM3/=(xlen+ylen)*0.5;
+    TM4/=Lnorm_ass;
+    TM5/=ylen;
+    if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
+}
+
+inline void trim_unused_segments(const string &seqM, DoubleMatrix& tu_vec)
+{
+    int r;
+    int hinge;
+    for (hinge=tu_vec.size()-1;hinge>0;hinge--)
+    {
+        int afp_len=0;
+        for (r=0;r<seqM.size();r++) afp_len+=seqM[r]==hinge+'0';
+        if (afp_len) break;
+        tu_vec.pop_back(); // remove unnecessary afp
+    }
+}
+
+
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     Vec3& t0, RotMat& u0, DoubleMatrix&tu_vec,
@@ -1605,195 +1866,16 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     // re-derive alignment based on tu_vec
     vector<char> seqM_char(ylen,' ');
     vector<double> di_vec(ylen,-1);
-    double d;
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
-    {
-        tu2t_u(tu_vec[hinge],t0,u0);
-        do_rotation(xa, xt, xlen, t0, u0);
-        for (j=0;j<ylen;j++)
-        {
-            i=invmap[j];
-            if (i<0) continue;
-            d=sqrt(dist(xt[i], ya[j]));
-            if (di_vec[j]<0 || d<=di_vec[j])
-            {
-                di_vec[j]=d;
-                seqM_char[j]=hinge+'0';
-            }
-        }
-    }
-    j=-1;
-    for (r=0;r<seqM.size();r++)
-    {
-        if (seqyA[r]=='-') continue;
-        j++;
-        seqM[r]=seqM_char[j];
-    }
+    reassign_segments_by_distance(xa, ya, xt, invmap, tu_vec, t0, u0,
+        xlen, ylen, seqM, seqyA, seqM_char, di_vec);
+    smooth_segment_assignment(seqM, seqM_char, seqyA, tu_vec.size());
+    recompute_flexalign_scores(seqM, seqxA, seqyA, seqM_char, di_vec, invmap,
+        tu_vec, xa, ya, xt, t0, u0, xlen, ylen,
+        TM1, TM2, TM3, TM4, TM5, rmsd0, Liden,
+        d0A, d0B, d0a, d0u, d0_scale, Lnorm_ass,
+        a_opt, u_opt, d_opt, n_ali8);
+    trim_unused_segments(seqM, tu_vec);
 
-    // smooth out AFP assignment: remove singleton insert
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
-    {
-        j=-1;
-        for (r=0;r<seqM.size();r++)
-        {
-            if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM_char[j]!=hinge+'0') continue;
-            if (r<seqM.size()-1 && (seqM[r+1]==hinge+'0' || seqM[r+1]==' '))
-                continue;
-            if (r>0 && (seqM[r-1]==hinge+'0' || seqM[r-1]==' ')) continue;
-            if (r<seqM.size()-1 && r>0 && seqM[r-1]!=seqM[r+1]) continue;
-            if (r>0) seqM[r]=seqM_char[j]=seqM[r-1];
-            else     seqM[r]=seqM_char[j]=seqM[r+1];
-        }
-    }
-    // smooth out AFP assignment: remove singleton at the end of fragment
-    char left_hinge=' ';
-    char right_hinge=' ';
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
-    {
-        j=-1;
-        for (r=0;r<seqM.size();r++)
-        {
-            if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM[r]!=hinge+'0') continue;
-            if (r>0 && seqM[r-1]==' ' && r<seqM.size()-1 && seqM[r+1]==' ')
-                continue;
-            
-            left_hinge=' ';
-            for (i=r-1;i>=0;i--)
-            {
-                if (seqM[i]==' ') continue;
-                left_hinge=seqM[i];
-                break;
-            }
-            if (left_hinge==hinge+'0') continue;
-            
-            right_hinge=' ';
-            for (i=r+1;i<seqM.size();i++)
-            {
-                if (seqM[i]==' ') continue;
-                right_hinge=seqM[i];
-                break;
-            }
-            if (right_hinge==hinge+'0') continue;
-            if (left_hinge!=right_hinge && left_hinge!=' ' && right_hinge!=' ')
-                continue;
-            
-            if     (right_hinge!=' ') seqM[r]=seqM_char[j]=right_hinge;
-            else if (left_hinge!=' ') seqM[r]=seqM_char[j]=left_hinge;
-        }
-    }
-    // smooth out AFP assignment: remove dimer insert
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
-    {
-        j=-1;
-        for (r=0;r<seqM.size()-1;r++)
-        {
-            if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM[r]  !=hinge+'0'|| seqM[r+1]!=hinge+'0') continue;
-            
-            if (r<seqM.size()-2 && (seqM[r+2]==' ' || seqM[r+2]==hinge+'0'))
-                continue;
-            if (r>0 && (seqM[r-1]==' ' || seqM[r-1]==hinge+'0')) continue;
-            if (r<seqM.size()-2 && r>0 && seqM[r-1]!=seqM[r+2]) continue;
-
-            if (r>0) seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r-1];
-            else     seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r+2];
-        }
-    }
-    // smooth out AFP assignment: remove disconnected singleton
-    int i1;
-    int i2;
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
-    {
-        j=-1;
-        for (r=0;r<seqM.size();r++)
-        {
-            if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM[r]!=hinge+'0') continue;
-            
-            left_hinge=' ';
-            for (i=r-1;i>=0;i--)
-            {
-                if (seqM[i]==' ') continue;
-                left_hinge=seqM[i];
-                i1=(r-i);
-                break;
-            }
-            if (left_hinge==hinge+'0') continue;
-            
-            right_hinge=' ';
-            for (i=r+1;i<seqM.size();i++)
-            {
-                if (seqM[i]==' ') continue;
-                right_hinge=seqM[i];
-                i2=(i-r);
-                break;
-            }
-            if (right_hinge==hinge+'0') continue;
-            
-            if (right_hinge==' ') seqM[r]=seqM_char[j]=left_hinge;
-            else if (left_hinge==' ') seqM[r]=seqM_char[j]=right_hinge;
-            else
-            {
-                if (i1<i2) seqM[r]=seqM_char[j]=left_hinge;
-                else       seqM[r]=seqM_char[j]=right_hinge;
-            }
-        }
-    }
-    
-    // recalculate all scores
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
-    {
-        tu2t_u(tu_vec[hinge],t0,u0);
-        do_rotation(xa, xt, xlen, t0, u0);
-        for (j=0;j<ylen;j++)
-        {
-            i=invmap[j];
-            if (i<0) continue;
-            if (seqM_char[j]!=hinge+'0') continue;
-            d=sqrt(dist(xt[i], ya[j]));
-            if (di_vec[j]<0 || d<=di_vec[j])
-            {
-                di_vec[j]=d;
-                seqM_char[j]=hinge+'0';
-            }
-        }
-    }
-    rmsd0=TM1=TM2=TM3=TM4=TM5=0;
-    Liden=0;
-    for (r=0;r<seqM.size();r++) if (seqM[r]!=' ') Liden+=seqxA[r]==seqyA[r];
-    for(j=0; j<ylen; j++)
-    {
-        i=invmap[j];
-        if(i<0) continue;
-        {
-            d=di_vec[j];
-            TM2+=1/(1+(d/d0B)*(d/d0B)); // chain_1
-            TM1+=1/(1+(d/d0A)*(d/d0A)); // chain_2
-            if (a_opt) TM3+=1/(1+(d/d0a)*(d/d0a)); // -a
-            if (u_opt) TM4+=1/(1+(d/d0u)*(d/d0u)); // -u
-            if (d_opt) TM5+=1/(1+(d/d0_scale)*(d/d0_scale)); // -d
-            rmsd0+=d*d;
-        }
-    }
-    TM2/=xlen;
-    TM1/=ylen;
-    TM3/=(xlen+ylen)*0.5;
-    TM4/=Lnorm_ass;
-    TM5/=ylen;
-    if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
-    for (hinge=tu_vec.size()-1;hinge>0;hinge--)
-    {
-        int afp_len=0;
-        for (r=0;r<seqM.size();r++) afp_len+=seqM[r]==hinge+'0';
-        if (afp_len) break;
-        tu_vec.pop_back(); // remove unnecessary afp
-    }
 
     // clean up
     seqM_char.clear();
