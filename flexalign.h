@@ -1507,58 +1507,58 @@ inline void trim_unused_segments(const string &seqM, DoubleMatrix& tu_vec)
 }
 
 
-inline int flexalign_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    Vec3& t0, RotMat& u0, DoubleMatrix&tu_vec,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    const vector<string> &sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const int hinge_opt, const int ss_opt=0)
+inline void refine_with_split_alignment(
+        CoordArray& xa,
+        CoordArray& ya,
+        CoordArray& xt,
+        std::vector<int>& invmap,
+        DoubleMatrix& tu_vec,
+        Vec3& t0,
+        RotMat& u0,
+        const std::string &seqx,
+        const std::string &seqy,
+        const std::string &secx,
+        const std::string &secy,
+        string &seqM,
+        string &seqxA,
+        string &seqyA,
+        std::vector<double>& do_vec,
+        const int xlen,
+        const int ylen,
+        const int hinge_opt,
+        const vector<string> &sequence,
+        const double Lnorm_ass,
+        const double d0_scale,
+        const int i_opt,
+        const int a_opt,
+        const bool u_opt,
+        const bool d_opt,
+        const bool fast_opt,
+        const int mol_type,
+        const int ss_opt,
+        double &TM1,
+        double &TM2,
+        double &TM3,
+        double &TM4,
+        double &TM5,
+        double &d0_0,
+        double &TM_0,
+        double &d0A,
+        double &d0B,
+        double &d0u,
+        double &d0a,
+        double &d0_out,
+        double &rmsd0,
+        int &L_ali,
+        double &Liden,
+        double &TM_ali,
+        double &rmsd_ali,
+        int &n_ali,
+        int &n_ali8)
 {
-
-    vector<double> tu_tmp(12,0);
-    int round2=tu_vec.size();
-    if (round2==0)
-    {
-        TMalign_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
-            TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-            d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-            rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, Lnorm_ass,
-            d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
-
-        t_u2tu(t0,u0,tu_tmp);
-        tu_vec.push_back(tu_tmp);
-    }
-    
     int i;
     int j;
     int r;
-    std::vector<int> invmap(ylen+1, -1);
-
-    CoordArray xt;
-    xt.resize(xlen);
-    do_rotation(xa, xt, xlen, t0, u0);
-
-    TM1= TM2= TM3= TM4= TM5=rmsd0=0;
-    seqM="";
-    seqxA="";
-    seqyA="";
-    n_ali=n_ali8=0;
-    se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-        d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
-    if (round2)
-    {
         // aligned structure A vs unaligned structure B
         int xlen_h=n_ali8;
         int ylen_h=ylen - n_ali8;
@@ -1727,7 +1727,61 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         seqM_h.clear();
         seqxA_h.clear();
         seqyA_h.clear();
-    }
+}
+
+inline void extend_hinges_greedily(
+        CoordArray& xa,
+        CoordArray& ya,
+        CoordArray& xt,
+        std::vector<int>& invmap,
+        DoubleMatrix& tu_vec,
+        Vec3& t0,
+        RotMat& u0,
+        const std::string &seqx,
+        const std::string &seqy,
+        const std::string &secx,
+        const std::string &secy,
+        string &seqM,
+        string &seqxA,
+        string &seqyA,
+        std::vector<double>& do_vec,
+        const int xlen,
+        const int ylen,
+        const int hinge_opt,
+        const vector<string> &sequence,
+        const double Lnorm_ass,
+        const double d0_scale,
+        const int i_opt,
+        const int a_opt,
+        const bool u_opt,
+        const bool d_opt,
+        const bool fast_opt,
+        const int mol_type,
+        const int ss_opt,
+        double &TM1,
+        double &TM2,
+        double &TM3,
+        double &TM4,
+        double &TM5,
+        double &d0_0,
+        double &TM_0,
+        double &d0A,
+        double &d0B,
+        double &d0u,
+        double &d0a,
+        double &d0_out,
+        double &rmsd0,
+        int &L_ali,
+        double &Liden,
+        double &TM_ali,
+        double &rmsd_ali,
+        int &n_ali,
+        int &n_ali8)
+{
+    int i;
+    int j;
+    int r;
+    vector<double> tu_tmp(12,0);
     for (r=0;r<seqM.size();r++) if (seqM[r]=='1') seqM[r]='0';
 
     int minlen = min(xlen, ylen);
@@ -1856,6 +1910,150 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         seqyA_h.clear();
         if (new_ali<5) break;
     }
+}
+inline int flexalign_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    Vec3& t0, RotMat& u0, DoubleMatrix&tu_vec,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen,
+    const vector<string> &sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const int hinge_opt, const int ss_opt=0)
+{
+
+    vector<double> tu_tmp(12,0);
+    int round2=tu_vec.size();
+    if (round2==0)
+    {
+        TMalign_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
+            TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+            d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
+            rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+            xlen, ylen, sequence, Lnorm_ass,
+            d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
+
+        t_u2tu(t0,u0,tu_tmp);
+        tu_vec.push_back(tu_tmp);
+    }
+    
+    std::vector<int> invmap(ylen+1, -1);
+
+    CoordArray xt;
+    xt.resize(xlen);
+    do_rotation(xa, xt, xlen, t0, u0);
+
+    TM1= TM2= TM3= TM4= TM5=rmsd0=0;
+    seqM="";
+    seqxA="";
+    seqyA="";
+    n_ali=n_ali8=0;
+    se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
+    if (round2) refine_with_split_alignment(
+        xa,
+        ya,
+        xt,
+        invmap,
+        tu_vec,
+        t0,
+        u0,
+        seqx,
+        seqy,
+        secx,
+        secy,
+        seqM,
+        seqxA,
+        seqyA,
+        do_vec,
+        xlen,
+        ylen,
+        hinge_opt,
+        sequence,
+        Lnorm_ass,
+        d0_scale,
+        i_opt,
+        a_opt,
+        u_opt,
+        d_opt,
+        fast_opt,
+        mol_type,
+        ss_opt,
+        TM1,
+        TM2,
+        TM3,
+        TM4,
+        TM5,
+        d0_0,
+        TM_0,
+        d0A,
+        d0B,
+        d0u,
+        d0a,
+        d0_out,
+        rmsd0,
+        L_ali,
+        Liden,
+        TM_ali,
+        rmsd_ali,
+        n_ali,
+        n_ali8);
+    extend_hinges_greedily(
+        xa,
+        ya,
+        xt,
+        invmap,
+        tu_vec,
+        t0,
+        u0,
+        seqx,
+        seqy,
+        secx,
+        secy,
+        seqM,
+        seqxA,
+        seqyA,
+        do_vec,
+        xlen,
+        ylen,
+        hinge_opt,
+        sequence,
+        Lnorm_ass,
+        d0_scale,
+        i_opt,
+        a_opt,
+        u_opt,
+        d_opt,
+        fast_opt,
+        mol_type,
+        ss_opt,
+        TM1,
+        TM2,
+        TM3,
+        TM4,
+        TM5,
+        d0_0,
+        TM_0,
+        d0A,
+        d0B,
+        d0u,
+        d0a,
+        d0_out,
+        rmsd0,
+        L_ali,
+        Liden,
+        TM_ali,
+        rmsd_ali,
+        n_ali,
+        n_ali8);
 
     if (tu_vec.size()<=1)
     {
