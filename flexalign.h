@@ -1493,7 +1493,7 @@ inline void recompute_flexalign_scores(const string &seqM, const string &seqxA,
     if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
 }
 
-inline void trim_unused_segments(const string &seqM, DoubleMatrix& tu_vec)
+inline void denoise_segments(const string &seqM, DoubleMatrix& tu_vec)
 {
     int r;
     int hinge;
@@ -1507,229 +1507,327 @@ inline void trim_unused_segments(const string &seqM, DoubleMatrix& tu_vec)
 }
 
 
-inline void refine_with_split_alignment(
-        CoordArray& xa,
-        CoordArray& ya,
-        CoordArray& xt,
-        std::vector<int>& invmap,
-        DoubleMatrix& tu_vec,
-        Vec3& t0,
-        RotMat& u0,
-        const std::string &seqx,
-        const std::string &seqy,
-        const std::string &secx,
-        const std::string &secy,
-        string &seqM,
-        string &seqxA,
-        string &seqyA,
-        std::vector<double>& do_vec,
-        const int xlen,
-        const int ylen,
-        const int hinge_opt,
-        const vector<string> &sequence,
-        const double Lnorm_ass,
-        const double d0_scale,
-        const int i_opt,
-        const int a_opt,
-        const bool u_opt,
-        const bool d_opt,
-        const bool fast_opt,
-        const int mol_type,
-        const int ss_opt,
-        double &TM1,
-        double &TM2,
-        double &TM3,
-        double &TM4,
-        double &TM5,
-        double &d0_0,
-        double &TM_0,
-        double &d0A,
-        double &d0B,
-        double &d0u,
-        double &d0a,
-        double &d0_out,
-        double &rmsd0,
-        int &L_ali,
-        double &Liden,
-        double &TM_ali,
-        double &rmsd_ali,
-        int &n_ali,
-        int &n_ali8)
+inline void score_with_cur_transform(
+    CoordArray& xa, CoordArray& ya, CoordArray& xt, std::vector<int>& invmap,
+    Vec3& t0, RotMat& u0,
+    const std::string &seqx, const std::string &seqy,
+    std::vector<double>& do_vec,
+    const int xlen, const int ylen,
+    const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale,
+    const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt,
+    const int mol_type, const int hinge,
+    string &seqM, string &seqxA, string &seqyA,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali,
+    int &n_ali, int &n_ali8)
 {
-    int i;
-    int j;
-    int r;
-        // aligned structure A vs unaligned structure B
-        int xlen_h=n_ali8;
-        int ylen_h=ylen - n_ali8;
-        std::string seqx_h;
-        std::string seqy_h;
-        std::string secx_h;
-        std::string secy_h;
-        secx_h.resize(xlen + 1);
-        secy_h.resize(ylen + 1);
-        CoordArray xa_h;
-        CoordArray ya_h;
-        xa_h.resize(xlen);
-        ya_h.resize(ylen);
-
-        int r1;
-        int r2;
-        i=j=-1;
-        r1=r2=0;
-        for (r=0;r<seqxA.size();r++)
-        {
-            i+=(seqxA[r]!='-');
-            j+=(seqyA[r]!='-');
-            if (seqxA[r]!='-' && seqyA[r]!='-')
-            {
-                seqx_h += seqx[i];
-                secx_h[r1]=secx[i];
-                xa_h[r1][0]=xa[i][0];
-                xa_h[r1][1]=xa[i][1];
-                xa_h[r1][2]=xa[i][2];
-                r1++;
-            }
-            if (seqxA[r]=='-')
-            {
-                seqy_h += seqx[j];
-                secy_h[r2]=secx[j];
-                ya_h[r2][0]=ya[j][0];
-                ya_h[r2][1]=ya[j][1];
-                ya_h[r2][2]=ya[j][2];
-                r2++;
-            }
-        }
-        
-        double TM1_h;
-        double TM2_h;
-        double TM3_h, TM4_h, TM5_h;     // for a_opt, u_opt, d_opt
-        double d0_0_h;
-        double TM_0_h;
-        double d0A_h;
-        double d0B_h;
-        double d0u_h;
-        double d0a_h;
-        double d0_out_h=5.0;
-        string seqM_h, seqxA_h, seqyA_h;// for output alignment
-        double rmsd0_h = 0.0;
-        int L_ali_h=0;                // Aligned length in standard_TMscore
-        double Liden_h=0;
-        double TM_ali_h, rmsd_ali_h;  // TMscore and rmsd in standard_TMscore
-        int n_ali_h=0;
-        int n_ali8_h=0;
-
-        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
-            TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
-            d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
-            rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
-            xlen_h, ylen_h, sequence, Lnorm_ass,
-            d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
-
-        do_rotation(xa, xt, xlen, t0, u0);
-        t_u2tu(t0,u0,tu_vec[0]);
-        
-       std::vector<int> invmap_h(ylen+1, -1);
-
-        TM1_h= TM2_h= TM3_h= TM4_h= TM5_h=rmsd0_h=0;
-        seqM_h="";
-        seqxA_h="";
-        seqyA_h="";
-        n_ali_h=n_ali8_h=0;
-        se_main(xt, ya, seqx, seqy, TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0,
-            TM_0, d0A, d0B, d0u, d0a, d0_out, seqM_h, seqxA_h, seqyA_h, do_vec,
-            rmsd0_h, L_ali, Liden, TM_ali, rmsd_ali, n_ali_h, n_ali8_h,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, invmap_h, 1);
-
-        // unaligned structure A vs aligned structure B
-        xlen_h=xlen - n_ali8;
-        ylen_h=n_ali8;
-
-        seqx_h.clear();
-        seqy_h.clear();
-        i=j=-1;
-        r1=r2=0;
-        for (r=0;r<seqxA.size();r++)
-        {
-            i+=(seqxA[r]!='-');
-            j+=(seqyA[r]!='-');
-            if (seqyA[r]=='-')
-            {
-                seqx_h += seqx[i];
-                secx_h[r1]=secx[i];
-                xa_h[r1][0]=xa[i][0];
-                xa_h[r1][1]=xa[i][1];
-                xa_h[r1][2]=xa[i][2];
-                r1++;
-            }
-            if (seqxA[r]!='-' && seqyA[r]!='-')
-            {
-                seqy_h += seqx[j];
-                secy_h[r2]=secx[j];
-                ya_h[r2][0]=ya[j][0];
-                ya_h[r2][1]=ya[j][1];
-                ya_h[r2][2]=ya[j][2];
-                r2++;
-            }
-        }
-        
-        d0_out_h=5.0;
-        L_ali_h=Liden_h=0;
-        TM1= TM2= TM3= TM4= TM5=rmsd0=0;
-        seqM="";
-        seqxA="";
-        seqyA="";
-        n_ali=n_ali8=0;
-
-        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
-            TM1, TM2, TM3, TM4, TM5, d0_0_h, TM_0_h, d0A_h, d0B_h,
-            d0u_h, d0a_h, d0_out_h, seqM, seqxA, seqyA, do_vec,
-            rmsd0, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali, n_ali8,
-            xlen_h, ylen_h, sequence, Lnorm_ass,
-            d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
-
-        do_rotation(xa, xt, xlen, t0, u0);
-
-
-        TM1= TM2= TM3= TM4= TM5=rmsd0=0;
-        seqM="";
-        seqxA="";
-        seqyA="";
-        n_ali=n_ali8=0;
-        se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5, d0_0,
-            TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-            rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
-
-        double TM_h=(TM1_h>TM2_h)?TM1_h:TM2_h;
-        double TM  =(TM1  >TM2  )?TM1  :TM2  ;
-        if (TM_h>TM)
-        {
-            TM1=TM1_h;
-            TM2=TM2_h;
-            TM3=TM3_h;
-            TM4=TM4_h;
-            TM5=TM5_h;
-            seqM=seqM_h;
-            seqxA=seqxA_h;
-            seqyA=seqyA_h;
-            rmsd0=rmsd0_h;
-            n_ali=n_ali_h;
-            n_ali8=n_ali8_h;
-            for (j=0;j<ylen+1;j++) invmap[j]=invmap_h[j];
-        }
-        else t_u2tu(t0,u0,tu_vec[0]);
-        
-        // clean up
-
-        seqM_h.clear();
-        seqxA_h.clear();
-        seqyA_h.clear();
+    do_rotation(xa, xt, xlen, t0, u0);
+    se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
+        a_opt, u_opt, d_opt, mol_type, 0, invmap, hinge);
 }
 
-inline void extend_hinges_greedily(
+#define NUM_SPLIT_VARIANTS 2
+
+struct AlignSubstruct {
+    std::string seqx_h;
+    std::string seqy_h;
+    std::string secx_h;
+    std::string secy_h;
+    CoordArray xa_h;
+    CoordArray ya_h;
+    int xlen_h;
+    int ylen_h;
+};
+
+struct SubstructAlignRes {
+    double TM1;
+    double TM2;
+    double TM3;
+    double TM4;
+    double TM5;
+    double rmsd0;
+    double d0_0;
+    double TM_0;
+    double d0A;
+    double d0B;
+    double d0u;
+    double d0a;
+    double d0_out;
+    std::string seqM;
+    std::string seqxA;
+    std::string seqyA;
+    int n_ali;
+    int n_ali8;
+    int L_ali;
+    double Liden;
+    double TM_ali;
+    double rmsd_ali;
+    std::vector<int> invmap;
+    Vec3 t_u_result;
+    RotMat u_u_result;
+};
+
+inline void extract_split_substruct(
+        const CoordArray& xa, const CoordArray& ya,
+        const std::string &seqx, const std::string &seqy,
+        const std::string &secx, const std::string &secy,
+        const string &seqxA, const string &seqyA,
+        const int xlen, const int ylen, const int n_ali8,
+        AlignSubstruct sub[NUM_SPLIT_VARIANTS])
+{
+    AlignSubstruct &sub0 = sub[0];
+    AlignSubstruct &sub1 = sub[1];
+    sub0.seqx_h.clear();
+    sub0.seqy_h.clear();
+    sub0.secx_h.resize(xlen + 1);
+    sub0.secy_h.resize(ylen + 1);
+    sub0.xa_h.resize(xlen);
+    sub0.ya_h.resize(ylen);
+    sub0.xlen_h = n_ali8;
+    sub0.ylen_h = ylen - n_ali8;
+    sub1.seqx_h.clear();
+    sub1.seqy_h.clear();
+    sub1.secx_h.resize(xlen + 1);
+    sub1.secy_h.resize(ylen + 1);
+    sub1.xa_h.resize(xlen);
+    sub1.ya_h.resize(ylen);
+    sub1.xlen_h = xlen - n_ali8;
+    sub1.ylen_h = n_ali8;
+    int i = -1;
+    int j = -1;
+    int a0 = 0;
+    int b0 = 0;
+    int a1 = 0;
+    int b1 = 0;
+    for (size_t r = 0; r < seqxA.size(); r++)
+    {
+        i += (seqxA[r] != '-');
+        j += (seqyA[r] != '-');
+        if (seqxA[r] != '-' && seqyA[r] != '-')
+        {
+            sub0.seqx_h += seqx[i];
+            sub0.secx_h[a0] = secx[i];
+            sub0.xa_h[a0][0] = xa[i][0];
+            sub0.xa_h[a0][1] = xa[i][1];
+            sub0.xa_h[a0][2] = xa[i][2];
+            a0++;
+            sub1.seqy_h += seqy[j];
+            sub1.secy_h[b1] = secy[j];
+            sub1.ya_h[b1][0] = ya[j][0];
+            sub1.ya_h[b1][1] = ya[j][1];
+            sub1.ya_h[b1][2] = ya[j][2];
+            b1++;
+        }
+        else if (seqxA[r] != '-')
+        {
+            sub1.seqx_h += seqx[i];
+            sub1.secx_h[a1] = secx[i];
+            sub1.xa_h[a1][0] = xa[i][0];
+            sub1.xa_h[a1][1] = xa[i][1];
+            sub1.xa_h[a1][2] = xa[i][2];
+            a1++;
+        }
+        else if (seqyA[r] != '-')
+        {
+            sub0.seqy_h += seqy[j];
+            sub0.secy_h[b0] = secy[j];
+            sub0.ya_h[b0][0] = ya[j][0];
+            sub0.ya_h[b0][1] = ya[j][1];
+            sub0.ya_h[b0][2] = ya[j][2];
+            b0++;
+        }
+    }
+}
+
+inline void score_alignedA_unalignB(
+        AlignSubstruct& sub,
+        CoordArray& xa, CoordArray& ya,
+        const std::string &seqx, const std::string &seqy,
+        std::vector<double>& do_vec,
+        const int xlen, const int ylen,
+        const vector<string> &sequence,
+        const double Lnorm_ass, const double d0_scale,
+        const int i_opt, const int a_opt,
+        const bool u_opt, const bool d_opt,
+        const bool fast_opt, const int mol_type, const int ss_opt,
+        Vec3& t0, RotMat& u0,
+        SubstructAlignRes& res)
+{
+    double TM1, TM2, TM3, TM4, TM5, rmsd0;
+    double d0_0_h, TM_0_h, d0A_h, d0B_h, d0u_h, d0a_h, d0_out_h;
+    string seqM_h, seqxA_h, seqyA_h;
+    int L_ali_h, n_ali_h, n_ali8_h;
+    double Liden_h, TM_ali_h, rmsd_ali_h;
+    TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
+        t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0_h, TM_0_h, d0A_h, d0B_h,
+        d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
+        rmsd0, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
+        sub.xlen_h, sub.ylen_h, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
+    res.t_u_result = t0;
+    res.u_u_result = u0;
+    res.invmap.assign(ylen + 1, -1);
+    TM1= TM2= TM3= TM4= TM5=rmsd0=0;
+    seqM_h="";
+    seqxA_h="";
+    seqyA_h="";
+    n_ali_h=n_ali8_h=0;
+    CoordArray xt;
+    xt.resize(xlen);
+    score_with_cur_transform(
+        xa, ya, xt, res.invmap,
+        t0, u0, seqx, seqy, do_vec, xlen, ylen,
+        sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
+        mol_type, 1, seqM_h, seqxA_h, seqyA_h,
+        TM1, TM2, TM3, TM4, TM5, res.d0_0, res.TM_0,
+        res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
+        res.rmsd0, res.L_ali, res.Liden, res.TM_ali,
+        res.rmsd_ali, n_ali_h, n_ali8_h);
+    res.TM1 = TM1;
+    res.TM2 = TM2;
+    res.TM3 = TM3;
+    res.TM4 = TM4;
+    res.TM5 = TM5;
+    res.seqM = seqM_h;
+    res.seqxA = seqxA_h;
+    res.seqyA = seqyA_h;
+    res.n_ali = n_ali_h;
+    res.n_ali8 = n_ali8_h;
+}
+
+inline void score_unalignA_alignedB(
+    AlignSubstruct& sub, CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    std::vector<double>& do_vec, const int xlen, const int ylen,
+    const vector<string> &sequence, const double Lnorm_ass,
+    const double d0_scale, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, const int ss_opt, Vec3& t0, RotMat& u0,
+    SubstructAlignRes& res)
+{
+    double TM1, TM2, TM3, TM4, TM5, rmsd0;
+    double d0_0_h, TM_0_h, d0A_h, d0B_h, d0u_h, d0a_h, d0_out_h;
+    string seqM_h, seqxA_h, seqyA_h;
+    int L_ali_h, n_ali_h, n_ali8_h;
+    double Liden_h, TM_ali_h, rmsd_ali_h;
+    d0_out_h=5.0;
+    L_ali_h=Liden_h=0;
+    TM1= TM2= TM3= TM4= TM5=rmsd0=0;
+    seqM_h="";
+    seqxA_h="";
+    seqyA_h="";
+    n_ali_h=n_ali8_h=0;
+    TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
+        t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0_h, TM_0_h, d0A_h, d0B_h,
+        d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
+        rmsd0, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
+        sub.xlen_h, sub.ylen_h, sequence, Lnorm_ass,
+        d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
+    res.t_u_result = t0;
+    res.u_u_result = u0;
+    res.invmap.assign(ylen + 1, -1);
+    TM1= TM2= TM3= TM4= TM5=rmsd0=0;
+    seqM_h="";
+    seqxA_h="";
+    seqyA_h="";
+    n_ali_h=n_ali8_h=0;
+    CoordArray xt;
+    xt.resize(xlen);
+    score_with_cur_transform(
+        xa, ya, xt, res.invmap,
+        t0, u0, seqx, seqy, do_vec, xlen, ylen,
+        sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
+        mol_type, 1, seqM_h, seqxA_h, seqyA_h,
+        TM1, TM2, TM3, TM4, TM5, res.d0_0, res.TM_0,
+        res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
+        res.rmsd0, res.L_ali, res.Liden, res.TM_ali,
+        res.rmsd_ali, n_ali_h, n_ali8_h);
+    res.TM1 = TM1;
+    res.TM2 = TM2;
+    res.TM3 = TM3;
+    res.TM4 = TM4;
+    res.TM5 = TM5;
+    res.seqM = seqM_h;
+    res.seqxA = seqxA_h;
+    res.seqyA = seqyA_h;
+    res.n_ali = n_ali_h;
+    res.n_ali8 = n_ali8_h;
+}
+
+inline void fill_sub_struct_align_result(
+        const SubstructAlignRes res[NUM_SPLIT_VARIANTS],
+        const int ylen,
+        DoubleMatrix& tu_vec,
+        Vec3& t0,
+        RotMat& u0,
+        std::vector<int>& invmap,
+        string &seqM,
+        string &seqxA,
+        string &seqyA,
+        double &TM1,
+        double &TM2,
+        double &TM3,
+        double &TM4,
+        double &TM5,
+        double &d0_0,
+        double &TM_0,
+        double &d0A,
+        double &d0B,
+        double &d0u,
+        double &d0a,
+        double &d0_out,
+        double &rmsd0,
+        int &L_ali,
+        double &Liden,
+        double &TM_ali,
+        double &rmsd_ali,
+        int &n_ali,
+        int &n_ali8)
+{
+    double TM_h=(res[0].TM1>res[0].TM2)?res[0].TM1:res[0].TM2;
+    double TM  =(res[1].TM1>res[1].TM2)?res[1].TM1:res[1].TM2;
+    const SubstructAlignRes* best_align;
+    if (TM_h>TM)
+        best_align=&res[0];
+    else
+        best_align=&res[1];
+    t0 = best_align->t_u_result;
+    u0 = best_align->u_u_result;
+    t_u2tu(t0, u0, tu_vec[0]);
+    TM1=best_align->TM1;
+    TM2=best_align->TM2;
+    TM3=best_align->TM3;
+    TM4=best_align->TM4;
+    TM5=best_align->TM5;
+    seqM=best_align->seqM;
+    seqxA=best_align->seqxA;
+    seqyA=best_align->seqyA;
+    rmsd0=best_align->rmsd0;
+    n_ali=best_align->n_ali;
+    n_ali8=best_align->n_ali8;
+    L_ali=best_align->L_ali;
+    Liden=best_align->Liden;
+    TM_ali=best_align->TM_ali;
+    rmsd_ali=best_align->rmsd_ali;
+    d0_0=best_align->d0_0;
+    TM_0=best_align->TM_0;
+    d0A=best_align->d0A;
+    d0B=best_align->d0B;
+    d0u=best_align->d0u;
+    d0a=best_align->d0a;
+    d0_out=best_align->d0_out;
+    for (int j=0;j<ylen+1;j++) invmap[j]=best_align->invmap[j];
+}
+
+inline void refine_via_split_alignment(
         CoordArray& xa,
         CoordArray& ya,
         CoordArray& xt,
@@ -1778,139 +1876,247 @@ inline void extend_hinges_greedily(
         int &n_ali,
         int &n_ali8)
 {
-    int i;
-    int j;
+    AlignSubstruct sub_struct[NUM_SPLIT_VARIANTS];
+    extract_split_substruct(xa, ya, seqx, seqy, secx, secy,
+        seqxA, seqyA, xlen, ylen, n_ali8, sub_struct);
+    SubstructAlignRes res[NUM_SPLIT_VARIANTS];
+    score_alignedA_unalignB(sub_struct[0], xa, ya, seqx, seqy, do_vec,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale,
+        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
+        t0, u0, res[0]);
+    score_unalignA_alignedB(sub_struct[1], xa, ya, seqx, seqy, do_vec,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale,
+        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
+        t0, u0, res[1]);
+    fill_sub_struct_align_result(res, ylen, tu_vec,
+        t0, u0, invmap,
+        seqM, seqxA, seqyA,
+        TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali,
+        n_ali, n_ali8);
+}
+
+static inline void extract_unalign_subcoords(
+        const std::string& seqxA, const std::string& seqyA,
+        const std::string& seqx, const std::string& seqy,
+        const std::string& secx, const std::string& secy,
+        const CoordArray& xa, const CoordArray& ya,
+        const int xlen_h, const int ylen_h,
+        CoordArray& xa_h, CoordArray& ya_h,
+        std::string& seqx_h, std::string& seqy_h,
+        std::string& secx_h, std::string& secy_h,
+        vector<int>& r1toi, vector<int>& r2toj)
+{
+    xa_h.resize(xlen_h);
+    ya_h.resize(ylen_h);
+    secx_h.resize(xlen_h + 1);
+    secy_h.resize(ylen_h + 1);
+    r1toi.assign(xlen_h, 0);
+    r2toj.assign(ylen_h, 0);
+    int i = -1, j = -1, r1 = 0, r2 = 0;
+    for (size_t r = 0; r < seqxA.size(); r++)
+    {
+        i += (seqxA[r] != '-');
+        j += (seqyA[r] != '-');
+        if (seqyA[r] == '-')
+        {
+            seqx_h.push_back(seqx[i]);
+            secx_h[r1] = secx[i];
+            xa_h[r1][0] = xa[i][0];
+            xa_h[r1][1] = xa[i][1];
+            xa_h[r1][2] = xa[i][2];
+            r1toi[r1] = i;
+            r1++;
+        }
+        if (seqxA[r] == '-')
+        {
+            seqy_h.push_back(seqy[j]);
+            secy_h[r2] = secy[j];
+            ya_h[r2][0] = ya[j][0];
+            ya_h[r2][1] = ya[j][1];
+            ya_h[r2][2] = ya[j][2];
+            r2toj[r2] = j;
+            r2++;
+        }
+    }
+}
+
+struct TMalignResult {
+    double TM1, TM2, TM3, TM4, TM5;
+    double d0_0, TM_0;
+    double d0A, d0B, d0u, d0a;
+    double d0_out = 5.0;
+    double rmsd0 = 0.0;
+    int L_ali = 0;
+    double Liden = 0, TM_ali = 0, rmsd_ali = 0;
+    int n_ali = 0, n_ali8 = 0;
+};
+
+struct SeMianResult {
+    std::string seqM, seqxA, seqyA;
+};
+
+struct CurHingeResult {
+    TMalignResult tmalign_res;
+    SeMianResult se_res;
+    std::vector<int> invmap_h;
+};
+
+// Copy main alignment output state into CurHingeResult
+static inline void fill_hing_res(
+        CurHingeResult& cur_hing_res,
+        const double& TM1, const double& TM2, const double& TM3,
+        const double& TM4, const double& TM5, const double& rmsd0,
+        const std::string& seqM, const std::string& seqxA,
+        const std::string& seqyA, const int& n_ali, const int& n_ali8,
+        const std::vector<int>& invmap, const int ylen)
+{
+    cur_hing_res.tmalign_res.TM1 = TM1;  cur_hing_res.tmalign_res.TM2 = TM2;  cur_hing_res.tmalign_res.TM3 = TM3;
+    cur_hing_res.tmalign_res.TM4 = TM4;  cur_hing_res.tmalign_res.TM5 = TM5;  cur_hing_res.tmalign_res.rmsd0 = rmsd0;
+    cur_hing_res.se_res.seqM = seqM;
+    cur_hing_res.se_res.seqxA = seqxA;
+    cur_hing_res.se_res.seqyA = seqyA;
+    cur_hing_res.tmalign_res.n_ali = n_ali;
+    cur_hing_res.tmalign_res.n_ali8 = n_ali8;
+    cur_hing_res.invmap_h.assign(ylen + 1, -1);
+    for (int j = 0; j < ylen + 1; j++)
+        cur_hing_res.invmap_h[j] = invmap[j];
+}
+
+static inline void update_global_res(
+        double& TM1, double& TM2, double& TM3,
+        double& TM4, double& TM5, double& rmsd0,
+        std::string& seqM, std::string& seqxA, std::string& seqyA,
+        int& n_ali, int& n_ali8,
+        std::vector<int>& invmap,
+        const CurHingeResult& cur_hing_res,
+        const Vec3& t0, const RotMat& u0,
+        DoubleMatrix& tu_vec)
+{
+    TM1 = cur_hing_res.tmalign_res.TM1;  
+    TM2 = cur_hing_res.tmalign_res.TM2;  
+    TM3 = cur_hing_res.tmalign_res.TM3;
+    TM4 = cur_hing_res.tmalign_res.TM4;  
+    TM5 = cur_hing_res.tmalign_res.TM5;  
+    rmsd0 = cur_hing_res.tmalign_res.rmsd0;
+    seqM  = cur_hing_res.se_res.seqM;
+    seqxA = cur_hing_res.se_res.seqxA;
+    seqyA = cur_hing_res.se_res.seqyA;
+    n_ali  = cur_hing_res.tmalign_res.n_ali;
+    n_ali8 = cur_hing_res.tmalign_res.n_ali8;
+    vector<double> tu_tmp(12, 0);
+    t_u2tu(t0, u0, tu_tmp);
+    tu_vec.push_back(tu_tmp);
+    invmap = cur_hing_res.invmap_h;
+}
+
+inline void search_hinge_regions(
+        CoordArray& xa, CoordArray& ya, CoordArray& xt, std::vector<int>& invmap, DoubleMatrix& tu_vec,
+        Vec3& t0, RotMat& u0, const std::string &seqx, const std::string &seqy, const std::string &secx,
+        const std::string &secy, string &seqM, string &seqxA, string &seqyA, std::vector<double>& do_vec,
+        const int xlen, const int ylen, const int hinge_opt, const vector<string> &sequence, const double Lnorm_ass,
+        const double d0_scale, const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool fast_opt,
+        const int mol_type, const int ss_opt, double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+        double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out, double &rmsd0,
+        int &L_ali, double &Liden, double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8)
+{
     int r;
-    vector<double> tu_tmp(12,0);
-    for (r=0;r<seqM.size();r++) if (seqM[r]=='1') seqM[r]='0';
+    for (int r2=0;r2<seqM.size();r2++)
+    {
+        if (seqM[r2]=='1')
+            seqM[r2]='0';
+    }
 
     int minlen = min(xlen, ylen);
-    int hinge;
-    for (hinge=0;hinge<hinge_opt;hinge++)
+    for (int hinge=0;hinge<hinge_opt;hinge++)
     {
         if (minlen-n_ali8<5) break;
+
         int xlen_h=xlen - n_ali8;
         int ylen_h=ylen - n_ali8;
-        std::string seqx_h;
-        std::string seqy_h;
-        std::string secx_h;
-        std::string secy_h;
-        secx_h.resize(xlen_h + 1);
-        secy_h.resize(ylen_h + 1);
         CoordArray xa_h;
         CoordArray ya_h;
-        xa_h.resize(xlen_h);
-        ya_h.resize(ylen_h);
-        vector<int> r1toi(xlen_h,0);
-        vector<int> r2toj(ylen_h,0);
+        string seqx_h, seqy_h, secx_h, secy_h;
+        vector<int> r1toi, r2toj;
 
-        int r1;
-        int r2;
-        i=j=-1;
-        r1=r2=0;
-        for (r=0;r<seqxA.size();r++)
-        {
-            i+=(seqxA[r]!='-');
-            j+=(seqyA[r]!='-');
-            if (seqyA[r]=='-')
-            {
-                seqx_h += seqx[i];
-                secx_h[r1]=secx[i];
-                xa_h[r1][0]=xa[i][0];
-                xa_h[r1][1]=xa[i][1];
-                xa_h[r1][2]=xa[i][2];
-                r1toi[r1]=i;
-                r1++;
-            }
-            if (seqxA[r]=='-')
-            {
-                seqy_h += seqx[j];
-                secy_h[r2]=secx[j];
-                ya_h[r2][0]=ya[j][0];
-                ya_h[r2][1]=ya[j][1];
-                ya_h[r2][2]=ya[j][2];
-                r2toj[r2]=j;
-                r2++;
-            }
-        }
-        
-        double TM1_h;
-        double TM2_h;
-        double TM3_h, TM4_h, TM5_h;     // for a_opt, u_opt, d_opt
-        double d0_0_h;
-        double TM_0_h;
-        double d0A_h;
-        double d0B_h;
-        double d0u_h;
-        double d0a_h;
-        double d0_out_h=5.0;
-        string seqM_h, seqxA_h, seqyA_h;// for output alignment
-        double rmsd0_h = 0.0;
-        int L_ali_h=0;                // Aligned length in standard_TMscore
-        double Liden_h=0;
-        double TM_ali_h, rmsd_ali_h;  // TMscore and rmsd in standard_TMscore
-        int n_ali_h=0;
-        int n_ali8_h=0;
+        extract_unalign_subcoords(seqxA, seqyA, seqx, seqy, secx, secy, xa, ya,
+            xlen_h, ylen_h, xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, r1toi, r2toj);
 
+        CurHingeResult cur_hing_res;
         TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, t0, u0,
-            TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0_h, TM_0_h, d0A_h, d0B_h,
-            d0u_h, d0a_h, d0_out_h, seqM_h, seqxA_h, seqyA_h, do_vec,
-            rmsd0_h, L_ali_h, Liden_h, TM_ali_h, rmsd_ali_h, n_ali_h, n_ali8_h,
+            cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3, cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5,
+            cur_hing_res.tmalign_res.d0_0, cur_hing_res.tmalign_res.TM_0,
+            cur_hing_res.tmalign_res.d0A, cur_hing_res.tmalign_res.d0B, cur_hing_res.tmalign_res.d0u, cur_hing_res.tmalign_res.d0a,
+            cur_hing_res.tmalign_res.d0_out, cur_hing_res.se_res.seqM, cur_hing_res.se_res.seqxA, cur_hing_res.se_res.seqyA,
+            do_vec, cur_hing_res.tmalign_res.rmsd0, cur_hing_res.tmalign_res.L_ali, cur_hing_res.tmalign_res.Liden,
+            cur_hing_res.tmalign_res.TM_ali, cur_hing_res.tmalign_res.rmsd_ali,
+            cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
             xlen_h, ylen_h, sequence, Lnorm_ass,
             d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
 
         do_rotation(xa, xt, xlen, t0, u0);
+        fill_hing_res(cur_hing_res, TM1, TM2, TM3, TM4, TM5, rmsd0,
+            seqM, seqxA, seqyA, n_ali, n_ali8, invmap, ylen);
 
-        TM1_h=TM1;
-        TM2_h=TM2;
-        TM3_h=TM3;
-        TM4_h=TM4;
-        TM5_h=TM5;
-        seqM_h=seqM;
-        seqxA_h=seqxA;
-        seqyA_h=seqyA;
-        rmsd0_h=rmsd0;
-        n_ali_h=n_ali;
-        n_ali8_h=n_ali8;
-        std::vector<int> invmap_h(ylen+1, -1);
-        for (j=0;j<ylen+1;j++) invmap_h[j]=invmap[j];
-        se_main(xt, ya, seqx, seqy, TM1_h, TM2_h, TM3_h, TM4_h, TM5_h, d0_0, TM_0,
-            d0A, d0B, d0u, d0a, d0_out, seqM_h, seqxA_h, seqyA_h, do_vec,
-            rmsd0_h, L_ali, Liden, TM_ali, rmsd_ali, n_ali_h, n_ali8_h,
+        se_main(xt, ya, seqx, seqy,
+            cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3,
+            cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5, d0_0, TM_0,
+            d0A, d0B, d0u, d0a, d0_out,
+            cur_hing_res.se_res.seqM, cur_hing_res.se_res.seqxA, cur_hing_res.se_res.seqyA,
+            do_vec, cur_hing_res.tmalign_res.rmsd0, L_ali, Liden, TM_ali, rmsd_ali,
+            cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
             xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, invmap_h, hinge+1);
+            a_opt, u_opt, d_opt, mol_type, 0, cur_hing_res.invmap_h, hinge+1);
+
         int new_ali=0;
-        for (r=0;r<seqM_h.size();r++) new_ali+=(seqM_h[r]==hinge+'1');
-        if (n_ali8_h - n_ali8<5) new_ali=0;
+        for (r=0;r<cur_hing_res.se_res.seqM.size();r++)
+        {
+           new_ali+=(cur_hing_res.se_res.seqM[r]==hinge+'1');
+        }
+        if (cur_hing_res.tmalign_res.n_ali8 - n_ali8<5)
+        {
+           new_ali=0;
+        }
+
         if (new_ali>=5)
         {
-            TM1=TM1_h;
-            TM2=TM2_h;
-            TM3=TM3_h;
-            TM4=TM4_h;
-            TM5=TM5_h;
-            seqM=seqM_h;
-            seqxA=seqxA_h;
-            seqyA=seqyA_h;
-            rmsd0=rmsd0_h;
-            n_ali=n_ali_h;
-            n_ali8=n_ali8_h;
-            t_u2tu(t0,u0,tu_tmp);
-            tu_vec.push_back(tu_tmp);
-            for (j=0;j<ylen+1;j++) invmap[j]=invmap_h[j];
-                //<<seqxA<<'\n'<<seqM<<'\n'<<seqyA<<endl;
+            update_global_res(TM1, TM2, TM3, TM4, TM5, rmsd0,
+                seqM, seqxA, seqyA, n_ali, n_ali8,
+                invmap, cur_hing_res, t0, u0, tu_vec);
         }
-        
-        // clean up
 
         r1toi.clear();
         r2toj.clear();
-        seqM_h.clear();
-        seqxA_h.clear();
-        seqyA_h.clear();
         if (new_ali<5) break;
     }
 }
+
+inline void denoise_segments(
+        CoordArray& xa, CoordArray& ya, CoordArray& xt, std::vector<int>& invmap,
+        DoubleMatrix& tu_vec, Vec3& t0, RotMat& u0,
+        const int xlen, const int ylen,
+        string& seqM, string& seqxA, string& seqyA,
+        double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
+        double& rmsd0, double& Liden,
+        double& d0A, double& d0B, double& d0a, double& d0u,
+        const double d0_scale, const double Lnorm_ass,
+        const int a_opt, const bool u_opt, const bool d_opt,
+        const int n_ali8)
+{
+    vector<char> seqM_char(ylen,' ');
+    vector<double> di_vec(ylen,-1);
+    reassign_segments_by_distance(xa, ya, xt, invmap, tu_vec, t0, u0,
+        xlen, ylen, seqM, seqyA, seqM_char, di_vec);
+    smooth_segment_assignment(seqM, seqM_char, seqyA, tu_vec.size());
+    recompute_flexalign_scores(seqM, seqxA, seqyA, seqM_char, di_vec, invmap,
+        tu_vec, xa, ya, xt, t0, u0, xlen, ylen,
+        TM1, TM2, TM3, TM4, TM5, rmsd0, Liden,
+        d0A, d0B, d0a, d0u, d0_scale, Lnorm_ass,
+        a_opt, u_opt, d_opt, n_ali8);
+    denoise_segments(seqM, tu_vec);
+}
+
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     Vec3& t0, RotMat& u0, DoubleMatrix&tu_vec,
@@ -1946,141 +2152,49 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
 
     CoordArray xt;
     xt.resize(xlen);
-    do_rotation(xa, xt, xlen, t0, u0);
 
-    TM1= TM2= TM3= TM4= TM5=rmsd0=0;
-    seqM="";
-    seqxA="";
-    seqyA="";
-    n_ali=n_ali8=0;
-    se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-        d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-        a_opt, u_opt, d_opt, mol_type, 0, invmap, 1);
-    if (round2) refine_with_split_alignment(
-        xa,
-        ya,
-        xt,
-        invmap,
-        tu_vec,
-        t0,
-        u0,
-        seqx,
-        seqy,
-        secx,
-        secy,
-        seqM,
-        seqxA,
-        seqyA,
-        do_vec,
-        xlen,
-        ylen,
-        hinge_opt,
-        sequence,
-        Lnorm_ass,
-        d0_scale,
-        i_opt,
-        a_opt,
-        u_opt,
-        d_opt,
-        fast_opt,
-        mol_type,
-        ss_opt,
-        TM1,
-        TM2,
-        TM3,
-        TM4,
-        TM5,
-        d0_0,
-        TM_0,
-        d0A,
-        d0B,
-        d0u,
-        d0a,
-        d0_out,
-        rmsd0,
-        L_ali,
-        Liden,
-        TM_ali,
-        rmsd_ali,
-        n_ali,
-        n_ali8);
-    extend_hinges_greedily(
-        xa,
-        ya,
-        xt,
-        invmap,
-        tu_vec,
-        t0,
-        u0,
-        seqx,
-        seqy,
-        secx,
-        secy,
-        seqM,
-        seqxA,
-        seqyA,
-        do_vec,
-        xlen,
-        ylen,
-        hinge_opt,
-        sequence,
-        Lnorm_ass,
-        d0_scale,
-        i_opt,
-        a_opt,
-        u_opt,
-        d_opt,
-        fast_opt,
-        mol_type,
-        ss_opt,
-        TM1,
-        TM2,
-        TM3,
-        TM4,
-        TM5,
-        d0_0,
-        TM_0,
-        d0A,
-        d0B,
-        d0u,
-        d0a,
-        d0_out,
-        rmsd0,
-        L_ali,
-        Liden,
-        TM_ali,
-        rmsd_ali,
-        n_ali,
-        n_ali8);
+    TM1 = TM2 = TM3 = TM4 = TM5 = rmsd0 = 0;
+    seqM = "";
+    seqxA = "";
+    seqyA = "";
+    n_ali = n_ali8 = 0;
+
+    score_with_cur_transform(
+        xa, ya, xt, invmap, t0, u0, seqx, seqy, do_vec,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
+        mol_type, 1, seqM, seqxA, seqyA, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, rmsd0, L_ali, Liden,
+        TM_ali, rmsd_ali, n_ali, n_ali8);
+    if (round2) refine_via_split_alignment(
+        xa, ya, xt, invmap, tu_vec, t0, u0,
+        seqx, seqy, secx, secy, seqM, seqxA, seqyA, do_vec,
+        xlen, ylen, hinge_opt, sequence, Lnorm_ass, d0_scale,
+        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
+        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out, rmsd0, L_ali,
+        Liden, TM_ali, rmsd_ali, n_ali, n_ali8);
+    search_hinge_regions(
+        xa, ya, xt, invmap, tu_vec, t0, u0,
+        seqx, seqy, secx, secy, seqM, seqxA, seqyA, do_vec,
+        xlen, ylen, hinge_opt, sequence, Lnorm_ass, d0_scale,
+        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
+        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out, rmsd0, L_ali,
+        Liden, TM_ali, rmsd_ali, n_ali, n_ali8);
 
     if (tu_vec.size()<=1)
     {
-
         return tu_vec.size();
     }
-    
     // re-derive alignment based on tu_vec
-    vector<char> seqM_char(ylen,' ');
-    vector<double> di_vec(ylen,-1);
-    reassign_segments_by_distance(xa, ya, xt, invmap, tu_vec, t0, u0,
-        xlen, ylen, seqM, seqyA, seqM_char, di_vec);
-    smooth_segment_assignment(seqM, seqM_char, seqyA, tu_vec.size());
-    recompute_flexalign_scores(seqM, seqxA, seqyA, seqM_char, di_vec, invmap,
-        tu_vec, xa, ya, xt, t0, u0, xlen, ylen,
+    denoise_segments(
+        xa, ya, xt, invmap, tu_vec, t0, u0,
+        xlen, ylen, seqM, seqxA, seqyA,
         TM1, TM2, TM3, TM4, TM5, rmsd0, Liden,
         d0A, d0B, d0a, d0u, d0_scale, Lnorm_ass,
         a_opt, u_opt, d_opt, n_ali8);
-    trim_unused_segments(seqM, tu_vec);
-
-
-    // clean up
-    seqM_char.clear();
-    di_vec.clear();
 
     return tu_vec.size();
-
 }
 #endif
 struct FlexAlignResult
