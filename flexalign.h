@@ -1252,101 +1252,110 @@ inline void reassign_segments_by_distance(CoordArray& xa, CoordArray& ya,
     string &seqM, const string &seqyA,
     vector<char>& seqM_char, vector<double>& di_vec)
 {
-    int i;
-    int j;
-    int r;
-    int hinge;
-    double d;
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
+    for (int hinge = (int)tu_vec.size() - 1; hinge >= 0; hinge--)
     {
-        tu2t_u(tu_vec[hinge],t0,u0);
+        tu2t_u(tu_vec[hinge], t0, u0);
         do_rotation(xa, xt, xlen, t0, u0);
-        for (j=0;j<ylen;j++)
+        for (int j = 0; j < ylen; j++)
         {
-            i=invmap[j];
-            if (i<0) continue;
-            d=sqrt(dist(xt[i], ya[j]));
-            if (di_vec[j]<0 || d<=di_vec[j])
+            int i = invmap[j];
+            if (i < 0) continue;
+            double d = sqrt(dist(xt[i], ya[j]));
+            if (di_vec[j] < 0 || d <= di_vec[j])
             {
-                di_vec[j]=d;
-                seqM_char[j]=hinge+'0';
+                di_vec[j] = d;
+                seqM_char[j] = hinge + '0';
             }
         }
     }
-    j=-1;
-    for (r=0;r<seqM.size();r++)
+
+    int y_idx = -1;
+    for (size_t r = 0; r < seqM.size(); r++)
     {
-        if (seqyA[r]=='-') continue;
-        j++;
-        seqM[r]=seqM_char[j];
+        if (seqyA[r] == '-') continue;
+        y_idx++;
+        seqM[r] = seqM_char[y_idx];
     }
 }
 
 inline void smooth_singleton_insert(string &seqM, vector<char>& seqM_char,
     const string &seqyA, const int n_segments)
 {
-    int j;
-    int r;
-    int hinge;
-    // smooth out AFP assignment: remove singleton insert
-    for (hinge=n_segments-1;hinge>=0;hinge--)
+    for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
-        j=-1;
-        for (r=0;r<seqM.size();r++)
+        char cur_seg = hinge + '0';
+        char left_seg, right_seg;
+        int  y_idx = -1;
+
+        for (size_t r=0; r<seqM.size(); r++)
         {
             if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM_char[j]!=hinge+'0') continue;
-            if (r<seqM.size()-1 && (seqM[r+1]==hinge+'0' || seqM[r+1]==' '))
-                continue;
-            if (r>0 && (seqM[r-1]==hinge+'0' || seqM[r-1]==' ')) continue;
-            if (r<seqM.size()-1 && r>0 && seqM[r-1]!=seqM[r+1]) continue;
-            if (r>0) seqM[r]=seqM_char[j]=seqM[r-1];
-            else     seqM[r]=seqM_char[j]=seqM[r+1];
+            y_idx++;
+
+            if (seqM_char[y_idx] != cur_seg) continue;
+
+            left_seg  = (r > 0) ? seqM[r-1] : ' ';
+            right_seg = (r < seqM.size()-1) ? seqM[r+1] : ' ';
+
+            if (right_seg == cur_seg || right_seg == ' ') continue;
+            if (left_seg  == cur_seg || left_seg  == ' ') continue;
+            if (left_seg != right_seg) continue;
+
+            char neighbor_seg = (left_seg != ' ') ? left_seg : right_seg;
+            seqM[r] = seqM_char[y_idx] = neighbor_seg;
         }
     }
+}
+
+inline char find_nearest_seg_char(const string &seqM, int r, int step)
+{
+    for (int i = r + step; i >= 0 && i < (int)seqM.size(); i += step) {
+        if (seqM[i] != ' ') return seqM[i];
+    }
+    return ' ';
+}
+
+inline char find_nearest_seg_and_dist(const string &seqM, int r, int step, int &dist)
+{
+    for (int i = r + step; i >= 0 && i < (int)seqM.size(); i += step) {
+        if (seqM[i] != ' ') {
+            dist = (step > 0) ? (i - r) : (r - i);
+            return seqM[i];
+        }
+    }
+    dist = 0;
+    return ' ';
 }
 
 inline void smooth_singleton_at_end(string &seqM, vector<char>& seqM_char,
     const string &seqyA, const int n_segments)
 {
-    int i;
-    int j;
-    int r;
-    int hinge;
-    char left_hinge=' ';
-    char right_hinge=' ';
-    // smooth out AFP assignment: remove singleton at the end of fragment
-    for (hinge=n_segments-1;hinge>=0;hinge--)
+    for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
-        j=-1;
-        for (r=0;r<seqM.size();r++)
+        char cur_seg = hinge + '0';
+        int  y_idx   = -1;
+
+        for (size_t r=0; r<seqM.size(); r++)
         {
             if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM[r]!=hinge+'0') continue;
-            if (r>0 && seqM[r-1]==' ' && r<seqM.size()-1 && seqM[r+1]==' ')
+            y_idx++;
+
+            if (seqM[r] != cur_seg) continue;
+
+            if (r > 0 && seqM[r-1]==' ' && r+1 < seqM.size() && seqM[r+1]==' ')
                 continue;
-            left_hinge=' ';
-            for (i=r-1;i>=0;i--)
-            {
-                if (seqM[i]==' ') continue;
-                left_hinge=seqM[i];
-                break;
-            }
-            if (left_hinge==hinge+'0') continue;
-            right_hinge=' ';
-            for (i=r+1;i<seqM.size();i++)
-            {
-                if (seqM[i]==' ') continue;
-                right_hinge=seqM[i];
-                break;
-            }
-            if (right_hinge==hinge+'0') continue;
-            if (left_hinge!=right_hinge && left_hinge!=' ' && right_hinge!=' ')
+
+            char left_hinge  = find_nearest_seg_char(seqM, r, -1);
+            if (left_hinge == cur_seg) continue;
+
+            char right_hinge = find_nearest_seg_char(seqM, r, +1);
+            if (right_hinge == cur_seg) continue;
+
+            if (left_hinge!=' ' && right_hinge!=' ' && left_hinge!=right_hinge)
                 continue;
-            if     (right_hinge!=' ') seqM[r]=seqM_char[j]=right_hinge;
-            else if (left_hinge!=' ') seqM[r]=seqM_char[j]=left_hinge;
+
+            char neighbor_seg = (right_hinge != ' ') ? right_hinge : left_hinge;
+            seqM[r] = seqM_char[y_idx] = neighbor_seg;
         }
     }
 }
@@ -1354,24 +1363,25 @@ inline void smooth_singleton_at_end(string &seqM, vector<char>& seqM_char,
 inline void smooth_dimer_insert(string &seqM, vector<char>& seqM_char,
     const string &seqyA, const int n_segments)
 {
-    int j;
-    int r;
-    int hinge;
-    // smooth out AFP assignment: remove dimer insert
-    for (hinge=n_segments-1;hinge>=0;hinge--)
+    for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
-        j=-1;
-        for (r=0;r<seqM.size()-1;r++)
+        char cur_seg = hinge + '0';
+        int  y_idx   = -1;
+
+        for (size_t r=0; r+1<seqM.size(); r++)
         {
             if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM[r]  !=hinge+'0'|| seqM[r+1]!=hinge+'0') continue;
-            if (r<seqM.size()-2 && (seqM[r+2]==' ' || seqM[r+2]==hinge+'0'))
-                continue;
-            if (r>0 && (seqM[r-1]==' ' || seqM[r-1]==hinge+'0')) continue;
-            if (r<seqM.size()-2 && r>0 && seqM[r-1]!=seqM[r+2]) continue;
-            if (r>0) seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r-1];
-            else     seqM[r]=seqM_char[j]=seqM[r+1]=seqM_char[j+1]=seqM[r+2];
+            y_idx++;
+
+            if (seqM[r] != cur_seg || seqM[r+1] != cur_seg) continue;
+
+            if (r+2 < seqM.size() && (seqM[r+2]==' ' || seqM[r+2]==cur_seg)) continue;
+            if (r > 0 && (seqM[r-1]==' ' || seqM[r-1]==cur_seg)) continue;
+            if (r+2 < seqM.size() && r > 0 && seqM[r-1] != seqM[r+2]) continue;
+
+            char neighbor_seg = (r > 0) ? seqM[r-1] : seqM[r+2];
+            seqM[r]   = seqM_char[y_idx]       = neighbor_seg;
+            seqM[r+1] = seqM_char[y_idx + 1]   = neighbor_seg;
         }
     }
 }
@@ -1379,48 +1389,30 @@ inline void smooth_dimer_insert(string &seqM, vector<char>& seqM_char,
 inline void smooth_disconnected_singleton(string &seqM, vector<char>& seqM_char,
     const string &seqyA, const int n_segments)
 {
-    int i;
-    int j;
-    int r;
-    int i1;
-    int i2;
-    int hinge;
-    char left_hinge=' ';
-    char right_hinge=' ';
-    // smooth out AFP assignment: remove disconnected singleton
-    for (hinge=n_segments-1;hinge>=0;hinge--)
+    for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
-        j=-1;
-        for (r=0;r<seqM.size();r++)
+        char cur_seg = hinge + '0';
+        int  y_idx   = -1;
+
+        for (size_t r=0; r<seqM.size(); r++)
         {
             if (seqyA[r]=='-') continue;
-            j++;
-            if (seqM[r]!=hinge+'0') continue;
-            left_hinge=' ';
-            for (i=r-1;i>=0;i--)
-            {
-                if (seqM[i]==' ') continue;
-                left_hinge=seqM[i];
-                i1=(r-i);
-                break;
-            }
-            if (left_hinge==hinge+'0') continue;
-            right_hinge=' ';
-            for (i=r+1;i<seqM.size();i++)
-            {
-                if (seqM[i]==' ') continue;
-                right_hinge=seqM[i];
-                i2=(i-r);
-                break;
-            }
-            if (right_hinge==hinge+'0') continue;
-            if (right_hinge==' ') seqM[r]=seqM_char[j]=left_hinge;
-            else if (left_hinge==' ') seqM[r]=seqM_char[j]=right_hinge;
+            y_idx++;
+            if (seqM[r] != cur_seg) continue;
+
+            int left_dist, right_dist;
+            char left_hinge  = find_nearest_seg_and_dist(seqM, r, -1, left_dist);
+            if (left_hinge == cur_seg) continue;
+
+            char right_hinge = find_nearest_seg_and_dist(seqM, r, +1, right_dist);
+            if (right_hinge == cur_seg) continue;
+
+            if (right_hinge == ' ')
+                seqM[r] = seqM_char[y_idx] = left_hinge;
+            else if (left_hinge == ' ')
+                seqM[r] = seqM_char[y_idx] = right_hinge;
             else
-            {
-                if (i1<i2) seqM[r]=seqM_char[j]=left_hinge;
-                else       seqM[r]=seqM_char[j]=right_hinge;
-            }
+                seqM[r] = seqM_char[y_idx] = (left_dist < right_dist) ? left_hinge : right_hinge;
         }
     }
 }
@@ -1445,38 +1437,36 @@ inline void recompute_flexalign_scores(const string &seqM, const string &seqxA,
     const double d0_scale, const double Lnorm_ass,
     const int a_opt, const bool u_opt, const bool d_opt, const int n_ali8)
 {
-    int i;
-    int j;
-    int r;
-    int hinge;
-    double d;
-    // recalculate all scores
-    for (hinge=tu_vec.size()-1;hinge>=0;hinge--)
+    for (int hinge=(int)tu_vec.size()-1; hinge>=0; hinge--)
     {
         tu2t_u(tu_vec[hinge],t0,u0);
         do_rotation(xa, xt, xlen, t0, u0);
-        for (j=0;j<ylen;j++)
+        char cur_seg = hinge + '0';
+        for (int j=0; j<ylen; j++)
         {
-            i=invmap[j];
-            if (i<0) continue;
-            if (seqM_char[j]!=hinge+'0') continue;
-            d=sqrt(dist(xt[i], ya[j]));
-            if (di_vec[j]<0 || d<=di_vec[j])
-            {
-                di_vec[j]=d;
-                seqM_char[j]=hinge+'0';
-            }
+            int i = invmap[j];
+            if (i < 0) continue;
+            if (seqM_char[j] != cur_seg) continue;
+            double d = sqrt(dist(xt[i], ya[j]));
+            if (di_vec[j] < 0 || d <= di_vec[j])
+                di_vec[j] = d;
         }
     }
+
     rmsd0=TM1=TM2=TM3=TM4=TM5=0;
     Liden=0;
-    for (r=0;r<seqM.size();r++) if (seqM[r]!=' ') Liden+=seqxA[r]==seqyA[r];
-    for(j=0; j<ylen; j++)
+    for (int r=0; r<(int)seqM.size(); r++)
     {
-        i=invmap[j];
+        if (seqM[r]!=' ')
+            Liden+=(seqxA[r]==seqyA[r]);
+    }
+
+    for(int j=0; j<ylen; j++)
+    {
+        int i=invmap[j];
         if(i<0) continue;
         {
-            d=di_vec[j];
+            double d=di_vec[j];
             TM2+=1/(1+(d/d0B)*(d/d0B)); // chain_1
             TM1+=1/(1+(d/d0A)*(d/d0A)); // chain_2
             if (a_opt) TM3+=1/(1+(d/d0a)*(d/d0a)); // -a
@@ -1493,14 +1483,12 @@ inline void recompute_flexalign_scores(const string &seqM, const string &seqxA,
     if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
 }
 
-inline void denoise_segments(const string &seqM, DoubleMatrix& tu_vec)
+inline void remove_unused_segments(const string &seqM, DoubleMatrix& tu_vec)
 {
-    int r;
-    int hinge;
-    for (hinge=tu_vec.size()-1;hinge>0;hinge--)
+    for (int hinge = (int)tu_vec.size() - 1; hinge > 0; hinge--)
     {
-        int afp_len=0;
-        for (r=0;r<seqM.size();r++) afp_len+=seqM[r]==hinge+'0';
+        int afp_len = 0;
+        for (size_t r = 0; r < seqM.size(); r++) afp_len += (seqM[r] == hinge + '0');
         if (afp_len) break;
         tu_vec.pop_back(); // remove unnecessary afp
     }
@@ -2114,7 +2102,7 @@ inline void denoise_segments(
         TM1, TM2, TM3, TM4, TM5, rmsd0, Liden,
         d0A, d0B, d0a, d0u, d0_scale, Lnorm_ass,
         a_opt, u_opt, d_opt, n_ali8);
-    denoise_segments(seqM, tu_vec);
+    remove_unused_segments(seqM, tu_vec);
 }
 
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
@@ -2240,6 +2228,73 @@ enum FlexAlignMode
     FLEX_BEST = 0,
     FLEX_USBCAT = 1
 };
+
+struct UserOptions
+{
+    // 文件路径：结构文件和输出文件
+    std::string xname;
+    std::string yname;
+    std::string fname_super;
+    std::string fname_lign;
+    std::string fname_matrix;
+
+    // 目录选项：命令行提供的目录参数
+    std::string dir_opt;
+    std::string dirpair_opt;
+    std::string dir1_opt;
+    std::string dir2_opt;
+
+    // 命令行选项：格式、过滤等配置
+    int infmt1_opt;
+    int infmt2_opt;
+    int ter_opt;
+    int split_opt;
+    int het_opt;
+    std::string atom_opt;
+    int mirror_opt;
+    std::vector<std::string> chain2parse1;
+    std::vector<std::string> chain2parse2;
+    std::vector<std::string> model2parse1;
+    std::vector<std::string> model2parse2;
+    int byresi_opt;
+    bool fast_opt;
+    int i_opt;
+    int o_opt;
+    int a_opt;
+    bool m_opt;
+    bool u_opt;
+    bool d_opt;
+    int outfmt_opt;
+
+    // 计数/比例阈值
+    double Lnorm_ass;
+    double d0_scale;
+    double TMcut;
+};
+
+struct ParsedInput
+{
+    // 解析结果：由 PDB 文件解析得到的链列表、序列及派生配置
+    std::vector<std::string> chain1_list;
+    std::vector<std::string> chain2_list;
+    std::vector<std::string> sequence;
+    bool autojustify;
+};
+
+struct AlignCommonInput
+{
+    UserOptions user_options;
+    ParsedInput parsed_input;
+};
+
+struct FlexalignParams
+{
+    FlexAlignMode mode;
+    int hinge_opt;
+    bool hinge_set;
+    double TMpass;
+};
+
 struct USBCAT_AFP
 {
     int i; 
