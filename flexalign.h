@@ -2505,24 +2505,15 @@ inline int flexalign_usbcat_main(
 
 
 inline void run_flexalign(
-    FlexAlignMode mode,
     const ParsedChain& chain1_data,
     const ParsedChain& chain2_data,
-    const std::vector<std::string>& sequence,
-    double Lnorm_ass,
-    double d0_scale,
-    int i_opt,
-    int a_opt,
-    bool u_opt,
-    bool d_opt,
-    bool force_fast_opt,
-    int hinge_opt,
-    int ss_opt,
-    bool hinge_set,
-    double TMpass,
+    const AlignCommonInput& common_inputs,
+    const FlexalignParams& flex_params,
     FlexAlignResult& res)
 {
-    
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+
     CoordArray xa = chain1_data.chain_coords;
     CoordArray ya = chain2_data.chain_coords;
     std::string seqx = chain1_data.chain_seq;
@@ -2531,18 +2522,18 @@ inline void run_flexalign(
     std::string secy = chain2_data.chain_sec;
     int mol_type = chain1_data.cur_complex_mol_list + chain2_data.cur_complex_mol_list;
 
-    bool force_fast_opt_global = (std::min(chain1_data.chain_len, chain2_data.chain_len) > 1500) ? true : force_fast_opt;
+    bool force_fast_opt_global = (std::min(chain1_data.chain_len, chain2_data.chain_len) > 1500) ? true : opts.fast_opt;
 
     FlexAlignResult flexalign_main_res;
     align_with_flexalign_main(
         xa, ya, seqx, seqy, secx, secy,
-        chain1_data.chain_len, chain2_data.chain_len, sequence,
-        Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, force_fast_opt_global,
-        mol_type, hinge_opt, flexalign_main_res);
+        chain1_data.chain_len, chain2_data.chain_len, parsed.sequence,
+        opts.Lnorm_ass, opts.d0_scale,
+        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt_global,
+        mol_type, flex_params.hinge_opt, flexalign_main_res);
     double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
 
-    switch (mode)
+    switch (flex_params.mode)
     {
         case FLEX_USBCAT:
             res.hingeNum = flexalign_with_usbcat_main(
@@ -2550,11 +2541,11 @@ inline void run_flexalign(
                 seqx, seqy,
                 secx, secy,
                 chain1_data.chain_len, chain2_data.chain_len,
-                sequence, Lnorm_ass, d0_scale,
-                i_opt, a_opt, u_opt, d_opt, force_fast_opt_global,
-                mol_type, hinge_opt,
+                parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+                opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt_global,
+                mol_type, flex_params.hinge_opt,
                 flexalign_main_res, best_global_max_TM,
-                hinge_set, TMpass,
+                flex_params.hinge_set, flex_params.TMpass,
                 res);
             break;
 

@@ -5051,12 +5051,8 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                         extract_aln_from_resi(parsed.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
                             chain1_data.resi_vec, chain2_data.resi_vec, opts.byresi_opt);
 
-                    bool force_fast_opt = (getmin(chain1_data.chain_len, chain2_data.chain_len) > 1500) ? true : opts.fast_opt;
-
                     flex_result = FlexAlignResult();
-                    run_flexalign(flex_params.mode, chain1_data, chain2_data, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-                        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
-                        flex_params.hinge_opt, 0, flex_params.hinge_set, flex_params.TMpass, flex_result);
+                    run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flex_result);
 
                     if (opts.outfmt_opt==0) print_version();
                     output_flexalign_results(
