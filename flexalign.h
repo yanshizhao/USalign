@@ -3719,16 +3719,12 @@ inline void run_region_align(
     const std::string& seqy,
     const std::string& secx,
     const std::string& secy,
-    const std::vector<std::string>& sequence,
-    const double Lnorm_ass,
-    const double d0_scale,
-    const int i_opt,
-    const int a_opt,
-    const bool u_opt,
-    const bool d_opt,
-    const bool fast_opt,
+    const AlignCommonInput& common_inputs,
     const int mol_type)
 {
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+
     for (int region_indx = 0; region_indx < region_num; region_indx++)
     {
         FlexAlignResult cur_align_res;
@@ -3736,8 +3732,8 @@ inline void run_region_align(
         align_cur_region(
             cur_bound_pool, region_indx, hinge_set, remaining_hinges,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            sequence, Lnorm_ass, d0_scale,
-            i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type,
+            parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt, mol_type,
             region_valid, cur_align_res);
 
         int orig_region_idx = cur_bound_pool.region_meta[region_indx].original_region_idx;
@@ -4018,8 +4014,7 @@ inline void update_global_best_align(
             cur_bound_pool,
             region_num, hinge_set,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt, mol_type);
+            common_inputs, mol_type);
 
         GlobalAlignResult global_align_res;
         global_align_res.res_tu.assign(xlen, -1);
