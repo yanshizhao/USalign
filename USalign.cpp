@@ -5059,17 +5059,11 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                         opts.xname.substr(opts.dir1_opt.size()+opts.dir_opt.size()+opts.dirpair_opt.size()),
                         opts.yname.substr(opts.dir2_opt.size()+opts.dir_opt.size()+opts.dirpair_opt.size()),
                         chain1_data.chain_id, chain2_data.chain_id,
-                        chain1_data.chain_len, chain2_data.chain_len, flex_result.t0, flex_result.u0, flex_result.tu_vec,
-                        flex_result.TM1, flex_result.TM2, flex_result.TM3, flex_result.TM4, flex_result.TM5,
-                        flex_result.rmsd0, flex_result.d0_out, flex_result.seqM,
-                        flex_result.seqxA, flex_result.seqyA, flex_result.Liden,
-                        flex_result.n_ali8, flex_result.L_ali, flex_result.TM_ali, flex_result.rmsd_ali,
-                        flex_result.TM_0, flex_result.d0_0,
-                        flex_result.d0A, flex_result.d0B, opts.Lnorm_ass, opts.d0_scale, flex_result.d0a, flex_result.d0u,
-                        (opts.m_opt?opts.fname_matrix:"").c_str(),
-                        opts.outfmt_opt, opts.ter_opt, false, opts.split_opt, opts.o_opt,
-                        opts.fname_super, opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.mirror_opt,
-                        chain1_data.resi_vec, chain2_data.resi_vec);
+                        chain1_data.chain_len, chain2_data.chain_len,
+                        flex_result,
+                        opts,
+                        chain1_data.resi_vec, chain2_data.resi_vec,
+                        false);
                 } // chain_j
                 if (parsed.chain2_list.size()>1)
                 {

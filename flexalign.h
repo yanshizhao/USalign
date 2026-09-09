@@ -1151,24 +1151,126 @@ inline void output_flexalign_pymol(const string xname, const string yname,
 }
 
 //output the final results
+struct FlexAlignResult
+{
+    Vec3 t0;                        
+    RotMat u0;                      
+    vector<vector<double> > tu_vec;
+    double TM1, TM2, TM3, TM4, TM5;
+    double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out;
+    string seqM, seqxA, seqyA;
+    vector<double> do_vec;
+    double rmsd0, Liden, TM_ali, rmsd_ali;
+    int L_ali, n_ali, n_ali8, hingeNum;
+
+    FlexAlignResult() : TM1(-1.0), TM2(-1.0), TM3(-1.0), TM4(-1.0), TM5(-1.0),
+                        d0_0(0.0), TM_0(0.0), d0A(0.0), d0B(0.0), d0u(0.0), d0a(0.0), d0_out(5.0),
+                        rmsd0(0.0), Liden(0.0), TM_ali(0.0), rmsd_ali(0.0),
+                        L_ali(0), n_ali(0), n_ali8(0), hingeNum(0),
+                        t0{0.0, 0.0, 0.0}
+    {
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                u0[i][j] = (i == j) ? 1.0 : 0.0;
+    }
+};
+
+struct ParsedChain {
+    // --- 24-byte heavy objects (vector / string) ---
+    CoordArray     chain_coords;            // 3D coordinates
+    string         chain_seq;              // sequence
+    string         chain_sec;              // secondary structure
+    vector<string> resi_vec;                 // residue index (for -do output)
+    string         chain_id;                 // chain ID
+    string         filename;                 // source filename (for output)
+    vector<string> pdb_lines;                // raw PDB lines (for -do output)
+    // --- 4-byte scalars packed together ---
+    int            chain_len;                // length
+    int            cur_complex_mol_list;     // molecule type (-1=protein, 1=RNA)
+};
+
+enum FlexAlignMode
+{
+    FLEX_BEST = 0,
+    FLEX_USBCAT = 1
+};
+
+struct UserOptions
+{
+    // 文件路径：结构文件和输出文件
+    std::string xname;
+    std::string yname;
+    std::string fname_super;
+    std::string fname_lign;
+    std::string fname_matrix;
+
+    // 目录选项：命令行提供的目录参数
+    std::string dir_opt;
+    std::string dirpair_opt;
+    std::string dir1_opt;
+    std::string dir2_opt;
+
+    // 命令行选项：格式、过滤等配置
+    int infmt1_opt;
+    int infmt2_opt;
+    int ter_opt;
+    int split_opt;
+    int het_opt;
+    std::string atom_opt;
+    std::string mol_opt;
+    int mirror_opt;
+    std::vector<std::string> chain2parse1;
+    std::vector<std::string> chain2parse2;
+    std::vector<std::string> model2parse1;
+    std::vector<std::string> model2parse2;
+    int byresi_opt;
+    bool fast_opt;
+    int i_opt;
+    int o_opt;
+    int a_opt;
+    bool m_opt;
+    bool u_opt;
+    bool d_opt;
+    int outfmt_opt;
+
+    // 计数/比例阈值
+    double Lnorm_ass;
+    double d0_scale;
+    double TMcut;
+};
+
+struct ParsedInput
+{
+    // 解析结果：由 PDB 文件解析得到的链列表、序列及派生配置
+    std::vector<std::string> chain1_list;
+    std::vector<std::string> chain2_list;
+    std::vector<std::string> sequence;
+    bool autojustify;
+};
+
+struct AlignCommonInput
+{
+    UserOptions user_options;
+    ParsedInput parsed_input;
+};
+
+struct FlexalignParams
+{
+    FlexAlignMode mode;
+    int hinge_opt;
+    bool hinge_set;
+    double TMpass;
+};
+
 inline void output_flexalign_results(const string xname, const string yname,
     const string chainID1, const string chainID2,
-    const int xlen, const int ylen, const Vec3& t, const RotMat& u,
-    const DoubleMatrix&tu_vec, const double TM1, const double TM2,
-    const double TM3, const double TM4, const double TM5,
-    const double rmsd, const double d0_out, const std::string& seqM,
-    const std::string& seqxA, const std::string& seqyA, const double Liden,
-    const int n_ali8, const int L_ali, const double TM_ali,
-    const double rmsd_ali, const double TM_0, const double d0_0,
-    const double d0A, const double d0B, const double Lnorm_ass,
-    const double d0_scale, const double d0a, const double d0u,
-    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
-    const int mm_opt, const int split_opt, const int o_opt,
-    const string fname_super, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const int mirror_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2)
+    const int xlen, const int ylen,
+    const FlexAlignResult& res,
+    const UserOptions& opts,
+    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    const int mm_opt)
 {
-    if (outfmt_opt<=0)
+    if (opts.outfmt_opt<=0)
     {
         fcout("\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
             xname, chainID1);
@@ -1176,73 +1278,73 @@ inline void output_flexalign_results(const string xname, const string yname,
         fcout("Length of Structure_1: %d residues\n", xlen);
         fcout("Length of Structure_2: %d residues\n\n", ylen);
 
-        if (i_opt)
-            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", TM_ali, L_ali, rmsd_ali);
+        if (opts.i_opt)
+            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", res.TM_ali, res.L_ali, res.rmsd_ali);
 
-        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
-        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", TM2, xlen, d0B);
-        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", TM1, ylen, d0A);
+        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", res.n_ali8, res.rmsd0, (res.n_ali8>0)?res.Liden/res.n_ali8:0);
+        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", res.TM2, xlen, res.d0B);
+        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", res.TM1, ylen, res.d0A);
 
-        if (a_opt==1)
-            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
-        if (u_opt)
-            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
-        if (d_opt)
-            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
+        if (opts.a_opt==1)
+            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", res.TM3, (xlen+ylen)*0.5, res.d0a);
+        if (opts.u_opt)
+            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", res.TM4, opts.Lnorm_ass, res.d0u);
+        if (opts.d_opt)
+            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", res.TM5, opts.d0_scale, ylen);
         cout << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
         cout << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
-        cout << seqxA << "\n";
-        cout << seqM << "\n";
-        cout << seqyA << "\n";
+        cout << res.seqxA << "\n";
+        cout << res.seqM << "\n";
+        cout << res.seqyA << "\n";
     }
-    else if (outfmt_opt==1)
+    else if (opts.outfmt_opt==1)
     {
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            xname, chainID1, xlen, d0B, Liden/xlen, TM2);
-        cout << seqxA << "\n";
+            xname, chainID1, xlen, res.d0B, res.Liden/xlen, res.TM2);
+        cout << res.seqxA << "\n";
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            yname, chainID2, ylen, d0A, Liden/ylen, TM1);
-        cout << seqyA << "\n";
+            yname, chainID2, ylen, res.d0A, res.Liden/ylen, res.TM1);
+        cout << res.seqyA << "\n";
 
         fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
-            n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
+            res.n_ali8, res.rmsd0, (res.n_ali8>0)?res.Liden/res.n_ali8:0);
 
-        if (i_opt)
-            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", TM_ali, L_ali, rmsd_ali);
+        if (opts.i_opt)
+            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", res.TM_ali, res.L_ali, res.rmsd_ali);
 
-        if(a_opt)
-            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
+        if(opts.a_opt)
+            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", res.TM3, (xlen+ylen)*0.5, res.d0a);
 
-        if(u_opt)
-            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
+        if(opts.u_opt)
+            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", res.TM4, opts.Lnorm_ass, res.d0u);
 
-        if(d_opt)
-            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
+        if(opts.d_opt)
+            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", res.TM5, opts.d0_scale, ylen);
 
         cout << "$$$$\n";
     }
-    else if (outfmt_opt==2)
+    else if (opts.outfmt_opt==2)
     {
         fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname, chainID1, yname, chainID2,
-            TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
-            xlen, ylen, n_ali8);
+            res.TM2, res.TM1, res.rmsd0, res.Liden/xlen, res.Liden/ylen, (res.n_ali8>0)?res.Liden/res.n_ali8:0,
+            xlen, ylen, res.n_ali8);
     }
     cout << endl;
 
-    if (!fname_matrix.empty()) output_flexalign_rotation_matrix(
-            fname_matrix, tu_vec);
+    if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_rotation_matrix(
+            opts.fname_matrix, res.tu_vec);
 
-    if (o_opt==1) output_flexalign_pymol(xname, yname, fname_super, tu_vec,
-            ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+    if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, res.tu_vec,
+            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, res.seqM, res.seqxA, res.seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2);
-    else if (o_opt==2)
-        output_flexalign_rasmol(xname, yname, fname_super, tu_vec,
-            ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+    else if (opts.o_opt==2)
+        output_flexalign_rasmol(xname, yname, opts.fname_super, res.tu_vec,
+            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, res.seqM, res.seqxA, res.seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2,
-            xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
+            xlen, ylen, res.d0A, res.n_ali8, res.rmsd0, res.TM1, res.Liden);
 }
 
 
@@ -2104,117 +2206,6 @@ inline void denoise_segments(
         a_opt, u_opt, d_opt, n_ali8);
     remove_unused_segments(seqM, tu_vec);
 }
-
-struct FlexAlignResult
-{
-    Vec3 t0;                        
-    RotMat u0;                      
-    vector<vector<double> > tu_vec;
-    double TM1, TM2, TM3, TM4, TM5;
-    double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out;
-    string seqM, seqxA, seqyA;
-    vector<double> do_vec;
-    double rmsd0, Liden, TM_ali, rmsd_ali;
-    int L_ali, n_ali, n_ali8, hingeNum;
-
-    FlexAlignResult() : TM1(-1.0), TM2(-1.0), TM3(-1.0), TM4(-1.0), TM5(-1.0),
-                        d0_0(0.0), TM_0(0.0), d0A(0.0), d0B(0.0), d0u(0.0), d0a(0.0), d0_out(5.0),
-                        rmsd0(0.0), Liden(0.0), TM_ali(0.0), rmsd_ali(0.0),
-                        L_ali(0), n_ali(0), n_ali8(0), hingeNum(0),
-                        t0{0.0, 0.0, 0.0}
-    {
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                u0[i][j] = (i == j) ? 1.0 : 0.0;
-    }
-};
-
-struct ParsedChain {
-    // --- 24-byte heavy objects (vector / string) ---
-    CoordArray     chain_coords;            // 3D coordinates
-    string         chain_seq;              // sequence
-    string         chain_sec;              // secondary structure
-    vector<string> resi_vec;                 // residue index (for -do output)
-    string         chain_id;                 // chain ID
-    string         filename;                 // source filename (for output)
-    vector<string> pdb_lines;                // raw PDB lines (for -do output)
-    // --- 4-byte scalars packed together ---
-    int            chain_len;                // length
-    int            cur_complex_mol_list;     // molecule type (-1=protein, 1=RNA)
-};
-
-enum FlexAlignMode
-{
-    FLEX_BEST = 0,
-    FLEX_USBCAT = 1
-};
-
-struct UserOptions
-{
-    // 文件路径：结构文件和输出文件
-    std::string xname;
-    std::string yname;
-    std::string fname_super;
-    std::string fname_lign;
-    std::string fname_matrix;
-
-    // 目录选项：命令行提供的目录参数
-    std::string dir_opt;
-    std::string dirpair_opt;
-    std::string dir1_opt;
-    std::string dir2_opt;
-
-    // 命令行选项：格式、过滤等配置
-    int infmt1_opt;
-    int infmt2_opt;
-    int ter_opt;
-    int split_opt;
-    int het_opt;
-    std::string atom_opt;
-    std::string mol_opt;
-    int mirror_opt;
-    std::vector<std::string> chain2parse1;
-    std::vector<std::string> chain2parse2;
-    std::vector<std::string> model2parse1;
-    std::vector<std::string> model2parse2;
-    int byresi_opt;
-    bool fast_opt;
-    int i_opt;
-    int o_opt;
-    int a_opt;
-    bool m_opt;
-    bool u_opt;
-    bool d_opt;
-    int outfmt_opt;
-
-    // 计数/比例阈值
-    double Lnorm_ass;
-    double d0_scale;
-    double TMcut;
-};
-
-struct ParsedInput
-{
-    // 解析结果：由 PDB 文件解析得到的链列表、序列及派生配置
-    std::vector<std::string> chain1_list;
-    std::vector<std::string> chain2_list;
-    std::vector<std::string> sequence;
-    bool autojustify;
-};
-
-struct AlignCommonInput
-{
-    UserOptions user_options;
-    ParsedInput parsed_input;
-};
-
-struct FlexalignParams
-{
-    FlexAlignMode mode;
-    int hinge_opt;
-    bool hinge_set;
-    double TMpass;
-};
 
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
