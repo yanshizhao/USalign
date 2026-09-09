@@ -2363,18 +2363,22 @@ inline bool parse_chain(
 void run_flexalign_main(
     CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
-    int xlen, int ylen, const vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
-    const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool force_fast_opt,
+    int xlen, int ylen,
+    const AlignCommonInput& common_inputs,
     const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &res)
 {
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+    bool force_fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
+
     res.hingeNum = flexalign_main(
         xa, ya, seqx, seqy, secx, secy,
         res.t0, res.u0, res.tu_vec, res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
         res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
         res.seqM, res.seqxA, res.seqyA, res.do_vec,
         res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, force_fast_opt,
+        xlen, ylen, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
         mol_type, hinge_opt, ss_opt);
 
     
@@ -2393,8 +2397,8 @@ void run_flexalign_main(
             res_h.seqM, res_h.seqxA, res_h.seqyA, res_h.do_vec,
             res_h.rmsd0, res_h.L_ali, res_h.Liden, res_h.TM_ali, res_h.rmsd_ali,
             res_h.n_ali, res_h.n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, force_fast_opt,
+            xlen, ylen, parsed.sequence, opts.Lnorm_ass, opts.d0_scale, opts.i_opt,
+            opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
             mol_type, hinge_opt, ss_opt);
 
         double TM = (res.TM1 > res.TM2) ? res.TM1 : res.TM2;
@@ -2416,18 +2420,13 @@ inline void align_with_flexalign_main(
     int mol_type, int hinge_opt,
     FlexAlignResult& align_result)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-    bool force_fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
-
     double TM_best_max = -1.0;
     for (int cur_ss_opt = 0; cur_ss_opt <= MAX_SEC_STRUCT_OPT; cur_ss_opt++)
     {
         FlexAlignResult cur_res;
         run_flexalign_main(
             xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
+            xlen, ylen, common_inputs,
             mol_type, hinge_opt, cur_ss_opt, cur_res);
         double cur_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
         if (cur_max_TM > TM_best_max)
