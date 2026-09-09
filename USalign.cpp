@@ -4915,22 +4915,78 @@ bool is_single_mm1_align(int mm_opt,
 
 
 
-int Flexalign(string &xname, string &yname, const string &fname_super,
-                      const string &fname_lign, const string &fname_matrix,
-                      vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
-                      const bool m_opt, const int i_opt, const int o_opt, const int a_opt,
-                      const bool u_opt, const bool d_opt, const double TMcut,
-                      const int infmt1_opt, const int infmt2_opt, const int ter_opt,
-                      const int split_opt, const int outfmt_opt, const bool fast_opt,
-                      const int mirror_opt, const int het_opt, const string &atom_opt,
-                      const bool autojustify, const string &mol_opt, const string &dir_opt,
-                      const string &dirpair_opt, const string &dir1_opt, const string &dir2_opt,
-                      const vector<string> &chain2parse1, const vector<string> &chain2parse2,
-                      const vector<string> &model2parse1, const vector<string> &model2parse2,
-                      const int byresi_opt, const vector<string> &chain1_list,
-                      const vector<string> &chain2_list, const int hinge_opt, const int ss_opt,
-                      FlexAlignMode mode = FLEX_BEST, bool hinge_set = false, double TMpass = 0.85)
+void fill_align_common_input(
+    AlignCommonInput& common_inputs,
+    const string& xname, const string& yname,
+    const string& fname_super, const string& fname_lign, const string& fname_matrix,
+    const vector<string>& sequence,
+    double Lnorm_ass, double d0_scale,
+    bool m_opt, int i_opt, int o_opt, int a_opt, bool u_opt, bool d_opt, double TMcut,
+    int infmt1_opt, int infmt2_opt, int ter_opt, int split_opt, int outfmt_opt,
+    bool fast_opt, int mirror_opt, int het_opt, const string& atom_opt,
+    bool autojustify, const string& mol_opt, const string& dir_opt, const string& dirpair_opt,
+    const string& dir1_opt, const string& dir2_opt,
+    const vector<string>& chain2parse1, const vector<string>& chain2parse2,
+    const vector<string>& model2parse1, const vector<string>& model2parse2,
+    int byresi_opt,
+    const vector<string>& chain1_list, const vector<string>& chain2_list)
 {
+    common_inputs.user_options.xname = xname;
+    common_inputs.user_options.yname = yname;
+    common_inputs.user_options.fname_super = fname_super;
+    common_inputs.user_options.fname_lign = fname_lign;
+    common_inputs.user_options.fname_matrix = fname_matrix;
+    common_inputs.user_options.dir_opt = dir_opt;
+    common_inputs.user_options.dirpair_opt = dirpair_opt;
+    common_inputs.user_options.dir1_opt = dir1_opt;
+    common_inputs.user_options.dir2_opt = dir2_opt;
+    common_inputs.user_options.infmt1_opt = infmt1_opt;
+    common_inputs.user_options.infmt2_opt = infmt2_opt;
+    common_inputs.user_options.ter_opt = ter_opt;
+    common_inputs.user_options.split_opt = split_opt;
+    common_inputs.user_options.het_opt = het_opt;
+    common_inputs.user_options.atom_opt = atom_opt;
+    common_inputs.user_options.mol_opt = mol_opt;
+    common_inputs.user_options.mirror_opt = mirror_opt;
+    common_inputs.user_options.chain2parse1 = chain2parse1;
+    common_inputs.user_options.chain2parse2 = chain2parse2;
+    common_inputs.user_options.model2parse1 = model2parse1;
+    common_inputs.user_options.model2parse2 = model2parse2;
+    common_inputs.user_options.byresi_opt = byresi_opt;
+    common_inputs.user_options.fast_opt = fast_opt;
+    common_inputs.user_options.i_opt = i_opt;
+    common_inputs.user_options.o_opt = o_opt;
+    common_inputs.user_options.a_opt = a_opt;
+    common_inputs.user_options.m_opt = m_opt;
+    common_inputs.user_options.u_opt = u_opt;
+    common_inputs.user_options.d_opt = d_opt;
+    common_inputs.user_options.outfmt_opt = outfmt_opt;
+    common_inputs.user_options.Lnorm_ass = Lnorm_ass;
+    common_inputs.user_options.d0_scale = d0_scale;
+    common_inputs.user_options.TMcut = TMcut;
+
+    common_inputs.parsed_input.chain1_list = chain1_list;
+    common_inputs.parsed_input.chain2_list = chain2_list;
+    common_inputs.parsed_input.sequence = sequence;
+    common_inputs.parsed_input.autojustify = autojustify;
+}
+
+void fill_flexalign_params(
+    FlexalignParams& flex_params,
+    bool usbcat_opt, int hinge_opt, bool hinge_set, double TMpass_opt)
+{
+    flex_params.mode = usbcat_opt ? FLEX_USBCAT : FLEX_BEST;
+    flex_params.hinge_opt = hinge_opt;
+    flex_params.hinge_set = (flex_params.mode == FLEX_USBCAT) ? hinge_set : false;
+    flex_params.TMpass = (flex_params.mode == FLEX_USBCAT) ? TMpass_opt : 0.85;
+}
+
+int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_params,
+              FlexAlignResult& flex_result)
+{
+    UserOptions& opts = common_inputs.user_options;
+    ParsedInput& parsed = common_inputs.parsed_input;
+
     vector<vector<string> > PDB_lines1; // text of chain1
     vector<vector<string> > PDB_lines2; // text of chain2
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -4940,88 +4996,88 @@ int Flexalign(string &xname, string &yname, const string &fname_super,
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    int read_resi = ((byresi_opt == 0) && o_opt) ? 2 : byresi_opt;  // whether to read residue index
+    int read_resi = ((opts.byresi_opt == 0) && opts.o_opt) ? 2 : opts.byresi_opt;  // whether to read residue index
 
     // loop over file names
-    for (i=0;i<chain1_list.size();i++)
+    for (i=0;i<parsed.chain1_list.size();i++)
     {
         // parse chain 1
-        xname=chain1_list[i];
-        xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1,
-            mol_vec1, ter_opt, infmt1_opt, atom_opt, autojustify,
-            split_opt, het_opt, chain2parse1, model2parse1);
+        opts.xname=parsed.chain1_list[i];
+        xchainnum=get_PDB_lines(opts.xname, PDB_lines1, chainID_list1,
+            mol_vec1, opts.ter_opt, opts.infmt1_opt, opts.atom_opt, parsed.autojustify,
+            opts.split_opt, opts.het_opt, opts.chain2parse1, opts.model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
+            cerr<<"Warning! Cannot parse file: "<<opts.xname
                 <<". Chain number 0."<<endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
         {
             ParsedChain chain1_data;
-            if (!parse_chain(xname, PDB_lines1, chainID_list1, mol_vec1,
-                    chain_i, mol_opt, mirror_opt, read_resi,
-                    ter_opt, infmt1_opt, atom_opt, autojustify,
-                    split_opt, het_opt, chain2parse1, model2parse1, chain1_data))
+            if (!parse_chain(opts.xname, PDB_lines1, chainID_list1, mol_vec1,
+                    chain_i, opts.mol_opt, opts.mirror_opt, read_resi,
+                    opts.ter_opt, opts.infmt1_opt, opts.atom_opt, parsed.autojustify,
+                    opts.split_opt, opts.het_opt, opts.chain2parse1, opts.model2parse1, chain1_data))
                 continue;
 
-            int j_start = (dir_opt.size() > 0) * (i + 1);
-            for (j = j_start; j < chain2_list.size(); j++)
+            int j_start = (opts.dir_opt.size() > 0) * (i + 1);
+            for (j = j_start; j < parsed.chain2_list.size(); j++)
             {
-                if (dirpair_opt.size() && i!=j) continue;
+                if (opts.dirpair_opt.size() && i!=j) continue;
                 // parse chain 2
                 if (PDB_lines2.size() == 0)
                 {
-                    yname = chain2_list[j];
-                    ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2,
-                        mol_vec2, ter_opt, infmt2_opt, atom_opt, autojustify,
-                        split_opt, het_opt, chain2parse2, model2parse2);
+                    opts.yname = parsed.chain2_list[j];
+                    ychainnum=get_PDB_lines(opts.yname, PDB_lines2, chainID_list2,
+                        mol_vec2, opts.ter_opt, opts.infmt2_opt, opts.atom_opt, parsed.autojustify,
+                        opts.split_opt, opts.het_opt, opts.chain2parse2, opts.model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<yname<<". Chain number 0."<<endl;
+                        cerr<<"Warning! Cannot parse file: "<<opts.yname<<". Chain number 0."<<endl;
                         continue;
                     }
                 }
                 for (chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     ParsedChain chain2_data;
-                    if (!parse_chain(yname, PDB_lines2, chainID_list2, mol_vec2,
-                            chain_j, mol_opt, 0, read_resi,
-                            ter_opt, infmt2_opt, atom_opt, autojustify,
-                            split_opt, het_opt, chain2parse2, model2parse2, chain2_data))
+                    if (!parse_chain(opts.yname, PDB_lines2, chainID_list2, mol_vec2,
+                            chain_j, opts.mol_opt, 0, read_resi,
+                            opts.ter_opt, opts.infmt2_opt, opts.atom_opt, parsed.autojustify,
+                            opts.split_opt, opts.het_opt, opts.chain2parse2, opts.model2parse2, chain2_data))
                         continue;
 
-                    if (byresi_opt)
-                        extract_aln_from_resi(sequence, chain1_data.chain_seq, chain2_data.chain_seq,
-                            chain1_data.resi_vec, chain2_data.resi_vec, byresi_opt);
+                    if (opts.byresi_opt)
+                        extract_aln_from_resi(parsed.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
+                            chain1_data.resi_vec, chain2_data.resi_vec, opts.byresi_opt);
 
-                    bool force_fast_opt = (getmin(chain1_data.chain_len, chain2_data.chain_len) > 1500) ? true : fast_opt;
+                    bool force_fast_opt = (getmin(chain1_data.chain_len, chain2_data.chain_len) > 1500) ? true : opts.fast_opt;
 
-                    FlexAlignResult res;
-                    run_flexalign(mode, chain1_data, chain2_data, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt, force_fast_opt,
-                        hinge_opt, ss_opt, hinge_set, TMpass, res);
+                    flex_result = FlexAlignResult();
+                    run_flexalign(flex_params.mode, chain1_data, chain2_data, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+                        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
+                        flex_params.hinge_opt, 0, flex_params.hinge_set, flex_params.TMpass, flex_result);
 
-                    if (outfmt_opt==0) print_version();
+                    if (opts.outfmt_opt==0) print_version();
                     output_flexalign_results(
-                        xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
-                        yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
+                        opts.xname.substr(opts.dir1_opt.size()+opts.dir_opt.size()+opts.dirpair_opt.size()),
+                        opts.yname.substr(opts.dir2_opt.size()+opts.dir_opt.size()+opts.dirpair_opt.size()),
                         chain1_data.chain_id, chain2_data.chain_id,
-                        chain1_data.chain_len, chain2_data.chain_len, res.t0, res.u0, res.tu_vec,
-                        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
-                        res.rmsd0, res.d0_out, res.seqM,
-                        res.seqxA, res.seqyA, res.Liden,
-                        res.n_ali8, res.L_ali, res.TM_ali, res.rmsd_ali,
-                        res.TM_0, res.d0_0,
-                        res.d0A, res.d0B, Lnorm_ass, d0_scale, res.d0a, res.d0u,
-                        (m_opt?fname_matrix:"").c_str(),
-                        outfmt_opt, ter_opt, false, split_opt, o_opt,
-                        fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                        chain1_data.chain_len, chain2_data.chain_len, flex_result.t0, flex_result.u0, flex_result.tu_vec,
+                        flex_result.TM1, flex_result.TM2, flex_result.TM3, flex_result.TM4, flex_result.TM5,
+                        flex_result.rmsd0, flex_result.d0_out, flex_result.seqM,
+                        flex_result.seqxA, flex_result.seqyA, flex_result.Liden,
+                        flex_result.n_ali8, flex_result.L_ali, flex_result.TM_ali, flex_result.rmsd_ali,
+                        flex_result.TM_0, flex_result.d0_0,
+                        flex_result.d0A, flex_result.d0B, opts.Lnorm_ass, opts.d0_scale, flex_result.d0a, flex_result.d0u,
+                        (opts.m_opt?opts.fname_matrix:"").c_str(),
+                        opts.outfmt_opt, opts.ter_opt, false, opts.split_opt, opts.o_opt,
+                        opts.fname_super, opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.mirror_opt,
                         chain1_data.resi_vec, chain2_data.resi_vec);
                 } // chain_j
-                if (chain2_list.size()>1)
+                if (parsed.chain2_list.size()>1)
                 {
-                    yname.clear();
+                    opts.yname.clear();
                     for (chain_j=0;chain_j<ychainnum;chain_j++)
                         PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
@@ -5031,14 +5087,14 @@ int Flexalign(string &xname, string &yname, const string &fname_super,
             } // j
             PDB_lines1[chain_i].clear();
         } // chain_i
-        xname.clear();
+        opts.xname.clear();
         PDB_lines1.clear();
         chainID_list1.clear();
         mol_vec1.clear();
     } // i
-    if (chain2_list.size()==1)
+    if (parsed.chain2_list.size()==1)
     {
-        yname.clear();
+        opts.yname.clear();
         for (chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
@@ -5709,17 +5765,21 @@ int main(int argc, char *argv[])
         parallel_threads);
     else if (mm_opt==7)
     {
-        FlexAlignMode mode = usbcat_opt ? FLEX_USBCAT : FLEX_BEST;
-        bool hinge_set_param = (mode == FLEX_USBCAT) ? hinge_set : false;
-        double TMpass_param = (mode == FLEX_USBCAT) ? TMpass_opt : 0.85;
-        Flexalign(xname, yname, fname_super, fname_lign,
+        AlignCommonInput common_inputs;
+        FlexalignParams flex_params;
+        FlexAlignResult flex_result;
+
+        fill_align_common_input(common_inputs, xname, yname, fname_super, fname_lign,
             fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
             a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
             split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
             atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
             dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-            byresi_opt, chain1_list, chain2_list, hinge_opt, 0,
-            mode, hinge_set_param, TMpass_param);
+            byresi_opt, chain1_list, chain2_list);
+
+        fill_flexalign_params(flex_params, usbcat_opt, hinge_opt, hinge_set, TMpass_opt);
+
+        Flexalign(common_inputs, flex_params, flex_result);
     }
     else cerr<<"WARNING! -mm "<<mm_opt<<" not implemented"<<endl;
 
