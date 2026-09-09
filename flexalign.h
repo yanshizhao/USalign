@@ -3987,14 +3987,7 @@ inline void update_global_best_align(
     const std::string& seqy,
     const std::string& secx,
     const std::string& secy,
-    const std::vector<std::string>& sequence,
-    const double Lnorm_ass,
-    const double d0_scale,
-    const int i_opt,
-    const int a_opt,
-    const bool u_opt,
-    const bool d_opt,
-    const bool fast_opt,
+    const AlignCommonInput& common_inputs,
     const int mol_type,
     const int xlen,
     const int ylen,
@@ -4002,6 +3995,9 @@ inline void update_global_best_align(
     FlexAlignResult& best_res,
     double& best_global_max_TM)
 {
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+
     for (size_t pool_idx = 0; pool_idx < region_bound_pool.region_bounds.size(); pool_idx++)
     {
         RegionBoundsAllChain& cur_bound_pool = region_bound_pool.region_bounds[pool_idx];
@@ -4022,15 +4018,15 @@ inline void update_global_best_align(
             cur_bound_pool,
             region_num, hinge_set,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            sequence, Lnorm_ass, d0_scale,
-            i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type);
+            parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt, mol_type);
 
         GlobalAlignResult global_align_res;
         global_align_res.res_tu.assign(xlen, -1);
         build_gloabal_align_result(region_align_res, chain1_bounds, chain2_bounds, region_num, seqx, seqy, global_align_res);
         FlexAlignResult cur_res = recompute_global_metrics(
-            global_align_res, xa, ya, seqx, seqy, xlen, ylen, Lnorm_ass, d0_scale,
-            a_opt, u_opt, d_opt, mol_type, d0_out);
+            global_align_res, xa, ya, seqx, seqy, xlen, ylen, opts.Lnorm_ass, opts.d0_scale,
+            opts.a_opt, opts.u_opt, opts.d_opt, mol_type, d0_out);
 
         double cur_global_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
         if (cur_global_max_TM > best_global_max_TM)
@@ -4057,10 +4053,6 @@ int flexalign_usbcat_main(
     const FlexalignParams& flex_params,
     FlexAlignResult& res)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-    bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
-
     FlexAlignResult global_best_align = flexalign_main_res;
 
     USBCATParams usb_cat_para;
@@ -4086,8 +4078,8 @@ int flexalign_usbcat_main(
         region_bound_pool,
         flex_params.hinge_set, hinge_opt,
         usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-        parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, fast_opt, mol_type,
+        common_inputs,
+        mol_type,
         xlen, ylen, res.d0_out,
         global_best_align, best_global_max_TM);
 
