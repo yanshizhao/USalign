@@ -2435,49 +2435,14 @@ inline int flexalign_usbcat_main(
     const std::string &seqy,
     const std::string &secx,
     const std::string &secy,
-    Vec3& t0,
-    RotMat& u0,
-    std::vector<std::vector<double> > &tu_vec,
-    double &TM1,
-    double &TM2,
-    double &TM3,
-    double &TM4,
-    double &TM5,
-    double &d0_0,
-    double &TM_0,
-    double &d0A,
-    double &d0B,
-    double &d0u,
-    double &d0a,
-    double &d0_out,
-    std::string &seqM,
-    std::string &seqxA,
-    std::string &seqyA,
-    std::vector<double> &do_vec,
-    double &rmsd0,
-    int &L_ali,
-    double &Liden,
-    double &TM_ali,
-    double &rmsd_ali,
-    int &n_ali,
-    int &n_ali8,
-    const int xlen,
-    const int ylen,
-    const std::vector<std::string> &sequence,
-    const double Lnorm_ass,
-    const double d0_scale,
-    const int i_opt,
-    const int a_opt,
-    const bool u_opt,
-    const bool d_opt,
-    const bool fast_opt,
-    const int mol_type,
-    const int hinge_opt,
+    int xlen,
+    int ylen,
+    const AlignCommonInput& common_inputs,
     const FlexAlignResult& flexalign_main_res,
-    double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
+    int mol_type, int hinge_opt, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     int sparse_val,
-    bool hinge_set,
-    const double TMpass);
+    const FlexalignParams& flex_params,
+    FlexAlignResult& res);
 
 
 
@@ -2542,10 +2507,6 @@ inline int flexalign_with_usbcat_main(
     const FlexalignParams& flex_params,
     FlexAlignResult& res)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-    bool force_fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
-
     if (best_global_max_TM >= flex_params.TMpass)
     {
         res = flexalign_main_res;
@@ -2555,20 +2516,13 @@ inline int flexalign_with_usbcat_main(
         xa, ya,
         seqx, seqy,
         secx, secy,
-        res.t0, res.u0, res.tu_vec,
-        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
-        res.d0_0, res.TM_0,
-        res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
-        res.seqM, res.seqxA, res.seqyA, res.do_vec,
-        res.rmsd0, res.L_ali, res.Liden,
-        res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
         xlen, ylen,
-        parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
-        mol_type,
-        hinge_opt,
-        flexalign_main_res, best_global_max_TM,
-        0, flex_params.hinge_set, flex_params.TMpass);
+        common_inputs,
+        flexalign_main_res,
+        mol_type, hinge_opt, best_global_max_TM,
+        0,
+        flex_params,
+        res);
     return hingeNum;
 }
 
@@ -4094,50 +4048,19 @@ int flexalign_usbcat_main(
     const std::string &seqy,
     const std::string &secx,
     const std::string &secy,
-    Vec3& t0,
-    RotMat& u0,
-    std::vector<std::vector<double> > &tu_vec,
-    double &TM1,
-    double &TM2,
-    double &TM3,
-    double &TM4,
-    double &TM5,
-    double &d0_0,
-    double &TM_0,
-    double &d0A,
-    double &d0B,
-    double &d0u,
-    double &d0a,
-    double &d0_out,
-    std::string &seqM,
-    std::string &seqxA,
-    std::string &seqyA,
-    std::vector<double> &do_vec,
-    double &rmsd0,
-    int &L_ali,
-    double &Liden,
-    double &TM_ali,
-    double &rmsd_ali,
-    int &n_ali,
-    int &n_ali8,
-    const int xlen,
-    const int ylen,
-    const std::vector<std::string> &sequence,
-    const double Lnorm_ass,
-    const double d0_scale,
-    const int i_opt,
-    const int a_opt,
-    const bool u_opt,
-    const bool d_opt,
-    const bool fast_opt,
-    const int mol_type,
-    const int hinge_opt,
+    int xlen,
+    int ylen,
+    const AlignCommonInput& common_inputs,
     const FlexAlignResult& flexalign_main_res,
-    double best_global_max_TM, 
-    int sparse_val = 0,
-    bool hinge_set = false,
-    const double TMpass = 0.85)
+    int mol_type, int hinge_opt, double best_global_max_TM,
+    int sparse_val,
+    const FlexalignParams& flex_params,
+    FlexAlignResult& res)
 {
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+    bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
+
     FlexAlignResult global_best_align = flexalign_main_res;
 
     USBCATParams usb_cat_para;
@@ -4161,11 +4084,11 @@ int flexalign_usbcat_main(
 
     update_global_best_align(
         region_bound_pool,
-        hinge_set, hinge_opt,
+        flex_params.hinge_set, hinge_opt,
         usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-        sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type,
-        xlen, ylen, d0_out,
+        parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, fast_opt, mol_type,
+        xlen, ylen, res.d0_out,
         global_best_align, best_global_max_TM);
 
     // Safety check
@@ -4173,10 +4096,7 @@ int flexalign_usbcat_main(
         return 0;
 
     // Output best values back to the reference parameters
-    save_flexalign_result(global_best_align, t0, u0, tu_vec,
-        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-        d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8);
+    res = global_best_align;
 
-    return tu_vec.size();
+    return res.tu_vec.size();
 }
