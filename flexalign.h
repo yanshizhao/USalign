@@ -2251,6 +2251,7 @@ struct UserOptions
     int split_opt;
     int het_opt;
     std::string atom_opt;
+    std::string mol_opt;
     int mirror_opt;
     std::vector<std::string> chain2parse1;
     std::vector<std::string> chain2parse2;
