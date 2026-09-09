@@ -2743,60 +2743,6 @@ inline bool afp_less_by_ij(const USBCAT_AFP& a, const USBCAT_AFP& b)
     return a.i < b.i;
 }
 
-inline void save_flexalign_result(
-    const FlexAlignResult& best,
-    Vec3& t0,
-    RotMat& u0,
-    std::vector<std::vector<double> >& tu_vec,
-    double& TM1,
-    double& TM2,
-    double& TM3,
-    double& TM4,
-    double& TM5,
-    double& d0_0,
-    double& TM_0,
-    double& d0A,
-    double& d0B,
-    double& d0u,
-    double& d0a,
-    double& d0_out,
-    std::string& seqM,
-    std::string& seqxA,
-    std::string& seqyA,
-    std::vector<double>& do_vec,
-    double& rmsd0,
-    int& L_ali,
-    double& Liden,
-    double& TM_ali,
-    double& rmsd_ali,
-    int& n_ali,
-    int& n_ali8)
-{
-    TM1 = best.TM1;
-    TM2 = best.TM2;
-    TM3 = best.TM3;
-    TM4 = best.TM4;
-    TM5 = best.TM5;
-    rmsd0 = best.rmsd0;
-    Liden = best.Liden;
-    TM_ali = best.TM_ali;
-    rmsd_ali = best.rmsd_ali;
-    L_ali = best.L_ali;
-    n_ali = best.n_ali;
-    n_ali8 = best.n_ali8;
-    seqM = best.seqM;
-    seqxA = best.seqxA;
-    seqyA = best.seqyA;
-    do_vec = best.do_vec;
-    tu_vec = best.tu_vec;
-    d0A = best.d0A;
-    d0B = best.d0B;
-    d0a = best.d0a;
-    d0u = best.d0u;
-    t0 = best.t0;
-    u0 = best.u0;
-}
-
 struct AFPBlock
 {
     std::vector<USBCAT_AFP> afps;
