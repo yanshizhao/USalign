@@ -2411,20 +2411,23 @@ inline void align_with_flexalign_main(
     CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
-    int xlen, int ylen, const std::vector<std::string> &sequence,
-    const double Lnorm_ass, const double d0_scale,
-    const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool force_fast_opt,
-    const int mol_type, const int hinge_opt,
+    int xlen, int ylen,
+    const AlignCommonInput& common_inputs,
+    int mol_type, int hinge_opt,
     FlexAlignResult& align_result)
 {
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+    bool force_fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
+
     double TM_best_max = -1.0;
     for (int cur_ss_opt = 0; cur_ss_opt <= MAX_SEC_STRUCT_OPT; cur_ss_opt++)
     {
         FlexAlignResult cur_res;
         run_flexalign_main(
             xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale,
-            i_opt, a_opt, u_opt, d_opt, force_fast_opt,
+            xlen, ylen, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
             mol_type, hinge_opt, cur_ss_opt, cur_res);
         double cur_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
         if (cur_max_TM > TM_best_max)
@@ -2527,10 +2530,8 @@ inline void run_flexalign(
     FlexAlignResult flexalign_main_res;
     align_with_flexalign_main(
         xa, ya, seqx, seqy, secx, secy,
-        chain1_data.chain_len, chain2_data.chain_len, parsed.sequence,
-        opts.Lnorm_ass, opts.d0_scale,
-        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt_global,
-        mol_type, flex_params.hinge_opt, flexalign_main_res);
+        chain1_data.chain_len, chain2_data.chain_len,
+        common_inputs, mol_type, flex_params.hinge_opt, flexalign_main_res);
     double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
 
     switch (flex_params.mode)
@@ -3762,13 +3763,20 @@ inline void align_cur_region(
     RegionPdbData cur_reg_data;
     get_cur_region_pdb_data(xa, ya, seqx, secx, seqy, secy, region_x_start, region_x_len, region_y_start, region_y_len, cur_reg_data);
 
-    bool force_fast_opt = (std::min(region_x_len, region_y_len) > 1500) ? true : fast_opt;
+    AlignCommonInput common_inputs;
+    common_inputs.user_options.Lnorm_ass = Lnorm_ass;
+    common_inputs.user_options.d0_scale = d0_scale;
+    common_inputs.user_options.i_opt = i_opt;
+    common_inputs.user_options.a_opt = a_opt;
+    common_inputs.user_options.u_opt = u_opt;
+    common_inputs.user_options.d_opt = d_opt;
+    common_inputs.user_options.fast_opt = fast_opt;
+    common_inputs.parsed_input.sequence = local_sequence;
 
     align_with_flexalign_main(
         cur_reg_data.xa, cur_reg_data.ya, cur_reg_data.seqx, cur_reg_data.seqy, cur_reg_data.secx, cur_reg_data.secy,
-        region_x_len, region_y_len, local_sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, force_fast_opt,
-        mol_type, local_hinge_opt, cur_region_align_res);
+        region_x_len, region_y_len,
+        common_inputs, mol_type, local_hinge_opt, cur_region_align_res);
 }
 
 inline void run_region_align(
