@@ -3841,22 +3841,20 @@ inline FlexAlignResult recompute_global_metrics(
     const std::string& seqy,
     const int xlen,
     const int ylen,
-    const double Lnorm_ass,
-    const double d0_scale,
-    const int a_opt,
-    const bool u_opt,
-    const bool d_opt,
+    const AlignCommonInput& common_inputs,
     const int mol_type,
     const double d0_out)
 {
+    const UserOptions& opts = common_inputs.user_options;
+
     double dummy_D0_MIN, dummy_Lnorm, dummy_d0_search;
     double cur_d0A, cur_d0B, cur_d0a, cur_d0u = 0.0;
 
     parameter_set4final(ylen, dummy_D0_MIN, dummy_Lnorm, cur_d0A, dummy_d0_search, mol_type);
     parameter_set4final(xlen, dummy_D0_MIN, dummy_Lnorm, cur_d0B, dummy_d0_search, mol_type);
     parameter_set4final((xlen + ylen) * 0.5, dummy_D0_MIN, dummy_Lnorm, cur_d0a, dummy_d0_search, mol_type);
-    if (u_opt)
-        parameter_set4final(Lnorm_ass, dummy_D0_MIN, dummy_Lnorm, cur_d0u, dummy_d0_search, mol_type);
+    if (opts.u_opt)
+        parameter_set4final(opts.Lnorm_ass, dummy_D0_MIN, dummy_Lnorm, cur_d0u, dummy_d0_search, mol_type);
 
     
     FlexAlignResult res;
@@ -3891,12 +3889,12 @@ inline FlexAlignResult recompute_global_metrics(
 
                 res.TM2 += 1.0 / (1.0 + dist2 / (cur_d0B * cur_d0B));
                 res.TM1 += 1.0 / (1.0 + dist2 / (cur_d0A * cur_d0A));
-                if (a_opt)
+                if (opts.a_opt)
                     res.TM3 += 1.0 / (1.0 + dist2 / (cur_d0a * cur_d0a));
-                if (u_opt)
+                if (opts.u_opt)
                     res.TM4 += 1.0 / (1.0 + dist2 / (cur_d0u * cur_d0u));
-                if (d_opt)
-                    res.TM5 += 1.0 / (1.0 + dist2 / (d0_scale * d0_scale));
+                if (opts.d_opt)
+                    res.TM5 += 1.0 / (1.0 + dist2 / (opts.d0_scale * opts.d0_scale));
 
                 res.n_ali++;
                 res.do_vec.push_back(d);
@@ -3923,11 +3921,11 @@ inline FlexAlignResult recompute_global_metrics(
 
     res.TM2 /= xlen;
     res.TM1 /= ylen;
-    if (a_opt)
+    if (opts.a_opt)
         res.TM3 /= (xlen + ylen) * 0.5;
-    if (u_opt)
-        res.TM4 /= Lnorm_ass;
-    if (d_opt)
+    if (opts.u_opt)
+        res.TM4 /= opts.Lnorm_ass;
+    if (opts.d_opt)
         res.TM5 /= ylen;
     if (res.n_ali8 > 0)
         res.rmsd0 = std::sqrt(res.rmsd0 / res.n_ali8);
@@ -3970,9 +3968,6 @@ inline void update_global_best_align(
     FlexAlignResult& best_res,
     double& best_global_max_TM)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-
     for (size_t pool_idx = 0; pool_idx < region_bound_pool.region_bounds.size(); pool_idx++)
     {
         RegionBoundsAllChain& cur_bound_pool = region_bound_pool.region_bounds[pool_idx];
@@ -3999,8 +3994,8 @@ inline void update_global_best_align(
         global_align_res.res_tu.assign(xlen, -1);
         build_gloabal_align_result(region_align_res, chain1_bounds, chain2_bounds, region_num, seqx, seqy, global_align_res);
         FlexAlignResult cur_res = recompute_global_metrics(
-            global_align_res, xa, ya, seqx, seqy, xlen, ylen, opts.Lnorm_ass, opts.d0_scale,
-            opts.a_opt, opts.u_opt, opts.d_opt, mol_type, d0_out);
+            global_align_res, xa, ya, seqx, seqy, xlen, ylen, common_inputs,
+            mol_type, d0_out);
 
         double cur_global_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
         if (cur_global_max_TM > best_global_max_TM)
