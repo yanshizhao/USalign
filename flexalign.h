@@ -3662,14 +3662,7 @@ inline void align_cur_region(
     const std::string& seqy,
     const std::string& secx,
     const std::string& secy,
-    const std::vector<std::string>& local_sequence,
-    const double Lnorm_ass,
-    const double d0_scale,
-    const int i_opt,
-    const int a_opt,
-    const bool u_opt,
-    const bool d_opt,
-    const bool fast_opt,
+    const AlignCommonInput& common_inputs,
     const int mol_type,
     bool& valid,
     FlexAlignResult& cur_region_align_res)
@@ -3689,16 +3682,6 @@ inline void align_cur_region(
 
     RegionPdbData cur_reg_data;
     get_cur_region_pdb_data(xa, ya, seqx, secx, seqy, secy, region_x_start, region_x_len, region_y_start, region_y_len, cur_reg_data);
-
-    AlignCommonInput common_inputs;
-    common_inputs.user_options.Lnorm_ass = Lnorm_ass;
-    common_inputs.user_options.d0_scale = d0_scale;
-    common_inputs.user_options.i_opt = i_opt;
-    common_inputs.user_options.a_opt = a_opt;
-    common_inputs.user_options.u_opt = u_opt;
-    common_inputs.user_options.d_opt = d_opt;
-    common_inputs.user_options.fast_opt = fast_opt;
-    common_inputs.parsed_input.sequence = local_sequence;
 
     align_with_flexalign_main(
         cur_reg_data.xa, cur_reg_data.ya, cur_reg_data.seqx, cur_reg_data.seqy, cur_reg_data.secx, cur_reg_data.secy,
@@ -3722,9 +3705,6 @@ inline void run_region_align(
     const AlignCommonInput& common_inputs,
     const int mol_type)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-
     for (int region_indx = 0; region_indx < region_num; region_indx++)
     {
         FlexAlignResult cur_align_res;
@@ -3732,8 +3712,7 @@ inline void run_region_align(
         align_cur_region(
             cur_bound_pool, region_indx, hinge_set, remaining_hinges,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt, mol_type,
+            common_inputs, mol_type,
             region_valid, cur_align_res);
 
         int orig_region_idx = cur_bound_pool.region_meta[region_indx].original_region_idx;
