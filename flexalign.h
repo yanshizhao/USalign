@@ -2420,12 +2420,11 @@ inline int flexalign_with_usbcat_main(
     CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
-    int xlen, int ylen, const std::vector<std::string> &sequence,
-    const double Lnorm_ass, const double d0_scale,
-    const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool force_fast_opt,
-    const int mol_type, const int hinge_opt,
-    const FlexAlignResult& flexalign_main_res, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
-    bool hinge_set, const double TMpass,
+    int xlen, int ylen,
+    const AlignCommonInput& common_inputs,
+    const FlexAlignResult& flexalign_main_res,
+    const int mol_type, const int hinge_opt, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
+    const FlexalignParams& flex_params,
     FlexAlignResult& res);
 
 
@@ -2491,9 +2490,6 @@ inline void run_flexalign(
     const FlexalignParams& flex_params,
     FlexAlignResult& res)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-
     CoordArray xa = chain1_data.chain_coords;
     CoordArray ya = chain2_data.chain_coords;
     std::string seqx = chain1_data.chain_seq;
@@ -2501,8 +2497,6 @@ inline void run_flexalign(
     std::string secx = chain1_data.chain_sec;
     std::string secy = chain2_data.chain_sec;
     int mol_type = chain1_data.cur_complex_mol_list + chain2_data.cur_complex_mol_list;
-
-    bool force_fast_opt_global = (std::min(chain1_data.chain_len, chain2_data.chain_len) > 1500) ? true : opts.fast_opt;
 
     FlexAlignResult flexalign_main_res;
     align_with_flexalign_main(
@@ -2519,11 +2513,10 @@ inline void run_flexalign(
                 seqx, seqy,
                 secx, secy,
                 chain1_data.chain_len, chain2_data.chain_len,
-                parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-                opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt_global,
-                mol_type, flex_params.hinge_opt,
-                flexalign_main_res, best_global_max_TM,
-                flex_params.hinge_set, flex_params.TMpass,
+                common_inputs,
+                flexalign_main_res,
+                mol_type, flex_params.hinge_opt, best_global_max_TM,
+                flex_params,
                 res);
             break;
 
@@ -2542,15 +2535,18 @@ inline int flexalign_with_usbcat_main(
     CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
-    int xlen, int ylen, const std::vector<std::string> &sequence,
-    const double Lnorm_ass, const double d0_scale,
-    const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool force_fast_opt,
-    const int mol_type, const int hinge_opt,
-    const FlexAlignResult& flexalign_main_res, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
-    bool hinge_set, const double TMpass,
+    int xlen, int ylen,
+    const AlignCommonInput& common_inputs,
+    const FlexAlignResult& flexalign_main_res,
+    const int mol_type, const int hinge_opt, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
+    const FlexalignParams& flex_params,
     FlexAlignResult& res)
 {
-    if (best_global_max_TM >= TMpass)
+    const UserOptions& opts = common_inputs.user_options;
+    const ParsedInput& parsed = common_inputs.parsed_input;
+    bool force_fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
+
+    if (best_global_max_TM >= flex_params.TMpass)
     {
         res = flexalign_main_res;
         return res.tu_vec.size();
@@ -2567,12 +2563,12 @@ inline int flexalign_with_usbcat_main(
         res.rmsd0, res.L_ali, res.Liden,
         res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
         xlen, ylen,
-        sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, force_fast_opt,
+        parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
+        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, force_fast_opt,
         mol_type,
         hinge_opt,
         flexalign_main_res, best_global_max_TM,
-        0, hinge_set, TMpass);
+        0, flex_params.hinge_set, flex_params.TMpass);
     return hingeNum;
 }
 
