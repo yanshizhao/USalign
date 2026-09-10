@@ -1260,16 +1260,25 @@ struct FlexalignParams
     int hinge_opt;
     bool hinge_set;
     double TMpass;
+    int sparse_val;
 };
 
-inline void output_flexalign_results(const string xname, const string yname,
-    const string chainID1, const string chainID2,
-    const int xlen, const int ylen,
+inline void output_flexalign_results(
+    const ParsedChain& chain1_data, const ParsedChain& chain2_data,
     const FlexAlignResult& res,
     const UserOptions& opts,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
     const int mm_opt)
 {
+    const string xname = opts.xname.substr(opts.dir1_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
+    const string yname = opts.yname.substr(opts.dir2_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
+
+    const string& chainID1 = chain1_data.chain_id;
+    const string& chainID2 = chain2_data.chain_id;
+    const int xlen = chain1_data.chain_len;
+    const int ylen = chain2_data.chain_len;
+    const vector<string>& resi_vec1 = chain1_data.resi_vec;
+    const vector<string>& resi_vec2 = chain2_data.resi_vec;
+
     if (opts.outfmt_opt<=0)
     {
         fcout("\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
@@ -2355,10 +2364,8 @@ void run_flexalign_main(
     const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &res)
 {
     res.hingeNum = flexalign_main(
-        xa, ya, seqx, seqy, secx, secy,
-        xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, res);
+        xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, res);
 
-    
     bool refine_fallback = (hinge_opt) && (res.hingeNum <= 1) && (res.n_ali8 < 0.6 * getmin(xlen, ylen));
     if (refine_fallback)
     {
@@ -2367,8 +2374,7 @@ void run_flexalign_main(
         tu2t_u(res.tu_vec[0], res_h.t0, res_h.u0);
 
         res_h.hingeNum = flexalign_main(
-            xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, res_h);
+            xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, res_h);
 
         double TM = (res.TM1 > res.TM2) ? res.TM1 : res.TM2;
         double TM_h = (res_h.TM1 > res_h.TM2) ? res_h.TM1 : res_h.TM2;
@@ -2393,10 +2399,8 @@ inline void align_with_flexalign_main(
     for (int cur_ss_opt = 0; cur_ss_opt <= MAX_SEC_STRUCT_OPT; cur_ss_opt++)
     {
         FlexAlignResult cur_res;
-        run_flexalign_main(
-            xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, common_inputs,
-            mol_type, hinge_opt, cur_ss_opt, cur_res);
+        run_flexalign_main(xa, ya, seqx, seqy, secx, secy,
+            xlen, ylen, common_inputs, mol_type, hinge_opt, cur_ss_opt, cur_res);
         double cur_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
         if (cur_max_TM > TM_best_max)
         {
@@ -2407,19 +2411,7 @@ inline void align_with_flexalign_main(
 }
 
 
-inline int flexalign_with_usbcat_main(
-    CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    const std::string &secx, const std::string &secy,
-    int xlen, int ylen,
-    const AlignCommonInput& common_inputs,
-    const FlexAlignResult& flexalign_main_res,
-    const int mol_type, const int hinge_opt, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
-    const FlexalignParams& flex_params,
-    FlexAlignResult& res);
-
-
-inline int flexalign_usbcat_main(
+inline void flexalign_usbcat_main(
     CoordArray& xa,
     CoordArray& ya,
     const std::string &seqx,
@@ -2430,7 +2422,7 @@ inline int flexalign_usbcat_main(
     int ylen,
     const AlignCommonInput& common_inputs,
     const FlexAlignResult& flexalign_main_res,
-    int mol_type, int hinge_opt, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
+    int mol_type, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     int sparse_val,
     const FlexalignParams& flex_params,
     FlexAlignResult& res);
@@ -2452,30 +2444,32 @@ inline void run_flexalign(
     std::string seqy = chain2_data.chain_seq;
     std::string secx = chain1_data.chain_sec;
     std::string secy = chain2_data.chain_sec;
+    int xa_len = chain1_data.chain_len;
+    int ya_len = chain2_data.chain_len;
     int mol_type = chain1_data.cur_complex_mol_list + chain2_data.cur_complex_mol_list;
 
     FlexAlignResult flexalign_main_res;
     align_with_flexalign_main(
-        xa, ya, seqx, seqy, secx, secy,
-        chain1_data.chain_len, chain2_data.chain_len,
+        xa, ya, seqx, seqy, secx, secy, xa_len, ya_len,
         common_inputs, mol_type, flex_params.hinge_opt, flexalign_main_res);
     double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
 
     switch (flex_params.mode)
     {
         case FLEX_USBCAT:
-            res.hingeNum = flexalign_with_usbcat_main(
-                xa, ya,
-                seqx, seqy,
-                secx, secy,
-                chain1_data.chain_len, chain2_data.chain_len,
-                common_inputs,
-                flexalign_main_res,
-                mol_type, flex_params.hinge_opt, best_global_max_TM,
-                flex_params,
-                res);
+            if (best_global_max_TM >= flex_params.TMpass)
+            {
+                res = flexalign_main_res;
+                res.hingeNum = res.tu_vec.size();
+            }
+            else
+            {
+                flexalign_usbcat_main(
+                    xa, ya, seqx, seqy, secx, secy, xa_len, ya_len, common_inputs,
+                    flexalign_main_res, mol_type, best_global_max_TM, flex_params.sparse_val,
+                    flex_params, res);
+            }
             break;
-
         case FLEX_BEST:
             res = flexalign_main_res;
             break;
@@ -2485,36 +2479,6 @@ inline void run_flexalign(
     }
 
     return;
-}
-
-inline int flexalign_with_usbcat_main(
-    CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    const std::string &secx, const std::string &secy,
-    int xlen, int ylen,
-    const AlignCommonInput& common_inputs,
-    const FlexAlignResult& flexalign_main_res,
-    const int mol_type, const int hinge_opt, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
-    const FlexalignParams& flex_params,
-    FlexAlignResult& res)
-{
-    if (best_global_max_TM >= flex_params.TMpass)
-    {
-        res = flexalign_main_res;
-        return res.tu_vec.size();
-    }
-    int hingeNum = flexalign_usbcat_main(
-        xa, ya,
-        seqx, seqy,
-        secx, secy,
-        xlen, ylen,
-        common_inputs,
-        flexalign_main_res,
-        mol_type, hinge_opt, best_global_max_TM,
-        0,
-        flex_params,
-        res);
-    return hingeNum;
 }
 
 struct USBCATParams
@@ -3622,8 +3586,7 @@ inline void align_cur_region(
 
     align_with_flexalign_main(
         cur_reg_data.xa, cur_reg_data.ya, cur_reg_data.seqx, cur_reg_data.seqy, cur_reg_data.secx, cur_reg_data.secy,
-        region_x_len, region_y_len,
-        common_inputs, mol_type, local_hinge_opt, cur_region_align_res);
+        region_x_len, region_y_len, common_inputs, mol_type, local_hinge_opt, cur_region_align_res);
 }
 
 inline void run_region_align(
@@ -3649,8 +3612,7 @@ inline void run_region_align(
         align_cur_region(
             cur_bound_pool, region_indx, hinge_set, remaining_hinges,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            common_inputs, mol_type,
-            region_valid, cur_align_res);
+            common_inputs, mol_type, region_valid, cur_align_res);
 
         int orig_region_idx = cur_bound_pool.region_meta[region_indx].original_region_idx;
         if (!region_valid) continue;
@@ -3770,31 +3732,26 @@ inline void build_gloabal_align_result(
 
 
 
-inline FlexAlignResult recompute_global_metrics(
-    const GlobalAlignResult& sd,
-    const CoordArray& xa,
-    const CoordArray& ya,
-    const std::string& seqx,
-    const std::string& seqy,
-    const int xlen,
-    const int ylen,
-    const AlignCommonInput& common_inputs,
+inline void calc_cur_d0(
+    const int xlen, const int ylen,
+    const UserOptions& opts,
     const int mol_type,
-    const double d0_out)
+    double& d0A, double& d0B, double& d0a, double& d0u)
 {
-    const UserOptions& opts = common_inputs.user_options;
-
     double dummy_D0_MIN, dummy_Lnorm, dummy_d0_search;
-    double cur_d0A, cur_d0B, cur_d0a, cur_d0u = 0.0;
 
-    parameter_set4final(ylen, dummy_D0_MIN, dummy_Lnorm, cur_d0A, dummy_d0_search, mol_type);
-    parameter_set4final(xlen, dummy_D0_MIN, dummy_Lnorm, cur_d0B, dummy_d0_search, mol_type);
-    parameter_set4final((xlen + ylen) * 0.5, dummy_D0_MIN, dummy_Lnorm, cur_d0a, dummy_d0_search, mol_type);
+    parameter_set4final(ylen, dummy_D0_MIN, dummy_Lnorm, d0A, dummy_d0_search, mol_type);
+    parameter_set4final(xlen, dummy_D0_MIN, dummy_Lnorm, d0B, dummy_d0_search, mol_type);
+    parameter_set4final((xlen + ylen) * 0.5, dummy_D0_MIN, dummy_Lnorm, d0a, dummy_d0_search, mol_type);
+    d0u = 0.0;
     if (opts.u_opt)
-        parameter_set4final(opts.Lnorm_ass, dummy_D0_MIN, dummy_Lnorm, cur_d0u, dummy_d0_search, mol_type);
+        parameter_set4final(opts.Lnorm_ass, dummy_D0_MIN, dummy_Lnorm, d0u, dummy_d0_search, mol_type);
+}
 
-    
-    FlexAlignResult res;
+inline void reset_flexalign_result(FlexAlignResult& res, const size_t aln_len)
+{
+    res.do_vec.clear();
+    res.do_vec.reserve(aln_len);
     res.TM1 = 0.0;
     res.TM2 = 0.0;
     res.TM3 = 0.0;
@@ -3804,25 +3761,52 @@ inline FlexAlignResult recompute_global_metrics(
     res.Liden = 0.0;
     res.n_ali = 0;
     res.n_ali8 = 0;
+}
+
+inline void recompute_global_metrics(
+    const GlobalAlignResult& sd,
+    const CoordArray& xa,
+    const CoordArray& ya,
+    const std::string& seqx,
+    const std::string& seqy,
+    const int xlen,
+    const int ylen,
+    const AlignCommonInput& common_inputs,
+    const int mol_type,
+    const double d0_out,
+    FlexAlignResult& res)
+{
+    const UserOptions& opts = common_inputs.user_options;
+
+    double cur_d0A, cur_d0B, cur_d0a, cur_d0u;
+    calc_cur_d0(xlen, ylen, opts, mol_type, cur_d0A, cur_d0B, cur_d0a, cur_d0u);
+    reset_flexalign_result(res, sd.seqxA.length());
+
     int i_res = 0, j_res = 0;
+    int cached_matrix_idx = -1;
+    Vec3 t_k;
+    RotMat u_k;
     for (size_t r = 0; r < sd.seqxA.length(); r++)
     {
         bool x_valid = (sd.seqxA[r] != '-');
         bool y_valid = (sd.seqyA[r] != '-');
 
+        double d = -1.0;
         if (x_valid && y_valid)
         {
             int matrix_idx = sd.res_tu[i_res];
             if (matrix_idx >= 0 && matrix_idx < (int)sd.tu_vec.size())
             {
-                Vec3 t_k;
-                RotMat u_k;
-                tu2t_u(sd.tu_vec[matrix_idx], t_k, u_k);
+                if (matrix_idx != cached_matrix_idx)
+                {
+                    tu2t_u(sd.tu_vec[matrix_idx], t_k, u_k);
+                    cached_matrix_idx = matrix_idx;
+                }
 
                 Vec3 x_rot;
                 transform(t_k, u_k, xa[i_res], x_rot);
                 double dist2 = dist(x_rot, ya[j_res]);
-                double d = std::sqrt(dist2);
+                d = std::sqrt(dist2);
 
                 res.TM2 += 1.0 / (1.0 + dist2 / (cur_d0B * cur_d0B));
                 res.TM1 += 1.0 / (1.0 + dist2 / (cur_d0A * cur_d0A));
@@ -3834,7 +3818,6 @@ inline FlexAlignResult recompute_global_metrics(
                     res.TM5 += 1.0 / (1.0 + dist2 / (opts.d0_scale * opts.d0_scale));
 
                 res.n_ali++;
-                res.do_vec.push_back(d);
 
                 if (d <= d0_out)
                 {
@@ -3844,11 +3827,8 @@ inline FlexAlignResult recompute_global_metrics(
                         res.Liden += 1.0;
                 }
             }
-            else
-                res.do_vec.push_back(-1);
         }
-        else
-            res.do_vec.push_back(-1);
+        res.do_vec.push_back(d);
 
         if (x_valid)
             i_res++;
@@ -3883,7 +3863,6 @@ inline FlexAlignResult recompute_global_metrics(
     res.TM_ali = res.TM1;
     res.rmsd_ali = res.rmsd0;
     res.L_ali = res.n_ali;
-    return res;
 }
 
 inline void update_global_best_align(
@@ -3922,17 +3901,17 @@ inline void update_global_best_align(
         std::vector<RegionAlignResult> region_align_res(region_num);
         run_region_align(
             region_align_res, remaining_hinges,
-            cur_bound_pool,
-            region_num, hinge_set,
+            cur_bound_pool, region_num, hinge_set,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
             common_inputs, mol_type);
 
         GlobalAlignResult global_align_res;
         global_align_res.res_tu.assign(xlen, -1);
+        
         build_gloabal_align_result(region_align_res, chain1_bounds, chain2_bounds, region_num, seqx, seqy, global_align_res);
-        FlexAlignResult cur_res = recompute_global_metrics(
-            global_align_res, xa, ya, seqx, seqy, xlen, ylen, common_inputs,
-            mol_type, d0_out);
+        
+        FlexAlignResult cur_res;
+        recompute_global_metrics( global_align_res, xa, ya, seqx, seqy, xlen, ylen, common_inputs, mol_type, d0_out, cur_res);
 
         double cur_global_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
         if (cur_global_max_TM > best_global_max_TM)
@@ -3943,7 +3922,7 @@ inline void update_global_best_align(
     }
 }
 
-int flexalign_usbcat_main(
+void flexalign_usbcat_main(
     CoordArray& xa,
     CoordArray& ya,
     const std::string &seqx,
@@ -3954,7 +3933,7 @@ int flexalign_usbcat_main(
     int ylen,
     const AlignCommonInput& common_inputs,
     const FlexAlignResult& flexalign_main_res,
-    int mol_type, int hinge_opt, double best_global_max_TM,
+    int mol_type, double best_global_max_TM,
     int sparse_val,
     const FlexalignParams& flex_params,
     FlexAlignResult& res)
@@ -3962,7 +3941,7 @@ int flexalign_usbcat_main(
     FlexAlignResult global_best_align = flexalign_main_res;
 
     USBCATParams usb_cat_para;
-    fill_usbcat_params(usb_cat_para, hinge_opt);
+    fill_usbcat_params(usb_cat_para, flex_params.hinge_opt);
 
     LocalDistTables dist_tables;
     build_local_dist_tables(xa, ya, usb_cat_para, dist_tables);
@@ -3981,20 +3960,20 @@ int flexalign_usbcat_main(
     fill_region_bound_pools(bounds_default, bounds_strict, region_bound_pool);
 
     update_global_best_align(
-        region_bound_pool,
-        flex_params.hinge_set, hinge_opt,
-        usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-        common_inputs,
-        mol_type,
-        xlen, ylen, res.d0_out,
+        region_bound_pool, flex_params.hinge_set, 
+        flex_params.hinge_opt, usb_cat_para, xa, 
+        ya, seqx, seqy, secx, secy, common_inputs, 
+        mol_type, xlen, ylen, res.d0_out,
         global_best_align, best_global_max_TM);
 
     // Safety check
     if (best_global_max_TM < 0)
-        return 0;
+    {
+        res.hingeNum = 0;
+        return;
+    }
 
     // Output best values back to the reference parameters
     res = global_best_align;
-
-    return res.tu_vec.size();
+    res.hingeNum = res.tu_vec.size();
 }

@@ -4979,13 +4979,13 @@ void fill_flexalign_params(
     flex_params.hinge_opt = hinge_opt;
     flex_params.hinge_set = (flex_params.mode == FLEX_USBCAT) ? hinge_set : false;
     flex_params.TMpass = (flex_params.mode == FLEX_USBCAT) ? TMpass_opt : 0.85;
+    flex_params.sparse_val = 0;
 }
 
-int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_params,
-              FlexAlignResult& flex_result)
+int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_params, FlexAlignResult& flex_result)
 {
-    UserOptions& opts = common_inputs.user_options;
-    ParsedInput& parsed = common_inputs.parsed_input;
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
 
     vector<vector<string> > PDB_lines1; // text of chain1
     vector<vector<string> > PDB_lines2; // text of chain2
@@ -4996,78 +4996,70 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    int read_resi = ((opts.byresi_opt == 0) && opts.o_opt) ? 2 : opts.byresi_opt;  // whether to read residue index
+    int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
     // loop over file names
-    for (i=0;i<parsed.chain1_list.size();i++)
+    for (i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
-        opts.xname=parsed.chain1_list[i];
-        xchainnum=get_PDB_lines(opts.xname, PDB_lines1, chainID_list1,
-            mol_vec1, opts.ter_opt, opts.infmt1_opt, opts.atom_opt, parsed.autojustify,
-            opts.split_opt, opts.het_opt, opts.chain2parse1, opts.model2parse1);
+        user_opts.xname=parsed_input.chain1_list[i];
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1,
+            mol_vec1, user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify,
+            user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<opts.xname
+            cerr<<"Warning! Cannot parse file: "<<user_opts.xname
                 <<". Chain number 0."<<endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
         {
             ParsedChain chain1_data;
-            if (!parse_chain(opts.xname, PDB_lines1, chainID_list1, mol_vec1,
-                    chain_i, opts.mol_opt, opts.mirror_opt, read_resi,
-                    opts.ter_opt, opts.infmt1_opt, opts.atom_opt, parsed.autojustify,
-                    opts.split_opt, opts.het_opt, opts.chain2parse1, opts.model2parse1, chain1_data))
+            if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
+                    chain_i, user_opts.mol_opt, user_opts.mirror_opt, read_resi,
+                    user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify,
+                    user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1, chain1_data))
                 continue;
 
-            int j_start = (opts.dir_opt.size() > 0) * (i + 1);
-            for (j = j_start; j < parsed.chain2_list.size(); j++)
+            int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
+            for (j = j_start; j < parsed_input.chain2_list.size(); j++)
             {
-                if (opts.dirpair_opt.size() && i!=j) continue;
+                if (user_opts.dirpair_opt.size() && i!=j) continue;
                 // parse chain 2
                 if (PDB_lines2.size() == 0)
                 {
-                    opts.yname = parsed.chain2_list[j];
-                    ychainnum=get_PDB_lines(opts.yname, PDB_lines2, chainID_list2,
-                        mol_vec2, opts.ter_opt, opts.infmt2_opt, opts.atom_opt, parsed.autojustify,
-                        opts.split_opt, opts.het_opt, opts.chain2parse2, opts.model2parse2);
+                    user_opts.yname = parsed_input.chain2_list[j];
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
+                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify,
+                        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<opts.yname<<". Chain number 0."<<endl;
+                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<endl;
                         continue;
                     }
                 }
                 for (chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     ParsedChain chain2_data;
-                    if (!parse_chain(opts.yname, PDB_lines2, chainID_list2, mol_vec2,
-                            chain_j, opts.mol_opt, 0, read_resi,
-                            opts.ter_opt, opts.infmt2_opt, opts.atom_opt, parsed.autojustify,
-                            opts.split_opt, opts.het_opt, opts.chain2parse2, opts.model2parse2, chain2_data))
+                    if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,
+                            chain_j, user_opts.mol_opt, 0, read_resi,
+                            user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify,
+                            user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2, chain2_data))
                         continue;
 
-                    if (opts.byresi_opt)
-                        extract_aln_from_resi(parsed.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
-                            chain1_data.resi_vec, chain2_data.resi_vec, opts.byresi_opt);
+                    if (user_opts.byresi_opt)
+                        extract_aln_from_resi(parsed_input.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
+                            chain1_data.resi_vec, chain2_data.resi_vec, user_opts.byresi_opt);
 
                     flex_result = FlexAlignResult();
                     run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flex_result);
 
-                    if (opts.outfmt_opt==0) print_version();
-                    output_flexalign_results(
-                        opts.xname.substr(opts.dir1_opt.size()+opts.dir_opt.size()+opts.dirpair_opt.size()),
-                        opts.yname.substr(opts.dir2_opt.size()+opts.dir_opt.size()+opts.dirpair_opt.size()),
-                        chain1_data.chain_id, chain2_data.chain_id,
-                        chain1_data.chain_len, chain2_data.chain_len,
-                        flex_result,
-                        opts,
-                        chain1_data.resi_vec, chain2_data.resi_vec,
-                        false);
+                    if (user_opts.outfmt_opt==0) print_version();
+                    output_flexalign_results(chain1_data, chain2_data, flex_result, user_opts, false);
                 } // chain_j
-                if (parsed.chain2_list.size()>1)
+                if (parsed_input.chain2_list.size()>1)
                 {
-                    opts.yname.clear();
+                    user_opts.yname.clear();
                     for (chain_j=0;chain_j<ychainnum;chain_j++)
                         PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
@@ -5075,16 +5067,19 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                     mol_vec2.clear();
                 }
             } // j
+
             PDB_lines1[chain_i].clear();
         } // chain_i
-        opts.xname.clear();
+
+        user_opts.xname.clear();
         PDB_lines1.clear();
         chainID_list1.clear();
         mol_vec1.clear();
     } // i
-    if (parsed.chain2_list.size()==1)
+
+    if (parsed_input.chain2_list.size()==1)
     {
-        opts.yname.clear();
+        user_opts.yname.clear();
         for (chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
@@ -5659,7 +5654,8 @@ int main(int argc, char *argv[])
 
     /* real alignment. entry functions are MMalign_main and 
      * TMalign_main */
-    if (mm_opt==0) TMalign(xname, yname, fname_super, fname_lign, fname_matrix,
+    if (mm_opt==0) 
+        TMalign(xname, yname, fname_super, fname_lign, fname_matrix,
         sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt,
         u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, cp_opt, mirror_opt, het_opt,
@@ -5697,7 +5693,8 @@ int main(int argc, char *argv[])
                 vector<string>().swap(tmp_vec1);
             }
         }
-        else if (dirpair_opt.size()==0) MMalign(xname, yname, fname_super,
+        else if (dirpair_opt.size()==0) 
+            MMalign(xname, yname, fname_super,
             fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
             a_opt, d_opt, full_opt, TMcut, infmt1_opt, infmt2_opt,
             ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
@@ -5729,7 +5726,8 @@ int main(int argc, char *argv[])
         }
         chainmapfile.clear();
     }
-    else if (mm_opt==2) MMdock(xname, yname, fname_super,
+    else if (mm_opt==2) 
+        MMdock(xname, yname, fname_super,
         fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, o_opt, a_opt,
         u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
@@ -5738,14 +5736,16 @@ int main(int argc, char *argv[])
         chain1_list, chain2_list, do_opt,
         parallel_threads);
     else if (mm_opt==3) ; // should be changed to mm_opt=0, cp_opt=true
-    else if (mm_opt==4) mTMalign(xname, yname, fname_super, fname_matrix,
+    else if (mm_opt==4) 
+        mTMalign(xname, yname, fname_super, fname_matrix,
         sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt,
         u_opt, d_opt, full_opt, TMcut, infmt1_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, het_opt,
         atom_opt, autojustify, mol_opt, dir_opt, byresi_opt, chain1_list,
         chain2parse1, model2parse1, se_opt,
         parallel_threads);
-    else if (mm_opt==5 || mm_opt==6) SOIalign(xname, yname, fname_super, fname_lign,
+    else if (mm_opt==5 || mm_opt==6) 
+        SOIalign(xname, yname, fname_super, fname_lign,
         fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
         a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
         split_opt, outfmt_opt, fast_opt, cp_opt, mirror_opt, het_opt,
