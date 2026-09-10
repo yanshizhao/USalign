@@ -5093,6 +5093,175 @@ inline bool apply_bool_flag(const char* arg, const BoolFlag* flags, const size_t
     return false;
 }
 
+void finalize_options(AlignCommonInput& common_inputs)
+{
+    UserOptions&    user_opts = common_inputs.user_options;
+    ParsedInput&    parsed    = common_inputs.parsed_input;
+    ControlOptions& control   = common_inputs.control_options;
+
+    if  (user_opts.xname.size()==0 || (user_opts.yname.size() && user_opts.dir_opt.size()) ||
+        (user_opts.yname.size() && user_opts.dirpair_opt.size()) ||
+        (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0))
+    {
+        if (control.h_opt) print_help(control.h_opt);
+        if (control.v_opt)
+        {
+            print_version();
+            exit(EXIT_FAILURE);
+        }
+        if (user_opts.xname.size()==0)
+            PrintErrorAndQuit("Please provide input structures");
+        else if (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0 && control.mm_opt!=4)
+            PrintErrorAndQuit("Please provide structure B");
+        else if (user_opts.yname.size() && user_opts.dir_opt.size()+user_opts.dirpair_opt.size())
+            PrintErrorAndQuit("Please provide only one file name if -dir is set");
+    }
+
+    if (control.suffix_opt.size() && user_opts.dir_opt.size()+user_opts.dirpair_opt.size()+user_opts.dir1_opt.size()+user_opts.dir2_opt.size()==0)
+        PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
+    if ((user_opts.dir_opt.size() || user_opts.dirpair_opt.size() || user_opts.dir1_opt.size() || user_opts.dir2_opt.size()))
+    {
+        if (control.chainmapfile.size())
+            PrintErrorAndQuit("-chainmap cannot be used with -dir, -dir1 or -dir2");
+        if (control.mm_opt!=2 && control.mm_opt!=4)
+        {
+            if (user_opts.o_opt)
+                PrintErrorAndQuit("-o cannot be set with -dir, -dir1 or -dir2");
+            if (user_opts.m_opt && user_opts.fname_matrix!="-")
+                PrintErrorAndQuit("-m can only be - or unset when using -dir, -dir1 or -dir2");
+        }
+        else if ((user_opts.dir_opt.size() || user_opts.dirpair_opt.size() )&& (user_opts.dir1_opt.size() || user_opts.dir2_opt.size()))
+            PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
+        else if (user_opts.dir_opt.size() && user_opts.dirpair_opt.size())
+            PrintErrorAndQuit("-dir cannot be set with -dirpair");
+    }
+    if (user_opts.o_opt && (user_opts.infmt1_opt!=-1 && user_opts.infmt1_opt!=0 && user_opts.infmt1_opt!=3))
+        PrintErrorAndQuit("-o can only be used with -infmt1 -1, 0 or 3");
+
+    parsed.autojustify=(user_opts.atom_opt=="auto" || user_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (user_opts.mol_opt=="protein" && user_opts.atom_opt=="auto")
+        user_opts.atom_opt=" CA ";
+    else if (user_opts.mol_opt=="RNA" && user_opts.atom_opt=="auto")
+        user_opts.atom_opt=" C3'";
+    if (user_opts.atom_opt.size()!=4)
+    {
+        cerr<<"ERROR! Atom name must have 4 characters, including space.\n"
+              "For example, C alpha, C3' and P atoms should be specified by\n"
+              "-atom \" CA \", -atom \" P  \" and -atom \" C3'\", respectively."<<endl;
+        if (user_opts.atom_opt.size()>=5 || user_opts.atom_opt.size()==0) exit(1);
+        else if (user_opts.atom_opt.size()==1) user_opts.atom_opt=" "+user_opts.atom_opt+"  ";
+        else if (user_opts.atom_opt.size()==2) user_opts.atom_opt=" "+user_opts.atom_opt+" ";
+        else if (user_opts.atom_opt.size()==3) user_opts.atom_opt=" "+user_opts.atom_opt;
+        cerr<<"Change -atom to \""<<user_opts.atom_opt<<"\""<<endl;
+    }
+
+    if (user_opts.d_opt && user_opts.d0_scale<=0)
+        PrintErrorAndQuit("Wrong value for option -d! It should be >0");
+    if (user_opts.outfmt_opt>=2 && (user_opts.a_opt || user_opts.u_opt || user_opts.d_opt))
+        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
+    if (user_opts.byresi_opt!=0)
+    {
+        if (user_opts.i_opt)
+            PrintErrorAndQuit("-TMscore >=1 cannot be used with -i or -I");
+        if (user_opts.byresi_opt<0 || user_opts.byresi_opt>7)
+            PrintErrorAndQuit("-TMscore can only be 0 to 7");
+        if ((user_opts.byresi_opt==2 || user_opts.byresi_opt==3 || user_opts.byresi_opt==6) && user_opts.ter_opt>=2)
+            PrintErrorAndQuit("-TMscore 2 and 6 must be used with -ter <=1");
+    }
+    //if (split_opt==1 && ter_opt!=0)
+        //PrintErrorAndQuit("-split 1 should be used with -ter 0");
+    //else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
+        //PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
+    if (user_opts.split_opt<0)
+        if (user_opts.byresi_opt==2 || user_opts.byresi_opt==3) user_opts.split_opt=0;
+        else user_opts.split_opt=2;
+    else if (user_opts.split_opt>2)
+        PrintErrorAndQuit("-split can only be 0, 1 or 2");
+
+    if (control.mm_opt==3)
+    {
+        control.cp_opt=true;
+        control.mm_opt=0;
+    }
+    if (control.cp_opt && user_opts.i_opt)
+        PrintErrorAndQuit("-mm 3 cannot be used with -i or -I");
+
+    if (user_opts.mirror_opt && user_opts.het_opt!=1)
+        cerr<<"WARNING! -mirror was not used with -het 1. "
+            <<"D amino acids may not be correctly aligned."<<endl;
+
+    if (user_opts.ter_opt<0)
+    {
+        if (control.mm_opt==1 || control.mm_opt==2 || user_opts.byresi_opt==2 || user_opts.byresi_opt==3 || 
+            user_opts.byresi_opt==6 || user_opts.byresi_opt==7) user_opts.ter_opt=1;
+        else user_opts.ter_opt=2;
+    }
+
+    if (control.mm_opt)
+    {
+        if (user_opts.i_opt) PrintErrorAndQuit("-mm cannot be used with -i or -I");
+        if (user_opts.u_opt) PrintErrorAndQuit("-mm cannot be used with -u or -L");
+        //if (cp_opt) PrintErrorAndQuit("-mm cannot be used with -cp");
+        if (user_opts.dir_opt.size() && control.mm_opt==2) PrintErrorAndQuit("-mm 2 cannot be used with -dir");
+        if (user_opts.byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
+        if (user_opts.ter_opt>=2 && (control.mm_opt==1 || control.mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");
+        if (control.mm_opt==4 && (user_opts.yname.size() || user_opts.dir2_opt.size()))
+            cerr<<"WARNING! structure_2 is ignored for -mm 4"<<endl;
+        if (user_opts.dirpair_opt.size() && (control.mm_opt==2 || control.mm_opt==4))
+            PrintErrorAndQuit("-mm 2 or 4 cannot be used with -dirpair");
+    }
+    else if (control.full_opt) PrintErrorAndQuit("-full can only be used with -mm");
+
+    if (user_opts.o_opt && user_opts.ter_opt<=1 && user_opts.split_opt==2)
+    {
+        if (control.mm_opt && user_opts.o_opt==2) cerr<<"WARNING! -mm may generate incorrect" 
+            <<" RasMol output due to limitations in PDB file format. "
+            <<"When -mm is used, -o is recommended over -rasmol"<<endl;
+        else if (control.mm_opt==0) cerr<<"WARNING! Only the superposition of the"
+            <<" last aligned structure pair will be generated"<<endl;
+    }
+
+    if (control.closeK_opt<0)
+    {
+        if (control.mm_opt==5) control.closeK_opt=5;
+        else control.closeK_opt=0;
+    }
+
+    if (control.mm_opt==7 && control.hinge_opt>=10)
+        PrintErrorAndQuit("ERROR! -hinge must be <10");
+
+    if (control.usbcat_opt && control.mm_opt != 7)
+        PrintErrorAndQuit("ERROR! -afp parameter can only be used when -mm 7 is set");
+
+    if (control.chainmapfile.size() && control.mm_opt!=1)
+        PrintErrorAndQuit("ERROR! -chainmap must be used with -mm 1");
+
+    // read initial alignment file from 'align.txt'
+    if (user_opts.i_opt) read_user_alignment(parsed.sequence, user_opts.fname_lign, user_opts.i_opt);
+
+    if (user_opts.byresi_opt==6 || user_opts.byresi_opt==7) control.mm_opt=1;
+    else if (user_opts.byresi_opt) user_opts.i_opt=3;
+
+    if (user_opts.m_opt && user_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
+        PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+
+    // parse file list
+    int i; 
+    if (user_opts.dirpair_opt.size())
+        file2chainpairlist(parsed.chain1_list,parsed.chain2_list, user_opts.xname, user_opts.dirpair_opt, control.suffix_opt);
+    else
+    {
+        if (user_opts.dir1_opt.size()+user_opts.dir_opt.size()==0) parsed.chain1_list.push_back(user_opts.xname);
+        else file2chainlist(parsed.chain1_list, user_opts.xname, user_opts.dir_opt+user_opts.dir1_opt, control.suffix_opt);
+
+        if (user_opts.dir_opt.size())
+            for (i=0;i<parsed.chain1_list.size();i++)
+                parsed.chain2_list.push_back(parsed.chain1_list[i]);
+        else if (user_opts.dir2_opt.size()==0) parsed.chain2_list.push_back(user_opts.yname);
+        else file2chainlist(parsed.chain2_list, user_opts.yname, user_opts.dir2_opt, control.suffix_opt);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -5318,168 +5487,7 @@ int main(int argc, char *argv[])
         else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
     }
 
-    if  (user_opts.xname.size()==0 || (user_opts.yname.size() && user_opts.dir_opt.size()) ||
-        (user_opts.yname.size() && user_opts.dirpair_opt.size()) ||
-        (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0))
-    {
-        if (control.h_opt) print_help(control.h_opt);
-        if (control.v_opt)
-        {
-            print_version();
-            exit(EXIT_FAILURE);
-        }
-        if (user_opts.xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0 && control.mm_opt!=4)
-            PrintErrorAndQuit("Please provide structure B");
-        else if (user_opts.yname.size() && user_opts.dir_opt.size()+user_opts.dirpair_opt.size())
-            PrintErrorAndQuit("Please provide only one file name if -dir is set");
-    }
-
-    if (control.suffix_opt.size() && user_opts.dir_opt.size()+user_opts.dirpair_opt.size()+user_opts.dir1_opt.size()+user_opts.dir2_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if ((user_opts.dir_opt.size() || user_opts.dirpair_opt.size() || user_opts.dir1_opt.size() || user_opts.dir2_opt.size()))
-    {
-        if (control.chainmapfile.size())
-            PrintErrorAndQuit("-chainmap cannot be used with -dir, -dir1 or -dir2");
-        if (control.mm_opt!=2 && control.mm_opt!=4)
-        {
-            if (user_opts.o_opt)
-                PrintErrorAndQuit("-o cannot be set with -dir, -dir1 or -dir2");
-            if (user_opts.m_opt && user_opts.fname_matrix!="-")
-                PrintErrorAndQuit("-m can only be - or unset when using -dir, -dir1 or -dir2");
-        }
-        else if ((user_opts.dir_opt.size() || user_opts.dirpair_opt.size() )&& (user_opts.dir1_opt.size() || user_opts.dir2_opt.size()))
-            PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
-        else if (user_opts.dir_opt.size() && user_opts.dirpair_opt.size())
-            PrintErrorAndQuit("-dir cannot be set with -dirpair");
-    }
-    if (user_opts.o_opt && (user_opts.infmt1_opt!=-1 && user_opts.infmt1_opt!=0 && user_opts.infmt1_opt!=3))
-        PrintErrorAndQuit("-o can only be used with -infmt1 -1, 0 or 3");
-
-    parsed.autojustify=(user_opts.atom_opt=="auto" || user_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (user_opts.mol_opt=="protein" && user_opts.atom_opt=="auto")
-        user_opts.atom_opt=" CA ";
-    else if (user_opts.mol_opt=="RNA" && user_opts.atom_opt=="auto")
-        user_opts.atom_opt=" C3'";
-    if (user_opts.atom_opt.size()!=4)
-    {
-        cerr<<"ERROR! Atom name must have 4 characters, including space.\n"
-              "For example, C alpha, C3' and P atoms should be specified by\n"
-              "-atom \" CA \", -atom \" P  \" and -atom \" C3'\", respectively."<<endl;
-        if (user_opts.atom_opt.size()>=5 || user_opts.atom_opt.size()==0) return 1;
-        else if (user_opts.atom_opt.size()==1) user_opts.atom_opt=" "+user_opts.atom_opt+"  ";
-        else if (user_opts.atom_opt.size()==2) user_opts.atom_opt=" "+user_opts.atom_opt+" ";
-        else if (user_opts.atom_opt.size()==3) user_opts.atom_opt=" "+user_opts.atom_opt;
-        cerr<<"Change -atom to \""<<user_opts.atom_opt<<"\""<<endl;
-    }
-
-    if (user_opts.d_opt && user_opts.d0_scale<=0)
-        PrintErrorAndQuit("Wrong value for option -d! It should be >0");
-    if (user_opts.outfmt_opt>=2 && (user_opts.a_opt || user_opts.u_opt || user_opts.d_opt))
-        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-    if (user_opts.byresi_opt!=0)
-    {
-        if (user_opts.i_opt)
-            PrintErrorAndQuit("-TMscore >=1 cannot be used with -i or -I");
-        if (user_opts.byresi_opt<0 || user_opts.byresi_opt>7)
-            PrintErrorAndQuit("-TMscore can only be 0 to 7");
-        if ((user_opts.byresi_opt==2 || user_opts.byresi_opt==3 || user_opts.byresi_opt==6) && user_opts.ter_opt>=2)
-            PrintErrorAndQuit("-TMscore 2 and 6 must be used with -ter <=1");
-    }
-    //if (split_opt==1 && ter_opt!=0)
-        //PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    //else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
-        //PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (user_opts.split_opt<0)
-        if (user_opts.byresi_opt==2 || user_opts.byresi_opt==3) user_opts.split_opt=0;
-        else user_opts.split_opt=2;
-    else if (user_opts.split_opt>2)
-        PrintErrorAndQuit("-split can only be 0, 1 or 2");
-
-    if (control.mm_opt==3)
-    {
-        control.cp_opt=true;
-        control.mm_opt=0;
-    }
-    if (control.cp_opt && user_opts.i_opt)
-        PrintErrorAndQuit("-mm 3 cannot be used with -i or -I");
-
-    if (user_opts.mirror_opt && user_opts.het_opt!=1)
-        cerr<<"WARNING! -mirror was not used with -het 1. "
-            <<"D amino acids may not be correctly aligned."<<endl;
-
-    if (user_opts.ter_opt<0)
-    {
-        if (control.mm_opt==1 || control.mm_opt==2 || user_opts.byresi_opt==2 || user_opts.byresi_opt==3 || 
-            user_opts.byresi_opt==6 || user_opts.byresi_opt==7) user_opts.ter_opt=1;
-        else user_opts.ter_opt=2;
-    }
-
-    if (control.mm_opt)
-    {
-        if (user_opts.i_opt) PrintErrorAndQuit("-mm cannot be used with -i or -I");
-        if (user_opts.u_opt) PrintErrorAndQuit("-mm cannot be used with -u or -L");
-        //if (cp_opt) PrintErrorAndQuit("-mm cannot be used with -cp");
-        if (user_opts.dir_opt.size() && control.mm_opt==2) PrintErrorAndQuit("-mm 2 cannot be used with -dir");
-        if (user_opts.byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
-        if (user_opts.ter_opt>=2 && (control.mm_opt==1 || control.mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");
-        if (control.mm_opt==4 && (user_opts.yname.size() || user_opts.dir2_opt.size()))
-            cerr<<"WARNING! structure_2 is ignored for -mm 4"<<endl;
-        if (user_opts.dirpair_opt.size() && (control.mm_opt==2 || control.mm_opt==4))
-            PrintErrorAndQuit("-mm 2 or 4 cannot be used with -dirpair");
-    }
-    else if (control.full_opt) PrintErrorAndQuit("-full can only be used with -mm");
-
-    if (user_opts.o_opt && user_opts.ter_opt<=1 && user_opts.split_opt==2)
-    {
-        if (control.mm_opt && user_opts.o_opt==2) cerr<<"WARNING! -mm may generate incorrect" 
-            <<" RasMol output due to limitations in PDB file format. "
-            <<"When -mm is used, -o is recommended over -rasmol"<<endl;
-        else if (control.mm_opt==0) cerr<<"WARNING! Only the superposition of the"
-            <<" last aligned structure pair will be generated"<<endl;
-    }
-
-    if (control.closeK_opt<0)
-    {
-        if (control.mm_opt==5) control.closeK_opt=5;
-        else control.closeK_opt=0;
-    }
-
-    if (control.mm_opt==7 && control.hinge_opt>=10)
-        PrintErrorAndQuit("ERROR! -hinge must be <10");
-
-    if (control.usbcat_opt && control.mm_opt != 7)
-        PrintErrorAndQuit("ERROR! -afp parameter can only be used when -mm 7 is set");
-
-    if (control.chainmapfile.size() && control.mm_opt!=1)
-        PrintErrorAndQuit("ERROR! -chainmap must be used with -mm 1");
-
-    // read initial alignment file from 'align.txt'
-    if (user_opts.i_opt) read_user_alignment(parsed.sequence, user_opts.fname_lign, user_opts.i_opt);
-
-    if (user_opts.byresi_opt==6 || user_opts.byresi_opt==7) control.mm_opt=1;
-    else if (user_opts.byresi_opt) user_opts.i_opt=3;
-
-    if (user_opts.m_opt && user_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
-        PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
-
-    // parse file list
-    int i; 
-    if (user_opts.dirpair_opt.size())
-        file2chainpairlist(parsed.chain1_list,parsed.chain2_list, user_opts.xname, user_opts.dirpair_opt, control.suffix_opt);
-    else
-    {
-        if (user_opts.dir1_opt.size()+user_opts.dir_opt.size()==0) parsed.chain1_list.push_back(user_opts.xname);
-        else file2chainlist(parsed.chain1_list, user_opts.xname, user_opts.dir_opt+user_opts.dir1_opt, control.suffix_opt);
-
-        if (user_opts.dir_opt.size())
-            for (i=0;i<parsed.chain1_list.size();i++)
-                parsed.chain2_list.push_back(parsed.chain1_list[i]);
-        else if (user_opts.dir2_opt.size()==0) parsed.chain2_list.push_back(user_opts.yname);
-        else file2chainlist(parsed.chain2_list, user_opts.yname, user_opts.dir2_opt, control.suffix_opt);
-    }
-
+    finalize_options(common_inputs);
 
     bool single_mm1_align = is_single_mm1_align(control.mm_opt, user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt);
     if (user_opts.outfmt_opt == 2 && !single_mm1_align)
@@ -5495,6 +5503,8 @@ int main(int argc, char *argv[])
                 << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
         }
     }
+
+    int i;
 
     /* real alignment. entry functions are MMalign_main and 
      * TMalign_main */
