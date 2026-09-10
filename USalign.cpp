@@ -5135,6 +5135,19 @@ inline void set_user_alignment(string& fname_lign, int& i_opt,
     i_opt = incoming;
 }
 
+struct BoolFlag { const char* name; bool* target; };
+
+inline bool apply_bool_flag(const char* arg, const BoolFlag* flags, const size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+        if (string(arg) == flags[k].name)
+        {
+            *flags[k].target = true;
+            return true;
+        }
+    return false;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -5201,6 +5214,12 @@ int main(int argc, char *argv[])
     vector<string> model2parse2;
     vector<pair<string,string> > chain_pair_list; // only when -dirpair is set
 
+    const BoolFlag bool_flags[] = {
+        {"-fast", &fast_opt}, {"-se", &se_opt}, {"-do", &do_opt},
+        {"-v", &v_opt}, {"-h", &h_opt}, {"-afp", &usbcat_opt}
+    };
+    const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
+
     for(int i = 1; i < argc; i++)
     {
         if ( string(argv[i]) == "-o" )
@@ -5254,18 +5273,6 @@ int main(int argc, char *argv[])
             hinge_set = true;
             hinge_opt = safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-v" )
-        {
-            v_opt = true;
-        }
-        else if ( string(argv[i]) == "-do" )
-        {
-            do_opt = true;
-        }
-        else if ( string(argv[i]) == "-h" )
-        {
-            h_opt = true;
-        }
         else if ( string(argv[i]) == "-i" )
             set_user_alignment(fname_lign, i_opt, ALN_I,
                 next_value(argc, argv, i, "-i"));
@@ -5290,14 +5297,6 @@ int main(int argc, char *argv[])
             const string val = next_value(argc, argv, i, "-m");
             fname_matrix = val;    m_opt = true;
         }// get filename for rotation matrix
-        else if (string(argv[i]) == "-fast")
-        {
-            fast_opt = true;
-        }
-        else if (string(argv[i]) == "-se")
-        {
-            se_opt = true;
-        }
         else if ( string(argv[i]) == "-infmt1" )
         {
             const string val = next_value(argc, argv, i, "-infmt1");
@@ -5411,15 +5410,13 @@ int main(int argc, char *argv[])
             const string val = next_value(argc, argv, i, "-mm");
             mm_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-afp" )
-        {
-            usbcat_opt = true;
-        }
         else if ( string(argv[i]) == "-TMpass" )
         {
             const string val = next_value(argc, argv, i, "-TMpass");
             TMpass_opt = safe_stod(val);
         }
+        else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
+            continue;
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
         else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
