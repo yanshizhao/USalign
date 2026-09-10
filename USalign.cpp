@@ -4915,70 +4915,15 @@ bool is_single_mm1_align(int mm_opt,
 
 
 
-void fill_align_common_input(
-    AlignCommonInput& common_inputs,
-    const string& xname, const string& yname,
-    const string& fname_super, const string& fname_lign, const string& fname_matrix,
-    const vector<string>& sequence,
-    double Lnorm_ass, double d0_scale,
-    bool m_opt, int i_opt, int o_opt, int a_opt, bool u_opt, bool d_opt, double TMcut,
-    int infmt1_opt, int infmt2_opt, int ter_opt, int split_opt, int outfmt_opt,
-    bool fast_opt, int mirror_opt, int het_opt, const string& atom_opt,
-    bool autojustify, const string& mol_opt, const string& dir_opt, const string& dirpair_opt,
-    const string& dir1_opt, const string& dir2_opt,
-    const vector<string>& chain2parse1, const vector<string>& chain2parse2,
-    const vector<string>& model2parse1, const vector<string>& model2parse2,
-    int byresi_opt,
-    const vector<string>& chain1_list, const vector<string>& chain2_list)
-{
-    common_inputs.user_options.xname = xname;
-    common_inputs.user_options.yname = yname;
-    common_inputs.user_options.fname_super = fname_super;
-    common_inputs.user_options.fname_lign = fname_lign;
-    common_inputs.user_options.fname_matrix = fname_matrix;
-    common_inputs.user_options.dir_opt = dir_opt;
-    common_inputs.user_options.dirpair_opt = dirpair_opt;
-    common_inputs.user_options.dir1_opt = dir1_opt;
-    common_inputs.user_options.dir2_opt = dir2_opt;
-    common_inputs.user_options.infmt1_opt = infmt1_opt;
-    common_inputs.user_options.infmt2_opt = infmt2_opt;
-    common_inputs.user_options.ter_opt = ter_opt;
-    common_inputs.user_options.split_opt = split_opt;
-    common_inputs.user_options.het_opt = het_opt;
-    common_inputs.user_options.atom_opt = atom_opt;
-    common_inputs.user_options.mol_opt = mol_opt;
-    common_inputs.user_options.mirror_opt = mirror_opt;
-    common_inputs.user_options.chain2parse1 = chain2parse1;
-    common_inputs.user_options.chain2parse2 = chain2parse2;
-    common_inputs.user_options.model2parse1 = model2parse1;
-    common_inputs.user_options.model2parse2 = model2parse2;
-    common_inputs.user_options.byresi_opt = byresi_opt;
-    common_inputs.user_options.fast_opt = fast_opt;
-    common_inputs.user_options.i_opt = i_opt;
-    common_inputs.user_options.o_opt = o_opt;
-    common_inputs.user_options.a_opt = a_opt;
-    common_inputs.user_options.m_opt = m_opt;
-    common_inputs.user_options.u_opt = u_opt;
-    common_inputs.user_options.d_opt = d_opt;
-    common_inputs.user_options.outfmt_opt = outfmt_opt;
-    common_inputs.user_options.Lnorm_ass = Lnorm_ass;
-    common_inputs.user_options.d0_scale = d0_scale;
-    common_inputs.user_options.TMcut = TMcut;
-
-    common_inputs.parsed_input.chain1_list = chain1_list;
-    common_inputs.parsed_input.chain2_list = chain2_list;
-    common_inputs.parsed_input.sequence = sequence;
-    common_inputs.parsed_input.autojustify = autojustify;
-}
 
 void fill_flexalign_params(
     FlexalignParams& flex_params,
-    bool usbcat_opt, int hinge_opt, bool hinge_set, double TMpass_opt)
+    const ControlOptions& control)
 {
-    flex_params.mode = usbcat_opt ? FLEX_USBCAT : FLEX_BEST;
-    flex_params.hinge_opt = hinge_opt;
-    flex_params.hinge_set = (flex_params.mode == FLEX_USBCAT) ? hinge_set : false;
-    flex_params.TMpass = (flex_params.mode == FLEX_USBCAT) ? TMpass_opt : 0.85;
+    flex_params.mode = control.usbcat_opt ? FLEX_USBCAT : FLEX_BEST;
+    flex_params.hinge_opt = control.hinge_opt;
+    flex_params.hinge_set = (flex_params.mode == FLEX_USBCAT) ? control.hinge_set : false;
+    flex_params.TMpass = (flex_params.mode == FLEX_USBCAT) ? control.TMpass_opt : 0.85;
     flex_params.sparse_val = 0;
 }
 
@@ -5158,187 +5103,138 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname       = "";
-    string yname       = "";
-    string fname_super = ""; // file name for superposed structure
-    string fname_lign  = ""; // file name for user alignment
-    string fname_matrix= ""; // file name for output matrix
-    vector<string> sequence; // get value from alignment file
-    double Lnorm_ass;
-    double d0_scale;
+    AlignCommonInput common_inputs;
+    UserOptions&     user_opts = common_inputs.user_options;
+    ParsedInput&     parsed    = common_inputs.parsed_input;
+    ControlOptions&  control   = common_inputs.control_options;
 
-    bool h_opt = false; // print full help message
-    bool v_opt = false; // print version
-    bool m_opt = false; // flag for -m, output rotation matrix
-    int  i_opt = 0;     // 1 for -i, 3 for -I
-    int  o_opt = 0;     // 1 for -o, 2 for -rasmol, 3 for -chimerax
-    int  a_opt = 0;     // flag for -a, do not normalized by average length
-    bool u_opt = false; // flag for -u, normalized by user specified length
-    bool d_opt = false; // flag for -d, user specified d0
-    bool do_opt= false; // flag for -do, output distance of i-th aligned pair
-
-    bool   full_opt  = false;// do not show chain level alignment
-    double TMcut     =-1;
-    bool   se_opt    =false;
-    int    infmt1_opt=-1;    // PDB or PDBx/mmCIF format for chain_1
-    int    infmt2_opt=-1;    // PDB or PDBx/mmCIF format for chain_2
-    int    ter_opt   =-1;    // default change to 2 (END, or different chainID)
-    int    split_opt =-1;    // default change to 2 (split each chains)
-    int    outfmt_opt=0;     // set -outfmt to full output
-    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
-    int    cp_opt    =0;     // do not check circular permutation
-    int    closeK_opt=-1;    // number of atoms for SOI initial alignment.
-                             // 5 and 0 for -mm 5 and 6
-    int    hinge_opt =9;     // maximum number of hinge allowed for flexible
-    bool   hinge_set =false; // whether -hinge is explicitly set by user
-    double TMpass_opt=0.85;  // early stopping threshold for -afp (USBCAT) mode
-    bool   usbcat_opt=false; // flag for -afp, only valid with -mm 7
-    int    mirror_opt=0;     // do not align mirror
-    int    het_opt=0;        // do not read HETATM residues
-    int    mm_opt=0;         // do not perform MM-align
-    string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    string suffix_opt="";    // set -suffix to empty
-    string dir_opt   ="";    // set -dir to empty
-    string dirpair_opt="";   // set -dirpair to empty
-    string dir1_opt  ="";    // set -dir1 to empty
-    string dir2_opt  ="";    // set -dir2 to empty
-    string chainmapfile="";  // chain mapping between two complexes
-    int    byresi_opt=0;     // set -byresi to 0
-    int    parallel_threads=0;  // set -threads N for TMscore8 parallel search
-    vector<string> chain1_list; // only when -dir1 is set
-    vector<string> chain2_list; // only when -dir2 is set
-    vector<string> chain2parse1;
-    vector<string> chain2parse2;
-    vector<string> model2parse1;
-    vector<string> model2parse2;
     vector<pair<string,string> > chain_pair_list; // only when -dirpair is set
 
     const BoolFlag bool_flags[] = {
-        {"-fast", &fast_opt}, {"-se", &se_opt}, {"-do", &do_opt},
-        {"-v", &v_opt}, {"-h", &h_opt}, {"-afp", &usbcat_opt}
+        {"-fast", &user_opts.fast_opt}, {"-se", &control.se_opt}, {"-do", &control.do_opt},
+        {"-v", &control.v_opt}, {"-h", &control.h_opt}, {"-afp", &control.usbcat_opt}
     };
     const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
 
     for(int i = 1; i < argc; i++)
     {
         if ( string(argv[i]) == "-o" )
-            set_output_kind(o_opt, fname_super, OUT_O,
+            set_output_kind(user_opts.o_opt, user_opts.fname_super, OUT_O,
                 next_value(argc, argv, i, "-o"));
         else if ( string(argv[i]) == "-rasmol" )
-            set_output_kind(o_opt, fname_super, OUT_RASMOL,
+            set_output_kind(user_opts.o_opt, user_opts.fname_super, OUT_RASMOL,
                 next_value(argc, argv, i, "-rasmol"));
         else if ( string(argv[i]) == "-chimerax" )
-            set_output_kind(o_opt, fname_super, OUT_CHIMERAX,
+            set_output_kind(user_opts.o_opt, user_opts.fname_super, OUT_CHIMERAX,
                 next_value(argc, argv, i, "-chimerax"));
         else if ( string(argv[i]) == "-u" || string(argv[i]) == "-L" )
         {
             const string val = next_value(argc, argv, i, "-u or -L");
-            Lnorm_ass = safe_stod(val); u_opt = true;
-            if (Lnorm_ass<=0) PrintErrorAndQuit(
+            user_opts.Lnorm_ass = safe_stod(val); user_opts.u_opt = true;
+            if (user_opts.Lnorm_ass<=0) PrintErrorAndQuit(
                 "ERROR! The value for -u or -L should be >0");
         }
         else if ( string(argv[i]) == "-a" )
         {
             const string val = next_value(argc, argv, i, "-a");
-            if (val == "T")      a_opt=true;
-            else if (val == "F") a_opt=false;
+            if (val == "T")      user_opts.a_opt=true;
+            else if (val == "F") user_opts.a_opt=false;
             else 
             {
-                a_opt=safe_stoi(val);
-                if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
+                user_opts.a_opt=safe_stoi(val);
+                if (user_opts.a_opt!=-2 && user_opts.a_opt!=-1 && user_opts.a_opt!=1)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
         }
         else if ( string(argv[i]) == "-full" )
         {
             const string val = next_value(argc, argv, i, "-full");
-            if (val == "T")      full_opt=true;
-            else if (val == "F") full_opt=false;
+            if (val == "T")      control.full_opt=true;
+            else if (val == "F") control.full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
         }
         else if ( string(argv[i]) == "-d" )
         {
             const string val = next_value(argc, argv, i, "-d");
-            d0_scale = safe_stod(val); d_opt = true;
+            user_opts.d0_scale = safe_stod(val); user_opts.d_opt = true;
         }
         else if ( string(argv[i]) == "-closeK" )
         {
             const string val = next_value(argc, argv, i, "-closeK");
-            closeK_opt = safe_stoi(val);
+            control.closeK_opt = safe_stoi(val);
         }
         else if ( string(argv[i]) == "-hinge" )
         {
             const string val = next_value(argc, argv, i, "-hinge");
-            hinge_set = true;
-            hinge_opt = safe_stoi(val);
+            control.hinge_set = true;
+            control.hinge_opt = safe_stoi(val);
         }
         else if ( string(argv[i]) == "-i" )
-            set_user_alignment(fname_lign, i_opt, ALN_I,
+            set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_I,
                 next_value(argc, argv, i, "-i"));
         else if (string(argv[i]) == "-I" )
-            set_user_alignment(fname_lign, i_opt, ALN_BIG_I,
+            set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_BIG_I,
                 next_value(argc, argv, i, "-I"));
         else if (string(argv[i]) == "-chainmap" )
         {
             const string val = next_value(argc, argv, i, "-chainmap");
-            chainmapfile = val;
+            control.chainmapfile = val;
         }
         else if (string(argv[i]) == "-chain1" )
-            split_next(argc, argv, i, "-chain1", chain2parse1);
+            split_next(argc, argv, i, "-chain1", user_opts.chain2parse1);
         else if (string(argv[i]) == "-chain2" )
-            split_next(argc, argv, i, "-chain2", chain2parse2);
+            split_next(argc, argv, i, "-chain2", user_opts.chain2parse2);
         else if (string(argv[i]) == "-model1" )
-            split_next(argc, argv, i, "-model1", model2parse1);
+            split_next(argc, argv, i, "-model1", user_opts.model2parse1);
         else if (string(argv[i]) == "-model2" )
-            split_next(argc, argv, i, "-model2", model2parse2);
+            split_next(argc, argv, i, "-model2", user_opts.model2parse2);
         else if (string(argv[i]) == "-m" )
         {
             const string val = next_value(argc, argv, i, "-m");
-            fname_matrix = val;    m_opt = true;
+            user_opts.fname_matrix = val;    user_opts.m_opt = true;
         }// get filename for rotation matrix
         else if ( string(argv[i]) == "-infmt1" )
         {
             const string val = next_value(argc, argv, i, "-infmt1");
-            infmt1_opt=safe_stoi(val);
-            if (infmt1_opt<-1 || infmt1_opt>3)
+            user_opts.infmt1_opt=safe_stoi(val);
+            if (user_opts.infmt1_opt<-1 || user_opts.infmt1_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt1 can only be -1, 0, 1, 2, or 3");
         }
         else if ( string(argv[i]) == "-infmt2" )
         {
             const string val = next_value(argc, argv, i, "-infmt2");
-            infmt2_opt=safe_stoi(val);
-            if (infmt2_opt<-1 || infmt2_opt>3)
+            user_opts.infmt2_opt=safe_stoi(val);
+            if (user_opts.infmt2_opt<-1 || user_opts.infmt2_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt2 can only be -1, 0, 1, 2, or 3");
         }
         else if ( string(argv[i]) == "-ter" )
         {
             const string val = next_value(argc, argv, i, "-ter");
-            ter_opt=safe_stoi(val);
+            user_opts.ter_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-split" )
         {
             const string val = next_value(argc, argv, i, "-split");
-            split_opt=safe_stoi(val);
+            user_opts.split_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-atom" )
         {
             const string val = next_value(argc, argv, i, "-atom");
-            atom_opt=val;
+            user_opts.atom_opt=val;
         }
         else if ( string(argv[i]) == "-threads" )
         {
             const string val = next_value(argc, argv, i, "-threads");
-            parallel_threads = atoi(val.c_str());
-            if (parallel_threads <= 1) parallel_threads = 1;
+            control.parallel_threads = atoi(val.c_str());
+            if (control.parallel_threads <= 1) control.parallel_threads = 1;
         }
         else if ( string(argv[i]) == "-mol" )
         {
             const string val = next_value(argc, argv, i, "-mol");
-            mol_opt=val;
-            if (mol_opt=="prot") mol_opt="protein";
-            else if (mol_opt=="DNA") mol_opt="RNA";
-            if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
+            user_opts.mol_opt=val;
+            if (user_opts.mol_opt=="prot") user_opts.mol_opt="protein";
+            else if (user_opts.mol_opt=="DNA") user_opts.mol_opt="RNA";
+            if (user_opts.mol_opt!="auto" && user_opts.mol_opt!="protein" && user_opts.mol_opt!="RNA")
                 PrintErrorAndQuit("ERROR! Molecule type must be one of the "
                     "following:\nauto, prot (the same as 'protein'), and "
                     "RNA (the same as 'DNA').");
@@ -5346,255 +5242,255 @@ int main(int argc, char *argv[])
         else if ( string(argv[i]) == "-dir" )
         {
             const string val = next_value(argc, argv, i, "-dir");
-            dir_opt=val;
+            user_opts.dir_opt=val;
         }
         else if ( string(argv[i]) == "-dirpair" )
         {
             const string val = next_value(argc, argv, i, "-dirpair");
-            dirpair_opt=val;
+            user_opts.dirpair_opt=val;
         }
         else if ( string(argv[i]) == "-dir1" )
         {
             const string val = next_value(argc, argv, i, "-dir1");
-            dir1_opt=val;
+            user_opts.dir1_opt=val;
         }
         else if ( string(argv[i]) == "-dir2" )
         {
             const string val = next_value(argc, argv, i, "-dir2");
-            dir2_opt=val;
+            user_opts.dir2_opt=val;
         }
         else if ( string(argv[i]) == "-suffix" )
         {
             const string val = next_value(argc, argv, i, "-suffix");
-            suffix_opt=val;
+            control.suffix_opt=val;
         }
         else if ( string(argv[i]) == "-outfmt" )
         {
             const string val = next_value(argc, argv, i, "-outfmt");
-            outfmt_opt=safe_stoi(val);
+            user_opts.outfmt_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-TMcut" )
         {
             const string val = next_value(argc, argv, i, "-TMcut");
-            TMcut=safe_stod(val);
+            user_opts.TMcut=safe_stod(val);
         }
         else if ( string(argv[i]) == "-byresi"  || 
                   string(argv[i]) == "-tmscore" ||
                   string(argv[i]) == "-TMscore")
         {
             const string val = next_value(argc, argv, i, "-byresi");
-            byresi_opt=safe_stoi(val);
+            user_opts.byresi_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-seq" )
         {
-            byresi_opt=5;
+            user_opts.byresi_opt=5;
         }
         else if ( string(argv[i]) == "-cp" )
         {
-            mm_opt=3;
+            control.mm_opt=3;
         }
         else if ( string(argv[i]) == "-mirror" )
         {
             const string val = next_value(argc, argv, i, "-mirror");
-            mirror_opt=safe_stoi(val);
+            user_opts.mirror_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-het" )
         {
             const string val = next_value(argc, argv, i, "-het");
-            het_opt=safe_stoi(val);
-            if (het_opt!=0 && het_opt!=1 && het_opt!=2)
+            user_opts.het_opt=safe_stoi(val);
+            if (user_opts.het_opt!=0 && user_opts.het_opt!=1 && user_opts.het_opt!=2)
                 PrintErrorAndQuit("-het must be 0, 1, or 2");
         }
         else if ( string(argv[i]) == "-mm" )
         {
             const string val = next_value(argc, argv, i, "-mm");
-            mm_opt=safe_stoi(val);
+            control.mm_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-TMpass" )
         {
             const string val = next_value(argc, argv, i, "-TMpass");
-            TMpass_opt = safe_stod(val);
+            control.TMpass_opt = safe_stod(val);
         }
         else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
             continue;
-        else if (xname.size() == 0) xname=argv[i];
-        else if (yname.size() == 0) yname=argv[i];
+        else if (user_opts.xname.size() == 0) user_opts.xname=argv[i];
+        else if (user_opts.yname.size() == 0) user_opts.yname=argv[i];
         else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
     }
 
-    if  (xname.size()==0 || (yname.size() && dir_opt.size()) ||
-        (yname.size() && dirpair_opt.size()) ||
-        (yname.size()==0 && dir_opt.size()==0 && dirpair_opt.size()==0))
+    if  (user_opts.xname.size()==0 || (user_opts.yname.size() && user_opts.dir_opt.size()) ||
+        (user_opts.yname.size() && user_opts.dirpair_opt.size()) ||
+        (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0))
     {
-        if (h_opt) print_help(h_opt);
-        if (v_opt)
+        if (control.h_opt) print_help(control.h_opt);
+        if (control.v_opt)
         {
             print_version();
             exit(EXIT_FAILURE);
         }
-        if (xname.size()==0)
+        if (user_opts.xname.size()==0)
             PrintErrorAndQuit("Please provide input structures");
-        else if (yname.size()==0 && dir_opt.size()==0 && dirpair_opt.size()==0 && mm_opt!=4)
+        else if (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0 && control.mm_opt!=4)
             PrintErrorAndQuit("Please provide structure B");
-        else if (yname.size() && dir_opt.size()+dirpair_opt.size())
+        else if (user_opts.yname.size() && user_opts.dir_opt.size()+user_opts.dirpair_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
 
-    if (suffix_opt.size() && dir_opt.size()+dirpair_opt.size()+dir1_opt.size()+dir2_opt.size()==0)
+    if (control.suffix_opt.size() && user_opts.dir_opt.size()+user_opts.dirpair_opt.size()+user_opts.dir1_opt.size()+user_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if ((dir_opt.size() || dirpair_opt.size() || dir1_opt.size() || dir2_opt.size()))
+    if ((user_opts.dir_opt.size() || user_opts.dirpair_opt.size() || user_opts.dir1_opt.size() || user_opts.dir2_opt.size()))
     {
-        if (chainmapfile.size())
+        if (control.chainmapfile.size())
             PrintErrorAndQuit("-chainmap cannot be used with -dir, -dir1 or -dir2");
-        if (mm_opt!=2 && mm_opt!=4)
+        if (control.mm_opt!=2 && control.mm_opt!=4)
         {
-            if (o_opt)
+            if (user_opts.o_opt)
                 PrintErrorAndQuit("-o cannot be set with -dir, -dir1 or -dir2");
-            if (m_opt && fname_matrix!="-")
+            if (user_opts.m_opt && user_opts.fname_matrix!="-")
                 PrintErrorAndQuit("-m can only be - or unset when using -dir, -dir1 or -dir2");
         }
-        else if ((dir_opt.size() || dirpair_opt.size() )&& (dir1_opt.size() || dir2_opt.size()))
+        else if ((user_opts.dir_opt.size() || user_opts.dirpair_opt.size() )&& (user_opts.dir1_opt.size() || user_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
-        else if (dir_opt.size() && dirpair_opt.size())
+        else if (user_opts.dir_opt.size() && user_opts.dirpair_opt.size())
             PrintErrorAndQuit("-dir cannot be set with -dirpair");
     }
-    if (o_opt && (infmt1_opt!=-1 && infmt1_opt!=0 && infmt1_opt!=3))
+    if (user_opts.o_opt && (user_opts.infmt1_opt!=-1 && user_opts.infmt1_opt!=0 && user_opts.infmt1_opt!=3))
         PrintErrorAndQuit("-o can only be used with -infmt1 -1, 0 or 3");
 
-    bool autojustify=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
-    if (mol_opt=="protein" && atom_opt=="auto")
-        atom_opt=" CA ";
-    else if (mol_opt=="RNA" && atom_opt=="auto")
-        atom_opt=" C3'";
-    if (atom_opt.size()!=4)
+    parsed.autojustify=(user_opts.atom_opt=="auto" || user_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (user_opts.mol_opt=="protein" && user_opts.atom_opt=="auto")
+        user_opts.atom_opt=" CA ";
+    else if (user_opts.mol_opt=="RNA" && user_opts.atom_opt=="auto")
+        user_opts.atom_opt=" C3'";
+    if (user_opts.atom_opt.size()!=4)
     {
         cerr<<"ERROR! Atom name must have 4 characters, including space.\n"
               "For example, C alpha, C3' and P atoms should be specified by\n"
               "-atom \" CA \", -atom \" P  \" and -atom \" C3'\", respectively."<<endl;
-        if (atom_opt.size()>=5 || atom_opt.size()==0) return 1;
-        else if (atom_opt.size()==1) atom_opt=" "+atom_opt+"  ";
-        else if (atom_opt.size()==2) atom_opt=" "+atom_opt+" ";
-        else if (atom_opt.size()==3) atom_opt=" "+atom_opt;
-        cerr<<"Change -atom to \""<<atom_opt<<"\""<<endl;
+        if (user_opts.atom_opt.size()>=5 || user_opts.atom_opt.size()==0) return 1;
+        else if (user_opts.atom_opt.size()==1) user_opts.atom_opt=" "+user_opts.atom_opt+"  ";
+        else if (user_opts.atom_opt.size()==2) user_opts.atom_opt=" "+user_opts.atom_opt+" ";
+        else if (user_opts.atom_opt.size()==3) user_opts.atom_opt=" "+user_opts.atom_opt;
+        cerr<<"Change -atom to \""<<user_opts.atom_opt<<"\""<<endl;
     }
 
-    if (d_opt && d0_scale<=0)
+    if (user_opts.d_opt && user_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d! It should be >0");
-    if (outfmt_opt>=2 && (a_opt || u_opt || d_opt))
+    if (user_opts.outfmt_opt>=2 && (user_opts.a_opt || user_opts.u_opt || user_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-    if (byresi_opt!=0)
+    if (user_opts.byresi_opt!=0)
     {
-        if (i_opt)
+        if (user_opts.i_opt)
             PrintErrorAndQuit("-TMscore >=1 cannot be used with -i or -I");
-        if (byresi_opt<0 || byresi_opt>7)
+        if (user_opts.byresi_opt<0 || user_opts.byresi_opt>7)
             PrintErrorAndQuit("-TMscore can only be 0 to 7");
-        if ((byresi_opt==2 || byresi_opt==3 || byresi_opt==6) && ter_opt>=2)
+        if ((user_opts.byresi_opt==2 || user_opts.byresi_opt==3 || user_opts.byresi_opt==6) && user_opts.ter_opt>=2)
             PrintErrorAndQuit("-TMscore 2 and 6 must be used with -ter <=1");
     }
     //if (split_opt==1 && ter_opt!=0)
         //PrintErrorAndQuit("-split 1 should be used with -ter 0");
     //else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
         //PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (split_opt<0)
-        if (byresi_opt==2 || byresi_opt==3) split_opt=0;
-        else split_opt=2;
-    else if (split_opt>2)
+    if (user_opts.split_opt<0)
+        if (user_opts.byresi_opt==2 || user_opts.byresi_opt==3) user_opts.split_opt=0;
+        else user_opts.split_opt=2;
+    else if (user_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
-    if (mm_opt==3)
+    if (control.mm_opt==3)
     {
-        cp_opt=true;
-        mm_opt=0;
+        control.cp_opt=true;
+        control.mm_opt=0;
     }
-    if (cp_opt && i_opt)
+    if (control.cp_opt && user_opts.i_opt)
         PrintErrorAndQuit("-mm 3 cannot be used with -i or -I");
 
-    if (mirror_opt && het_opt!=1)
+    if (user_opts.mirror_opt && user_opts.het_opt!=1)
         cerr<<"WARNING! -mirror was not used with -het 1. "
             <<"D amino acids may not be correctly aligned."<<endl;
 
-    if (ter_opt<0)
+    if (user_opts.ter_opt<0)
     {
-        if (mm_opt==1 || mm_opt==2 || byresi_opt==2 || byresi_opt==3 || 
-            byresi_opt==6 || byresi_opt==7) ter_opt=1;
-        else ter_opt=2;
+        if (control.mm_opt==1 || control.mm_opt==2 || user_opts.byresi_opt==2 || user_opts.byresi_opt==3 || 
+            user_opts.byresi_opt==6 || user_opts.byresi_opt==7) user_opts.ter_opt=1;
+        else user_opts.ter_opt=2;
     }
 
-    if (mm_opt)
+    if (control.mm_opt)
     {
-        if (i_opt) PrintErrorAndQuit("-mm cannot be used with -i or -I");
-        if (u_opt) PrintErrorAndQuit("-mm cannot be used with -u or -L");
+        if (user_opts.i_opt) PrintErrorAndQuit("-mm cannot be used with -i or -I");
+        if (user_opts.u_opt) PrintErrorAndQuit("-mm cannot be used with -u or -L");
         //if (cp_opt) PrintErrorAndQuit("-mm cannot be used with -cp");
-        if (dir_opt.size() && mm_opt==2) PrintErrorAndQuit("-mm 2 cannot be used with -dir");
-        if (byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
-        if (ter_opt>=2 && (mm_opt==1 || mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");
-        if (mm_opt==4 && (yname.size() || dir2_opt.size()))
+        if (user_opts.dir_opt.size() && control.mm_opt==2) PrintErrorAndQuit("-mm 2 cannot be used with -dir");
+        if (user_opts.byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
+        if (user_opts.ter_opt>=2 && (control.mm_opt==1 || control.mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");
+        if (control.mm_opt==4 && (user_opts.yname.size() || user_opts.dir2_opt.size()))
             cerr<<"WARNING! structure_2 is ignored for -mm 4"<<endl;
-        if (dirpair_opt.size() && (mm_opt==2 || mm_opt==4))
+        if (user_opts.dirpair_opt.size() && (control.mm_opt==2 || control.mm_opt==4))
             PrintErrorAndQuit("-mm 2 or 4 cannot be used with -dirpair");
     }
-    else if (full_opt) PrintErrorAndQuit("-full can only be used with -mm");
+    else if (control.full_opt) PrintErrorAndQuit("-full can only be used with -mm");
 
-    if (o_opt && ter_opt<=1 && split_opt==2)
+    if (user_opts.o_opt && user_opts.ter_opt<=1 && user_opts.split_opt==2)
     {
-        if (mm_opt && o_opt==2) cerr<<"WARNING! -mm may generate incorrect" 
+        if (control.mm_opt && user_opts.o_opt==2) cerr<<"WARNING! -mm may generate incorrect" 
             <<" RasMol output due to limitations in PDB file format. "
             <<"When -mm is used, -o is recommended over -rasmol"<<endl;
-        else if (mm_opt==0) cerr<<"WARNING! Only the superposition of the"
+        else if (control.mm_opt==0) cerr<<"WARNING! Only the superposition of the"
             <<" last aligned structure pair will be generated"<<endl;
     }
 
-    if (closeK_opt<0)
+    if (control.closeK_opt<0)
     {
-        if (mm_opt==5) closeK_opt=5;
-        else closeK_opt=0;
+        if (control.mm_opt==5) control.closeK_opt=5;
+        else control.closeK_opt=0;
     }
 
-    if (mm_opt==7 && hinge_opt>=10)
+    if (control.mm_opt==7 && control.hinge_opt>=10)
         PrintErrorAndQuit("ERROR! -hinge must be <10");
 
-    if (usbcat_opt && mm_opt != 7)
+    if (control.usbcat_opt && control.mm_opt != 7)
         PrintErrorAndQuit("ERROR! -afp parameter can only be used when -mm 7 is set");
 
-    if (chainmapfile.size() && mm_opt!=1)
+    if (control.chainmapfile.size() && control.mm_opt!=1)
         PrintErrorAndQuit("ERROR! -chainmap must be used with -mm 1");
 
     // read initial alignment file from 'align.txt'
-    if (i_opt) read_user_alignment(sequence, fname_lign, i_opt);
+    if (user_opts.i_opt) read_user_alignment(parsed.sequence, user_opts.fname_lign, user_opts.i_opt);
 
-    if (byresi_opt==6 || byresi_opt==7) mm_opt=1;
-    else if (byresi_opt) i_opt=3;
+    if (user_opts.byresi_opt==6 || user_opts.byresi_opt==7) control.mm_opt=1;
+    else if (user_opts.byresi_opt) user_opts.i_opt=3;
 
-    if (m_opt && fname_matrix == "") // Output rotation matrix: matrix.txt
+    if (user_opts.m_opt && user_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
 
     // parse file list
     int i; 
-    if (dirpair_opt.size())
-        file2chainpairlist(chain1_list,chain2_list, xname, dirpair_opt, suffix_opt);
+    if (user_opts.dirpair_opt.size())
+        file2chainpairlist(parsed.chain1_list,parsed.chain2_list, user_opts.xname, user_opts.dirpair_opt, control.suffix_opt);
     else
     {
-        if (dir1_opt.size()+dir_opt.size()==0) chain1_list.push_back(xname);
-        else file2chainlist(chain1_list, xname, dir_opt+dir1_opt, suffix_opt);
+        if (user_opts.dir1_opt.size()+user_opts.dir_opt.size()==0) parsed.chain1_list.push_back(user_opts.xname);
+        else file2chainlist(parsed.chain1_list, user_opts.xname, user_opts.dir_opt+user_opts.dir1_opt, control.suffix_opt);
 
-        if (dir_opt.size())
-            for (i=0;i<chain1_list.size();i++)
-                chain2_list.push_back(chain1_list[i]);
-        else if (dir2_opt.size()==0) chain2_list.push_back(yname);
-        else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
+        if (user_opts.dir_opt.size())
+            for (i=0;i<parsed.chain1_list.size();i++)
+                parsed.chain2_list.push_back(parsed.chain1_list[i]);
+        else if (user_opts.dir2_opt.size()==0) parsed.chain2_list.push_back(user_opts.yname);
+        else file2chainlist(parsed.chain2_list, user_opts.yname, user_opts.dir2_opt, control.suffix_opt);
     }
 
 
-    bool single_mm1_align = is_single_mm1_align(mm_opt, dir_opt, dir1_opt, dir2_opt, dirpair_opt);
-    if (outfmt_opt == 2 && !single_mm1_align)
+    bool single_mm1_align = is_single_mm1_align(control.mm_opt, user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt);
+    if (user_opts.outfmt_opt == 2 && !single_mm1_align)
     {
-        if (mm_opt == 2)
+        if (control.mm_opt == 2)
         {
             cout << "#Query\tTemplate\tTM" << endl;
         }
         else
         {
-            if (mm_opt == 1) cout << endl;
+            if (control.mm_opt == 1) cout << endl;
             cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
                 << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
         }
@@ -5602,137 +5498,128 @@ int main(int argc, char *argv[])
 
     /* real alignment. entry functions are MMalign_main and 
      * TMalign_main */
-    if (mm_opt==0) 
-        TMalign(xname, yname, fname_super, fname_lign, fname_matrix,
-        sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt,
-        u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
-        split_opt, outfmt_opt, fast_opt, cp_opt, mirror_opt, het_opt,
-        atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
-        dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-        byresi_opt, chain1_list, chain2_list, se_opt, do_opt,
-        parallel_threads);
-    else if (mm_opt==1)
+    if (control.mm_opt==0) 
+        TMalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_lign, user_opts.fname_matrix,
+        parsed.sequence, user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.m_opt, user_opts.i_opt, user_opts.o_opt, user_opts.a_opt,
+        user_opts.u_opt, user_opts.d_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt,
+        user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, control.cp_opt, user_opts.mirror_opt, user_opts.het_opt,
+        user_opts.atom_opt, parsed.autojustify, user_opts.mol_opt, user_opts.dir_opt, user_opts.dirpair_opt, user_opts.dir1_opt,
+        user_opts.dir2_opt, user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
+        user_opts.byresi_opt, parsed.chain1_list, parsed.chain2_list, control.se_opt, control.do_opt,
+        control.parallel_threads);
+    else if (control.mm_opt==1)
     {
-        if (dir_opt.size()>0 || dir1_opt.size()>0 || dir2_opt.size()>0)
+        if (user_opts.dir_opt.size()>0 || user_opts.dir1_opt.size()>0 || user_opts.dir2_opt.size()>0)
         {
-            for (int chain1_idx=0; chain1_idx<(int)chain1_list.size(); chain1_idx++)
+            for (int chain1_idx=0; chain1_idx<(int)parsed.chain1_list.size(); chain1_idx++)
             {
-                xname = chain1_list[chain1_idx];
-                vector<string> tmp_vec1(1, xname);
-                for (int chain2_idx=0; chain2_idx<(int)chain2_list.size(); chain2_idx++)
+                user_opts.xname = parsed.chain1_list[chain1_idx];
+                vector<string> tmp_vec1(1, user_opts.xname);
+                for (int chain2_idx=0; chain2_idx<(int)parsed.chain2_list.size(); chain2_idx++)
                 {
-                    if (dir_opt.size()>0 && chain2_idx<=chain1_idx) continue;
-                    yname = chain2_list[chain2_idx];
-                    vector<string> tmp_vec2(1, yname);
+                    if (user_opts.dir_opt.size()>0 && chain2_idx<=chain1_idx) continue;
+                    user_opts.yname = parsed.chain2_list[chain2_idx];
+                    vector<string> tmp_vec2(1, user_opts.yname);
                     string norm_dir1;
                     string norm_dir2;
-                    normalize_dir_options(dir_opt, dir1_opt, dir2_opt, norm_dir1, norm_dir2);
-                    MMalign(xname, yname, fname_super,
-                        fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
-                        a_opt, d_opt, full_opt, TMcut, infmt1_opt, infmt2_opt,
-                        ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt,
-                        het_opt, atom_opt, autojustify, mol_opt,
+                    normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
+                    MMalign(user_opts.xname, user_opts.yname, user_opts.fname_super,
+                        user_opts.fname_lign, user_opts.fname_matrix, parsed.sequence, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt,
+                        user_opts.a_opt, user_opts.d_opt, control.full_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt,
+                        user_opts.ter_opt, user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt,
+                        user_opts.het_opt, user_opts.atom_opt, parsed.autojustify, user_opts.mol_opt,
                         norm_dir1, norm_dir2,
-                        chain2parse1, chain2parse2, model2parse1, model2parse2,
-                        tmp_vec1, tmp_vec2, byresi_opt, chainmapfile, se_opt,
-                        parallel_threads);
+                        user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
+                        tmp_vec1, tmp_vec2, user_opts.byresi_opt, control.chainmapfile, control.se_opt,
+                        control.parallel_threads);
                     vector<string>().swap(tmp_vec2);
                 }
                 vector<string>().swap(tmp_vec1);
             }
         }
-        else if (dirpair_opt.size()==0) 
-            MMalign(xname, yname, fname_super,
-            fname_lign, fname_matrix, sequence, d0_scale, m_opt, o_opt,
-            a_opt, d_opt, full_opt, TMcut, infmt1_opt, infmt2_opt,
-            ter_opt, split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
-            atom_opt, autojustify, mol_opt, dir1_opt, dir2_opt,
-            chain2parse1, chain2parse2, model2parse1, model2parse2,
-            chain1_list, chain2_list, byresi_opt,chainmapfile, se_opt,
-            parallel_threads);
+        else if (user_opts.dirpair_opt.size()==0) 
+            MMalign(user_opts.xname, user_opts.yname, user_opts.fname_super,
+            user_opts.fname_lign, user_opts.fname_matrix, parsed.sequence, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt,
+            user_opts.a_opt, user_opts.d_opt, control.full_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt,
+            user_opts.ter_opt, user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt, user_opts.het_opt,
+            user_opts.atom_opt, parsed.autojustify, user_opts.mol_opt, user_opts.dir1_opt, user_opts.dir2_opt,
+            user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
+            parsed.chain1_list, parsed.chain2_list, user_opts.byresi_opt,control.chainmapfile, control.se_opt,
+            control.parallel_threads);
         else
         {
             vector<string> tmp_vec1;
             vector<string> tmp_vec2;
-            for (i=0;i<chain1_list.size();i++)
+            for (i=0;i<parsed.chain1_list.size();i++)
             {
-                xname=chain1_list[i];
-                yname=chain2_list[i];
-                tmp_vec1.push_back(xname);
-                tmp_vec2.push_back(yname);
-                MMalign(xname, yname, fname_super, fname_lign, fname_matrix,
-                    sequence, d0_scale, m_opt, o_opt, a_opt, d_opt, full_opt,
-                    TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt,
-                    outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt,
-                    autojustify, mol_opt, dirpair_opt, dirpair_opt,
-                    chain2parse1, chain2parse2, model2parse1, model2parse2,
-                    tmp_vec1, tmp_vec2, byresi_opt,chainmapfile, se_opt,
-                    parallel_threads);
+                user_opts.xname=parsed.chain1_list[i];
+                user_opts.yname=parsed.chain2_list[i];
+                tmp_vec1.push_back(user_opts.xname);
+                tmp_vec2.push_back(user_opts.yname);
+                MMalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_lign, user_opts.fname_matrix,
+                    parsed.sequence, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt, control.full_opt,
+                    user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt, user_opts.split_opt,
+                    user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt, user_opts.het_opt, user_opts.atom_opt,
+                    parsed.autojustify, user_opts.mol_opt, user_opts.dirpair_opt, user_opts.dirpair_opt,
+                    user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
+                    tmp_vec1, tmp_vec2, user_opts.byresi_opt,control.chainmapfile, control.se_opt,
+                    control.parallel_threads);
                 tmp_vec1[0].clear(); tmp_vec1.clear();
                 tmp_vec2[0].clear(); tmp_vec2.clear();
             }
         }
-        chainmapfile.clear();
+        control.chainmapfile.clear();
     }
-    else if (mm_opt==2) 
-        MMdock(xname, yname, fname_super,
-        fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, o_opt, a_opt,
-        u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
-        split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
-        atom_opt, autojustify, mol_opt, dir1_opt, dir2_opt,
-        chain2parse1, chain2parse2, model2parse1, model2parse2,
-        chain1_list, chain2_list, do_opt,
-        parallel_threads);
-    else if (mm_opt==3) ; // should be changed to mm_opt=0, cp_opt=true
-    else if (mm_opt==4) 
-        mTMalign(xname, yname, fname_super, fname_matrix,
-        sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt, a_opt,
-        u_opt, d_opt, full_opt, TMcut, infmt1_opt, ter_opt,
-        split_opt, outfmt_opt, fast_opt, het_opt,
-        atom_opt, autojustify, mol_opt, dir_opt, byresi_opt, chain1_list,
-        chain2parse1, model2parse1, se_opt,
-        parallel_threads);
-    else if (mm_opt==5 || mm_opt==6) 
-        SOIalign(xname, yname, fname_super, fname_lign,
-        fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
-        a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
-        split_opt, outfmt_opt, fast_opt, cp_opt, mirror_opt, het_opt,
-        atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
-        dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-        chain1_list, chain2_list, se_opt, closeK_opt, mm_opt,
-        parallel_threads);
-    else if (mm_opt==7)
+    else if (control.mm_opt==2) 
+        MMdock(user_opts.xname, user_opts.yname, user_opts.fname_super,
+        user_opts.fname_matrix, parsed.sequence, user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt, user_opts.a_opt,
+        user_opts.u_opt, user_opts.d_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt,
+        user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt, user_opts.het_opt,
+        user_opts.atom_opt, parsed.autojustify, user_opts.mol_opt, user_opts.dir1_opt, user_opts.dir2_opt,
+        user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
+        parsed.chain1_list, parsed.chain2_list, control.do_opt,
+        control.parallel_threads);
+    else if (control.mm_opt==3) ; // should be changed to mm_opt=0, cp_opt=true
+    else if (control.mm_opt==4) 
+        mTMalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_matrix,
+        parsed.sequence, user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.m_opt, user_opts.i_opt, user_opts.o_opt, user_opts.a_opt,
+        user_opts.u_opt, user_opts.d_opt, control.full_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.ter_opt,
+        user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.het_opt,
+        user_opts.atom_opt, parsed.autojustify, user_opts.mol_opt, user_opts.dir_opt, user_opts.byresi_opt, parsed.chain1_list,
+        user_opts.chain2parse1, user_opts.model2parse1, control.se_opt,
+        control.parallel_threads);
+    else if (control.mm_opt==5 || control.mm_opt==6) 
+        SOIalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_lign,
+        user_opts.fname_matrix, parsed.sequence, user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.m_opt, user_opts.i_opt, user_opts.o_opt,
+        user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt,
+        user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, control.cp_opt, user_opts.mirror_opt, user_opts.het_opt,
+        user_opts.atom_opt, parsed.autojustify, user_opts.mol_opt, user_opts.dir_opt, user_opts.dirpair_opt, user_opts.dir1_opt,
+        user_opts.dir2_opt, user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
+        parsed.chain1_list, parsed.chain2_list, control.se_opt, control.closeK_opt, control.mm_opt,
+        control.parallel_threads);
+    else if (control.mm_opt==7)
     {
-        AlignCommonInput common_inputs;
         FlexalignParams flex_params;
         FlexAlignResult flex_result;
 
-        fill_align_common_input(common_inputs, xname, yname, fname_super, fname_lign,
-            fname_matrix, sequence, Lnorm_ass, d0_scale, m_opt, i_opt, o_opt,
-            a_opt, u_opt, d_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt,
-            split_opt, outfmt_opt, fast_opt, mirror_opt, het_opt,
-            atom_opt, autojustify, mol_opt, dir_opt, dirpair_opt, dir1_opt,
-            dir2_opt, chain2parse1, chain2parse2, model2parse1, model2parse2,
-            byresi_opt, chain1_list, chain2_list);
-
-        fill_flexalign_params(flex_params, usbcat_opt, hinge_opt, hinge_set, TMpass_opt);
+        fill_flexalign_params(flex_params, control);
 
         Flexalign(common_inputs, flex_params, flex_result);
     }
-    else cerr<<"WARNING! -mm "<<mm_opt<<" not implemented"<<endl;
+    else cerr<<"WARNING! -mm "<<control.mm_opt<<" not implemented"<<endl;
 
     // clean up
-    vector<string>().swap(chain1_list);
-    vector<string>().swap(chain2_list);
-    vector<string>().swap(chain2parse1);
-    vector<string>().swap(chain2parse2);
-    vector<string>().swap(model2parse1);
-    vector<string>().swap(model2parse2);
-    vector<string>().swap(sequence);
+    vector<string>().swap(parsed.chain1_list);
+    vector<string>().swap(parsed.chain2_list);
+    vector<string>().swap(user_opts.chain2parse1);
+    vector<string>().swap(user_opts.chain2parse2);
+    vector<string>().swap(user_opts.model2parse1);
+    vector<string>().swap(user_opts.model2parse2);
+    vector<string>().swap(parsed.sequence);
     vector<pair<string,string> >().swap(chain_pair_list);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
-    if (outfmt_opt<2) fcout("#Total CPU time is %5.2f seconds\n", diff);
+    if (user_opts.outfmt_opt<2) fcout("#Total CPU time is %5.2f seconds\n", diff);
     return 0;
 }

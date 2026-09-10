@@ -1237,6 +1237,12 @@ struct UserOptions
     double Lnorm_ass;
     double d0_scale;
     double TMcut;
+
+    UserOptions() : infmt1_opt(-1), infmt2_opt(-1), ter_opt(-1), split_opt(-1),
+                    het_opt(0), atom_opt("auto"), mol_opt("auto"), mirror_opt(0),
+                    byresi_opt(0), fast_opt(false), i_opt(0), o_opt(0), a_opt(0),
+                    m_opt(false), u_opt(false), d_opt(false), outfmt_opt(0),
+                    Lnorm_ass(0.0), d0_scale(0.0), TMcut(-1) {}
 };
 
 struct ParsedInput
@@ -1246,12 +1252,40 @@ struct ParsedInput
     std::vector<std::string> chain2_list;
     std::vector<std::string> sequence;
     bool autojustify;
+
+    ParsedInput() : autojustify(false) {}
+};
+
+struct ControlOptions
+{
+    int         mm_opt;
+    int         cp_opt;
+    bool        full_opt;
+    int         closeK_opt;
+    std::string chainmapfile;
+    bool        se_opt;
+    bool        do_opt;
+    int         parallel_threads;
+    bool        h_opt;
+    bool        v_opt;
+    std::string suffix_opt;
+    bool        usbcat_opt;
+    int         hinge_opt;
+    bool        hinge_set;
+    double      TMpass_opt;
+
+    ControlOptions() : mm_opt(0), cp_opt(0), full_opt(false), closeK_opt(-1),
+                       se_opt(false), do_opt(false), parallel_threads(0),
+                       h_opt(false), v_opt(false), chainmapfile(""),
+                       suffix_opt(""), usbcat_opt(false), hinge_opt(9),
+                       hinge_set(false), TMpass_opt(0.85) {}
 };
 
 struct AlignCommonInput
 {
     UserOptions user_options;
     ParsedInput parsed_input;
+    ControlOptions control_options;
 };
 
 struct FlexalignParams
