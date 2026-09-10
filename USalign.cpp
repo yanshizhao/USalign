@@ -996,7 +996,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     int    chain_i,chain_j;    // chain index
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
     CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
@@ -4615,7 +4615,7 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     int    chain_i,chain_j;    // chain index
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
     IntPairArray   secx_bond;        // boundary of secondary structure
@@ -4940,7 +4940,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     vector<string> chainID_list2;      // list of chainID2
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
-    int    xchainnum,ychainnum;// number of chains in a PDB file
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
     // loop over file names
