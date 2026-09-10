@@ -5089,6 +5089,13 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     return 0;
 }
 
+inline string next_value(int argc, char* argv[], int& i, const char* opt)
+{
+    if (i >= argc - 1)
+        PrintErrorAndQuit(string("ERROR! Missing value for ") + opt);
+    return argv[++i];
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -5159,98 +5166,84 @@ int main(int argc, char *argv[])
     {
         if ( string(argv[i]) == "-o" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -o");
+            const string val = next_value(argc, argv, i, "-o");
             if (o_opt==2)
                 cerr<<"Warning! -rasmol is already set. Ignore -o"<<endl;
             else if (o_opt==3)
                 cerr<<"Warning! -chimerax is already set. Ignore -o"<<endl;
             else
             {
-                fname_super = argv[i + 1];
+                fname_super = val;
                 o_opt = 1;
             }
-            i++;
         }
         else if ( string(argv[i]) == "-rasmol" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -rasmol");
+            const string val = next_value(argc, argv, i, "-rasmol");
             if (o_opt==1)
                 cerr<<"Warning! -o is already set. Ignore -rasmol"<<endl;
             else if (o_opt==3)
                 cerr<<"Warning! -chimerax is already set. Ignore -rasmol"<<endl;
             else
             {
-                fname_super = argv[i + 1];
+                fname_super = val;
                 o_opt = 2;
             }
-            i++;
         }
         else if ( string(argv[i]) == "-chimerax" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -chimerax");
+            const string val = next_value(argc, argv, i, "-chimerax");
             if (o_opt==1)
                 cerr<<"Warning! -o is already set. Ignore -chimerax"<<endl;
             else if (o_opt==2)
                 cerr<<"Warning! -rasmol is already set. Ignore -chimerax"<<endl;
             else
             {
-                fname_super = argv[i + 1];
+                fname_super = val;
                 o_opt = 3;
             }
-            i++;
         }
         else if ( string(argv[i]) == "-u" || string(argv[i]) == "-L" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -u or -L");
-            Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
+            const string val = next_value(argc, argv, i, "-u or -L");
+            Lnorm_ass = safe_stod(val); u_opt = true;
             if (Lnorm_ass<=0) PrintErrorAndQuit(
                 "ERROR! The value for -u or -L should be >0");
         }
         else if ( string(argv[i]) == "-a" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -a");
-            if (string(argv[i + 1]) == "T")      a_opt=true;
-            else if (string(argv[i + 1]) == "F") a_opt=false;
+            const string val = next_value(argc, argv, i, "-a");
+            if (val == "T")      a_opt=true;
+            else if (val == "F") a_opt=false;
             else 
             {
-                a_opt=safe_stoi(argv[i + 1]);
+                a_opt=safe_stoi(val);
                 if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
-            i++;
         }
         else if ( string(argv[i]) == "-full" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -full");
-            if (string(argv[i + 1]) == "T")      full_opt=true;
-            else if (string(argv[i + 1]) == "F") full_opt=false;
+            const string val = next_value(argc, argv, i, "-full");
+            if (val == "T")      full_opt=true;
+            else if (val == "F") full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
-            i++;
         }
         else if ( string(argv[i]) == "-d" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -d");
-            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
+            const string val = next_value(argc, argv, i, "-d");
+            d0_scale = safe_stod(val); d_opt = true;
         }
         else if ( string(argv[i]) == "-closeK" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -closeK");
-            closeK_opt = safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-closeK");
+            closeK_opt = safe_stoi(val);
         }
         else if ( string(argv[i]) == "-hinge" )
         {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -hinge");
+            const string val = next_value(argc, argv, i, "-hinge");
             hinge_set = true;
-            hinge_opt = safe_stoi(argv[i + 1]); i++;
+            hinge_opt = safe_stoi(val);
         }
         else if ( string(argv[i]) == "-v" )
         {
@@ -5266,59 +5259,47 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-i" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -i");
+            const string val = next_value(argc, argv, i, "-i");
             if (i_opt==3)
                 PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
-            fname_lign = argv[i + 1];      i_opt = 1; i++;
+            fname_lign = val;      i_opt = 1;
         }
         else if (string(argv[i]) == "-I" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -I");
+            const string val = next_value(argc, argv, i, "-I");
             if (i_opt==1)
                 PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
-            fname_lign = argv[i + 1];      i_opt = 3; i++;
+            fname_lign = val;      i_opt = 3;
         }
         else if (string(argv[i]) == "-chainmap" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -chainmap");
-            chainmapfile = argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-chainmap");
+            chainmapfile = val;
         }
         else if (string(argv[i]) == "-chain1" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],chain2parse1,',');
-            i++;
+            const string val = next_value(argc, argv, i, "-chain1");
+            split(val,chain2parse1,',');
         }
         else if (string(argv[i]) == "-chain2" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],chain2parse2,',');
-            i++;
+            const string val = next_value(argc, argv, i, "-chain2");
+            split(val,chain2parse2,',');
         }
         else if (string(argv[i]) == "-model1" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],model2parse1,',');
-            i++;
+            const string val = next_value(argc, argv, i, "-model1");
+            split(val,model2parse1,',');
         }
         else if (string(argv[i]) == "-model2" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],model2parse2,',');
-            i++;
+            const string val = next_value(argc, argv, i, "-model2");
+            split(val,model2parse2,',');
         }
         else if (string(argv[i]) == "-m" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -m");
-            fname_matrix = argv[i + 1];    m_opt = true; i++;
+            const string val = next_value(argc, argv, i, "-m");
+            fname_matrix = val;    m_opt = true;
         }// get filename for rotation matrix
         else if (string(argv[i]) == "-fast")
         {
@@ -5330,50 +5311,43 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-infmt1" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -infmt1");
-            infmt1_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-infmt1");
+            infmt1_opt=safe_stoi(val);
             if (infmt1_opt<-1 || infmt1_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt1 can only be -1, 0, 1, 2, or 3");
         }
         else if ( string(argv[i]) == "-infmt2" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -infmt2");
-            infmt2_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-infmt2");
+            infmt2_opt=safe_stoi(val);
             if (infmt2_opt<-1 || infmt2_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt2 can only be -1, 0, 1, 2, or 3");
         }
         else if ( string(argv[i]) == "-ter" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -ter");
-            ter_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-ter");
+            ter_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-split" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -split");
-            split_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-split");
+            split_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-atom" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -atom");
-            atom_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-atom");
+            atom_opt=val;
         }
         else if ( string(argv[i]) == "-threads" )
         {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -threads");
-            parallel_threads = atoi(argv[++i]);
+            const string val = next_value(argc, argv, i, "-threads");
+            parallel_threads = atoi(val.c_str());
             if (parallel_threads <= 1) parallel_threads = 1;
         }
         else if ( string(argv[i]) == "-mol" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -mol");
-            mol_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-mol");
+            mol_opt=val;
             if (mol_opt=="prot") mol_opt="protein";
             else if (mol_opt=="DNA") mol_opt="RNA";
             if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
@@ -5383,53 +5357,45 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-dir" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -dir");
-            dir_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-dir");
+            dir_opt=val;
         }
         else if ( string(argv[i]) == "-dirpair" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -dirpair");
-            dirpair_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-dirpair");
+            dirpair_opt=val;
         }
         else if ( string(argv[i]) == "-dir1" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -dir1");
-            dir1_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-dir1");
+            dir1_opt=val;
         }
         else if ( string(argv[i]) == "-dir2" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -dir2");
-            dir2_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-dir2");
+            dir2_opt=val;
         }
         else if ( string(argv[i]) == "-suffix" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -suffix");
-            suffix_opt=argv[i + 1]; i++;
+            const string val = next_value(argc, argv, i, "-suffix");
+            suffix_opt=val;
         }
         else if ( string(argv[i]) == "-outfmt" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -outfmt");
-            outfmt_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-outfmt");
+            outfmt_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-TMcut" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -TMcut");
-            TMcut=safe_stod(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-TMcut");
+            TMcut=safe_stod(val);
         }
         else if ( string(argv[i]) == "-byresi"  || 
                   string(argv[i]) == "-tmscore" ||
                   string(argv[i]) == "-TMscore")
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -byresi");
-            byresi_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-byresi");
+            byresi_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-seq" )
         {
@@ -5441,23 +5407,20 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-mirror" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -mirror");
-            mirror_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-mirror");
+            mirror_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-het" )
         {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -het");
-            het_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-het");
+            het_opt=safe_stoi(val);
             if (het_opt!=0 && het_opt!=1 && het_opt!=2)
                 PrintErrorAndQuit("-het must be 0, 1, or 2");
         }
         else if ( string(argv[i]) == "-mm" )
         {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -mm");
-            mm_opt=safe_stoi(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-mm");
+            mm_opt=safe_stoi(val);
         }
         else if ( string(argv[i]) == "-afp" )
         {
@@ -5465,9 +5428,8 @@ int main(int argc, char *argv[])
         }
         else if ( string(argv[i]) == "-TMpass" )
         {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -TMpass");
-            TMpass_opt = safe_stod(argv[i + 1]); i++;
+            const string val = next_value(argc, argv, i, "-TMpass");
+            TMpass_opt = safe_stod(val);
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
