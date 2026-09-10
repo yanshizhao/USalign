@@ -5096,6 +5096,45 @@ inline string next_value(int argc, char* argv[], int& i, const char* opt)
     return argv[++i];
 }
 
+inline void split_next(int argc, char* argv[], int& i, const char* opt,
+                       vector<string>& target)
+{
+    split(next_value(argc, argv, i, opt), target, ',');
+}
+
+enum OutputKind { OUT_NONE = 0, OUT_O = 1, OUT_RASMOL = 2, OUT_CHIMERAX = 3 };
+
+inline void set_output_kind(int& o_opt, string& fname_super,
+                            const int incoming, const string& value)
+{
+    static const char* kind_name[] = {"", "-o", "-rasmol", "-chimerax"};
+    for (int other = OUT_O; other <= OUT_CHIMERAX; other++)
+    {
+        if (other == incoming) continue;
+        if (o_opt == other)
+        {
+            cerr << "Warning! " << kind_name[other] << " is already set. Ignore "
+                 << kind_name[incoming] << endl;
+            return;
+        }
+    }
+    fname_super = value;
+    o_opt = incoming;
+}
+
+enum AlnInputKind { ALN_NONE = 0, ALN_I = 1, ALN_BIG_I = 3 };
+
+inline void set_user_alignment(string& fname_lign, int& i_opt,
+                               const int incoming, const string& value)
+{
+    if (incoming == ALN_I && i_opt == ALN_BIG_I)
+        PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
+    if (incoming == ALN_BIG_I && i_opt == ALN_I)
+        PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
+    fname_lign = value;
+    i_opt = incoming;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -5165,44 +5204,14 @@ int main(int argc, char *argv[])
     for(int i = 1; i < argc; i++)
     {
         if ( string(argv[i]) == "-o" )
-        {
-            const string val = next_value(argc, argv, i, "-o");
-            if (o_opt==2)
-                cerr<<"Warning! -rasmol is already set. Ignore -o"<<endl;
-            else if (o_opt==3)
-                cerr<<"Warning! -chimerax is already set. Ignore -o"<<endl;
-            else
-            {
-                fname_super = val;
-                o_opt = 1;
-            }
-        }
+            set_output_kind(o_opt, fname_super, OUT_O,
+                next_value(argc, argv, i, "-o"));
         else if ( string(argv[i]) == "-rasmol" )
-        {
-            const string val = next_value(argc, argv, i, "-rasmol");
-            if (o_opt==1)
-                cerr<<"Warning! -o is already set. Ignore -rasmol"<<endl;
-            else if (o_opt==3)
-                cerr<<"Warning! -chimerax is already set. Ignore -rasmol"<<endl;
-            else
-            {
-                fname_super = val;
-                o_opt = 2;
-            }
-        }
+            set_output_kind(o_opt, fname_super, OUT_RASMOL,
+                next_value(argc, argv, i, "-rasmol"));
         else if ( string(argv[i]) == "-chimerax" )
-        {
-            const string val = next_value(argc, argv, i, "-chimerax");
-            if (o_opt==1)
-                cerr<<"Warning! -o is already set. Ignore -chimerax"<<endl;
-            else if (o_opt==2)
-                cerr<<"Warning! -rasmol is already set. Ignore -chimerax"<<endl;
-            else
-            {
-                fname_super = val;
-                o_opt = 3;
-            }
-        }
+            set_output_kind(o_opt, fname_super, OUT_CHIMERAX,
+                next_value(argc, argv, i, "-chimerax"));
         else if ( string(argv[i]) == "-u" || string(argv[i]) == "-L" )
         {
             const string val = next_value(argc, argv, i, "-u or -L");
@@ -5258,44 +5267,24 @@ int main(int argc, char *argv[])
             h_opt = true;
         }
         else if ( string(argv[i]) == "-i" )
-        {
-            const string val = next_value(argc, argv, i, "-i");
-            if (i_opt==3)
-                PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
-            fname_lign = val;      i_opt = 1;
-        }
+            set_user_alignment(fname_lign, i_opt, ALN_I,
+                next_value(argc, argv, i, "-i"));
         else if (string(argv[i]) == "-I" )
-        {
-            const string val = next_value(argc, argv, i, "-I");
-            if (i_opt==1)
-                PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
-            fname_lign = val;      i_opt = 3;
-        }
+            set_user_alignment(fname_lign, i_opt, ALN_BIG_I,
+                next_value(argc, argv, i, "-I"));
         else if (string(argv[i]) == "-chainmap" )
         {
             const string val = next_value(argc, argv, i, "-chainmap");
             chainmapfile = val;
         }
         else if (string(argv[i]) == "-chain1" )
-        {
-            const string val = next_value(argc, argv, i, "-chain1");
-            split(val,chain2parse1,',');
-        }
+            split_next(argc, argv, i, "-chain1", chain2parse1);
         else if (string(argv[i]) == "-chain2" )
-        {
-            const string val = next_value(argc, argv, i, "-chain2");
-            split(val,chain2parse2,',');
-        }
+            split_next(argc, argv, i, "-chain2", chain2parse2);
         else if (string(argv[i]) == "-model1" )
-        {
-            const string val = next_value(argc, argv, i, "-model1");
-            split(val,model2parse1,',');
-        }
+            split_next(argc, argv, i, "-model1", model2parse1);
         else if (string(argv[i]) == "-model2" )
-        {
-            const string val = next_value(argc, argv, i, "-model2");
-            split(val,model2parse2,',');
-        }
+            split_next(argc, argv, i, "-model2", model2parse2);
         else if (string(argv[i]) == "-m" )
         {
             const string val = next_value(argc, argv, i, "-m");
