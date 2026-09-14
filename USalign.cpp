@@ -1159,59 +1159,50 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 
 
 // ---- Collect signature parameters into the context ----
-void build_context(MMalignInputs& inputs,
-    const string &xname, const string &yname,
-    const string &fname_super, const string &fname_lign,
-    const string &fname_matrix, vector<string> &sequence,
-    const double d0_scale, const bool m_opt, const int o_opt,
-    const int a_opt, const bool d_opt, const bool full_opt,
-    const double TMcut, const int infmt1_opt, const int infmt2_opt,
-    const int ter_opt, const int split_opt, const int outfmt_opt,
-    bool fast_opt, const int mirror_opt, const int het_opt,
-    const string &atom_opt, const bool autojustify, const string &mol_opt,
-    const string &dir1_opt, const string &dir2_opt,
-    const vector<string> &chain2parse1, const vector<string> &chain2parse2,
-    const vector<string> &model2parse1, const vector<string> &model2parse2,
-    const vector<string> &chain1_list, const vector<string> &chain2_list,
-    const int byresi_opt, const string &chainmapfile, const bool se_opt,
-    int parallel_threads)
+void fill_mmalign_inputs(MMalignInputs& inputs,
+    AlignCommonInput& common_inputs,
+    const MMalignParams& mm_params)
 {
-    inputs.structure1_name = xname;
-    inputs.structure2_name = yname;
-    inputs.superposed_out = fname_super;
-    inputs.alignment_file = fname_lign;
-    inputs.matrix_out = fname_matrix;
-    inputs.infmt1_opt = infmt1_opt;
-    inputs.infmt2_opt = infmt2_opt;
-    inputs.ter_opt = ter_opt;
-    inputs.split_opt = split_opt;
-    inputs.mirror_opt = mirror_opt;
-    inputs.het_opt = het_opt;
-    inputs.atom_opt = atom_opt;
-    inputs.normalize_atom_name = autojustify;
-    inputs.mol_opt = mol_opt;
-    inputs.dir1_opt = dir1_opt;
-    inputs.dir2_opt = dir2_opt;
-    inputs.parsed_chains1 = chain2parse1;
-    inputs.chain2parse2 = chain2parse2;
-    inputs.model2parse1 = model2parse1;
-    inputs.model2parse2 = model2parse2;
-    inputs.struct1_chain_list = chain1_list;
-    inputs.chain2_list = chain2_list;
-    inputs.byresi_opt = byresi_opt;
-    inputs.chain_map_file = chainmapfile;
-    inputs.m_opt = m_opt;
-    inputs.full_opt = full_opt;
-    inputs.o_opt = o_opt;
-    inputs.parallel_threads = parallel_threads;
-    inputs.a_opt = a_opt;
-    inputs.outfmt_opt = outfmt_opt;
-    inputs.d_opt = d_opt;
-    inputs.fast_opt = fast_opt;
-    inputs.se_opt = se_opt;
-    inputs.TMcut = TMcut;
-    inputs.d0_scale = d0_scale;
-    inputs.sequence = &sequence;
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+
+    inputs.structure1_name = user_opts.xname;
+    inputs.structure2_name = user_opts.yname;
+    inputs.superposed_out = user_opts.fname_super;
+    inputs.alignment_file = user_opts.fname_lign;
+    inputs.matrix_out = user_opts.fname_matrix;
+    inputs.infmt1_opt = user_opts.infmt1_opt;
+    inputs.infmt2_opt = user_opts.infmt2_opt;
+    inputs.ter_opt = user_opts.ter_opt;
+    inputs.split_opt = user_opts.split_opt;
+    inputs.mirror_opt = user_opts.mirror_opt;
+    inputs.het_opt = user_opts.het_opt;
+    inputs.atom_opt = user_opts.atom_opt;
+    inputs.normalize_atom_name = parsed_input.autojustify;
+    inputs.mol_opt = user_opts.mol_opt;
+    inputs.dir1_opt = mm_params.dir1_opt;
+    inputs.dir2_opt = mm_params.dir2_opt;
+    inputs.parsed_chains1 = user_opts.chain2parse1;
+    inputs.chain2parse2 = user_opts.chain2parse2;
+    inputs.model2parse1 = user_opts.model2parse1;
+    inputs.model2parse2 = user_opts.model2parse2;
+    inputs.struct1_chain_list = mm_params.chain1_list;
+    inputs.chain2_list = mm_params.chain2_list;
+    inputs.byresi_opt = user_opts.byresi_opt;
+    inputs.chain_map_file = ctrl_opts.chainmapfile;
+    inputs.m_opt = user_opts.m_opt;
+    inputs.full_opt = ctrl_opts.full_opt;
+    inputs.o_opt = user_opts.o_opt;
+    inputs.parallel_threads = ctrl_opts.parallel_threads;
+    inputs.a_opt = user_opts.a_opt;
+    inputs.outfmt_opt = user_opts.outfmt_opt;
+    inputs.d_opt = user_opts.d_opt;
+    inputs.fast_opt = user_opts.fast_opt;
+    inputs.se_opt = ctrl_opts.se_opt;
+    inputs.TMcut = user_opts.TMcut;
+    inputs.d0_scale = user_opts.d0_scale;
+    inputs.sequence = &parsed_input.sequence;
 }
 
 // Output the check warning for the forced molecule type from -mol
@@ -2778,31 +2769,11 @@ void output_final_results(MMalignContext& ctx,
 }
 
 // MMalign if more than two chains. TMalign if only one chain
-int MMalign(const string &xname, const string &yname,
-    const string &fname_super, const string &fname_lign,
-    const string &fname_matrix, vector<string> &sequence,
-    const double d0_scale, const bool m_opt, const int o_opt,
-    const int a_opt, const bool d_opt, const bool full_opt,
-    const double TMcut, const int infmt1_opt, const int infmt2_opt,
-    const int ter_opt, const int split_opt, const int outfmt_opt,
-    bool fast_opt, const int mirror_opt, const int het_opt,
-    const string &atom_opt, const bool autojustify, const string &mol_opt,
-    const string &dir1_opt, const string &dir2_opt,
-    const vector<string> &chain2parse1, const vector<string> &chain2parse2,
-    const vector<string> &model2parse1, const vector<string> &model2parse2,
-    const vector<string> &chain1_list, const vector<string> &chain2_list,
-    const int byresi_opt,const string&chainmapfile, const bool se_opt,
-    int parallel_threads = 1)
+int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 {
-    
+
     MMalignContext ctx = {};
-    build_context(ctx.inputs, xname, yname, fname_super, fname_lign,
-        fname_matrix, sequence, d0_scale, m_opt, o_opt, a_opt, d_opt,
-        full_opt, TMcut, infmt1_opt, infmt2_opt, ter_opt, split_opt,
-        outfmt_opt, fast_opt, mirror_opt, het_opt, atom_opt, autojustify,
-        mol_opt, dir1_opt, dir2_opt, chain2parse1, chain2parse2,
-        model2parse1, model2parse2, chain1_list, chain2_list,
-        byresi_opt, chainmapfile, se_opt, parallel_threads);
+    fill_mmalign_inputs(ctx.inputs, common_inputs, mm_params);
 
     if (!detect_complex_filtered_chains(ctx.inputs)) return 0;
     if (!parse_structures(ctx.inputs, ctx.parsed)) return 0;
@@ -5614,29 +5585,26 @@ int main(int argc, char *argv[])
                     string norm_dir1;
                     string norm_dir2;
                     normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
-                    MMalign(user_opts.xname, user_opts.yname, user_opts.fname_super,
-                        user_opts.fname_lign, user_opts.fname_matrix, parsed_input.sequence, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt,
-                        user_opts.a_opt, user_opts.d_opt, ctrl_opts.full_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt,
-                        user_opts.ter_opt, user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt,
-                        user_opts.het_opt, user_opts.atom_opt, parsed_input.autojustify, user_opts.mol_opt,
-                        norm_dir1, norm_dir2,
-                        user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
-                        tmp_vec1, tmp_vec2, user_opts.byresi_opt, ctrl_opts.chainmapfile, ctrl_opts.se_opt,
-                        ctrl_opts.parallel_threads);
+                    MMalignParams mm_params;
+                    mm_params.dir1_opt = norm_dir1;
+                    mm_params.dir2_opt = norm_dir2;
+                    mm_params.chain1_list = tmp_vec1;
+                    mm_params.chain2_list = tmp_vec2;
+                    MMalign(common_inputs, mm_params);
                     vector<string>().swap(tmp_vec2);
                 }
                 vector<string>().swap(tmp_vec1);
             }
         }
-        else if (user_opts.dirpair_opt.size()==0) 
-            MMalign(user_opts.xname, user_opts.yname, user_opts.fname_super,
-            user_opts.fname_lign, user_opts.fname_matrix, parsed_input.sequence, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt,
-            user_opts.a_opt, user_opts.d_opt, ctrl_opts.full_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt,
-            user_opts.ter_opt, user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt, user_opts.het_opt,
-            user_opts.atom_opt, parsed_input.autojustify, user_opts.mol_opt, user_opts.dir1_opt, user_opts.dir2_opt,
-            user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
-            parsed_input.chain1_list, parsed_input.chain2_list, user_opts.byresi_opt,ctrl_opts.chainmapfile, ctrl_opts.se_opt,
-            ctrl_opts.parallel_threads);
+        else if (user_opts.dirpair_opt.size()==0)
+        {
+            MMalignParams mm_params;
+            mm_params.dir1_opt = user_opts.dir1_opt;
+            mm_params.dir2_opt = user_opts.dir2_opt;
+            mm_params.chain1_list = parsed_input.chain1_list;
+            mm_params.chain2_list = parsed_input.chain2_list;
+            MMalign(common_inputs, mm_params);
+        }
         else
         {
             vector<string> tmp_vec1;
@@ -5647,14 +5615,12 @@ int main(int argc, char *argv[])
                 user_opts.yname=parsed_input.chain2_list[i];
                 tmp_vec1.push_back(user_opts.xname);
                 tmp_vec2.push_back(user_opts.yname);
-                MMalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_lign, user_opts.fname_matrix,
-                    parsed_input.sequence, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt, ctrl_opts.full_opt,
-                    user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt, user_opts.split_opt,
-                    user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt, user_opts.het_opt, user_opts.atom_opt,
-                    parsed_input.autojustify, user_opts.mol_opt, user_opts.dirpair_opt, user_opts.dirpair_opt,
-                    user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
-                    tmp_vec1, tmp_vec2, user_opts.byresi_opt,ctrl_opts.chainmapfile, ctrl_opts.se_opt,
-                    ctrl_opts.parallel_threads);
+                MMalignParams mm_params;
+                mm_params.dir1_opt = user_opts.dirpair_opt;
+                mm_params.dir2_opt = user_opts.dirpair_opt;
+                mm_params.chain1_list = tmp_vec1;
+                mm_params.chain2_list = tmp_vec2;
+                MMalign(common_inputs, mm_params);
                 tmp_vec1[0].clear(); tmp_vec1.clear();
                 tmp_vec2[0].clear(); tmp_vec2.clear();
             }

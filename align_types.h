@@ -164,6 +164,15 @@ struct AlignCommonInput
     ControlOptions control_options;
 };
 
+// ---- MMalign 每次调用的 per-call 差异参数（dir 与链列表随调用分支变化）----
+struct MMalignParams
+{
+    std::string dir1_opt;              // 归一化后的 dir1（main 计算）
+    std::string dir2_opt;              // 归一化后的 dir2（main 计算）
+    std::vector<std::string> chain1_list;  // 本次调用结构1 的链文件列表
+    std::vector<std::string> chain2_list;  // 本次调用结构2 的链文件列表
+};
+
 // ---- 单条链对结构比对的引擎选项（per-pair，跨模式共享）----
 struct ChainPairAlignOptions
 {
