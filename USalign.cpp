@@ -1654,6 +1654,115 @@ bool is_monomer(int chain_num)
     return chain_num == 1;
 }
 
+// ---- Single chain-pair structure alignment dispatcher (cp / se / TMalign_main) ----
+void align_chain_pair_core(ChainPairAlignResult& result,
+    const ParsedChain& chain1,
+    const ParsedChain& chain2,
+    const ChainPairAlignOptions& opts,
+    const vector<string>& sequence,
+    int outfmt_opt)
+{
+    const int xlen = chain1.chain_len;
+    const int ylen = chain2.chain_len;
+    const int mol_type = chain1.cur_complex_mol_list + chain2.cur_complex_mol_list;
+
+    if (opts.cp_opt) CPalign_main(
+        const_cast<CoordArray&>(chain1.chain_coords), const_cast<CoordArray&>(chain2.chain_coords),
+        chain1.chain_seq, chain2.chain_seq,
+        chain1.chain_sec, chain2.chain_sec,
+        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+        result.seqM, result.seqxA, result.seqyA, result.do_vec,
+        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+        xlen, ylen, sequence, opts.Lnorm, opts.d0_scale,
+        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt,
+        mol_type, opts.TMcut);
+    else if (opts.se_opt)
+    {
+        std::vector<int> invmap(ylen + 1);
+        result.u0[0][0]=result.u0[1][1]=result.u0[2][2]=1;
+        result.u0[0][1]=         result.u0[0][2]=
+        result.u0[1][0]=         result.u0[1][2]=
+        result.u0[2][0]=         result.u0[2][1]=
+        result.t0[0]   =result.t0[1]   =result.t0[2]   =0;
+        se_main(const_cast<CoordArray&>(chain1.chain_coords), const_cast<CoordArray&>(chain2.chain_coords),
+            chain1.chain_seq, chain2.chain_seq,
+            result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+            result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+            result.seqM, result.seqxA, result.seqyA, result.do_vec,
+            result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+            xlen, ylen, sequence, opts.Lnorm, opts.d0_scale,
+            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt,
+            mol_type, outfmt_opt, invmap);
+        if (outfmt_opt >= 2)
+        {
+            result.Liden=result.L_ali=0;
+            int r1;
+            int r2;
+            for (r2=0; r2<ylen; r2++)
+            {
+                r1 = invmap[r2];
+                if (r1 < 0) continue;
+                result.L_ali += 1;
+                result.Liden += (chain1.chain_seq[r1] == chain2.chain_seq[r2]);
+            }
+        }
+    }
+    else TMalign_main(
+        const_cast<CoordArray&>(chain1.chain_coords), const_cast<CoordArray&>(chain2.chain_coords),
+        chain1.chain_seq, chain2.chain_seq,
+        chain1.chain_sec, chain2.chain_sec,
+        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+        result.seqM, result.seqxA, result.seqyA, result.do_vec,
+        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+        xlen, ylen, sequence, opts.Lnorm, opts.d0_scale,
+        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt,
+        mol_type, opts.TMcut, opts.parallel_threads, opts.ss_opt);
+}
+
+// ---- Output one chain-pair alignment result (version / CP / results / do-block) ----
+void output_pair_alignment(const AlignCommonInput& common_inputs,
+    const ParsedChain& chain1,
+    const ParsedChain& chain2,
+    const ChainPairAlignResult& result,
+    const vector<string>& pdb_lines1,
+    const vector<string>& pdb_lines2)
+{
+    const UserOptions& user_opts = common_inputs.user_options;
+    const ControlOptions& ctrl_opts = common_inputs.control_options;
+
+    if (user_opts.outfmt_opt == 0) print_version();
+    int left_num=0;
+    int right_num=0;
+    int left_aln_num=0;
+    int right_aln_num=0;
+    if (ctrl_opts.cp_opt) output_cp(
+        user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size()),
+        user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size()),
+        result.seqxA, result.seqyA, user_opts.outfmt_opt,
+        left_num, right_num, left_aln_num, right_aln_num);
+    output_results(
+        user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()),
+        user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()),
+        chain1.chain_id, chain2.chain_id,
+        chain1.chain_len, chain2.chain_len,
+        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.rmsd0, result.d0_out, result.seqM,
+        result.seqxA, result.seqyA, result.Liden,
+        result.n_ali8, result.L_ali, result.TM_ali, result.rmsd_ali, result.TM_0, result.d0_0,
+        result.d0A, result.d0B, user_opts.Lnorm_ass, user_opts.d0_scale, result.d0a, result.d0u,
+        (user_opts.m_opt ? user_opts.fname_matrix : "").c_str(),
+        user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, user_opts.o_opt,
+        user_opts.fname_super, user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
+        chain1.resi_vec, chain2.resi_vec);
+    if (ctrl_opts.do_opt || (ctrl_opts.cp_opt && user_opts.outfmt_opt <= 0))
+    {
+        output_do_block(std::cout, result.seqxA, result.seqyA,
+            pdb_lines1, pdb_lines2, result.do_vec, right_num);
+    }
+}
+
 // ---- Single chain-pair structure alignment (se_main / TMalign_main, one of the two) ----
 void align_chain_pair(ChainPairAlignResult& result,
     CoordArray& xa,

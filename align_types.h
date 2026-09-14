@@ -163,3 +163,20 @@ struct AlignCommonInput
     ParsedInput parsed_input;
     ControlOptions control_options;
 };
+
+// ---- 单条链对结构比对的引擎选项（per-pair，跨模式共享）----
+struct ChainPairAlignOptions
+{
+    int    i_opt;              // 比对模式：0=自动 1=策略+用户比对 2=仅用户比对 3=-I
+    int    a_opt;              // 是否产出 TM3（平均长度归一）
+    int    u_opt;              // 0/1/2：1=按用户 Lnorm 出 TM4；2=额外用 Lnorm 覆盖搜索 d0
+    bool   d_opt;              // 是否产出 TM5（缩放 d0）
+    bool   fast_opt;           // 快速模式
+    bool   se_opt;             // 走 se_main 而非 TMalign_main
+    bool   cp_opt;             // 走 CPalign_main（仅 mm0/sn 置位）
+    double Lnorm;              // 归一化长度
+    double d0_scale;           // d0 缩放
+    double TMcut;              // 早退阈值
+    int    parallel_threads;   // 引擎内并行度
+    int    ss_opt;             // 1=跳过基于二级结构的初始策略
+};
