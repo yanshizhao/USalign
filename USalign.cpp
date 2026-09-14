@@ -947,6 +947,23 @@ void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_i
     params.align.ss_opt   = 0;
 }
 
+struct SoiAlignParams
+{
+    int read_resi;
+    int closeK_opt;
+    int mm_opt;
+};
+
+void fill_soi_params(SoiAlignParams& params, const AlignCommonInput& common_inputs)
+{
+    const UserOptions& user_opts = common_inputs.user_options;
+    const ControlOptions& ctrl_opts = common_inputs.control_options;
+
+    params.read_resi  = (user_opts.o_opt != 0) ? 2 : 0;
+    params.closeK_opt = ctrl_opts.closeK_opt;
+    params.mm_opt     = ctrl_opts.mm_opt;
+}
+
 int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 {
     UserOptions& user_opts = common_inputs.user_options;
@@ -4505,23 +4522,12 @@ int mTMalign(string &xname, string &yname, const string &fname_super,
 }
 
 // sequence order independent alignment
-int SOIalign(string &xname, string &yname, const string &fname_super,
-    const string &fname_lign, const string &fname_matrix,
-    vector<string> &sequence, const double Lnorm_ass, const double d0_scale,
-    const bool m_opt, const int  i_opt, const int o_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const double TMcut,
-    const int infmt1_opt, const int infmt2_opt, const int ter_opt,
-    const int split_opt, const int outfmt_opt, const bool fast_opt,
-    const int cp_opt, const int mirror_opt, const int het_opt,
-    const string &atom_opt, const bool autojustify, const string &mol_opt,
-    const string &dir_opt, const string &dirpair_opt, const string &dir1_opt,
-    const string &dir2_opt, const vector<string> &chain2parse1,
-    const vector<string> &chain2parse2, const vector<string> &model2parse1,
-    const vector<string> &model2parse2, const vector<string> &chain1_list,
-    const vector<string> &chain2_list, const bool se_opt,
-    const int closeK_opt, const int mm_opt,
-    int parallel_threads = 1)
+int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
 {
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+
     // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
@@ -4547,118 +4553,116 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     CoordArray xk, yk;             // k closest residues
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
-    int read_resi=0;  // whether to read residue index
-    if (o_opt) read_resi=2;
 
 
 #ifdef _OPENMP
-    if (parallel_threads > 1 && (chain1_list.size() > 1 || chain2_list.size() > 1)) 
+    if (ctrl_opts.parallel_threads > 1 && (parsed_input.chain1_list.size() > 1 || parsed_input.chain2_list.size() > 1)) 
     {
         return run_batch_parallel(
-            chain1_list, chain2_list, chain2parse1, chain2parse2,
-            model2parse1, model2parse2, sequence,
-            dir_opt, dir1_opt, dir2_opt, dirpair_opt,
-            fname_matrix, fname_super, atom_opt, mol_opt,
-            Lnorm_ass, d0_scale, TMcut,
-            outfmt_opt, ter_opt, split_opt, o_opt,
-            i_opt, a_opt, infmt1_opt, infmt2_opt, read_resi,
-            fast_opt, false, false, false,
-            u_opt, d_opt, m_opt,
-            autojustify, het_opt, mirror_opt,
-            parallel_threads);
+            parsed_input.chain1_list, parsed_input.chain2_list, user_opts.chain2parse1, user_opts.chain2parse2,
+            user_opts.model2parse1, user_opts.model2parse2, parsed_input.sequence,
+            user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt,
+            user_opts.fname_matrix, user_opts.fname_super, user_opts.atom_opt, user_opts.mol_opt,
+            user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.TMcut,
+            user_opts.outfmt_opt, user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt,
+            user_opts.i_opt, user_opts.a_opt, user_opts.infmt1_opt, user_opts.infmt2_opt, soi_params.read_resi,
+            user_opts.fast_opt, false, false, false,
+            user_opts.u_opt, user_opts.d_opt, user_opts.m_opt,
+            parsed_input.autojustify, user_opts.het_opt, user_opts.mirror_opt,
+            ctrl_opts.parallel_threads);
     }
 #endif  // _OPENMP
 
     // loop over file names
-    for (i=0;i<chain1_list.size();i++)
+    for (i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
-        xname=chain1_list[i];
-        xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
-            ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt, 
-            chain2parse1, model2parse1);
+        user_opts.xname=parsed_input.chain1_list[i];
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
+            user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify, user_opts.split_opt, user_opts.het_opt, 
+            user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
+            cerr<<"Warning! Cannot parse file: "<<user_opts.xname
                 <<". Chain number 0."<<endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
         {
             xlen=PDB_lines1[chain_i].size();
-            if (mol_opt=="RNA") mol_vec1[chain_i]=1;
-            else if (mol_opt=="protein") mol_vec1[chain_i]=-1;
+            if (user_opts.mol_opt=="RNA") mol_vec1[chain_i]=1;
+            else if (user_opts.mol_opt=="protein") mol_vec1[chain_i]=-1;
             if (!xlen)
             {
-                cerr<<"Warning! Cannot parse file: "<<xname
+                cerr<<"Warning! Cannot parse file: "<<user_opts.xname
                     <<". Chain length 0."<<endl;
                 continue;
             }
             else if (xlen<3)
             {
-                cerr<<"Sequence is too short <3!: "<<xname<<endl;
+                cerr<<"Sequence is too short <3!: "<<user_opts.xname<<endl;
                 continue;
             }
             xa.clear();
             xa.reserve(xlen);
-            if (closeK_opt>=3) xk.resize(xlen*closeK_opt);
+            if (soi_params.closeK_opt>=3) xk.resize(xlen*soi_params.closeK_opt);
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
-                resi_vec1, read_resi);
-            if (mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, atom_opt);
+                resi_vec1, soi_params.read_resi);
+            if (user_opts.mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
+            if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, user_opts.atom_opt);
             else make_sec(xa, xlen, secx); // secondary structure assignment
-            if (closeK_opt>=3) getCloseK(xa, xlen, closeK_opt, xk);
-            if (mm_opt==6) 
+            if (soi_params.closeK_opt>=3) getCloseK(xa, xlen, soi_params.closeK_opt, xk);
+            if (soi_params.mm_opt==6) 
             {
                 secx_bond.resize(xlen);
                 assign_sec_bond(secx_bond, secx, xlen);
             }
 
-            int j_start = (dir_opt.size() > 0) * (i + 1);
-            for (j=j_start;j<chain2_list.size();j++)
+            int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
+            for (j=j_start;j<parsed_input.chain2_list.size();j++)
             {
-                if (dirpair_opt.size() && i!=j) continue;
+                if (user_opts.dirpair_opt.size() && i!=j) continue;
                 // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
-                    yname=chain2_list[j];
-                    ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2,
-                        mol_vec2, ter_opt, infmt2_opt, atom_opt, autojustify, 
-                        split_opt, het_opt, chain2parse2, model2parse2);
+                    user_opts.yname=parsed_input.chain2_list[j];
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
+                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify, 
+                        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<yname<<". Chain number 0."<<endl;
+                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<endl;
                         continue;
                     }
                 }
                 for (chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     ylen=PDB_lines2[chain_j].size();
-                    if (mol_opt=="RNA") mol_vec2[chain_j]=1;
-                    else if (mol_opt=="protein") mol_vec2[chain_j]=-1;
+                    if (user_opts.mol_opt=="RNA") mol_vec2[chain_j]=1;
+                    else if (user_opts.mol_opt=="protein") mol_vec2[chain_j]=-1;
                     if (!ylen)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<yname
+                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname
                             <<". Chain length 0."<<endl;
                         continue;
                     }
                     else if (ylen<3)
                     {
-                        cerr<<"Sequence is too short <3!: "<<yname<<endl;
+                        cerr<<"Sequence is too short <3!: "<<user_opts.yname<<endl;
                         continue;
                     }
                     ya.clear();
                     ya.reserve(ylen);
-                    if (closeK_opt>=3) yk.resize(ylen*closeK_opt);
+                    if (soi_params.closeK_opt>=3) yk.resize(ylen*soi_params.closeK_opt);
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
-                        resi_vec2, read_resi);
+                        resi_vec2, soi_params.read_resi);
                     if (mol_vec2[chain_j]>0)
-                         make_sec(seqy, ya, ylen, secy, atom_opt);
+                         make_sec(seqy, ya, ylen, secy, user_opts.atom_opt);
                     else make_sec(ya, ylen, secy);
-                    if (closeK_opt>=3) getCloseK(ya, ylen, closeK_opt, yk);
-                    if (mm_opt==6) 
+                    if (soi_params.closeK_opt>=3) getCloseK(ya, ylen, soi_params.closeK_opt, yk);
+                    if (soi_params.mm_opt==6) 
                     {
                         secy_bond.resize(ylen);
                         assign_sec_bond(secy_bond, secy, ylen);
@@ -4684,12 +4688,12 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
                     int n_ali=0;
                     int n_ali8=0;
-                    bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:fast_opt;
+                    bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:user_opts.fast_opt;
                     std::vector<int> invmap(ylen+1);
                     std::vector<double> dist_list(ylen+1);
 
                     // entry function for structure alignment
-                    if (se_opt) 
+                    if (ctrl_opts.se_opt) 
                     {
                         u0[0][0]=u0[1][1]=u0[2][2]=1;
                         u0[0][1]=         u0[0][2]=
@@ -4700,12 +4704,12 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt,
+                        xlen, ylen, user_opts.Lnorm_ass, user_opts.d0_scale,
+                        user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j],
-                        outfmt_opt, invmap, dist_list,
-                        secx_bond, secy_bond, mm_opt);
-                        if (outfmt_opt>=2) 
+                        user_opts.outfmt_opt, invmap, dist_list,
+                        secx_bond, secy_bond, soi_params.mm_opt);
+                        if (user_opts.outfmt_opt>=2) 
                         {
                             Liden=L_ali=0;
                             int r1;
@@ -4721,34 +4725,34 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     }
                     else
                     {
-                    SOIalign_main(xa, ya, xk, yk, closeK_opt,
+                    SOIalign_main(xa, ya, xk, yk, soi_params.closeK_opt,
                         seqx, seqy, secx, secy,
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, invmap,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt, force_fast_opt,
+                        xlen, ylen, parsed_input.sequence, user_opts.Lnorm_ass, user_opts.d0_scale,
+                        user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, force_fast_opt,
                         mol_vec1[chain_i]+mol_vec2[chain_j], dist_list,
-                        secx_bond, secy_bond, mm_opt);
+                        secx_bond, secy_bond, soi_params.mm_opt);
                     }
 
                     // print result
-                    if (outfmt_opt==0) print_version();
+                    if (user_opts.outfmt_opt==0) print_version();
                     output_results(
-                        xname.substr(dir1_opt.size()+dir_opt.size()+dirpair_opt.size()),
-                        yname.substr(dir2_opt.size()+dir_opt.size()+dirpair_opt.size()),
+                        user_opts.xname.substr(user_opts.dir1_opt.size()+user_opts.dir_opt.size()+user_opts.dirpair_opt.size()),
+                        user_opts.yname.substr(user_opts.dir2_opt.size()+user_opts.dir_opt.size()+user_opts.dirpair_opt.size()),
                         chainID_list1[chain_i], chainID_list2[chain_j],
                         xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
                         rmsd0, d0_out, seqM,
                         seqxA, seqyA, Liden,
                         n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
-                        d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u, 
-                        (m_opt?fname_matrix:"").c_str(),
-                        outfmt_opt, ter_opt, false, split_opt, o_opt,
-                        fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                        d0A, d0B, user_opts.Lnorm_ass, user_opts.d0_scale, d0a, d0u, 
+                        (user_opts.m_opt?user_opts.fname_matrix:"").c_str(),
+                        user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, user_opts.o_opt,
+                        user_opts.fname_super, user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
                         resi_vec1, resi_vec2);
-                    if (outfmt_opt<=0)
+                    if (user_opts.outfmt_opt<=0)
                     {
                         cout<<"###############\t###############\t#########"<<endl;
                         cout<<"#Aligned atom 1\tAligned atom 2 \tDistance#"<<endl;
@@ -4772,9 +4776,9 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
                     seqyA.clear();
                     resi_vec2.clear();
                 } // chain_j
-                if (chain2_list.size()>1)
+                if (parsed_input.chain2_list.size()>1)
                 {
-                    yname.clear();
+                    user_opts.yname.clear();
                     for (chain_j=0;chain_j<ychainnum;chain_j++)
                         PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
@@ -4785,14 +4789,14 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
             PDB_lines1[chain_i].clear();
             resi_vec1.clear();
         } // chain_i
-        xname.clear();
+        user_opts.xname.clear();
         PDB_lines1.clear();
         chainID_list1.clear();
         mol_vec1.clear();
     } // i
-    if (chain2_list.size()==1)
+    if (parsed_input.chain2_list.size()==1)
     {
-        yname.clear();
+        user_opts.yname.clear();
         for (chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
@@ -4802,7 +4806,6 @@ int SOIalign(string &xname, string &yname, const string &fname_super,
     }
     return 0;
 }
-
 void normalize_dir_options(const string& dir_opt,
     const string& dir1_opt,
     const string& dir2_opt,
@@ -5583,15 +5586,12 @@ int main(int argc, char *argv[])
         user_opts.atom_opt, parsed_input.autojustify, user_opts.mol_opt, user_opts.dir_opt, user_opts.byresi_opt, parsed_input.chain1_list,
         user_opts.chain2parse1, user_opts.model2parse1, ctrl_opts.se_opt,
         ctrl_opts.parallel_threads);
-    else if (ctrl_opts.mm_opt==5 || ctrl_opts.mm_opt==6) 
-        SOIalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_lign,
-        user_opts.fname_matrix, parsed_input.sequence, user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.m_opt, user_opts.i_opt, user_opts.o_opt,
-        user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt,
-        user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, ctrl_opts.cp_opt, user_opts.mirror_opt, user_opts.het_opt,
-        user_opts.atom_opt, parsed_input.autojustify, user_opts.mol_opt, user_opts.dir_opt, user_opts.dirpair_opt, user_opts.dir1_opt,
-        user_opts.dir2_opt, user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
-        parsed_input.chain1_list, parsed_input.chain2_list, ctrl_opts.se_opt, ctrl_opts.closeK_opt, ctrl_opts.mm_opt,
-        ctrl_opts.parallel_threads);
+    else if (ctrl_opts.mm_opt==5 || ctrl_opts.mm_opt==6)
+    {
+        SoiAlignParams soi_params;
+        fill_soi_params(soi_params, common_inputs);
+        SOIalign(common_inputs, soi_params);
+    }
     else if (ctrl_opts.mm_opt==7)
     {
         FlexalignParams flex_params;
