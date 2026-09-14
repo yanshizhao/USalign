@@ -531,48 +531,6 @@ int count_assign_pair(const ChainAssignResult& assign_result)
     return pair_num;
 }
 
-// ---- State container for the MMalign flow (2nd-level composition shell) ----
-struct MMalignInputs
-{
-    string structure1_name;
-    string structure2_name;
-    string superposed_out;
-    string alignment_file;
-    string matrix_out;
-    int infmt1_opt;
-    int infmt2_opt;
-    int ter_opt;
-    int split_opt;
-    int mirror_opt;
-    int het_opt;
-    string atom_opt;
-    bool normalize_atom_name;
-    string mol_opt;
-    string dir1_opt;
-    string dir2_opt;
-    vector<string> parsed_chains1;
-    vector<string> chain2parse2;
-    vector<string> model2parse1;
-    vector<string> model2parse2;
-    vector<string> struct1_chain_list;
-    vector<string> chain2_list;
-    int byresi_opt;
-    string chain_map_file;
-    bool m_opt;
-    bool full_opt;
-    int o_opt;
-    int parallel_threads;
-    // alignment options (expanded, not encapsulated; i_opt is derived from byresi_opt, not a signature parameter, not kept in ctx)
-    int a_opt;
-    int outfmt_opt;
-    bool d_opt;
-    bool fast_opt;
-    bool se_opt;
-    double TMcut;
-    double d0_scale;
-    vector<string>* sequence;       // reference to the caller's alignment (no copy)
-};
-
 // ---- Parsed products (filled by parse_structures / read_chainmap, read-only afterwards) ----
 struct MMalignParsed
 {
@@ -587,8 +545,10 @@ struct MMalignParsed
 
 struct MMalignContext
 {
-    MMalignInputs inputs;           // input parameters
-    MMalignParsed parsed;           // parsed products
+    AlignCommonInput& common_inputs;
+    const MMalignParams& mm_params;
+    bool fast_opt;
+    MMalignParsed parsed;              // parsed products
 
     // alignment state (stages B/C, produced progressively by the flow)
     AllChainPairsResult pair_result;
@@ -606,6 +566,21 @@ struct MMalignContext
     string iter_seqy;               // was sy
     string iter_secx;               // was scx
     string iter_secy;               // was scy
+
+    MMalignContext(AlignCommonInput& common_inputs_in,
+        const MMalignParams& mm_params_in)
+        : common_inputs(common_inputs_in),
+          mm_params(mm_params_in),
+          fast_opt(common_inputs_in.user_options.fast_opt),
+          parsed(),
+          pair_result(),
+          assign_result(),
+          aln_chain_num(0),
+          is_oligomer(false),
+          origin_pair_num(0),
+          assign_result_origin(),
+          pair_result_origin(),
+          iteration_score(0.0) {}
 };
 
 // ---- Forward declaration of mark_pair_invalid (defined later in this file) ----
@@ -624,7 +599,7 @@ void mark_chain_invalid(AllChainPairsResult& pairwise,
 void init_pair_rotation(RotArray& rotations,
     int pair_idx);
 
-bool handle_byresi_pair(const MMalignInputs& inputs,
+bool handle_byresi_pair(AlignCommonInput& common_inputs,
     const MMalignParsed& parsed,
     AllChainPairsResult& pairwise,
     int chain1_idx,
@@ -658,7 +633,8 @@ void align_chain_pair(ChainPairAlignResult& result,
     int ylen,
     int cur_complex_mol_list,
     double norm_len,
-    const MMalignInputs& inputs,
+    AlignCommonInput& common_inputs,
+    bool fast_opt,
     int i_opt_val,
     int u_opt_val,
     int parallel_threads,
@@ -672,12 +648,13 @@ void align_chain_pair(ChainPairAlignResult& result,
 // best monomer pair). Logically equivalent to run_mmalign_serial_pairwise
 // (parallel version with schedule(dynamic,8) dynamic scheduling).
 // ===========================================================================
-void run_mmalign_parallel(const MMalignInputs& inputs,
+void run_mmalign_parallel(AlignCommonInput& common_inputs,
     const MMalignParsed& parsed,
     AllChainPairsResult& pairwise,
     int chain1_num,
     int chain2_num,
-    int i_opt)
+    int i_opt,
+    bool fast_opt)
 {
     int chain1_idx;
     int chain2_idx;
@@ -694,7 +671,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
     CoordArray chain2_coords;
 
     // ---- Outer loop: iterate over each chain of structure 1 (OpenMP parallel, private work variables per thread) ----
-#pragma omp parallel for schedule(dynamic, 1) num_threads(inputs.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, chain2_idx, pair_idx, rot_row, rot_col)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, chain2_idx, pair_idx, rot_row, rot_col)
     for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
             int norm_len;
@@ -756,7 +733,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                 }
 
                 // byresi (-TMscore) mode: extract alignment by residue index; skip this chain pair if the alignment is abnormal
-                if (handle_byresi_pair(inputs, parsed, pairwise,
+                if (handle_byresi_pair(common_inputs, parsed, pairwise,
                     chain1_idx, chain2_idx, pair_idx,
                     chain1_len, chain2_len, chain1_num,
                     chain1_seq, chain2_seq, pair_sequence))
@@ -772,7 +749,7 @@ void run_mmalign_parallel(const MMalignInputs& inputs,
                     chain1_coords, chain2_coords, chain1_seq,
                     chain2_seq, chain1_sec, chain2_sec,
                     chain1_len, chain2_len, mol_types,
-                    norm_len, inputs, i_opt, 1, inputs.parallel_threads,
+                    norm_len, common_inputs, fast_opt, i_opt, 1, common_inputs.control_options.parallel_threads,
                     pair_sequence);
 
                 // save align_result (reuses the common function save_pair_result)
@@ -1158,53 +1135,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 
 
 
-// ---- Collect signature parameters into the context ----
-void fill_mmalign_inputs(MMalignInputs& inputs,
-    AlignCommonInput& common_inputs,
-    const MMalignParams& mm_params)
-{
-    UserOptions& user_opts = common_inputs.user_options;
-    ParsedInput& parsed_input = common_inputs.parsed_input;
-    ControlOptions& ctrl_opts = common_inputs.control_options;
-
-    inputs.structure1_name = user_opts.xname;
-    inputs.structure2_name = user_opts.yname;
-    inputs.superposed_out = user_opts.fname_super;
-    inputs.alignment_file = user_opts.fname_lign;
-    inputs.matrix_out = user_opts.fname_matrix;
-    inputs.infmt1_opt = user_opts.infmt1_opt;
-    inputs.infmt2_opt = user_opts.infmt2_opt;
-    inputs.ter_opt = user_opts.ter_opt;
-    inputs.split_opt = user_opts.split_opt;
-    inputs.mirror_opt = user_opts.mirror_opt;
-    inputs.het_opt = user_opts.het_opt;
-    inputs.atom_opt = user_opts.atom_opt;
-    inputs.normalize_atom_name = parsed_input.autojustify;
-    inputs.mol_opt = user_opts.mol_opt;
-    inputs.dir1_opt = mm_params.dir1_opt;
-    inputs.dir2_opt = mm_params.dir2_opt;
-    inputs.parsed_chains1 = user_opts.chain2parse1;
-    inputs.chain2parse2 = user_opts.chain2parse2;
-    inputs.model2parse1 = user_opts.model2parse1;
-    inputs.model2parse2 = user_opts.model2parse2;
-    inputs.struct1_chain_list = mm_params.chain1_list;
-    inputs.chain2_list = mm_params.chain2_list;
-    inputs.byresi_opt = user_opts.byresi_opt;
-    inputs.chain_map_file = ctrl_opts.chainmapfile;
-    inputs.m_opt = user_opts.m_opt;
-    inputs.full_opt = ctrl_opts.full_opt;
-    inputs.o_opt = user_opts.o_opt;
-    inputs.parallel_threads = ctrl_opts.parallel_threads;
-    inputs.a_opt = user_opts.a_opt;
-    inputs.outfmt_opt = user_opts.outfmt_opt;
-    inputs.d_opt = user_opts.d_opt;
-    inputs.fast_opt = user_opts.fast_opt;
-    inputs.se_opt = ctrl_opts.se_opt;
-    inputs.TMcut = user_opts.TMcut;
-    inputs.d0_scale = user_opts.d0_scale;
-    inputs.sequence = &parsed_input.sequence;
-}
-
 // Output the check warning for the forced molecule type from -mol
 // Params: file_path - structure file path
 //         chain_num - total number of chains
@@ -1324,18 +1254,20 @@ bool detect_filtered_chains(const vector<string>& pdb_file_list,
 // Check the chain counts of structure 1 / structure 2 filtered out by the -mol option
 // Params: inputs - MMalign input parameters
 // Return: false means the structure cannot be parsed
-bool detect_complex_filtered_chains(const MMalignInputs& inputs)
+bool detect_complex_filtered_chains(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 {
-    if (!detect_filtered_chains(inputs.struct1_chain_list, inputs.mol_opt,
-        inputs.ter_opt, inputs.infmt1_opt, inputs.normalize_atom_name,
-        inputs.split_opt, inputs.het_opt, inputs.parsed_chains1, inputs.model2parse1))
+    UserOptions& uo = common_inputs.user_options;
+    ParsedInput& pi = common_inputs.parsed_input;
+    if (!detect_filtered_chains(mm_params.chain1_list, uo.mol_opt,
+        uo.ter_opt, uo.infmt1_opt, pi.autojustify,
+        uo.split_opt, uo.het_opt, uo.chain2parse1, uo.model2parse1))
     {
         return false;
     }
-    
-    if (!detect_filtered_chains(inputs.chain2_list, inputs.mol_opt,
-        inputs.ter_opt, inputs.infmt2_opt, inputs.normalize_atom_name,
-        inputs.split_opt, inputs.het_opt, inputs.chain2parse2, inputs.model2parse2))
+
+    if (!detect_filtered_chains(mm_params.chain2_list, uo.mol_opt,
+        uo.ter_opt, uo.infmt2_opt, pi.autojustify,
+        uo.split_opt, uo.het_opt, uo.chain2parse2, uo.model2parse2))
     {
         return false;
     }
@@ -1343,24 +1275,26 @@ bool detect_complex_filtered_chains(const MMalignInputs& inputs)
 }
 
 // ---- Parse complexes (pure parsing; pre-scan is done by MMalign before this) ----
-bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
+bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_params, MMalignParsed& parsed)
 {
-    parse_chain_list(inputs.struct1_chain_list, parsed.complex1.coords, parsed.complex1.seqs,
+    UserOptions& uo = common_inputs.user_options;
+    ParsedInput& pi = common_inputs.parsed_input;
+    parse_chain_list(mm_params.chain1_list, parsed.complex1.coords, parsed.complex1.seqs,
         parsed.complex1.secs, parsed.complex1.mol_types, parsed.complex1.lengths,
-        parsed.complex1.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
-        inputs.infmt1_opt, inputs.atom_opt, inputs.normalize_atom_name, inputs.mirror_opt,
-        inputs.het_opt, parsed.complex1.total_len_aa, parsed.complex1.total_len_na,
-        inputs.o_opt, parsed.complex1.resi, inputs.parsed_chains1, inputs.model2parse1);
-    parse_chain_list(inputs.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
+        parsed.complex1.chain_ids, uo.ter_opt, uo.split_opt, uo.mol_opt,
+        uo.infmt1_opt, uo.atom_opt, pi.autojustify, uo.mirror_opt,
+        uo.het_opt, parsed.complex1.total_len_aa, parsed.complex1.total_len_na,
+        uo.o_opt, parsed.complex1.resi, uo.chain2parse1, uo.model2parse1);
+    parse_chain_list(mm_params.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
         parsed.complex2.secs, parsed.complex2.mol_types, parsed.complex2.lengths,
-        parsed.complex2.chain_ids, inputs.ter_opt, inputs.split_opt, inputs.mol_opt,
-        inputs.infmt2_opt, inputs.atom_opt, inputs.normalize_atom_name, 0,
-        inputs.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
-        inputs.o_opt, parsed.complex2.resi, inputs.chain2parse2, inputs.model2parse2);
+        parsed.complex2.chain_ids, uo.ter_opt, uo.split_opt, uo.mol_opt,
+        uo.infmt2_opt, uo.atom_opt, pi.autojustify, 0,
+        uo.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
+        uo.o_opt, parsed.complex2.resi, uo.chain2parse2, uo.model2parse2);
 
     if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
     {
-        if (inputs.dir1_opt.size() || inputs.dir2_opt.size())
+        if (mm_params.dir1_opt.size() || mm_params.dir2_opt.size())
         {
             cerr << "Warning! Cannot align: one of the structures contains 0 chain" << endl;
             return false;
@@ -1370,7 +1304,7 @@ bool parse_structures(const MMalignInputs& inputs, MMalignParsed& parsed)
 
     parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
     parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
-    if (inputs.a_opt)
+    if (uo.a_opt)
     {
         parsed.protein_norm_len = (parsed.complex1.total_len_aa + parsed.complex2.total_len_aa) / 2;
         parsed.na_norm_len = (parsed.complex1.total_len_na + parsed.complex2.total_len_na) / 2;
@@ -1414,7 +1348,7 @@ int find_chain_map_key(const map<int,int>& chain_pair_map, int complex2_chain_id
 //         complex1_chain_idx, complex2_chain_idx - chain indices of both mapping sides
 //         chain1_name, chain2_name - chain names of both mapping sides
 // Note: on duplicate key or value a warning is printed and the chain pair is ignored in the later flow; only chain pairs passing both checks are saved
-void check_chain_map(const MMalignInputs& inputs,
+void check_chain_map(AlignCommonInput& common_inputs,
     MMalignParsed& parsed,
     int complex1_chain_idx,
     int complex2_chain_idx,
@@ -1427,7 +1361,7 @@ void check_chain_map(const MMalignInputs& inputs,
     {
         fcout(std::cerr, "Warning! chain %s of %s is already mapped to chain %s; "
                          "mapping %s -> %s is ignored (the first mapping is kept)\n",
-            chain1_name, get_basename(inputs.structure1_name),
+            chain1_name, get_basename(common_inputs.user_options.xname),
             parsed.complex2.chain_ids[parsed.chain_pair_map[complex1_chain_idx]],
             chain1_name, chain2_name);
     }
@@ -1438,7 +1372,7 @@ void check_chain_map(const MMalignInputs& inputs,
         fcout(std::cerr, "Warning! chain %s of %s is already the target of mapping "
                          "%s -> %s; mapping %s -> %s is ignored (chain %s will be "
                          "paired automatically by TM-score)\n",
-            chain2_name, get_basename(inputs.structure2_name),
+            chain2_name, get_basename(common_inputs.user_options.yname),
             parsed.complex1.chain_ids[chain_map_key], chain2_name,
             chain1_name, chain2_name, chain1_name);
     }
@@ -1451,22 +1385,23 @@ void check_chain_map(const MMalignInputs& inputs,
 
 
 // ---- Read the chain mapping file ----
-void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
+void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
 {
-    if (inputs.chain_map_file.size() == 0) return;
+    const string& chain_map_file = common_inputs.control_options.chainmapfile;
+    if (chain_map_file.size() == 0) return;
 
     string line;
     vector<string> line_vec;
     ifstream fin;
-    bool fromStdin = (inputs.chain_map_file == "-");
+    bool fromStdin = (chain_map_file == "-");
     if (!fromStdin)
     {
-        fin.open(inputs.chain_map_file.c_str());
+        fin.open(chain_map_file.c_str());
         if (!fin)
         {
             fcout(std::cerr, "Warning! Cannot open chainmap file: %s; chains will be "
                              "paired automatically by TM-score\n",
-                inputs.chain_map_file);
+                chain_map_file);
             return;
         }
     }
@@ -1492,7 +1427,7 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
             if (complex1_chain_idx >= 0 && complex2_chain_idx >= 0)
             {
 
-                check_chain_map(inputs, parsed, complex1_chain_idx, complex2_chain_idx,
+                check_chain_map(common_inputs, parsed, complex1_chain_idx, complex2_chain_idx,
                     line_vec[0], line_vec[1]);
             }
             else if (complex1_chain_idx < 0 && complex2_chain_idx < 0)
@@ -1500,22 +1435,22 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
                 // both chain1 and chain2 are invalid
                 parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
-                    + get_basename(inputs.structure1_name) + "), chain " + line_vec[1] + " does not exist in structure 2 ("
-                    + get_basename(inputs.structure2_name) + "))");
+                    + get_basename(common_inputs.user_options.xname) + "), chain " + line_vec[1] + " does not exist in structure 2 ("
+                    + get_basename(common_inputs.user_options.yname) + "))");
             }
             else if (complex1_chain_idx < 0)
-            {   
+            {
                 // chain1 is invalid (does not exist in structure 1)
                 parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[0] + " does not exist in structure 1 ("
-                    + get_basename(inputs.structure1_name) + "))");
+                    + get_basename(common_inputs.user_options.xname) + "))");
             }
             else
             {
                 // chain2 is invalid (does not exist in structure 2)
                 parsed.invalid_mappings.push_back(line_vec[0] + " -> " + line_vec[1]
                     + " (chain " + line_vec[1] + " does not exist in structure 2 ("
-                    + get_basename(inputs.structure2_name) + "))");
+                    + get_basename(common_inputs.user_options.yname) + "))");
             }
         }
         else
@@ -1538,7 +1473,7 @@ void read_chainmap(const MMalignInputs& inputs, MMalignParsed& parsed)
 // Params: inputs - MMalign input parameters
 //         parsed - parsing result (mapping table filtered in place: type-valid ones are kept)
 // Note: exits with an error when all mappings are invalid
-void build_valid_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
+void build_valid_chain_map(AlignCommonInput& common_inputs, MMalignParsed& parsed)
 {
     map<int,int> valid_chain_map;
     for (map<int,int>::const_iterator kv = parsed.chain_pair_map.begin(); kv != parsed.chain_pair_map.end(); ++kv)
@@ -1551,8 +1486,8 @@ void build_valid_chain_map(const MMalignInputs& inputs, MMalignParsed& parsed)
             const char* value_mol_name = (value_mol_type > 0) ? "RNA" : "protein";
             const string key_chain_name = parsed.complex1.chain_ids[kv->first];
             const string value_chain_name = parsed.complex2.chain_ids[kv->second];
-            const string struct1_name = get_basename(inputs.structure1_name);
-            const string struct2_name = get_basename(inputs.structure2_name);
+            const string struct1_name = get_basename(common_inputs.user_options.xname);
+            const string struct2_name = get_basename(common_inputs.user_options.yname);
 
             // Full-context warning
             fcout(std::cerr, "\nWarning! Mapped chain %s (%s) of %s cannot pair with chain "
@@ -1709,13 +1644,14 @@ void align_chain_pair(ChainPairAlignResult& result,
     int ylen,
     int cur_complex_mol_list,
     double norm_len,
-    const MMalignInputs& inputs,
+    AlignCommonInput& common_inputs,
+    bool fast_opt,
     int i_opt_val,
     int u_opt_val,
     int parallel_threads,
     vector<string>& sequence)
 {
-    if (inputs.se_opt)
+    if (common_inputs.control_options.se_opt)
     {
         result.invmap.resize(ylen + 1);
         result.u0[0][0] = result.u0[1][1] = result.u0[2][2] = 1;
@@ -1725,10 +1661,10 @@ void align_chain_pair(ChainPairAlignResult& result,
             result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
             result.seqM, result.seqxA, result.seqyA, result.do_vec,
             result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, sequence, norm_len, inputs.d0_scale,
-            i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt,
-            cur_complex_mol_list, inputs.outfmt_opt, result.invmap);
-        if (inputs.outfmt_opt >= 2)
+            xlen, ylen, sequence, norm_len, common_inputs.user_options.d0_scale,
+            i_opt_val, common_inputs.user_options.a_opt, u_opt_val, common_inputs.user_options.d_opt,
+            cur_complex_mol_list, common_inputs.user_options.outfmt_opt, result.invmap);
+        if (common_inputs.user_options.outfmt_opt >= 2)
         {
             result.Liden = 0.0;
             result.L_ali = 0;
@@ -1751,9 +1687,9 @@ void align_chain_pair(ChainPairAlignResult& result,
             result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
             result.seqM, result.seqxA, result.seqyA, result.do_vec,
             result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, sequence, norm_len, inputs.d0_scale,
-            i_opt_val, inputs.a_opt, u_opt_val, inputs.d_opt, inputs.fast_opt,
-            cur_complex_mol_list, inputs.TMcut, parallel_threads);
+            xlen, ylen, sequence, norm_len, common_inputs.user_options.d0_scale,
+            i_opt_val, common_inputs.user_options.a_opt, u_opt_val, common_inputs.user_options.d_opt, fast_opt,
+            cur_complex_mol_list, common_inputs.user_options.TMcut, parallel_threads);
     }
 }
 
@@ -1806,7 +1742,7 @@ void update_best_pair(AllChainPairsResult& pairwise,
 }
 
 // ---- Monomer alignment ----
-int align_monomers(const MMalignInputs& inputs,
+int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_params,
     const ComplexData& complex1, const ComplexData& complex2)
 {
     int chain1_len = complex1.lengths[0];
@@ -1826,48 +1762,49 @@ int align_monomers(const MMalignInputs& inputs,
     copy_chain_data(complex2.coords[0], complex2.seqs[0],
         complex2.secs[0], chain2_len, chain2_coords, chain2_seq, chain2_sec);
 
-    if (inputs.byresi_opt)
+    if (common_inputs.user_options.byresi_opt)
     {
-        extract_aln_from_resi(*inputs.sequence, chain1_seq, chain2_seq,
-            complex1.resi, complex2.resi, inputs.byresi_opt);
+        extract_aln_from_resi(common_inputs.parsed_input.sequence, chain1_seq, chain2_seq,
+            complex1.resi, complex2.resi, common_inputs.user_options.byresi_opt);
     }
 
-    int i_opt = (inputs.byresi_opt ? 3 : 0);
+    int i_opt = (common_inputs.user_options.byresi_opt ? 3 : 0);
     int cur_complex_mol_list = complex1.mol_types[0] + complex2.mol_types[0];
     ChainPairAlignResult align_result = { 0};
     align_result.d0_out = 5.0;
     align_chain_pair(align_result,
         chain1_coords, chain2_coords, chain1_seq, chain2_seq,
         chain1_sec, chain2_sec, chain1_len, chain2_len,
-        cur_complex_mol_list, 0, inputs, i_opt, 0, 1,
-        *inputs.sequence);
+        cur_complex_mol_list, 0, common_inputs, common_inputs.user_options.fast_opt, i_opt, 0, 1,
+        common_inputs.parsed_input.sequence);
 
-    if (inputs.outfmt_opt == 0) print_version();
-    
+    if (common_inputs.user_options.outfmt_opt == 0) print_version();
+
     output_results(
-        inputs.structure1_name.substr(inputs.dir1_opt.size()),
-        inputs.structure2_name.substr(inputs.dir2_opt.size()),
+        common_inputs.user_options.xname.substr(mm_params.dir1_opt.size()),
+        common_inputs.user_options.yname.substr(mm_params.dir2_opt.size()),
         complex1.chain_ids[0], complex2.chain_ids[0],
         chain1_len, chain2_len, align_result.t0, align_result.u0,
         align_result.TM1, align_result.TM2, align_result.TM3, align_result.TM4, align_result.TM5,
         align_result.rmsd0, align_result.d0_out, align_result.seqM, align_result.seqxA, align_result.seqyA,
         align_result.Liden, align_result.n_ali8, align_result.L_ali,
         align_result.TM_ali, align_result.rmsd_ali, align_result.TM_0, align_result.d0_0,
-        align_result.d0A, align_result.d0B, 0, inputs.d0_scale,
-        align_result.d0a, align_result.d0u, (inputs.m_opt ? inputs.matrix_out : "").c_str(),
-        inputs.outfmt_opt, inputs.ter_opt, true, inputs.split_opt,
-        inputs.o_opt, inputs.superposed_out, 0, inputs.a_opt, false,
-        inputs.d_opt, inputs.mirror_opt, complex1.resi, complex2.resi);
+        align_result.d0A, align_result.d0B, 0, common_inputs.user_options.d0_scale,
+        align_result.d0a, align_result.d0u, (common_inputs.user_options.m_opt ? common_inputs.user_options.fname_matrix : "").c_str(),
+        common_inputs.user_options.outfmt_opt, common_inputs.user_options.ter_opt, true, common_inputs.user_options.split_opt,
+        common_inputs.user_options.o_opt, common_inputs.user_options.fname_super, 0, common_inputs.user_options.a_opt, false,
+        common_inputs.user_options.d_opt, common_inputs.user_options.mirror_opt, complex1.resi, complex2.resi);
     return 0;
 }
 
 // ---- Serial all-against-all loop ----
-void run_mmalign_serial_pairwise(const MMalignInputs& inputs,
+void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
     MMalignParsed& parsed,
     AllChainPairsResult& pairwise,
     int chain1_num,
     int chain2_num,
-    int i_opt)
+    int i_opt,
+    bool fast_opt)
 {
     string chain1_seq;
     string chain2_seq;
@@ -1928,24 +1865,24 @@ void run_mmalign_serial_pairwise(const MMalignInputs& inputs,
                 norm_len = parsed.na_norm_len;
             }
 
-            if (handle_byresi_pair(inputs, parsed, pairwise,
+            if (handle_byresi_pair(common_inputs, parsed, pairwise,
                 chain1_idx, chain2_idx, pair_idx, chain1_len, chain2_len, chain1_num,
-                chain1_seq, chain2_seq, *inputs.sequence))
+                chain1_seq, chain2_seq, common_inputs.parsed_input.sequence))
             {
                 continue;
             }
 
             // entry function for structure alignment
-            int i_opt = (inputs.byresi_opt ? 3 : 0);
+            int i_opt = (common_inputs.user_options.byresi_opt ? 3 : 0);
             ChainPairAlignResult align_result = { 0};
             align_result.d0_out = 5.0;   // TMalign_main overrides d0_out only with -d
             int mol_types = parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx];
             align_chain_pair(align_result,
                 chain1_coords, chain2_coords, chain1_seq, chain2_seq,
                 chain1_sec, chain2_sec, chain1_len, chain2_len,
-                mol_types, norm_len, inputs,
-                i_opt, 1, inputs.parallel_threads,
-                *inputs.sequence);
+                mol_types, norm_len, common_inputs, fast_opt,
+                i_opt, 1, common_inputs.control_options.parallel_threads,
+                common_inputs.parsed_input.sequence);
 
             // save align_result
             save_pair_result(align_result, pairwise,
@@ -1992,7 +1929,7 @@ void mark_chain_invalid(AllChainPairsResult& pairwise,
 }
 
 // ---- Handle byresi (-TMscore) chain pair: extract alignment by residue index; skip the pair if the alignment is abnormal ----
-bool handle_byresi_pair(const MMalignInputs& inputs,
+bool handle_byresi_pair(AlignCommonInput& common_inputs,
     const MMalignParsed& parsed,
     AllChainPairsResult& pairwise,
     int chain1_idx,
@@ -2005,13 +1942,13 @@ bool handle_byresi_pair(const MMalignInputs& inputs,
     const string& chain2_seq,
     vector<string>& sequence)
 {
-    if (!inputs.byresi_opt)
+    if (!common_inputs.user_options.byresi_opt)
     {
         return false;
     }
     int total_aln = extract_aln_from_resi(sequence, chain1_seq, chain2_seq,
         parsed.complex1.resi, parsed.complex2.resi, parsed.complex1.lengths,
-        parsed.complex2.lengths, chain1_idx, chain2_idx, inputs.byresi_opt);
+        parsed.complex2.lengths, chain1_idx, chain2_idx, common_inputs.user_options.byresi_opt);
     pairwise.aligned_seq1[chain1_idx][chain2_idx] = sequence[0];
     pairwise.aligned_seq2[chain1_idx][chain2_idx] = sequence[1];
     if (total_aln > chain1_len + chain2_len - 3)
@@ -2051,27 +1988,28 @@ void init_pairwise_results(AllChainPairsResult& pairwise, int chain1_num, int ch
 }
 
 // ---- All-against-all chain-level scoring ----
-void align_all_chain_pairs(const MMalignInputs& inputs,
+void align_all_chain_pairs(AlignCommonInput& common_inputs,
     MMalignParsed& parsed,
     AllChainPairsResult& pairwise,
     int chain1_num,
-    int chain2_num)
+    int chain2_num,
+    bool fast_opt)
 {
     init_pairwise_results(pairwise, chain1_num, chain2_num);
-    int i_opt = (inputs.byresi_opt ? 3 : 0);   // alignment mode
+    int i_opt = (common_inputs.user_options.byresi_opt ? 3 : 0);   // alignment mode
 
     bool parallel_done = false;
 #ifdef _OPENMP
-    if (inputs.parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1))
+    if (common_inputs.control_options.parallel_threads > 1 && (chain1_num > 1 || chain2_num > 1))
     {
-        run_mmalign_parallel(inputs, parsed, pairwise, chain1_num, chain2_num, i_opt);
+        run_mmalign_parallel(common_inputs, parsed, pairwise, chain1_num, chain2_num, i_opt, fast_opt);
         parallel_done = true;
     }
 #endif  // _OPENMP
 
     if (!parallel_done)
     {
-        run_mmalign_serial_pairwise(inputs, parsed, pairwise, chain1_num, chain2_num, i_opt);
+        run_mmalign_serial_pairwise(common_inputs, parsed, pairwise, chain1_num, chain2_num, i_opt, fast_opt);
     }
 
     update_best_pair(pairwise, chain1_num, chain2_num);
@@ -2317,7 +2255,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
     int chain2_num,
     int max_iter)
 {
-    copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
+    copy_chain_assign_data(chain1_num, chain2_num, ctx.common_inputs.parsed_input.sequence,
             ctx.pair_result_origin.aligned_seq1, ctx.pair_result_origin.aligned_seq2,
             ctx.assign_result_origin.chain2_of_chain1, ctx.assign_result_origin.chain1_of_chain2,
             ctx.pair_result_origin.tm_matrix,
@@ -2339,7 +2277,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
         }
 
         // Rebuild the sequence from the new assignment (mapped chain pairs + best unpaired monomer pair)
-        copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
+        copy_chain_assign_data(chain1_num, chain2_num, ctx.common_inputs.parsed_input.sequence,
             ctx.pair_result_origin.aligned_seq1, ctx.pair_result_origin.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
             ctx.pair_result_origin.tm_matrix,
@@ -2358,7 +2296,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt, ctx.parsed.chain_pair_map);
+            ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale, ctx.fast_opt, ctx.parsed.chain_pair_map);
 }
 
 /* 
@@ -2383,7 +2321,7 @@ void run_cross_chain_alignment(MMalignContext& ctx,
             ctx.pair_result_origin.tm_matrix);
     }
     double cross_score = ctx.iteration_score;
-    if (ctx.inputs.byresi_opt == 0 && ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len < 10000)
+    if (ctx.common_inputs.user_options.byresi_opt == 0 && ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len < 10000)
     {
         MMalign_dimer(cross_score,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
@@ -2396,12 +2334,12 @@ void run_cross_chain_alignment(MMalignContext& ctx,
             ctx.pair_result_origin.tm_matrix, ctx.pair_result_origin.aligned_seq1,
             ctx.pair_result_origin.aligned_seq2,
             ctx.assign_result_origin.chain2_of_chain1, ctx.assign_result_origin.chain1_of_chain2,
-            ctx.sequence_origin, ctx.inputs.d0_scale, ctx.inputs.fast_opt,
+            ctx.sequence_origin, ctx.common_inputs.user_options.d0_scale, ctx.fast_opt,
             ctx.parsed.chain_pair_map);
         if (cross_score > ctx.iteration_score)
         {
             ctx.iteration_score = cross_score;
-            copy_chain_assign_data(chain1_num, chain2_num, *ctx.inputs.sequence,
+            copy_chain_assign_data(chain1_num, chain2_num, ctx.common_inputs.parsed_input.sequence,
                 ctx.pair_result_origin.aligned_seq1, ctx.pair_result_origin.aligned_seq2,
                 ctx.assign_result_origin.chain2_of_chain1, ctx.assign_result_origin.chain1_of_chain2,
                 ctx.pair_result_origin.tm_matrix,
@@ -2580,7 +2518,7 @@ void out_pairing_counts(const MMalignContext& ctx,
     const PairingCounts& counts)
 {
     // summary header
-    if (ctx.inputs.outfmt_opt == 2)
+    if (ctx.common_inputs.user_options.outfmt_opt == 2)
     {
         cout << endl;
     }
@@ -2588,7 +2526,7 @@ void out_pairing_counts(const MMalignContext& ctx,
          << name2 << " (structure 2)" << endl;
 
     // Chainmap statistics (only when chainmap was specified)
-    if (ctx.inputs.chain_map_file.size() > 0)
+    if (ctx.common_inputs.control_options.chainmapfile.size() > 0)
     {
         cout << "#   Chainmap: " << ctx.parsed.chain_map_num
              << " entries specified, " << counts.mapped_pair_num
@@ -2695,8 +2633,8 @@ void output_chain_pairing_summary(const MMalignContext& ctx,
     PairingCounts counts = calc_paired_pairs_count(ctx, chain1_num);
 
     // File names
-    string name1 = get_basename(ctx.inputs.structure1_name);
-    string name2 = get_basename(ctx.inputs.structure2_name);
+    string name1 = get_basename(ctx.common_inputs.user_options.xname);
+    string name2 = get_basename(ctx.common_inputs.user_options.yname);
     
     // Summary header + Chainmap statistics + paired counts by molecule type
     out_pairing_counts(ctx, name1, name2, counts);
@@ -2714,19 +2652,19 @@ void output_final_results(MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
 {
-    if (ctx.inputs.outfmt_opt == 0)
+    if (ctx.common_inputs.user_options.outfmt_opt == 0)
     {
         print_version();
     }
     
-    string xname = get_basename(ctx.inputs.structure1_name);
-    string yname = get_basename(ctx.inputs.structure2_name);
-    if (ctx.inputs.se_opt)
+    string xname = get_basename(ctx.common_inputs.user_options.xname);
+    string yname = get_basename(ctx.common_inputs.user_options.yname);
+    if (ctx.common_inputs.control_options.se_opt)
     {
         MMalign_se_final(xname,
             yname,
             ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-            ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
+            ctx.common_inputs.user_options.fname_super, ctx.common_inputs.user_options.fname_lign, ctx.common_inputs.user_options.fname_matrix,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
             ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
             ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
@@ -2737,17 +2675,17 @@ void output_final_results(MMalignContext& ctx,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            *ctx.inputs.sequence, ctx.inputs.d0_scale,
-            ctx.inputs.m_opt, ctx.inputs.o_opt, ctx.inputs.outfmt_opt, ctx.inputs.ter_opt, ctx.inputs.split_opt,
-            ctx.inputs.a_opt, ctx.inputs.d_opt, ctx.inputs.fast_opt, ctx.inputs.full_opt,
-            ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
+            ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale,
+            ctx.common_inputs.user_options.m_opt, ctx.common_inputs.user_options.o_opt, ctx.common_inputs.user_options.outfmt_opt, ctx.common_inputs.user_options.ter_opt, ctx.common_inputs.user_options.split_opt,
+            ctx.common_inputs.user_options.a_opt, ctx.common_inputs.user_options.d_opt, ctx.fast_opt, ctx.common_inputs.control_options.full_opt,
+            ctx.common_inputs.user_options.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
     else
     {
         MMalign_final(xname,
             yname,
             ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-            ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
+            ctx.common_inputs.user_options.fname_super, ctx.common_inputs.user_options.fname_lign, ctx.common_inputs.user_options.fname_matrix,
             ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
             ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
             ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
@@ -2758,10 +2696,10 @@ void output_final_results(MMalignContext& ctx,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            *ctx.inputs.sequence, ctx.inputs.d0_scale,
-            ctx.inputs.m_opt, ctx.inputs.o_opt, ctx.inputs.outfmt_opt, ctx.inputs.ter_opt, ctx.inputs.split_opt,
-            ctx.inputs.a_opt, ctx.inputs.d_opt, ctx.inputs.fast_opt, ctx.inputs.full_opt,
-            ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
+            ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale,
+            ctx.common_inputs.user_options.m_opt, ctx.common_inputs.user_options.o_opt, ctx.common_inputs.user_options.outfmt_opt, ctx.common_inputs.user_options.ter_opt, ctx.common_inputs.user_options.split_opt,
+            ctx.common_inputs.user_options.a_opt, ctx.common_inputs.user_options.d_opt, ctx.fast_opt, ctx.common_inputs.control_options.full_opt,
+            ctx.common_inputs.user_options.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
     }
 
     // Print the chain pairing summary
@@ -2772,17 +2710,17 @@ void output_final_results(MMalignContext& ctx,
 int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 {
 
-    MMalignContext ctx = {};
-    fill_mmalign_inputs(ctx.inputs, common_inputs, mm_params);
+    MMalignContext ctx(common_inputs, mm_params);
 
-    if (!detect_complex_filtered_chains(ctx.inputs)) return 0;
-    if (!parse_structures(ctx.inputs, ctx.parsed)) return 0;
+    if (!detect_complex_filtered_chains(ctx.common_inputs, ctx.mm_params)) return 0;
+    if (!parse_structures(ctx.common_inputs, ctx.mm_params, ctx.parsed)) return 0;
 
-    read_chainmap(ctx.inputs, ctx.parsed);
-    build_valid_chain_map(ctx.inputs, ctx.parsed);
+    read_chainmap(ctx.common_inputs, ctx.parsed);
+    build_valid_chain_map(ctx.common_inputs, ctx.parsed);
 
-    if (ctx.inputs.outfmt_opt == 2 && ctx.inputs.dir1_opt.size() == 0
-        && ctx.inputs.dir2_opt.size() == 0)
+    if (ctx.common_inputs.user_options.outfmt_opt == 2
+        && ctx.mm_params.dir1_opt.size() == 0
+        && ctx.mm_params.dir2_opt.size() == 0)
     {
         cout << endl;
         cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
@@ -2795,21 +2733,21 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     bool monomer = is_monomer(struct1_chain_num) && is_monomer(struct2_chain_num);
     if (monomer)
     {
-        return align_monomers(ctx.inputs, ctx.parsed.complex1, ctx.parsed.complex2);
+        return align_monomers(ctx.common_inputs, ctx.mm_params, ctx.parsed.complex1, ctx.parsed.complex2);
     }
 
     // ---- All-vs-all chain scoring (force fast mode for large complexes) ----
     if (ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len > 500)
     {
-        ctx.inputs.fast_opt = true;
+        ctx.fast_opt = true;
     }
-    align_all_chain_pairs(ctx.inputs, ctx.parsed, ctx.pair_result, struct1_chain_num, struct2_chain_num);
+    align_all_chain_pairs(ctx.common_inputs, ctx.parsed, ctx.pair_result, struct1_chain_num, struct2_chain_num, ctx.fast_opt);
 
     // ---- Initial greedy assignment + assignment optimization (dimer/oligomer) + initial snapshot ----
     assign_initial_chains_greedily(ctx.pair_result, ctx.parsed, ctx.assign_result, struct1_chain_num, struct2_chain_num);
 
     optimize_chain_assign(ctx.pair_result, ctx.parsed, ctx.assign_result,
-        ctx.inputs.se_opt, ctx.aln_chain_num, ctx.is_oligomer);
+        ctx.common_inputs.control_options.se_opt, ctx.aln_chain_num, ctx.is_oligomer);
 
     save_initial_assign_result(ctx.pair_result, ctx.assign_result, ctx.parsed,
         ctx.pair_result_origin, ctx.assign_result_origin, ctx.sequence_origin,
@@ -2819,7 +2757,7 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     int max_iter = 5 - static_cast<int>((ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len) / 200);
     max_iter = (max_iter < 2) ? 2 : max_iter;
 
-    if (!ctx.inputs.se_opt)
+    if (!ctx.common_inputs.control_options.se_opt)
     {
         ctx.iteration_score = 0;   // ignore old score from monomeric superpositions
         MMalign_iter(ctx.iteration_score, max_iter,
@@ -2834,19 +2772,19 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_seq2,
             ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            *ctx.inputs.sequence, ctx.inputs.d0_scale, ctx.inputs.fast_opt,
-            ctx.parsed.chain_pair_map, ctx.inputs.byresi_opt);
+            ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale, ctx.fast_opt,
+            ctx.parsed.chain_pair_map, ctx.common_inputs.user_options.byresi_opt);
     }
 
     // byresi optimization (-TMscore 6/7 chain-level refinement)
-    bool is_byresi_optimize = is_need_byresi_optimize(ctx.inputs.byresi_opt, ctx.aln_chain_num,
-        ctx.is_oligomer, ctx.inputs.se_opt);
+    bool is_byresi_optimize = is_need_byresi_optimize(ctx.common_inputs.user_options.byresi_opt, ctx.aln_chain_num,
+        ctx.is_oligomer, ctx.common_inputs.control_options.se_opt);
     if (is_byresi_optimize)
     {
-            MMalign_final(ctx.inputs.structure1_name.substr(ctx.inputs.dir1_opt.size()),
-                    ctx.inputs.structure2_name.substr(ctx.inputs.dir2_opt.size()),
+            MMalign_final(ctx.common_inputs.user_options.xname.substr(ctx.mm_params.dir1_opt.size()),
+                    ctx.common_inputs.user_options.yname.substr(ctx.mm_params.dir2_opt.size()),
                     ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-                    ctx.inputs.superposed_out, ctx.inputs.alignment_file, ctx.inputs.matrix_out,
+                    ctx.common_inputs.user_options.fname_super, ctx.common_inputs.user_options.fname_lign, ctx.common_inputs.user_options.fname_matrix,
                     ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
                     ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
                     ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
@@ -2857,9 +2795,9 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
                     ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
                     ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
                     ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-                    *ctx.inputs.sequence, ctx.inputs.d0_scale, 1, 0, 5,
-                    ctx.inputs.ter_opt, ctx.inputs.split_opt, 0, 0, true, true,
-                    ctx.inputs.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
+                    ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale, 1, 0, 5,
+                    ctx.common_inputs.user_options.ter_opt, ctx.common_inputs.user_options.split_opt, 0, 0, true, true,
+                    ctx.common_inputs.user_options.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
 
                 // extract centroid coordinates
                 CoordArray xcentroids;
@@ -2882,7 +2820,7 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     }
 
     // ---- Fallback: recover the best monomer pair when iteration score is below monomer best ----
-    bool is_fallback = !ctx.inputs.se_opt && need_monomer_fallback(ctx.inputs.byresi_opt,
+    bool is_fallback = !ctx.common_inputs.control_options.se_opt && need_monomer_fallback(ctx.common_inputs.user_options.byresi_opt,
         ctx.iteration_score, ctx.pair_result.best_pair_tm);
     if (is_fallback)
     {
@@ -2890,7 +2828,7 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     }
 
     // ---- Cross-chain alignment (mask-constrained intra-chain pairing, homodimer improvement) ----
-    if (!ctx.inputs.se_opt)
+    if (!ctx.common_inputs.control_options.se_opt)
     {
         run_cross_chain_alignment(ctx, struct1_chain_num, struct2_chain_num);
     }
