@@ -5693,16 +5693,6 @@ int main(int argc, char *argv[])
     }
     else cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<endl;
 
-    // clean up
-    vector<string>().swap(parsed_input.chain1_list);
-    vector<string>().swap(parsed_input.chain2_list);
-    vector<string>().swap(user_opts.chain2parse1);
-    vector<string>().swap(user_opts.chain2parse2);
-    vector<string>().swap(user_opts.model2parse1);
-    vector<string>().swap(user_opts.model2parse2);
-    vector<string>().swap(parsed_input.sequence);
-    vector<pair<string,string> >().swap(chain_pair_list);
-
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
     if (user_opts.outfmt_opt<2) fcout("#Total CPU time is %5.2f seconds\n", diff);
