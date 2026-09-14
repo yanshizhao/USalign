@@ -1,5 +1,6 @@
 // command line argument parsing and document of US-align main program
 
+#include "align_types.h"
 #include "MMalign.h"
 #include "SOIalign.h"
 #include "flexalign.h"
@@ -496,19 +497,6 @@ int run_batch_parallel(
 }
 
 // ---- Data of a complex / chain set (isomorphic to parse_chain_list output, transitional) ----
-struct ComplexData
-{
-    DoubleCube coords;           // coordinates of each chain (was xa_vec)
-    CharMatrix seqs;             // sequence of each chain (was seqx_vec)
-    CharMatrix secs;             // secondary structure of each chain (was secx_vec)
-    vector<int> mol_types;       // molecule type of each chain (was mol_vec)
-    vector<int> lengths;         // length of each chain (was xlen_vec)
-    vector<string> chain_ids;    // chain ID (was chainID_list)
-    vector<string> resi;         // residue indices (was resi_vec)
-    int total_len_aa;
-    int total_len_na;
-};
-
 // ---- All-against-all chain-level scoring results (stage B, shared across flows) ----
 struct AllChainPairsResult
 {
@@ -618,37 +606,6 @@ struct MMalignContext
     string iter_seqy;               // was sy
     string iter_secx;               // was scx
     string iter_secy;               // was scy
-};
-
-// ---- Result of one chain-pair structure alignment (replaces 20+ scattered variables) ----
-struct ChainPairAlignResult
-{
-    Vec3 t0;
-    RotMat u0;
-    double TM1;
-    double TM2;
-    double TM3;
-    double TM4;
-    double TM5;
-    double d0_0;
-    double TM_0;
-    double d0A;
-    double d0B;
-    double d0u;
-    double d0a;
-    double d0_out;
-    string seqM;
-    string seqxA;
-    string seqyA;
-    double rmsd0;
-    double Liden;
-    double TM_ali;
-    double rmsd_ali;
-    int L_ali;
-    int n_ali;
-    int n_ali8;
-    vector<double> do_vec;
-    vector<int> invmap;
 };
 
 // ---- Forward declaration of mark_pair_invalid (defined later in this file) ----
