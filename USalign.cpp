@@ -2857,21 +2857,13 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 }
 
 // alignment individual chains to a complex.
-int MMdock(const string &xname, const string &yname, const string &fname_super, 
-    const string &fname_matrix, vector<string> &sequence, const double Lnorm_ass,
-    const double d0_scale, const bool m_opt, const int o_opt,
-    const int a_opt, const bool u_opt, const bool d_opt,
-    const double TMcut, const int infmt1_opt, const int infmt2_opt,
-    const int ter_opt, const int split_opt, const int outfmt_opt,
-    bool fast_opt, const int mirror_opt, const int het_opt,
-    const string &atom_opt, const bool autojustify, const string &mol_opt,
-    const string &dir1_opt, const string &dir2_opt,
-    const vector<string> &chain2parse1, const vector<string> &chain2parse2, 
-    const vector<string> &model2parse1, const vector<string> &model2parse2, 
-    const vector<string> &chain1_list, const vector<string> &chain2_list,
-    const bool do_opt,
-    int parallel_threads = 1)
+int MMdock(AlignCommonInput& common_inputs)
 {
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+    bool fast_opt = user_opts.fast_opt;
+
     // declare previously global variables
     DoubleCube xa_vec; // structure of complex1
     DoubleCube ya_vec; // structure of complex2
@@ -2898,20 +2890,20 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     vector<string> resi_vec2;  // residue index for chain2
 
     // parse complex
-    parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
-        xlen_vec, chainID_list1, ter_opt, split_opt, mol_opt, infmt1_opt,
-        atom_opt, autojustify, mirror_opt, het_opt, xlen_aa, xlen_na, o_opt,
-        resi_vec1, chain2parse1, model2parse1);
+    parse_chain_list(parsed_input.chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
+        xlen_vec, chainID_list1, user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, parsed_input.autojustify, user_opts.mirror_opt, user_opts.het_opt, xlen_aa, xlen_na, user_opts.o_opt,
+        resi_vec1, user_opts.chain2parse1, user_opts.model2parse1);
     if (xa_vec.size()==0) PrintErrorAndQuit("ERROR! 0 individual chain");
-    parse_chain_list(chain2_list, ya_vec, seqy_vec, secy_vec, mol_vec2,
-        ylen_vec, chainID_list2, ter_opt, split_opt, mol_opt, infmt2_opt,
-        atom_opt, autojustify, 0, het_opt, ylen_aa, ylen_na, o_opt, resi_vec2,
-        chain2parse2, model2parse2);
+    parse_chain_list(parsed_input.chain2_list, ya_vec, seqy_vec, secy_vec, mol_vec2,
+        ylen_vec, chainID_list2, user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt2_opt,
+        user_opts.atom_opt, parsed_input.autojustify, 0, user_opts.het_opt, ylen_aa, ylen_na, user_opts.o_opt, resi_vec2,
+        user_opts.chain2parse2, user_opts.model2parse2);
     if (xa_vec.size()>ya_vec.size()) 
         PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
     int len_aa=getmin(xlen_aa,ylen_aa);
     int len_na=getmin(xlen_na,ylen_na);
-    if (a_opt)
+    if (user_opts.a_opt)
     {
         len_aa=(xlen_aa+ylen_aa)/2;
         len_na=(xlen_na+ylen_na)/2;
@@ -2959,24 +2951,24 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale,
-            0, a_opt, u_opt, d_opt, fast_opt,
-            mol_vec1[0]+mol_vec2[0],TMcut);
+            xlen, ylen, parsed_input.sequence, user_opts.Lnorm_ass, user_opts.d0_scale,
+            0, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, fast_opt,
+            mol_vec1[0]+mol_vec2[0],user_opts.TMcut);
 
         // print result
         output_results(
-            xname.substr(dir1_opt.size()),
-            yname.substr(dir2_opt.size()),
+            user_opts.xname.substr(user_opts.dir1_opt.size()),
+            user_opts.yname.substr(user_opts.dir2_opt.size()),
             chainID_list1[0], chainID_list2[0],
             xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
             seqM, seqxA, seqyA, Liden,
             n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0, d0A, d0B,
-            Lnorm_ass, d0_scale, d0a, d0u, (m_opt?fname_matrix:"").c_str(),
-            (outfmt_opt==2?outfmt_opt:3), ter_opt, true, split_opt, o_opt, fname_super,
-            0, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
-        if (outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
-            xname.substr(dir1_opt.size()), chainID_list1[0],
-            yname.substr(dir2_opt.size()), chainID_list2[0],
+            user_opts.Lnorm_ass, user_opts.d0_scale, d0a, d0u, (user_opts.m_opt?user_opts.fname_matrix:"").c_str(),
+            (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3), user_opts.ter_opt, true, user_opts.split_opt, user_opts.o_opt, user_opts.fname_super,
+            0, user_opts.a_opt, false, user_opts.d_opt, user_opts.mirror_opt, resi_vec1, resi_vec2);
+        if (user_opts.outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
+            user_opts.xname.substr(user_opts.dir1_opt.size()), chainID_list1[0],
+            user_opts.yname.substr(user_opts.dir2_opt.size()), chainID_list2[0],
             sqrt((TM1*TM1+TM2*TM2)/2));
 
         // clean up
@@ -3037,7 +3029,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
 
     bool mmdock_parallel_done = false;
 #ifdef _OPENMP
-    if (parallel_threads > 1 && chain1_num > 1) {
+    if (ctrl_opts.parallel_threads > 1 && chain1_num > 1) {
         run_mmdock_parallel(
             xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, xlen_vec, ylen_vec,
@@ -3045,10 +3037,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             resi_vec1, resi_vec2, TMave_mat,
             seqxA_mat, seqyA_mat,
             chain1_num, chain2_num, len_aa, len_na,
-            outfmt_opt, TMcut, d0_scale, fast_opt,
+            user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
             ya_trim_vec, seqy_trim_vec, secy_trim_vec, ylen_trim_vec,
             trim_chain_count,
-            parallel_threads);
+            ctrl_opts.parallel_threads);
         mmdock_parallel_done = true;
     }
 #endif
@@ -3127,9 +3119,9 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
+                        xlen, ylen_trim, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
                         0, false, true, false, fast_opt,
-                        mol_vec1[i]+mol_vec2[j],TMcut, parallel_threads);
+                        mol_vec1[i]+mol_vec2[j],user_opts.TMcut, ctrl_opts.parallel_threads);
                     seqxA.clear();
                     seqyA.clear();
 
@@ -3139,22 +3131,22 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                     se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
                         do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        xlen, ylen, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
                         0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
 
 
-                    if (sequence.size()<2) sequence.push_back("");
-                    if (sequence.size()<2) sequence.push_back("");
-                    sequence[0]=seqxA;
-                    sequence[1]=seqyA;
+                    if (parsed_input.sequence.size()<2) parsed_input.sequence.push_back("");
+                    if (parsed_input.sequence.size()<2) parsed_input.sequence.push_back("");
+                    parsed_input.sequence[0]=seqxA;
+                    parsed_input.sequence[1]=seqyA;
                     TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
                         t0, u0, TM1, TM2, TM3, TM4, TM5,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        xlen, ylen, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
                         2, false, true, false, fast_opt,
-                        mol_vec1[i]+mol_vec2[j],TMcut);
+                        mol_vec1[i]+mol_vec2[j],user_opts.TMcut);
                 }
                 else
                 {
@@ -3163,9 +3155,9 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
                         seqM, seqxA, seqyA, do_vec,
                         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                        xlen, ylen, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
                         0, false, true, false, fast_opt,
-                        mol_vec1[i]+mol_vec2[j],TMcut);
+                        mol_vec1[i]+mol_vec2[j],user_opts.TMcut);
                 }
 
                 // store result
@@ -3191,7 +3183,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     enhanced_greedy_search(TMave_mat, assign1_list,
         assign2_list, chain1_num, chain2_num);
 
-    if (outfmt_opt==0) print_version();
+    if (user_opts.outfmt_opt==0) print_version();
     RotArray ut_mat; // rotation matrices for all-against-all alignment
     ut_mat.resize(chain1_num);
     int ui;
@@ -3202,7 +3194,7 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
     for (i=0;i<chain1_num;i++)
     {
         j=assign1_list[i];
-        xname_vec.push_back(xname+chainID_list1[i]);
+        xname_vec.push_back(user_opts.xname+chainID_list1[i]);
         if (j<0)
         {
             cerr<<"Warning! "<<chainID_list1[i]<<" cannot be alighed"<<endl;
@@ -3211,10 +3203,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
                 for (uj=0;uj<4;uj++) ut_mat[i][ui*3+uj]=0;
                 ut_mat[i][ui*3+ui]=1;
             }
-            yname_vec.push_back(yname);
+            yname_vec.push_back(user_opts.yname);
             continue;
         }
-        yname_vec.push_back(yname+chainID_list2[j]);
+        yname_vec.push_back(user_opts.yname+chainID_list2[j]);
 
         xlen =xlen_vec[i];
         secx.resize(xlen+1);
@@ -3251,10 +3243,10 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         vector<double> do_vec;
 
         int c;
-        for (c=0; c<sequence.size(); c++) sequence[c].clear();
-        sequence.clear();
-        sequence.push_back(seqxA_mat[i][j]);
-        sequence.push_back(seqyA_mat[i][j]);
+        for (c=0; c<parsed_input.sequence.size(); c++) parsed_input.sequence[c].clear();
+        parsed_input.sequence.clear();
+        parsed_input.sequence.push_back(seqxA_mat[i][j]);
+        parsed_input.sequence.push_back(seqyA_mat[i][j]);
             
         // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
@@ -3262,8 +3254,8 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale,
-            3, a_opt, u_opt, d_opt, fast_opt,
+            xlen, ylen, parsed_input.sequence, user_opts.Lnorm_ass, user_opts.d0_scale,
+            3, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, fast_opt,
             mol_vec1[i]+mol_vec2[j]);
         
         for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=u0[ui][uj];
@@ -3272,17 +3264,17 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         TM_vec.push_back(TM1);
         TM_vec.push_back(TM2);
 
-        if (outfmt_opt<2) output_results(
-            xname.c_str(), yname.c_str(),
+        if (user_opts.outfmt_opt<2) output_results(
+            user_opts.xname.c_str(), user_opts.yname.c_str(),
             chainID_list1[i], chainID_list2[j],
             xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
             rmsd0, d0_out, seqM.c_str(),
             seqxA.c_str(), seqyA.c_str(), Liden,
             n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
-            d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u, 
-            "", outfmt_opt, ter_opt, false, split_opt, 
+            d0A, d0B, user_opts.Lnorm_ass, user_opts.d0_scale, d0a, d0u, 
+            "", user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, 
             false, "",//o_opt, fname_super+chainID_list1[i], 
-            false, a_opt, u_opt, d_opt, mirror_opt,
+            false, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
             resi_vec1, resi_vec2);
         
         // clean up
@@ -3291,13 +3283,13 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         seqyA.clear();
         do_vec.clear();
     }
-    if (outfmt_opt==2)
+    if (user_opts.outfmt_opt==2)
     {
         double TM=0;
         for (i=0;i<TM_vec.size();i++) TM+=TM_vec[i]*TM_vec[i];
         TM=sqrt(TM/TM_vec.size());
-        string query_name=xname;
-        string template_name=yname;
+        string query_name=user_opts.xname;
+        string template_name=user_opts.yname;
 
         for (i=0;i<chain1_num;i++)
         {
@@ -3311,11 +3303,11 @@ int MMdock(const string &xname, const string &yname, const string &fname_super,
         template_name.clear();
     }
 
-    if (m_opt) output_dock_rotation_matrix(fname_matrix,
+    if (user_opts.m_opt) output_dock_rotation_matrix(user_opts.fname_matrix,
         xname_vec,yname_vec, ut_mat, assign1_list);
 
-    if (o_opt) output_dock(chain1_list, ter_opt, split_opt, infmt1_opt,
-        atom_opt, mirror_opt, ut_mat, fname_super);
+    if (user_opts.o_opt) output_dock(parsed_input.chain1_list, user_opts.ter_opt, user_opts.split_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, user_opts.mirror_opt, ut_mat, user_opts.fname_super);
 
     // clean up everything
     vector<double>().swap(TM_vec);
@@ -5568,15 +5560,8 @@ int main(int argc, char *argv[])
         }
         ctrl_opts.chainmapfile.clear();
     }
-    else if (ctrl_opts.mm_opt==2) 
-        MMdock(user_opts.xname, user_opts.yname, user_opts.fname_super,
-        user_opts.fname_matrix, parsed_input.sequence, user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.m_opt, user_opts.o_opt, user_opts.a_opt,
-        user_opts.u_opt, user_opts.d_opt, user_opts.TMcut, user_opts.infmt1_opt, user_opts.infmt2_opt, user_opts.ter_opt,
-        user_opts.split_opt, user_opts.outfmt_opt, user_opts.fast_opt, user_opts.mirror_opt, user_opts.het_opt,
-        user_opts.atom_opt, parsed_input.autojustify, user_opts.mol_opt, user_opts.dir1_opt, user_opts.dir2_opt,
-        user_opts.chain2parse1, user_opts.chain2parse2, user_opts.model2parse1, user_opts.model2parse2,
-        parsed_input.chain1_list, parsed_input.chain2_list, ctrl_opts.do_opt,
-        ctrl_opts.parallel_threads);
+    else if (ctrl_opts.mm_opt==2)
+        MMdock(common_inputs);
     else if (ctrl_opts.mm_opt==3) ; // should be changed to mm_opt=0, cp_opt=true
     else if (ctrl_opts.mm_opt==4) 
         mTMalign(user_opts.xname, user_opts.yname, user_opts.fname_super, user_opts.fname_matrix,
