@@ -179,4 +179,5 @@ struct ChainPairAlignOptions
     double TMcut;              // 早退阈值
     int    parallel_threads;   // 引擎内并行度
     int    ss_opt;             // 1=跳过基于二级结构的初始策略
+    int    mol_type;           // 两链分子类型之和（-1/0/1，逐对覆盖）
 };
