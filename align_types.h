@@ -3,27 +3,26 @@
 // 常设公共层共享类型：跨模式共享的数据结构。
 // 仅依赖 basic_fun.h 的基础类型（CoordArray/Vec3/RotMat/DoubleMatrix 等），
 // 不引用任何引擎头（TMalign.h/MMalign.h/flexalign.h/…），避免 include 环。
+// 全部使用 std:: 前缀，不在共享头引入 using namespace std。
 #include "basic_fun.h"
 
 #include <string>
 #include <vector>
-
-using namespace std;
 
 // ---- 单链解析结果（mm0/mm5-6/mm7 用）----
 struct ParsedChain
 {
     // --- 24-byte heavy objects (vector / string) ---
     CoordArray     chain_coords;            // 3D coordinates
-    string         chain_seq;              // sequence
-    string         chain_sec;              // secondary structure
-    vector<string> resi_vec;                 // residue index (for -do output)
-    string         chain_id;                 // chain ID
-    string         filename;                 // source filename (for output)
-    vector<string> pdb_lines;                // raw PDB lines (for -do output)
+    std::string    chain_seq;              // sequence
+    std::string    chain_sec;              // secondary structure
+    std::vector<std::string> resi_vec;      // residue index (for -do output)
+    std::string    chain_id;               // chain ID
+    std::string    filename;               // source filename (for output)
+    std::vector<std::string> pdb_lines;    // raw PDB lines (for -do output)
     // --- 4-byte scalars packed together ---
-    int            chain_len;                // length
-    int            cur_complex_mol_list;     // molecule type (-1=protein, 1=RNA)
+    int            chain_len;              // length
+    int            cur_complex_mol_list;   // molecule type (-1=protein, 1=RNA)
 };
 
 // ---- 多链解析结果（mm1/mm2/mm4 用）----
@@ -32,10 +31,10 @@ struct ComplexData
     DoubleCube coords;           // coordinates of each chain (was xa_vec)
     CharMatrix seqs;             // sequence of each chain (was seqx_vec)
     CharMatrix secs;             // secondary structure of each chain (was secx_vec)
-    vector<int> mol_types;       // molecule type of each chain (was mol_vec)
-    vector<int> lengths;         // length of each chain (was xlen_vec)
-    vector<string> chain_ids;    // chain ID (was chainID_list)
-    vector<string> resi;         // residue indices (was resi_vec)
+    std::vector<int> mol_types;  // molecule type of each chain (was mol_vec)
+    std::vector<int> lengths;    // length of each chain (was xlen_vec)
+    std::vector<std::string> chain_ids;  // chain ID (was chainID_list)
+    std::vector<std::string> resi;       // residue indices (was resi_vec)
     int total_len_aa;
     int total_len_na;
 };
@@ -57,9 +56,9 @@ struct ChainPairAlignResult
     double d0u;
     double d0a;
     double d0_out;
-    string seqM;
-    string seqxA;
-    string seqyA;
+    std::string seqM;
+    std::string seqxA;
+    std::string seqyA;
     double rmsd0;
     double Liden;
     double TM_ali;
@@ -67,8 +66,8 @@ struct ChainPairAlignResult
     int L_ali;
     int n_ali;
     int n_ali8;
-    vector<double> do_vec;
-    vector<int> invmap;
+    std::vector<double> do_vec;
+    std::vector<int> invmap;
 };
 
 // ---- 命令行选项容器（mm0-7 全部模式共用）----
