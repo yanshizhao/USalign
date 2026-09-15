@@ -1656,46 +1656,23 @@ void align_chain_pair(ChainPairAlignResult& result,
     int parallel_threads,
     vector<string>& sequence)
 {
-    if (common_inputs.control_options.se_opt)
-    {
-        result.invmap.resize(ylen + 1);
-        result.u0[0][0] = result.u0[1][1] = result.u0[2][2] = 1;
-        result.u0[0][1] = result.u0[0][2] = result.u0[1][0] = result.u0[1][2] = result.u0[2][0] = result.u0[2][1] = 0;
-        result.t0[0] = result.t0[1] = result.t0[2] = 0;
-        se_main(xa, ya, seqx, seqy, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-            result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-            result.seqM, result.seqxA, result.seqyA, result.do_vec,
-            result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, sequence, norm_len, common_inputs.user_options.d0_scale,
-            i_opt_val, common_inputs.user_options.a_opt, u_opt_val, common_inputs.user_options.d_opt,
-            cur_complex_mol_list, common_inputs.user_options.outfmt_opt, result.invmap);
-        if (common_inputs.user_options.outfmt_opt >= 2)
-        {
-            result.Liden = 0.0;
-            result.L_ali = 0;
-            for (int res_idx2 = 0; res_idx2 < ylen; res_idx2++)
-            {
-                int res_idx1 = result.invmap[res_idx2];
-                if (res_idx1 < 0)
-                {
-                    continue;
-                }
-                result.L_ali += 1;
-                result.Liden += (seqx[res_idx1] == seqy[res_idx2]);
-            }
-        }
-    }
-    else
-    {
-        TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-            result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-            result.seqM, result.seqxA, result.seqyA, result.do_vec,
-            result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, sequence, norm_len, common_inputs.user_options.d0_scale,
-            i_opt_val, common_inputs.user_options.a_opt, u_opt_val, common_inputs.user_options.d_opt, fast_opt,
-            cur_complex_mol_list, common_inputs.user_options.TMcut, parallel_threads);
-    }
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = i_opt_val;
+    align_opts.a_opt = common_inputs.user_options.a_opt;
+    align_opts.u_opt = u_opt_val;
+    align_opts.d_opt = common_inputs.user_options.d_opt;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = common_inputs.control_options.se_opt;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = norm_len;
+    align_opts.d0_scale = common_inputs.user_options.d0_scale;
+    align_opts.TMcut = common_inputs.user_options.TMcut;
+    align_opts.parallel_threads = parallel_threads;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = cur_complex_mol_list;
+    align_chain_pair_core(result, xa, ya, seqx, seqy, secx, secy,
+        xlen, ylen, align_opts, sequence,
+        common_inputs.user_options.outfmt_opt);
 }
 
 // ---- Store one chain-pair alignment result into the all-against-all matrix ----
