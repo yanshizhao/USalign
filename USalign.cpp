@@ -623,22 +623,35 @@ void save_pair_result(const ChainPairAlignResult& result,
 
 // ---- Forward declaration of align_chain_pair (defined later in this file; used first by run_mmalign_parallel) ----
 void align_chain_pair(ChainPairAlignResult& result,
-    CoordArray& xa,
-    CoordArray& ya,
-    const string& seqx,
-    const string& seqy,
-    const string& secx,
-    const string& secy,
-    int xlen,
-    int ylen,
-    int cur_complex_mol_list,
-    double norm_len,
-    AlignCommonInput& common_inputs,
-    bool fast_opt,
-    int i_opt_val,
-    int u_opt_val,
-    int parallel_threads,
-    vector<string>& sequence);
+    CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy,
+    int xlen, int ylen,
+    const ChainPairAlignOptions& opts,
+    const std::vector<std::string>& sequence,
+    int outfmt_opt);
+
+ChainPairAlignOptions mmalign_pair_options(const AlignCommonInput& common_inputs,
+    int mol_type, double norm_len, bool fast_opt, int i_opt_val, int u_opt_val,
+    int parallel_threads)
+{
+    const UserOptions& user_opts = common_inputs.user_options;
+    ChainPairAlignOptions opts;
+    opts.i_opt = i_opt_val;
+    opts.a_opt = user_opts.a_opt;
+    opts.u_opt = u_opt_val;
+    opts.d_opt = user_opts.d_opt;
+    opts.fast_opt = fast_opt;
+    opts.se_opt = common_inputs.control_options.se_opt;
+    opts.cp_opt = false;
+    opts.Lnorm = norm_len;
+    opts.d0_scale = user_opts.d0_scale;
+    opts.TMcut = user_opts.TMcut;
+    opts.parallel_threads = parallel_threads;
+    opts.ss_opt = 0;
+    opts.mol_type = mol_type;
+    return opts;
+}
 
 // ===========================================================================
 // All-against-all chain-level alignment (OpenMP parallel path).
@@ -748,9 +761,10 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                 align_chain_pair(align_result,
                     chain1_coords, chain2_coords, chain1_seq,
                     chain2_seq, chain1_sec, chain2_sec,
-                    chain1_len, chain2_len, mol_types,
-                    norm_len, common_inputs, fast_opt, i_opt, 1, common_inputs.control_options.parallel_threads,
-                    pair_sequence);
+                    chain1_len, chain2_len,
+                    mmalign_pair_options(common_inputs, mol_types, norm_len, fast_opt,
+                        i_opt, 1, common_inputs.control_options.parallel_threads),
+                    pair_sequence, common_inputs.user_options.outfmt_opt);
 
                 // save align_result (reuses the common function save_pair_result)
                 save_pair_result(align_result, pairwise,
@@ -909,14 +923,6 @@ struct TMalignParams
 };
 
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs);
-void align_chain_pair_core(ChainPairAlignResult& result,
-    CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy,
-    int xlen, int ylen,
-    const ChainPairAlignOptions& opts,
-    const std::vector<std::string>& sequence,
-    int outfmt_opt);
 void output_pair_alignment(const AlignCommonInput& common_inputs,
     const std::string& xname, const std::string& yname,
     int xlen, int ylen,
@@ -1119,7 +1125,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                     ChainPairAlignOptions align_opts = tm_params.align;
                     align_opts.fast_opt = (getmin(xlen, ylen) > 1500) ? true : user_opts.fast_opt;
                     align_opts.mol_type = mol_vec1[chain_i] + mol_vec2[chain_j];
-                    align_chain_pair_core(result, xa, ya, seqx, seqy, secx, secy,
+                    align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
                         xlen, ylen, align_opts, parsed_input.sequence,
                         user_opts.outfmt_opt);
 
@@ -1552,7 +1558,7 @@ bool is_monomer(int chain_num)
 }
 
 // ---- Single chain-pair structure alignment dispatcher (cp / se / TMalign_main) ----
-void align_chain_pair_core(ChainPairAlignResult& result,
+void align_chain_pair(ChainPairAlignResult& result,
     CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy,
@@ -1637,44 +1643,6 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     }
 }
 
-// ---- Single chain-pair structure alignment (se_main / TMalign_main, one of the two) ----
-void align_chain_pair(ChainPairAlignResult& result,
-    CoordArray& xa,
-    CoordArray& ya,
-    const string& seqx,
-    const string& seqy,
-    const string& secx,
-    const string& secy,
-    int xlen,
-    int ylen,
-    int cur_complex_mol_list,
-    double norm_len,
-    AlignCommonInput& common_inputs,
-    bool fast_opt,
-    int i_opt_val,
-    int u_opt_val,
-    int parallel_threads,
-    vector<string>& sequence)
-{
-    ChainPairAlignOptions align_opts;
-    align_opts.i_opt = i_opt_val;
-    align_opts.a_opt = common_inputs.user_options.a_opt;
-    align_opts.u_opt = u_opt_val;
-    align_opts.d_opt = common_inputs.user_options.d_opt;
-    align_opts.fast_opt = fast_opt;
-    align_opts.se_opt = common_inputs.control_options.se_opt;
-    align_opts.cp_opt = false;
-    align_opts.Lnorm = norm_len;
-    align_opts.d0_scale = common_inputs.user_options.d0_scale;
-    align_opts.TMcut = common_inputs.user_options.TMcut;
-    align_opts.parallel_threads = parallel_threads;
-    align_opts.ss_opt = 0;
-    align_opts.mol_type = cur_complex_mol_list;
-    align_chain_pair_core(result, xa, ya, seqx, seqy, secx, secy,
-        xlen, ylen, align_opts, sequence,
-        common_inputs.user_options.outfmt_opt);
-}
-
 // ---- Store one chain-pair alignment result into the all-against-all matrix ----
 void save_pair_result(const ChainPairAlignResult& result,
     AllChainPairsResult& pairwise,
@@ -1757,8 +1725,9 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
     align_chain_pair(align_result,
         chain1_coords, chain2_coords, chain1_seq, chain2_seq,
         chain1_sec, chain2_sec, chain1_len, chain2_len,
-        cur_complex_mol_list, 0, common_inputs, common_inputs.user_options.fast_opt, i_opt, 0, 1,
-        common_inputs.parsed_input.sequence);
+        mmalign_pair_options(common_inputs, cur_complex_mol_list, 0,
+            common_inputs.user_options.fast_opt, i_opt, 0, 1),
+        common_inputs.parsed_input.sequence, common_inputs.user_options.outfmt_opt);
 
     if (common_inputs.user_options.outfmt_opt == 0) print_version();
 
@@ -1858,9 +1827,9 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
             align_chain_pair(align_result,
                 chain1_coords, chain2_coords, chain1_seq, chain2_seq,
                 chain1_sec, chain2_sec, chain1_len, chain2_len,
-                mol_types, norm_len, common_inputs, fast_opt,
-                i_opt, 1, common_inputs.control_options.parallel_threads,
-                common_inputs.parsed_input.sequence);
+                mmalign_pair_options(common_inputs, mol_types, norm_len, fast_opt,
+                    i_opt, 1, common_inputs.control_options.parallel_threads),
+                common_inputs.parsed_input.sequence, common_inputs.user_options.outfmt_opt);
 
             // save align_result
             save_pair_result(align_result, pairwise,
