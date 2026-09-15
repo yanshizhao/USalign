@@ -233,3 +233,20 @@ int se_main(
 
     return 0; // zero for no exception
 }
+
+inline int se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& opt, const int outfmt_opt)
+{
+    return se_main(xa, ya, seqx, seqy,
+        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
+        res.seqM, res.seqxA, res.seqyA, res.do_vec,
+        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
+        xlen, ylen, sequence, opt.Lnorm, opt.d0_scale,
+        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt,
+        opt.mol_type, outfmt_opt, res.invmap);
+}

@@ -1565,20 +1565,15 @@ void align_chain_pair_core(ChainPairAlignResult& result,
         mol_type, opts.TMcut);
     else if (opts.se_opt)
     {
-        std::vector<int> invmap(ylen + 1);
+        result.invmap.assign(ylen + 1, 0);
         result.u0[0][0]=result.u0[1][1]=result.u0[2][2]=1;
         result.u0[0][1]=         result.u0[0][2]=
         result.u0[1][0]=         result.u0[1][2]=
         result.u0[2][0]=         result.u0[2][1]=
         result.t0[0]   =result.t0[1]   =result.t0[2]   =0;
         se_main(xa, ya, seqx, seqy,
-            result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-            result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-            result.seqM, result.seqxA, result.seqyA, result.do_vec,
-            result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-            xlen, ylen, sequence, opts.Lnorm, opts.d0_scale,
-            opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt,
-            mol_type, outfmt_opt, invmap);
+            result,
+            xlen, ylen, sequence, opts, outfmt_opt);
         if (outfmt_opt >= 2)
         {
             result.Liden=result.L_ali=0;
@@ -1586,7 +1581,7 @@ void align_chain_pair_core(ChainPairAlignResult& result,
             int r2;
             for (r2=0; r2<ylen; r2++)
             {
-                r1 = invmap[r2];
+                r1 = result.invmap[r2];
                 if (r1 < 0) continue;
                 result.L_ali += 1;
                 result.Liden += (seqx[r1] == seqy[r2]);
