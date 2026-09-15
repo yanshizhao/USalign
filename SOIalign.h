@@ -927,4 +927,88 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     return 0;
 }
 
+inline int soi_se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const ChainPairAlignOptions& opt, const int outfmt_opt,
+    std::vector<double>& dist_list,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+{
+    return soi_se_main(xa, ya, seqx, seqy,
+        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
+        res.seqM, res.seqxA, res.seqyA,
+        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
+        xlen, ylen, opt.Lnorm, opt.d0_scale,
+        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt,
+        opt.mol_type, outfmt_opt, res.invmap,
+        dist_list, secx_bond, secy_bond, mm_opt);
+}
+
+inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& opt,
+    std::vector<double>& dist_list,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+{
+    return SOIalign_main(xa_c, ya_c, xk, yk, closeK_opt,
+        seqx, seqy, secx, secy,
+        res.t0, res.u0,
+        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.d0_0, res.TM_0,
+        res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
+        res.seqM, res.seqxA, res.seqyA, res.invmap,
+        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
+        xlen, ylen, sequence, opt.Lnorm, opt.d0_scale,
+        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt, opt.fast_opt,
+        opt.mol_type, dist_list, secx_bond, secy_bond, mm_opt);
+}
+
+inline void soi_align_pair(ChainPairAlignResult& result,
+    CoordArray& xa, CoordArray& ya,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
+    const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy,
+    int xlen, int ylen,
+    const ChainPairAlignOptions& opts,
+    const std::vector<std::string>& sequence,
+    std::vector<double>& dist_list,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    int outfmt_opt)
+{
+    result.invmap.assign(ylen + 1, 0);
+    if (opts.se_opt)
+    {
+        result.u0[0][0]=result.u0[1][1]=result.u0[2][2]=1;
+        result.u0[0][1]=         result.u0[0][2]=
+        result.u0[1][0]=         result.u0[1][2]=
+        result.u0[2][0]=         result.u0[2][1]=
+        result.t0[0]   =result.t0[1]   =result.t0[2]   =0;
+        soi_se_main(xa, ya, seqx, seqy, result,
+            xlen, ylen, opts, outfmt_opt, dist_list, secx_bond, secy_bond, mm_opt);
+        if (outfmt_opt >= 2)
+        {
+            result.Liden=result.L_ali=0;
+            int r1;
+            int r2;
+            for (r2=0;r2<ylen;r2++)
+            {
+                r1=result.invmap[r2];
+                if (r1<0) continue;
+                result.L_ali+=1;
+                result.Liden+=(seqx[r1]==seqy[r2]);
+            }
+        }
+    }
+    else SOIalign_main(xa, ya, xk, yk, closeK_opt,
+        seqx, seqy, secx, secy, result,
+        xlen, ylen, sequence, opts, dist_list, secx_bond, secy_bond, mm_opt);
+}
+
 #endif

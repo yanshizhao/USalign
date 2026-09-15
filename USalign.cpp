@@ -952,6 +952,7 @@ struct SoiAlignParams
     int read_resi;
     int closeK_opt;
     int mm_opt;
+    ChainPairAlignOptions align;
 };
 
 void fill_soi_params(SoiAlignParams& params, const AlignCommonInput& common_inputs)
@@ -962,6 +963,18 @@ void fill_soi_params(SoiAlignParams& params, const AlignCommonInput& common_inpu
     params.read_resi  = (user_opts.o_opt != 0) ? 2 : 0;
     params.closeK_opt = ctrl_opts.closeK_opt;
     params.mm_opt     = ctrl_opts.mm_opt;
+    params.align.i_opt    = user_opts.i_opt;
+    params.align.a_opt    = user_opts.a_opt;
+    params.align.u_opt    = user_opts.u_opt;
+    params.align.d_opt    = user_opts.d_opt;
+    params.align.fast_opt = user_opts.fast_opt;
+    params.align.se_opt   = ctrl_opts.se_opt;
+    params.align.cp_opt   = ctrl_opts.cp_opt;
+    params.align.Lnorm    = user_opts.Lnorm_ass;
+    params.align.d0_scale = user_opts.d0_scale;
+    params.align.TMcut    = user_opts.TMcut;
+    params.align.parallel_threads = ctrl_opts.parallel_threads;
+    params.align.ss_opt   = 0;
 }
 
 int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
@@ -4627,74 +4640,18 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         assign_sec_bond(secy_bond, secy, ylen);
                     }
 
-                    // declare variable specific to this pair of TMalign
-                    Vec3 t0;
-                    RotMat u0;
-                    double TM1;
-                    double TM2;
-                    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0;
-                    double TM_0;
-                    double d0A;
-                    double d0B;
-                    double d0u;
-                    double d0a;
-                    double d0_out=5.0;
-                    string seqM, seqxA, seqyA;// for output alignment
-                    double rmsd0 = 0.0;
-                    int L_ali;                // Aligned length in standard_TMscore
-                    double Liden=0;
-                    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                    int n_ali=0;
-                    int n_ali8=0;
-                    bool force_fast_opt=(getmin(xlen,ylen)>1500)?true:user_opts.fast_opt;
-                    std::vector<int> invmap(ylen+1);
+                    ChainPairAlignResult result = { 0};
+                    result.d0_out = 5.0;
+                    ChainPairAlignOptions soi_align_opts = soi_params.align;
+                    soi_align_opts.fast_opt = (getmin(xlen,ylen)>1500)?true:user_opts.fast_opt;
+                    soi_align_opts.mol_type = mol_vec1[chain_i]+mol_vec2[chain_j];
                     std::vector<double> dist_list(ylen+1);
 
                     // entry function for structure alignment
-                    if (ctrl_opts.se_opt) 
-                    {
-                        u0[0][0]=u0[1][1]=u0[2][2]=1;
-                        u0[0][1]=         u0[0][2]=
-                        u0[1][0]=         u0[1][2]=
-                        u0[2][0]=         u0[2][1]=
-                        t0[0]   =t0[1]   =t0[2]   =0;
-                        soi_se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, user_opts.Lnorm_ass, user_opts.d0_scale,
-                        user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j],
-                        user_opts.outfmt_opt, invmap, dist_list,
-                        secx_bond, secy_bond, soi_params.mm_opt);
-                        if (user_opts.outfmt_opt>=2) 
-                        {
-                            Liden=L_ali=0;
-                            int r1;
-                            int r2;
-                            for (r2=0;r2<ylen;r2++)
-                            {
-                                r1=invmap[r2];
-                                if (r1<0) continue;
-                                L_ali+=1;
-                                Liden+=(seqx[r1]==seqy[r2]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                    SOIalign_main(xa, ya, xk, yk, soi_params.closeK_opt,
-                        seqx, seqy, secx, secy,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, invmap,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, parsed_input.sequence, user_opts.Lnorm_ass, user_opts.d0_scale,
-                        user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, force_fast_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j], dist_list,
-                        secx_bond, secy_bond, soi_params.mm_opt);
-                    }
+                    soi_align_pair(result, xa, ya, xk, yk, soi_params.closeK_opt,
+                        seqx, seqy, secx, secy, xlen, ylen, soi_align_opts,
+                        parsed_input.sequence, dist_list, secx_bond, secy_bond,
+                        soi_params.mm_opt, user_opts.outfmt_opt);
 
                     // print result
                     if (user_opts.outfmt_opt==0) print_version();
@@ -4702,11 +4659,8 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         user_opts.xname.substr(user_opts.dir1_opt.size()+user_opts.dir_opt.size()+user_opts.dirpair_opt.size()),
                         user_opts.yname.substr(user_opts.dir2_opt.size()+user_opts.dir_opt.size()+user_opts.dirpair_opt.size()),
                         chainID_list1[chain_i], chainID_list2[chain_j],
-                        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        rmsd0, d0_out, seqM,
-                        seqxA, seqyA, Liden,
-                        n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
-                        d0A, d0B, user_opts.Lnorm_ass, user_opts.d0_scale, d0a, d0u, 
+                        xlen, ylen, result,
+                        user_opts.Lnorm_ass, user_opts.d0_scale,
                         (user_opts.m_opt?user_opts.fname_matrix:"").c_str(),
                         user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, user_opts.o_opt,
                         user_opts.fname_super, user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
@@ -4719,7 +4673,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         int r2;
                         for (r2=0;r2<ylen;r2++)
                         {
-                            r1=invmap[r2];
+                            r1=result.invmap[r2];
                             if (r1<0) continue;
                             cout<<PDB_lines1[chain_i][r1].substr(12,15)<<'\t'
                                 <<PDB_lines2[chain_j][r2].substr(12,15)<<'\t'
@@ -4730,9 +4684,9 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                     }
 
                     // Done! Free memory
-                    seqM.clear();
-                    seqxA.clear();
-                    seqyA.clear();
+                    result.seqM.clear();
+                    result.seqxA.clear();
+                    result.seqyA.clear();
                     resi_vec2.clear();
                 } // chain_j
                 if (parsed_input.chain2_list.size()>1)
