@@ -2799,6 +2799,27 @@ void output_results(const string xname, const string yname,
             xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
 }
 
+void output_results(const string xname, const string yname,
+    const string chainID1, const string chainID2,
+    const int xlen, const int ylen, const ChainPairAlignResult& res,
+    const double Lnorm_ass, const double d0_scale,
+    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
+    const int mm_opt, const int split_opt, const int o_opt,
+    const string fname_super, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const int mirror_opt,
+    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    std::ostream& os = std::cout)
+{
+    output_results(xname, yname, chainID1, chainID2, xlen, ylen,
+        res.t0, res.u0, res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.rmsd0, res.d0_out, res.seqM, res.seqxA, res.seqyA, res.Liden,
+        res.n_ali8, res.L_ali, res.TM_ali, res.rmsd_ali, res.TM_0, res.d0_0,
+        res.d0A, res.d0B, Lnorm_ass, d0_scale, res.d0a, res.d0u,
+        fname_matrix, outfmt_opt, ter_opt, mm_opt, split_opt, o_opt,
+        fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+        resi_vec1, resi_vec2, os);
+}
+
 void output_mTMalign_results(const string xname, const string yname,
     const string chainID1, const string chainID2,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
