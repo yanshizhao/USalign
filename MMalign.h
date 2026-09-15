@@ -1183,6 +1183,23 @@ inline void parse_chain_list(const vector<string>&chain_list,
     }
 }
 
+inline void parse_chain_list(const vector<string>&chain_list,
+    ComplexData& complex,
+    const int ter_opt, const int split_opt,
+    const string mol_opt, const int infmt_opt, const string atom_opt,
+    const bool autojustify, const int mirror_opt, const int het_opt,
+    const int o_opt, const vector<string> &chain2parse,
+    const vector<string> &model2parse)
+{
+    parse_chain_list(chain_list,
+        complex.coords, complex.seqs, complex.secs,
+        complex.mol_types, complex.lengths, complex.chain_ids,
+        ter_opt, split_opt, mol_opt, infmt_opt, atom_opt,
+        autojustify, mirror_opt, het_opt,
+        complex.total_len_aa, complex.total_len_na, o_opt, complex.resi,
+        chain2parse, model2parse);
+}
+
 inline int copy_chain_pair_data(
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,

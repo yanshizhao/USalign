@@ -1296,18 +1296,14 @@ bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_p
 {
     UserOptions& uo = common_inputs.user_options;
     ParsedInput& pi = common_inputs.parsed_input;
-    parse_chain_list(mm_params.chain1_list, parsed.complex1.coords, parsed.complex1.seqs,
-        parsed.complex1.secs, parsed.complex1.mol_types, parsed.complex1.lengths,
-        parsed.complex1.chain_ids, uo.ter_opt, uo.split_opt, uo.mol_opt,
+    parse_chain_list(mm_params.chain1_list, parsed.complex1,
+        uo.ter_opt, uo.split_opt, uo.mol_opt,
         uo.infmt1_opt, uo.atom_opt, pi.autojustify, uo.mirror_opt,
-        uo.het_opt, parsed.complex1.total_len_aa, parsed.complex1.total_len_na,
-        uo.o_opt, parsed.complex1.resi, uo.chain2parse1, uo.model2parse1);
-    parse_chain_list(mm_params.chain2_list, parsed.complex2.coords, parsed.complex2.seqs,
-        parsed.complex2.secs, parsed.complex2.mol_types, parsed.complex2.lengths,
-        parsed.complex2.chain_ids, uo.ter_opt, uo.split_opt, uo.mol_opt,
+        uo.het_opt, uo.o_opt, uo.chain2parse1, uo.model2parse1);
+    parse_chain_list(mm_params.chain2_list, parsed.complex2,
+        uo.ter_opt, uo.split_opt, uo.mol_opt,
         uo.infmt2_opt, uo.atom_opt, pi.autojustify, 0,
-        uo.het_opt, parsed.complex2.total_len_aa, parsed.complex2.total_len_na,
-        uo.o_opt, parsed.complex2.resi, uo.chain2parse2, uo.model2parse2);
+        uo.het_opt, uo.o_opt, uo.chain2parse2, uo.model2parse2);
 
     if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
     {
