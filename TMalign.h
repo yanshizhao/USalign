@@ -8,6 +8,7 @@
 #include "NW.h"
 #include "Kabsch.h"
 #include "NWalign.h"
+#include "align_types.h"
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -3841,6 +3842,23 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     seqM =seqM.substr(0,kk);
 
     return 0; // zero for no exception
+}
+inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& opt)
+{
+    return TMalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
+        res.t0, res.u0, res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
+        res.seqM, res.seqxA, res.seqyA, res.do_vec,
+        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
+        xlen, ylen, sequence, opt.Lnorm, opt.d0_scale,
+        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt, opt.fast_opt,
+        opt.mol_type, opt.TMcut, opt.parallel_threads, opt.ss_opt);
 }
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
