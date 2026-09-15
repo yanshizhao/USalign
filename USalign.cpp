@@ -1552,17 +1552,10 @@ void align_chain_pair_core(ChainPairAlignResult& result,
     const vector<string>& sequence,
     int outfmt_opt)
 {
-    const int mol_type = opts.mol_type;
-
     if (opts.cp_opt) CPalign_main(
         xa, ya, seqx, seqy, secx, secy,
-        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-        result.seqM, result.seqxA, result.seqyA, result.do_vec,
-        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-        xlen, ylen, sequence, opts.Lnorm, opts.d0_scale,
-        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, opts.fast_opt,
-        mol_type, opts.TMcut);
+        result,
+        xlen, ylen, sequence, opts);
     else if (opts.se_opt)
     {
         result.invmap.assign(ylen + 1, 0);
