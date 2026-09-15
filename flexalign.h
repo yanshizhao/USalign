@@ -1152,24 +1152,20 @@ inline void output_flexalign_pymol(const string xname, const string yname,
 }
 
 //output the final results
-struct FlexAlignResult
+struct FlexAlignResult : ChainPairAlignResult
 {
-    Vec3 t0;                        
-    RotMat u0;                      
     vector<vector<double> > tu_vec;
-    double TM1, TM2, TM3, TM4, TM5;
-    double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out;
-    string seqM, seqxA, seqyA;
-    vector<double> do_vec;
-    double rmsd0, Liden, TM_ali, rmsd_ali;
-    int L_ali, n_ali, n_ali8, hingeNum;
+    int hingeNum;
 
-    FlexAlignResult() : TM1(-1.0), TM2(-1.0), TM3(-1.0), TM4(-1.0), TM5(-1.0),
-                        d0_0(0.0), TM_0(0.0), d0A(0.0), d0B(0.0), d0u(0.0), d0a(0.0), d0_out(5.0),
-                        rmsd0(0.0), Liden(0.0), TM_ali(0.0), rmsd_ali(0.0),
-                        L_ali(0), n_ali(0), n_ali8(0), hingeNum(0),
-                        t0{0.0, 0.0, 0.0}
+    FlexAlignResult()
     {
+        TM1 = TM2 = TM3 = TM4 = TM5 = -1.0;
+        d0_0 = TM_0 = d0A = d0B = d0u = d0a = 0.0;
+        d0_out = 5.0;
+        rmsd0 = Liden = TM_ali = rmsd_ali = 0.0;
+        L_ali = n_ali = n_ali8 = 0;
+        hingeNum = 0;
+        t0[0] = t0[1] = t0[2] = 0.0;
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
                 u0[i][j] = (i == j) ? 1.0 : 0.0;
@@ -1969,25 +1965,8 @@ static inline void extract_unalign_subcoords(
     }
 }
 
-struct TMalignResult {
-    double TM1, TM2, TM3, TM4, TM5;
-    double d0_0, TM_0;
-    double d0A, d0B, d0u, d0a;
-    double d0_out = 5.0;
-    double rmsd0 = 0.0;
-    int L_ali = 0;
-    double Liden = 0, TM_ali = 0, rmsd_ali = 0;
-    int n_ali = 0, n_ali8 = 0;
-};
-
-struct SeMianResult {
-    std::string seqM, seqxA, seqyA;
-};
-
 struct CurHingeResult {
-    TMalignResult tmalign_res;
-    SeMianResult se_res;
-    std::vector<int> invmap_h;
+    ChainPairAlignResult tmalign_res;
 };
 
 // Copy main alignment output state into CurHingeResult
@@ -2001,14 +1980,14 @@ static inline void fill_hing_res(
 {
     cur_hing_res.tmalign_res.TM1 = TM1;  cur_hing_res.tmalign_res.TM2 = TM2;  cur_hing_res.tmalign_res.TM3 = TM3;
     cur_hing_res.tmalign_res.TM4 = TM4;  cur_hing_res.tmalign_res.TM5 = TM5;  cur_hing_res.tmalign_res.rmsd0 = rmsd0;
-    cur_hing_res.se_res.seqM = seqM;
-    cur_hing_res.se_res.seqxA = seqxA;
-    cur_hing_res.se_res.seqyA = seqyA;
+    cur_hing_res.tmalign_res.seqM = seqM;
+    cur_hing_res.tmalign_res.seqxA = seqxA;
+    cur_hing_res.tmalign_res.seqyA = seqyA;
     cur_hing_res.tmalign_res.n_ali = n_ali;
     cur_hing_res.tmalign_res.n_ali8 = n_ali8;
-    cur_hing_res.invmap_h.assign(ylen + 1, -1);
+    cur_hing_res.tmalign_res.invmap.assign(ylen + 1, -1);
     for (int j = 0; j < ylen + 1; j++)
-        cur_hing_res.invmap_h[j] = invmap[j];
+        cur_hing_res.tmalign_res.invmap[j] = invmap[j];
 }
 
 static inline void update_global_res(
@@ -2021,21 +2000,21 @@ static inline void update_global_res(
         const Vec3& t0, const RotMat& u0,
         DoubleMatrix& tu_vec)
 {
-    TM1 = cur_hing_res.tmalign_res.TM1;  
-    TM2 = cur_hing_res.tmalign_res.TM2;  
+    TM1 = cur_hing_res.tmalign_res.TM1;
+    TM2 = cur_hing_res.tmalign_res.TM2;
     TM3 = cur_hing_res.tmalign_res.TM3;
-    TM4 = cur_hing_res.tmalign_res.TM4;  
-    TM5 = cur_hing_res.tmalign_res.TM5;  
+    TM4 = cur_hing_res.tmalign_res.TM4;
+    TM5 = cur_hing_res.tmalign_res.TM5;
     rmsd0 = cur_hing_res.tmalign_res.rmsd0;
-    seqM  = cur_hing_res.se_res.seqM;
-    seqxA = cur_hing_res.se_res.seqxA;
-    seqyA = cur_hing_res.se_res.seqyA;
+    seqM  = cur_hing_res.tmalign_res.seqM;
+    seqxA = cur_hing_res.tmalign_res.seqxA;
+    seqyA = cur_hing_res.tmalign_res.seqyA;
     n_ali  = cur_hing_res.tmalign_res.n_ali;
     n_ali8 = cur_hing_res.tmalign_res.n_ali8;
     vector<double> tu_tmp(12, 0);
     t_u2tu(t0, u0, tu_tmp);
     tu_vec.push_back(tu_tmp);
-    invmap = cur_hing_res.invmap_h;
+    invmap = cur_hing_res.tmalign_res.invmap;
 }
 
 inline void search_hinge_regions(
@@ -2075,7 +2054,7 @@ inline void search_hinge_regions(
             cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3, cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5,
             cur_hing_res.tmalign_res.d0_0, cur_hing_res.tmalign_res.TM_0,
             cur_hing_res.tmalign_res.d0A, cur_hing_res.tmalign_res.d0B, cur_hing_res.tmalign_res.d0u, cur_hing_res.tmalign_res.d0a,
-            cur_hing_res.tmalign_res.d0_out, cur_hing_res.se_res.seqM, cur_hing_res.se_res.seqxA, cur_hing_res.se_res.seqyA,
+            cur_hing_res.tmalign_res.d0_out, cur_hing_res.tmalign_res.seqM, cur_hing_res.tmalign_res.seqxA, cur_hing_res.tmalign_res.seqyA,
             do_vec, cur_hing_res.tmalign_res.rmsd0, cur_hing_res.tmalign_res.L_ali, cur_hing_res.tmalign_res.Liden,
             cur_hing_res.tmalign_res.TM_ali, cur_hing_res.tmalign_res.rmsd_ali,
             cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
@@ -2090,16 +2069,16 @@ inline void search_hinge_regions(
             cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3,
             cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5, d0_0, TM_0,
             d0A, d0B, d0u, d0a, d0_out,
-            cur_hing_res.se_res.seqM, cur_hing_res.se_res.seqxA, cur_hing_res.se_res.seqyA,
+            cur_hing_res.tmalign_res.seqM, cur_hing_res.tmalign_res.seqxA, cur_hing_res.tmalign_res.seqyA,
             do_vec, cur_hing_res.tmalign_res.rmsd0, L_ali, Liden, TM_ali, rmsd_ali,
             cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
             xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, cur_hing_res.invmap_h, hinge+1);
+            a_opt, u_opt, d_opt, mol_type, 0, cur_hing_res.tmalign_res.invmap, hinge+1);
 
         int new_ali=0;
-        for (r=0;r<cur_hing_res.se_res.seqM.size();r++)
+        for (r=0;r<cur_hing_res.tmalign_res.seqM.size();r++)
         {
-           new_ali+=(cur_hing_res.se_res.seqM[r]==hinge+'1');
+           new_ali+=(cur_hing_res.tmalign_res.seqM[r]==hinge+'1');
         }
         if (cur_hing_res.tmalign_res.n_ali8 - n_ali8<5)
         {
