@@ -5306,7 +5306,6 @@ int main(int argc, char *argv[])
     }
     else if (ctrl_opts.mm_opt==2)
         MMdock(common_inputs);
-    else if (ctrl_opts.mm_opt==3) ; // should be changed to mm_opt=0, cp_opt=true
     else if (ctrl_opts.mm_opt==4)
         mTMalign(common_inputs);
     else if (ctrl_opts.mm_opt==5 || ctrl_opts.mm_opt==6)
