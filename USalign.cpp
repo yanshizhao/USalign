@@ -5217,8 +5217,6 @@ int main(int argc, char *argv[])
     ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
 
-    vector<pair<string,string> > chain_pair_list; // only when -dirpair is set
-
     parse_arguments(argc, argv, common_inputs);
 
     postprocess_arguments(common_inputs);
