@@ -3652,33 +3652,33 @@ int mTMalign(AlignCommonInput& common_inputs)
     bool fast_opt = user_opts.fast_opt;
 
     // declare previously global variables
-    DoubleCube a_vec;  // atomic structure
-    DoubleCube ua_vec; // unchanged atomic structure 
-    CharMatrix seq_vec;  // sequence of complex
-    CharMatrix sec_vec;  // secondary structure of complex
-    vector<int> mol_vec;           // molecule type of complex1, RNA if >0
-    vector<string> chainID_list;   // list of chainID
-    vector<int> len_vec;           // length of complex
     int    i,j;                    // chain index
     int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
     string secx;                   // for the secondary structure
     string secy;
-    int    len_aa,len_na;          // total length of protein and RNA/DNA
-    vector<string> resi_vec;       // residue index for chain
 
     // parse chain list
-    parse_chain_list(parsed_input.chain1_list, a_vec, seq_vec, sec_vec, mol_vec,
-        len_vec, chainID_list, user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, len_aa, len_na, user_opts.o_opt,
-        resi_vec, user_opts.chain2parse1, user_opts.model2parse1);
-    int chain_num=a_vec.size();
+    ComplexData complex;
+    parse_chain_list(parsed_input.chain1_list, complex,
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, user_opts.o_opt,
+        user_opts.chain2parse1, user_opts.model2parse1);
+    int chain_num=complex.coords.size();
     if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
-    // Save original coordinates for ccTM-score calculation and -o/-m output
-    for (i=0;i<chain_num;i++) ua_vec.push_back(a_vec[i]);
-    int cur_complex_mol_list=0;
-    int total_len=0;
+    DoubleCube a_vec = complex.coords;
+    DoubleCube ua_vec = complex.coords;
+    const CharMatrix& seq_vec = complex.seqs;
+    const CharMatrix& sec_vec = complex.secs;
+    const vector<int>& mol_vec = complex.mol_types;
+    const vector<string>& chainID_list = complex.chain_ids;
+    const vector<int>& len_vec = complex.lengths;
+    const vector<string>& resi_vec = complex.resi;
+    int    len_aa = complex.total_len_aa;
+    int    len_na = complex.total_len_na;
+    int    cur_complex_mol_list=0;
+    int    total_len=0;
     xlen=0;
     for (i=0; i<chain_num; i++)
     {
@@ -4329,11 +4329,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     vector<string>().swap(xname_vec);
     vector<string>().swap(yname_vec);
     DoubleCube().swap(a_vec); // structure of complex
-    CharMatrix().swap(seq_vec); // sequence of complex
-    CharMatrix().swap(sec_vec); // secondary structure of complex
-    vector<int>().swap(mol_vec);           // molecule type of complex1, RNA if >0
-    vector<string>().swap(chainID_list);   // list of chainID
-    vector<int>().swap(len_vec);           // length of complex
     vector<double>().swap(TM_vec);
     vector<double>().swap(d0_vec);
     vector<double>().swap(seqID_vec);
