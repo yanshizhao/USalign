@@ -2853,6 +2853,142 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 }
 
 // alignment individual chains to a complex.
+// ---- Assign chains by the TM-score matrix and emit the dock output (mm2) ----
+void mmdock_assign_and_output(AlignCommonInput& common_inputs,
+    const ComplexData& complex1, const ComplexData& complex2,
+    DoubleMatrix& TMave_mat,
+    vector<vector<string> >& seqxA_mat, vector<vector<string> >& seqyA_mat,
+    int chain1_num, int chain2_num, bool fast_opt)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+
+    int    i,j;                    // chain index
+    int    xlen, ylen;             // chain length
+    string seqx, seqy;             // for the protein sequence
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
+    string secx;                   // for the secondary structure
+    string secy;
+
+    std::vector<int> assign1_list(chain1_num);
+    std::vector<int> assign2_list(chain2_num);
+    enhanced_greedy_search(TMave_mat, assign1_list,
+        assign2_list, chain1_num, chain2_num);
+
+    if (user_opts.outfmt_opt==0) print_version();
+    RotArray ut_mat; // rotation matrices for all-against-all alignment
+    ut_mat.resize(chain1_num);
+    int ui;
+    int uj;
+    vector<string>xname_vec;
+    vector<string>yname_vec;
+    vector<double>TM_vec;
+    for (i=0;i<chain1_num;i++)
+    {
+        j=assign1_list[i];
+        xname_vec.push_back(user_opts.xname+complex1.chain_ids[i]);
+        if (j<0)
+        {
+            cerr<<"Warning! "<<complex1.chain_ids[i]<<" cannot be alighed"<<endl;
+            for (ui=0;ui<3;ui++)
+            {
+                for (uj=0;uj<4;uj++) ut_mat[i][ui*3+uj]=0;
+                ut_mat[i][ui*3+ui]=1;
+            }
+            yname_vec.push_back(user_opts.yname);
+            continue;
+        }
+        yname_vec.push_back(user_opts.yname+complex2.chain_ids[j]);
+
+        xlen =complex1.lengths[i];
+        secx.resize(xlen+1);
+        xa.clear();
+        xa.reserve(xlen);
+        copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i], xlen,xa,seqx,secx);
+
+        ylen =complex2.lengths[j];
+        secy.resize(ylen+1);
+        ya.clear();
+        ya.reserve(ylen);
+        copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j], ylen,ya,seqy,secy);
+
+        ChainPairAlignResult result = { 0};
+        result.d0_out = 5.0;
+        ChainPairAlignOptions align_opts;
+        align_opts.i_opt = 3;
+        align_opts.a_opt = user_opts.a_opt;
+        align_opts.u_opt = user_opts.u_opt;
+        align_opts.d_opt = user_opts.d_opt;
+        align_opts.fast_opt = fast_opt;
+        align_opts.se_opt = false;
+        align_opts.cp_opt = false;
+        align_opts.Lnorm = user_opts.Lnorm_ass;
+        align_opts.d0_scale = user_opts.d0_scale;
+        align_opts.TMcut = -1;
+        align_opts.parallel_threads = 1;
+        align_opts.ss_opt = 0;
+        align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
+
+        int c;
+        for (c=0; c<parsed_input.sequence.size(); c++) parsed_input.sequence[c].clear();
+        parsed_input.sequence.clear();
+        parsed_input.sequence.push_back(seqxA_mat[i][j]);
+        parsed_input.sequence.push_back(seqyA_mat[i][j]);
+            
+        // entry function for structure alignment
+        align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
+            xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
+        
+        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=result.u0[ui][uj];
+        for (uj=0;uj<3;uj++) ut_mat[i][9+uj]=result.t0[uj];
+
+        TM_vec.push_back(result.TM1);
+        TM_vec.push_back(result.TM2);
+
+        if (user_opts.outfmt_opt<2) output_results(
+            user_opts.xname.c_str(), user_opts.yname.c_str(),
+            complex1.chain_ids[i], complex2.chain_ids[j],
+            xlen, ylen, result,
+            user_opts.Lnorm_ass, user_opts.d0_scale, 
+            "", user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, 
+            false, "",//o_opt, fname_super+complex1.chain_ids[i], 
+            false, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
+            complex1.resi, complex2.resi);
+        
+        // clean up
+        result.seqM.clear();
+        result.seqxA.clear();
+        result.seqyA.clear();
+        result.do_vec.clear();
+    }
+    if (user_opts.outfmt_opt==2)
+    {
+        double TM=0;
+        for (i=0;i<TM_vec.size();i++) TM+=TM_vec[i]*TM_vec[i];
+        TM=sqrt(TM/TM_vec.size());
+        string query_name=user_opts.xname;
+        string template_name=user_opts.yname;
+
+        for (i=0;i<chain1_num;i++)
+        {
+            j=assign1_list[i];
+            if (j<0) continue;
+            query_name   +=complex1.chain_ids[i];
+            template_name+=complex2.chain_ids[j];
+        }
+        fcout("%s\t%s\t%.4f\n", query_name, template_name, TM);
+        query_name.clear();
+        template_name.clear();
+    }
+
+    if (user_opts.m_opt) output_dock_rotation_matrix(user_opts.fname_matrix,
+        xname_vec,yname_vec, ut_mat, assign1_list);
+
+    if (user_opts.o_opt) output_dock(parsed_input.chain1_list, user_opts.ter_opt, user_opts.split_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, user_opts.mirror_opt, ut_mat, user_opts.fname_super);
+}
+
 int MMdock(AlignCommonInput& common_inputs)
 {
     UserOptions& user_opts = common_inputs.user_options;
@@ -3091,127 +3227,9 @@ int MMdock(AlignCommonInput& common_inputs)
     CharMatrix().swap(trimmed.secs);
     vector<int> ().swap(trimmed.lengths);
 
-    std::vector<int> assign1_list(chain1_num);
-    std::vector<int> assign2_list(chain2_num);
-    enhanced_greedy_search(TMave_mat, assign1_list,
-        assign2_list, chain1_num, chain2_num);
+    mmdock_assign_and_output(common_inputs, complex1, complex2, TMave_mat,
+        seqxA_mat, seqyA_mat, chain1_num, chain2_num, fast_opt);
 
-    if (user_opts.outfmt_opt==0) print_version();
-    RotArray ut_mat; // rotation matrices for all-against-all alignment
-    ut_mat.resize(chain1_num);
-    int ui;
-    int uj;
-    vector<string>xname_vec;
-    vector<string>yname_vec;
-    vector<double>TM_vec;
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        xname_vec.push_back(user_opts.xname+complex1.chain_ids[i]);
-        if (j<0)
-        {
-            cerr<<"Warning! "<<complex1.chain_ids[i]<<" cannot be alighed"<<endl;
-            for (ui=0;ui<3;ui++)
-            {
-                for (uj=0;uj<4;uj++) ut_mat[i][ui*3+uj]=0;
-                ut_mat[i][ui*3+ui]=1;
-            }
-            yname_vec.push_back(user_opts.yname);
-            continue;
-        }
-        yname_vec.push_back(user_opts.yname+complex2.chain_ids[j]);
-
-        xlen =complex1.lengths[i];
-        secx.resize(xlen+1);
-        xa.clear();
-        xa.reserve(xlen);
-        copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i], xlen,xa,seqx,secx);
-
-        ylen =complex2.lengths[j];
-        secy.resize(ylen+1);
-        ya.clear();
-        ya.reserve(ylen);
-        copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j], ylen,ya,seqy,secy);
-
-        ChainPairAlignResult result = { 0};
-        result.d0_out = 5.0;
-        ChainPairAlignOptions align_opts;
-        align_opts.i_opt = 3;
-        align_opts.a_opt = user_opts.a_opt;
-        align_opts.u_opt = user_opts.u_opt;
-        align_opts.d_opt = user_opts.d_opt;
-        align_opts.fast_opt = fast_opt;
-        align_opts.se_opt = false;
-        align_opts.cp_opt = false;
-        align_opts.Lnorm = user_opts.Lnorm_ass;
-        align_opts.d0_scale = user_opts.d0_scale;
-        align_opts.TMcut = -1;
-        align_opts.parallel_threads = 1;
-        align_opts.ss_opt = 0;
-        align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
-
-        int c;
-        for (c=0; c<parsed_input.sequence.size(); c++) parsed_input.sequence[c].clear();
-        parsed_input.sequence.clear();
-        parsed_input.sequence.push_back(seqxA_mat[i][j]);
-        parsed_input.sequence.push_back(seqyA_mat[i][j]);
-            
-        // entry function for structure alignment
-        align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
-        
-        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=result.u0[ui][uj];
-        for (uj=0;uj<3;uj++) ut_mat[i][9+uj]=result.t0[uj];
-
-        TM_vec.push_back(result.TM1);
-        TM_vec.push_back(result.TM2);
-
-        if (user_opts.outfmt_opt<2) output_results(
-            user_opts.xname.c_str(), user_opts.yname.c_str(),
-            complex1.chain_ids[i], complex2.chain_ids[j],
-            xlen, ylen, result,
-            user_opts.Lnorm_ass, user_opts.d0_scale, 
-            "", user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, 
-            false, "",//o_opt, fname_super+complex1.chain_ids[i], 
-            false, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
-            complex1.resi, complex2.resi);
-        
-        // clean up
-        result.seqM.clear();
-        result.seqxA.clear();
-        result.seqyA.clear();
-        result.do_vec.clear();
-    }
-    if (user_opts.outfmt_opt==2)
-    {
-        double TM=0;
-        for (i=0;i<TM_vec.size();i++) TM+=TM_vec[i]*TM_vec[i];
-        TM=sqrt(TM/TM_vec.size());
-        string query_name=user_opts.xname;
-        string template_name=user_opts.yname;
-
-        for (i=0;i<chain1_num;i++)
-        {
-            j=assign1_list[i];
-            if (j<0) continue;
-            query_name   +=complex1.chain_ids[i];
-            template_name+=complex2.chain_ids[j];
-        }
-        fcout("%s\t%s\t%.4f\n", query_name, template_name, TM);
-        query_name.clear();
-        template_name.clear();
-    }
-
-    if (user_opts.m_opt) output_dock_rotation_matrix(user_opts.fname_matrix,
-        xname_vec,yname_vec, ut_mat, assign1_list);
-
-    if (user_opts.o_opt) output_dock(parsed_input.chain1_list, user_opts.ter_opt, user_opts.split_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, user_opts.mirror_opt, ut_mat, user_opts.fname_super);
-
-    // clean up everything
-    vector<double>().swap(TM_vec);
-    vector<string>().swap(xname_vec);
-    vector<string>().swap(yname_vec);
 
 
     vector<vector<string> >().swap(seqxA_mat);
