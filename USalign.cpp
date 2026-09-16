@@ -932,7 +932,12 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const std::vector<std::string>& pdb_lines2,
     const std::string& chain_id1, const std::string& chain_id2,
     const std::vector<std::string>& resi_vec1,
-    const std::vector<std::string>& resi_vec2);
+    const std::vector<std::string>& resi_vec2,
+    const std::vector<double>* dist_arg = NULL);
+void output_soi_dist_block(std::ostream& os, int ylen,
+    const std::vector<int>& invmap, const std::vector<double>& dist_list,
+    const std::vector<std::string>& pdb_lines1,
+    const std::vector<std::string>& pdb_lines2);
 
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs)
 {
@@ -1612,7 +1617,8 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const vector<string>& pdb_lines2,
     const std::string& chain_id1, const std::string& chain_id2,
     const std::vector<std::string>& resi_vec1,
-    const std::vector<std::string>& resi_vec2)
+    const std::vector<std::string>& resi_vec2,
+    const std::vector<double>* dist_arg)
 {
     const UserOptions& user_opts = common_inputs.user_options;
     const ControlOptions& ctrl_opts = common_inputs.control_options;
@@ -1637,11 +1643,34 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
         user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, user_opts.o_opt,
         user_opts.fname_super, user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
         resi_vec1, resi_vec2);
-    if (ctrl_opts.do_opt || (ctrl_opts.cp_opt && user_opts.outfmt_opt <= 0))
+    if (dist_arg) output_soi_dist_block(std::cout, ylen,
+        result.invmap, *dist_arg, pdb_lines1, pdb_lines2);
+    else if (ctrl_opts.do_opt || (ctrl_opts.cp_opt && user_opts.outfmt_opt <= 0))
     {
         output_do_block(std::cout, result.seqxA, result.seqyA,
             pdb_lines1, pdb_lines2, result.do_vec, right_num);
     }
+}
+
+void output_soi_dist_block(std::ostream& os, int ylen,
+    const std::vector<int>& invmap, const std::vector<double>& dist_list,
+    const std::vector<std::string>& pdb_lines1,
+    const std::vector<std::string>& pdb_lines2)
+{
+    os << "###############\t###############\t#########\n";
+    os << "#Aligned atom 1\tAligned atom 2 \tDistance#\n";
+    int r1;
+    int r2;
+    for (r2=0;r2<ylen;r2++)
+    {
+        r1=invmap[r2];
+        if (r1<0) continue;
+        os<<pdb_lines1[r1].substr(12,15)<<'\t'
+            <<pdb_lines2[r2].substr(12,15)<<'\t'
+            <<std::setw(9)<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+            <<dist_list[r2]<<'\n';
+    }
+    os << "###############\t###############\t#########\n";
 }
 
 // ---- Store one chain-pair alignment result into the all-against-all matrix ----
@@ -4453,34 +4482,12 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         soi_params.mm_opt, user_opts.outfmt_opt);
 
                     // print result
-                    if (user_opts.outfmt_opt==0) print_version();
-                    output_results(
-                        user_opts.xname.substr(user_opts.dir1_opt.size()+user_opts.dir_opt.size()+user_opts.dirpair_opt.size()),
-                        user_opts.yname.substr(user_opts.dir2_opt.size()+user_opts.dir_opt.size()+user_opts.dirpair_opt.size()),
-                        chainID_list1[chain_i], chainID_list2[chain_j],
+                    output_pair_alignment(common_inputs,
+                        user_opts.xname, user_opts.yname,
                         xlen, ylen, result,
-                        user_opts.Lnorm_ass, user_opts.d0_scale,
-                        (user_opts.m_opt?user_opts.fname_matrix:"").c_str(),
-                        user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, user_opts.o_opt,
-                        user_opts.fname_super, user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
-                        resi_vec1, resi_vec2);
-                    if (user_opts.outfmt_opt<=0)
-                    {
-                        cout<<"###############\t###############\t#########"<<endl;
-                        cout<<"#Aligned atom 1\tAligned atom 2 \tDistance#"<<endl;
-                        int r1;
-                        int r2;
-                        for (r2=0;r2<ylen;r2++)
-                        {
-                            r1=result.invmap[r2];
-                            if (r1<0) continue;
-                            cout<<PDB_lines1[chain_i][r1].substr(12,15)<<'\t'
-                                <<PDB_lines2[chain_j][r2].substr(12,15)<<'\t'
-                                <<setw(9)<<setiosflags(ios::fixed)<<setprecision(3)
-                                <<dist_list[r2]<<'\n';
-                        }
-                        cout<<"###############\t###############\t#########"<<endl;
-                    }
+                        PDB_lines1[chain_i], PDB_lines2[chain_j],
+                        chainID_list1[chain_i], chainID_list2[chain_j],
+                        resi_vec1, resi_vec2, &dist_list);
 
                     // Done! Free memory
                     result.seqM.clear();
