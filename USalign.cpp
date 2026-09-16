@@ -811,11 +811,7 @@ inline void run_mmdock_parallel(
     int len_aa, int len_na,
     int outfmt_opt, double TMcut, double d0_scale,
     bool fast_opt,
-    const DoubleCube& ya_trim_vec,
-    const CharMatrix& seqy_trim_vec,
-    const CharMatrix& secy_trim_vec,
-    const vector<int>& ylen_trim_vec,
-    int trim_chain_count,
+    const TrimmedComplex& trimmed,
     int parallel_threads = 1)
 {
     #pragma omp parallel for schedule(dynamic, 1) num_threads(parallel_threads)
@@ -866,14 +862,14 @@ inline void run_mmdock_parallel(
             result.d0_out = 5.0;
 
             // entry function for structure alignment
-            if (trim_chain_count && ylen_trim_vec[j] < ylen)
+            if (trimmed.chain_count && trimmed.lengths[j] < ylen)
             {
                 // ---- trimComplex branch ----
-                int ylen_trim = ylen_trim_vec[j];
+                int ylen_trim = trimmed.lengths[j];
                 CoordArray ya_trim(ylen_trim);
                 string seqy_trim, secy_trim;
                 secy_trim.resize(ylen_trim + 1);
-                copy_chain_data(ya_trim_vec[j], seqy_trim_vec[j], secy_trim_vec[j],
+                copy_chain_data(trimmed.coords[j], trimmed.seqs[j], trimmed.secs[j],
                     ylen_trim, ya_trim, seqy_trim, secy_trim);
 
                 TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
@@ -2972,21 +2968,18 @@ int MMdock(AlignCommonInput& common_inputs)
     vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
 
     // trimComplex
-    DoubleCube ya_trim_vec; // structure of complex2
-    CharMatrix seqy_trim_vec; // sequence of complex2
-    CharMatrix secy_trim_vec; // secondary structure of complex2
-    vector<int> ylen_trim_vec;          // length of complex2
-    int Lchain_aa_max1=0;
-    int Lchain_na_max1=0;
+    TrimmedComplex trimmed;
+    trimmed.max_aa_len=0;
+    trimmed.max_na_len=0;
     for (i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
-        if      (mol_vec1[i]>0  && xlen>Lchain_na_max1) Lchain_na_max1=xlen;
-        else if (mol_vec1[i]<=0 && xlen>Lchain_aa_max1) Lchain_aa_max1=xlen;
+        if      (mol_vec1[i]>0  && xlen>trimmed.max_na_len) trimmed.max_na_len=xlen;
+        else if (mol_vec1[i]<=0 && xlen>trimmed.max_aa_len) trimmed.max_aa_len=xlen;
     }
-    int trim_chain_count=trimComplex(ya_trim_vec,seqy_trim_vec,
-        secy_trim_vec,ylen_trim_vec,ya_vec,seqy_vec,secy_vec,ylen_vec,
-        mol_vec2,Lchain_aa_max1,Lchain_na_max1);
+    trimmed.chain_count=trimComplex(trimmed.coords,trimmed.seqs,
+        trimmed.secs,trimmed.lengths,ya_vec,seqy_vec,secy_vec,ylen_vec,
+        mol_vec2,trimmed.max_aa_len,trimmed.max_na_len);
     int    ylen_trim;             // chain length
     CoordArray ya_trim;             // structure of single chain
     std::string seqy_trim;           // for the protein sequence
@@ -3007,8 +3000,7 @@ int MMdock(AlignCommonInput& common_inputs)
             seqxA_mat, seqyA_mat,
             chain1_num, chain2_num, len_aa, len_na,
             user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
-            ya_trim_vec, seqy_trim_vec, secy_trim_vec, ylen_trim_vec,
-            trim_chain_count,
+            trimmed,
             ctrl_opts.parallel_threads);
         mmdock_parallel_done = true;
     }
@@ -3055,13 +3047,13 @@ int MMdock(AlignCommonInput& common_inputs)
                 if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
 
                 // entry function for structure alignment
-                if (trim_chain_count && ylen_trim_vec[j]<ylen)
+                if (trimmed.chain_count && trimmed.lengths[j]<ylen)
                 {
-                    ylen_trim = ylen_trim_vec[j];
+                    ylen_trim = trimmed.lengths[j];
                     secy_trim.resize(ylen_trim+1);
                     ya_trim.clear();
                     ya_trim.reserve(ylen_trim);
-                    copy_chain_data(ya_trim_vec[j],seqy_trim_vec[j],secy_trim_vec[j],
+                    copy_chain_data(trimmed.coords[j],trimmed.seqs[j],trimmed.secs[j],
                         ylen_trim,ya_trim,seqy_trim,secy_trim);
                     TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
                         result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
@@ -3130,10 +3122,10 @@ int MMdock(AlignCommonInput& common_inputs)
             }
         }
     }
-    DoubleCube().swap(ya_trim_vec);
-    CharMatrix().swap(seqy_trim_vec);
-    CharMatrix().swap(secy_trim_vec);
-    vector<int> ().swap(ylen_trim_vec);
+    DoubleCube().swap(trimmed.coords);
+    CharMatrix().swap(trimmed.seqs);
+    CharMatrix().swap(trimmed.secs);
+    vector<int> ().swap(trimmed.lengths);
 
     std::vector<int> assign1_list(chain1_num);
     std::vector<int> assign2_list(chain2_num);

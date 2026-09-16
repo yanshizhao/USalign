@@ -39,6 +39,17 @@ struct ComplexData
     int total_len_na;
 };
 
+struct TrimmedComplex
+{
+    DoubleCube coords;
+    CharMatrix seqs;
+    CharMatrix secs;
+    std::vector<int> lengths;
+    int chain_count;
+    int max_aa_len;
+    int max_na_len;
+};
+
 // ---- 单条链对的结构比对结果（mm0-4 的每对链共用）----
 struct ChainPairAlignResult
 {
