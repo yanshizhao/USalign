@@ -3782,24 +3782,6 @@ int mTMalign(AlignCommonInput& common_inputs)
 
     state.assign_list.assign(chain_num, 0);
     state.compare_num = 0;
-    double TM1_total;
-    double TM2_total;
-    double TM3_total, TM4_total, TM5_total;     // for a_opt, u_opt, d_opt
-    double d0_0_total;
-    double TM_0_total;
-    double d0A_total;
-    double d0B_total;
-    double d0u_total;
-    double d0a_total;
-    double d0_out_total;
-    double rmsd0_total;
-    int L_ali_total;                // Aligned length in standard_TMscore
-    double Liden_total;
-    double TM_ali_total, rmsd_ali_total;  // TMscore and rmsd in standard_TMscore
-    int n_ali_total;
-    int n_ali8_total;
-    int xlen_total;
-    int ylen_total;
     state.TM4_total_max=0;
 
     state.max_iter=5-static_cast<int>(total_len/200);
@@ -4065,18 +4047,18 @@ int mTMalign(AlignCommonInput& common_inputs)
 
         // recover statistics such as TM-score
         state.compare_num=0;
-        TM1_total=0, TM2_total=0;
-        TM3_total=0, TM4_total=0, TM5_total=0;
-        d0_0_total=0, TM_0_total=0;
-        d0A_total=0, d0B_total=0, d0u_total=0, d0a_total=0;
-        d0_out_total=0;
-        rmsd0_total = 0.0;
-        L_ali_total=0;
-        Liden_total=0;
-        TM_ali_total=0, rmsd_ali_total=0;
-        n_ali_total=0;
-        n_ali8_total=0;
-        xlen_total=0, ylen_total=0;
+        state.totals.TM1=0, state.totals.TM2=0;
+        state.totals.TM3=0, state.totals.TM4=0, state.totals.TM5=0;
+        state.totals.d0_0=0, state.totals.TM_0=0;
+        state.totals.d0A=0, state.totals.d0B=0, state.totals.d0u=0, state.totals.d0a=0;
+        state.totals.d0_out=0;
+        state.totals.rmsd0 = 0.0;
+        state.totals.L_ali=0;
+        state.totals.Liden=0;
+        state.totals.TM_ali=0, state.totals.rmsd_ali=0;
+        state.totals.n_ali=0;
+        state.totals.n_ali8=0;
+        state.xlen_total=0, state.ylen_total=0;
         for (i=0; i< chain_num; i++)
         {
             xlen=len_vec[i];
@@ -4128,21 +4110,21 @@ int mTMalign(AlignCommonInput& common_inputs)
 
                 if (xlen<=ylen)
                 {
-                    xlen_total+=xlen;
-                    ylen_total+=ylen;
-                    TM1_total+=TM1;
-                    TM2_total+=TM2;
-                    d0A_total+=d0A;
-                    d0B_total+=d0B;
+                    state.xlen_total+=xlen;
+                    state.ylen_total+=ylen;
+                    state.totals.TM1+=TM1;
+                    state.totals.TM2+=TM2;
+                    state.totals.d0A+=d0A;
+                    state.totals.d0B+=d0B;
                 }
                 else
                 {
-                    xlen_total+=ylen;
-                    ylen_total+=xlen;
-                    TM1_total+=TM2;
-                    TM2_total+=TM1;
-                    d0A_total+=d0B;
-                    d0B_total+=d0A;
+                    state.xlen_total+=ylen;
+                    state.ylen_total+=xlen;
+                    state.totals.TM1+=TM2;
+                    state.totals.TM2+=TM1;
+                    state.totals.d0A+=d0B;
+                    state.totals.d0B+=d0A;
                 }
                 state.TM_mat[i][j]=TM2;
                 state.TM_mat[j][i]=TM1;
@@ -4151,20 +4133,20 @@ int mTMalign(AlignCommonInput& common_inputs)
                 state.seqID_mat[i][j]=1.*Liden/xlen;
                 state.seqID_mat[j][i]=1.*Liden/ylen;
 
-                TM3_total+=TM3;
-                TM4_total+=TM4;
-                TM5_total+=TM5;
-                d0_0_total+=d0_0;
-                TM_0_total+=TM_0;
-                d0u_total+=d0u;
-                d0_out_total+=d0_out;
-                rmsd0_total+=rmsd0;
-                L_ali_total+=L_ali;        // Aligned length in standard_TMscore
-                Liden_total+=Liden;
-                TM_ali_total+=TM_ali;
-                rmsd_ali_total+=rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                n_ali_total+=n_ali;
-                n_ali8_total+=n_ali8;
+                state.totals.TM3+=TM3;
+                state.totals.TM4+=TM4;
+                state.totals.TM5+=TM5;
+                state.totals.d0_0+=d0_0;
+                state.totals.TM_0+=TM_0;
+                state.totals.d0u+=d0u;
+                state.totals.d0_out+=d0_out;
+                state.totals.rmsd0+=rmsd0;
+                state.totals.L_ali+=L_ali;        // Aligned length in standard_TMscore
+                state.totals.Liden+=Liden;
+                state.totals.TM_ali+=TM_ali;
+                state.totals.rmsd_ali+=rmsd_ali;  // TMscore and rmsd in standard_TMscore
+                state.totals.n_ali+=n_ali;
+                state.totals.n_ali8+=n_ali8;
 
                 // clean up
                 seqM.clear();
@@ -4174,8 +4156,8 @@ int mTMalign(AlignCommonInput& common_inputs)
             }
             
         }
-        if (TM4_total<=state.TM4_total_max) break;
-        state.TM4_total_max=TM4_total;
+        if (state.totals.TM4<=state.TM4_total_max) break;
+        state.TM4_total_max=state.totals.TM4;
     }
     for (i=0;i<chain_num;i++)
     {
@@ -4190,26 +4172,26 @@ int mTMalign(AlignCommonInput& common_inputs)
         state.d0_vec[i]/=(chain_num-1);
         state.seqID_vec[i]/=(chain_num-1);
     }
-    xlen_total    /=state.compare_num;
-    ylen_total    /=state.compare_num;
-    TM1_total     /=state.compare_num;
-    TM2_total     /=state.compare_num;
-    d0A_total     /=state.compare_num;
-    d0B_total     /=state.compare_num;
-    TM3_total     /=state.compare_num;
-    TM4_total     /=state.compare_num;
-    TM5_total     /=state.compare_num;
-    d0_0_total    /=state.compare_num;
-    TM_0_total    /=state.compare_num;
-    d0u_total     /=state.compare_num;
-    d0_out_total  /=state.compare_num;
-    rmsd0_total   /=state.compare_num;
-    L_ali_total   /=state.compare_num;
-    Liden_total   /=state.compare_num;
-    TM_ali_total  /=state.compare_num;
-    rmsd_ali_total/=state.compare_num;
-    n_ali_total   /=state.compare_num;
-    n_ali8_total  /=state.compare_num;
+    state.xlen_total    /=state.compare_num;
+    state.ylen_total    /=state.compare_num;
+    state.totals.TM1     /=state.compare_num;
+    state.totals.TM2     /=state.compare_num;
+    state.totals.d0A     /=state.compare_num;
+    state.totals.d0B     /=state.compare_num;
+    state.totals.TM3     /=state.compare_num;
+    state.totals.TM4     /=state.compare_num;
+    state.totals.TM5     /=state.compare_num;
+    state.totals.d0_0    /=state.compare_num;
+    state.totals.TM_0    /=state.compare_num;
+    state.totals.d0u     /=state.compare_num;
+    state.totals.d0_out  /=state.compare_num;
+    state.totals.rmsd0   /=state.compare_num;
+    state.totals.L_ali   /=state.compare_num;
+    state.totals.Liden   /=state.compare_num;
+    state.totals.TM_ali  /=state.compare_num;
+    state.totals.rmsd_ali/=state.compare_num;
+    state.totals.n_ali   /=state.compare_num;
+    state.totals.n_ali8  /=state.compare_num;
     user_opts.xname="shorter";
     user_opts.yname="longer";
     string seqM="";
@@ -4235,12 +4217,12 @@ int mTMalign(AlignCommonInput& common_inputs)
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
     output_mTMalign_results( user_opts.xname,user_opts.yname, "","",
-        xlen_total, ylen_total, t0, u0, TM1_total, TM2_total,
-        TM3_total, TM4_total, TM5_total, rmsd0_total, d0_out_total,
-        seqM, seqxA, seqyA, Liden_total,
-        n_ali8_total, L_ali_total, TM_ali_total, rmsd_ali_total,
-        TM_0_total, d0_0_total, d0A_total, d0B_total,
-        Lnorm_ass, user_opts.d0_scale, d0a_total, d0u_total,
+        state.xlen_total, state.ylen_total, t0, u0, state.totals.TM1, state.totals.TM2,
+        state.totals.TM3, state.totals.TM4, state.totals.TM5, state.totals.rmsd0, state.totals.d0_out,
+        seqM, seqxA, seqyA, state.totals.Liden,
+        state.totals.n_ali8, state.totals.L_ali, state.totals.TM_ali, state.totals.rmsd_ali,
+        state.totals.TM_0, state.totals.d0_0, state.totals.d0A, state.totals.d0B,
+        Lnorm_ass, user_opts.d0_scale, state.totals.d0a, state.totals.d0u,
         "", user_opts.outfmt_opt, user_opts.ter_opt, 0, user_opts.split_opt, false,
         "", false, user_opts.a_opt, u_opt, user_opts.d_opt, false,
         resi_vec, resi_vec, ccTM_score );
