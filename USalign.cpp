@@ -797,6 +797,62 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
     }
 }
 
+// ---- The three-step dock alignment on a trimmed receptor chain (mm2) ----
+void mmdock_align_trimmed(ChainPairAlignResult& result,
+    CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy,
+    int xlen, int ylen,
+    const TrimmedComplex& trimmed, int trim_idx,
+    int mol_type, double Lnorm_tmp, double d0_scale, double TMcut,
+    bool fast_opt, int parallel_threads,
+    std::vector<std::string>& sequence)
+{
+    int ylen_trim = trimmed.lengths[trim_idx];
+    CoordArray ya_trim(ylen_trim);
+    std::string seqy_trim;
+    std::string secy_trim;
+    secy_trim.resize(ylen_trim + 1);
+    copy_chain_data(trimmed.coords[trim_idx], trimmed.seqs[trim_idx], trimmed.secs[trim_idx],
+        ylen_trim, ya_trim, seqy_trim, secy_trim);
+
+    TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
+        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+        result.seqM, result.seqxA, result.seqyA, result.do_vec,
+        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+        xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
+        0, false, true, false, fast_opt,
+        mol_type, TMcut, parallel_threads);
+    result.seqxA.clear();
+    result.seqyA.clear();
+
+    CoordArray xt(xlen);
+    do_rotation(xa, xt, xlen, result.t0, result.u0);
+    std::vector<int> invmap(ylen + 1);
+    se_main(xt, ya, seqx, seqy,
+        result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+        result.seqM, result.seqxA, result.seqyA, result.do_vec,
+        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+        0, false, 2, false, mol_type, 1, invmap);
+
+    if (sequence.size() < 2) sequence.push_back("");
+    if (sequence.size() < 2) sequence.push_back("");
+    sequence[0] = result.seqxA;
+    sequence[1] = result.seqyA;
+
+    TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
+        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
+        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
+        result.seqM, result.seqxA, result.seqyA, result.do_vec,
+        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
+        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+        2, false, true, false, fast_opt,
+        mol_type, TMcut);
+}
+
 inline void run_mmdock_parallel(
     const DoubleCube& xa_vec, const DoubleCube& ya_vec,
     const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
@@ -864,48 +920,10 @@ inline void run_mmdock_parallel(
             // entry function for structure alignment
             if (trimmed.chain_count && trimmed.lengths[j] < ylen)
             {
-                // ---- trimComplex branch ----
-                int ylen_trim = trimmed.lengths[j];
-                CoordArray ya_trim(ylen_trim);
-                string seqy_trim, secy_trim;
-                secy_trim.resize(ylen_trim + 1);
-                copy_chain_data(trimmed.coords[j], trimmed.seqs[j], trimmed.secs[j],
-                    ylen_trim, ya_trim, seqy_trim, secy_trim);
-
-                TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
-                    result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-                    result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-                    result.seqM, result.seqxA, result.seqyA, result.do_vec,
-                    result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-                    xlen, ylen_trim, pair_sequence, Lnorm_tmp, d0_scale,
-                    0, false, true, false, fast_opt,
-                    mol_vec1[i] + mol_vec2[j], TMcut);
-                result.seqxA.clear();
-                result.seqyA.clear();
-
-                CoordArray xt(xlen);
-                do_rotation(xa, xt, xlen, result.t0, result.u0);
-                std::vector<int> invmap(ylen + 1);
-                se_main(xt, ya, seqx, seqy, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-                    result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-                    result.seqM, result.seqxA, result.seqyA, result.do_vec,
-                    result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-                    xlen, ylen, pair_sequence, Lnorm_tmp, d0_scale,
-                    0, false, 2, false, mol_vec1[i] + mol_vec2[j], 1, invmap);
-
-                if (pair_sequence.size() < 2) pair_sequence.push_back("");
-                if (pair_sequence.size() < 2) pair_sequence.push_back("");
-                pair_sequence[0] = result.seqxA;
-                pair_sequence[1] = result.seqyA;
-
-                TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
-                    result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-                    result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-                    result.seqM, result.seqxA, result.seqyA, result.do_vec,
-                    result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-                    xlen, ylen, pair_sequence, Lnorm_tmp, d0_scale,
-                    2, false, true, false, fast_opt,
-                    mol_vec1[i] + mol_vec2[j], TMcut);
+                mmdock_align_trimmed(result, xa, ya, seqx, seqy, secx, secy,
+                    xlen, ylen, trimmed, j,
+                    mol_vec1[i] + mol_vec2[j], Lnorm_tmp, d0_scale, TMcut,
+                    fast_opt, 1, pair_sequence);
             }
             else
             {    // ---- no trimComplex branch ----
@@ -2980,11 +2998,6 @@ int MMdock(AlignCommonInput& common_inputs)
     trimmed.chain_count=trimComplex(trimmed.coords,trimmed.seqs,
         trimmed.secs,trimmed.lengths,ya_vec,seqy_vec,secy_vec,ylen_vec,
         mol_vec2,trimmed.max_aa_len,trimmed.max_na_len);
-    int    ylen_trim;             // chain length
-    CoordArray ya_trim;             // structure of single chain
-    std::string seqy_trim;           // for the protein sequence
-    std::string secy_trim;           // for the secondary structure
-    CoordArray xt;
 
     // Auto-enable fast mode BEFORE parallel entry to keep both paths consistent
     if (len_aa + len_na > 500) fast_opt = true;
@@ -3049,45 +3062,10 @@ int MMdock(AlignCommonInput& common_inputs)
                 // entry function for structure alignment
                 if (trimmed.chain_count && trimmed.lengths[j]<ylen)
                 {
-                    ylen_trim = trimmed.lengths[j];
-                    secy_trim.resize(ylen_trim+1);
-                    ya_trim.clear();
-                    ya_trim.reserve(ylen_trim);
-                    copy_chain_data(trimmed.coords[j],trimmed.seqs[j],trimmed.secs[j],
-                        ylen_trim,ya_trim,seqy_trim,secy_trim);
-                    TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
-                        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-                        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-                        result.seqM, result.seqxA, result.seqyA, result.do_vec,
-                        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-                        xlen, ylen_trim, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
-                        0, false, true, false, fast_opt,
-                        mol_vec1[i]+mol_vec2[j],user_opts.TMcut, ctrl_opts.parallel_threads);
-                    result.seqxA.clear();
-                    result.seqyA.clear();
-
-                    xt.resize(xlen);
-                    do_rotation(xa, xt, xlen, result.t0, result.u0);
-                    std::vector<int> invmap(ylen+1);
-                    se_main(xt, ya, seqx, seqy, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-                        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out, result.seqM, result.seqxA, result.seqyA,
-                        result.do_vec, result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-                        xlen, ylen, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
-                        0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
-
-
-                    if (parsed_input.sequence.size()<2) parsed_input.sequence.push_back("");
-                    if (parsed_input.sequence.size()<2) parsed_input.sequence.push_back("");
-                    parsed_input.sequence[0]=result.seqxA;
-                    parsed_input.sequence[1]=result.seqyA;
-                    TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
-                        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-                        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-                        result.seqM, result.seqxA, result.seqyA, result.do_vec,
-                        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-                        xlen, ylen, parsed_input.sequence, Lnorm_tmp, user_opts.d0_scale,
-                        2, false, true, false, fast_opt,
-                        mol_vec1[i]+mol_vec2[j],user_opts.TMcut);
+                    mmdock_align_trimmed(result, xa, ya, seqx, seqy, secx, secy,
+                        xlen, ylen, trimmed, j,
+                        mol_vec1[i]+mol_vec2[j], Lnorm_tmp, user_opts.d0_scale, user_opts.TMcut,
+                        fast_opt, ctrl_opts.parallel_threads, parsed_input.sequence);
                 }
                 else
                 {
