@@ -466,18 +466,40 @@ int run_batch_parallel(
         if (outfmt_opt == 0) print_version(ss);
 
         int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
-        bool after_cp = false;
-        if (cp_opt) after_cp = output_cp(xname_out, yname_out,
+        if (cp_opt) output_cp(xname_out, yname_out,
             seqxA, seqyA, outfmt_opt, left_num, right_num,
             left_aln_num, right_aln_num, ss);
 
+        ChainPairAlignResult result = { 0};
+        result.t0 = t0;
+        result.u0 = u0;
+        result.TM1 = TM1;
+        result.TM2 = TM2;
+        result.TM3 = TM3;
+        result.TM4 = TM4;
+        result.TM5 = TM5;
+        result.rmsd0 = rmsd0;
+        result.d0_out = d0_out;
+        result.Liden = Liden;
+        result.n_ali8 = n_ali8;
+        result.L_ali = L_ali;
+        result.TM_ali = TM_ali;
+        result.rmsd_ali = rmsd_ali;
+        result.TM_0 = TM_0;
+        result.d0_0 = d0_0;
+        result.d0A = d0A;
+        result.d0B = d0B;
+        result.d0a = d0a;
+        result.d0u = d0u;
+        result.seqM = seqM;
+        result.seqxA = seqxA;
+        result.seqyA = seqyA;
+        result.do_vec = do_vec;
         output_results(xname_out, yname_out,
             c1.chain_id, c2.chain_id,
-            c1.chain_len, c2.chain_len, t0, u0, TM1, TM2, TM3, TM4, TM5,
-            rmsd0, d0_out, seqM, seqxA, seqyA, Liden,
-            n_ali8, L_ali, TM_ali, rmsd_ali, TM_0, d0_0,
-            d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
-            (m_opt?fname_matrix:"").c_str(),
+            c1.chain_len, c2.chain_len, result,
+            Lnorm_ass, d0_scale,
+            (m_opt?fname_matrix:""),
             outfmt_opt, ter_opt, false, split_opt, o_opt,
             fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
             c1.resi_vec, c2.resi_vec, ss);
