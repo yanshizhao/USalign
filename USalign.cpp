@@ -5317,10 +5317,8 @@ int main(int argc, char *argv[])
     else if (ctrl_opts.mm_opt==7)
     {
         FlexalignParams flex_params;
-        FlexAlignResult flex_result;
-
         fill_flexalign_params(flex_params, ctrl_opts);
-
+        FlexAlignResult flex_result;
         Flexalign(common_inputs, flex_params, flex_result);
     }
     else cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<endl;
