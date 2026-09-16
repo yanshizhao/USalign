@@ -1558,13 +1558,34 @@ inline void MMalign_final(
     }
 
     // print alignment
+    ChainPairAlignResult result = { 0};
+    result.t0 = t0;
+    result.u0 = u0;
+    result.TM1 = TM1;
+    result.TM2 = TM2;
+    result.TM3 = TM3;
+    result.TM4 = TM4;
+    result.TM5 = TM5;
+    result.rmsd0 = rmsd0;
+    result.d0_out = d0_out;
+    result.Liden = Liden;
+    result.n_ali8 = n_ali8;
+    result.L_ali = L_ali;
+    result.TM_ali = TM_ali;
+    result.rmsd_ali = rmsd_ali;
+    result.TM_0 = TM_0;
+    result.d0_0 = d0_0;
+    result.d0A = d0A;
+    result.d0B = d0B;
+    result.d0a = d0a;
+    result.d0u = d0u;
+    result.seqM = sequence[2];
+    result.seqxA = sequence[0];
+    result.seqyA = sequence[1];
     output_results(xname, yname, chainID1, chainID2,
-        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
-        sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
-        Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
-        TM_0, d0_0, d0A, d0B, 0, d0_scale, d0a, d0u,
-        (m_opt?fname_matrix:"").c_str(), outfmt_opt, ter_opt, true,
-        split_opt, o_opt, fname_super,
+        xlen, ylen, result,
+        Lnorm_ass, d0_scale, (m_opt?fname_matrix:""),
+        outfmt_opt, ter_opt, true, split_opt, o_opt, fname_super,
         false, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
 
     // clean up
@@ -1629,14 +1650,38 @@ inline void MMalign_final(
             TMave_mat[i][j]=TM4*Lnorm_ass;
 
             // print result
-            if (j==assign1_list[i]) output_results(xname, yname,
-                chainID_list1[i].c_str(), chainID_list2[j].c_str(),
-                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
-                seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
-                seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
-                TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
-                "", outfmt_opt, ter_opt, false, split_opt, 0,
-                "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
+            if (j==assign1_list[i])
+            {
+                ChainPairAlignResult result = { 0};
+                result.t0 = t0;
+                result.u0 = u0;
+                result.TM1 = TM1;
+                result.TM2 = TM2;
+                result.TM3 = TM3;
+                result.TM4 = TM4;
+                result.TM5 = TM5;
+                result.rmsd0 = rmsd0;
+                result.d0_out = d0_out;
+                result.Liden = Liden;
+                result.n_ali8 = n_ali8;
+                result.L_ali = L_ali;
+                result.TM_ali = TM_ali;
+                result.rmsd_ali = rmsd_ali;
+                result.TM_0 = TM_0;
+                result.d0_0 = d0_0;
+                result.d0A = d0A;
+                result.d0B = d0B;
+                result.d0a = d0a;
+                result.d0u = d0u;
+                result.seqM = seqM_mat[i][j];
+                result.seqxA = seqxA_mat[i][j];
+                result.seqyA = seqyA_mat[i][j];
+                output_results(xname, yname,
+                    chainID_list1[i], chainID_list2[j],
+                    xlen, ylen, result,
+                    Lnorm_ass, d0_scale, "", outfmt_opt, ter_opt, false, split_opt, 0,
+                    "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
+            }
 
             // clean up
             seqxA.clear();
@@ -1785,13 +1830,34 @@ inline void MMalign_se_final(
     }
 
     // print alignment
+    ChainPairAlignResult result = { 0};
+    result.t0 = t0;
+    result.u0 = u0;
+    result.TM1 = TM1;
+    result.TM2 = TM2;
+    result.TM3 = TM3;
+    result.TM4 = TM4;
+    result.TM5 = TM5;
+    result.rmsd0 = rmsd0;
+    result.d0_out = d0_out;
+    result.Liden = Liden;
+    result.n_ali8 = n_ali8;
+    result.L_ali = L_ali;
+    result.TM_ali = TM_ali;
+    result.rmsd_ali = rmsd_ali;
+    result.TM_0 = TM_0;
+    result.d0_0 = d0_0;
+    result.d0A = d0A;
+    result.d0B = d0B;
+    result.d0a = d0a;
+    result.d0u = d0u;
+    result.seqM = sequence[2];
+    result.seqxA = sequence[0];
+    result.seqyA = sequence[1];
     output_results(xname, yname, chainID1, chainID2,
-        xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
-        sequence[2].c_str(), sequence[0].c_str(), sequence[1].c_str(),
-        Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
-        TM_0, d0_0, d0A, d0B, 0, d0_scale, d0a, d0u, 
-        (m_opt?fname_matrix:"").c_str(), outfmt_opt, ter_opt, true,
-        split_opt, o_opt, fname_super,
+        xlen, ylen, result,
+        Lnorm_ass, d0_scale, (m_opt?fname_matrix:""),
+        outfmt_opt, ter_opt, true, split_opt, o_opt, fname_super,
         false, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
 
     // clean up
@@ -1861,14 +1927,38 @@ inline void MMalign_se_final(
             TMave_mat[i][j]=TM4*Lnorm_ass;
 
             // print result
-            if (j==assign1_list[i]) output_results(xname, yname,
-                chainID_list1[i].c_str(), chainID_list2[j].c_str(),
-                xlen, ylen, t0, u0, TM1, TM2, TM3, TM4, TM5, rmsd0, d0_out,
-                seqM_mat[i][j].c_str(), seqxA_mat[i][j].c_str(),
-                seqyA_mat[i][j].c_str(), Liden, n_ali8, L_ali, TM_ali, rmsd_ali,
-                TM_0, d0_0, d0A, d0B, Lnorm_ass, d0_scale, d0a, d0u,
-                "", outfmt_opt, ter_opt, false, split_opt, 0,
-                "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
+            if (j==assign1_list[i])
+            {
+                ChainPairAlignResult result = { 0};
+                result.t0 = t0;
+                result.u0 = u0;
+                result.TM1 = TM1;
+                result.TM2 = TM2;
+                result.TM3 = TM3;
+                result.TM4 = TM4;
+                result.TM5 = TM5;
+                result.rmsd0 = rmsd0;
+                result.d0_out = d0_out;
+                result.Liden = Liden;
+                result.n_ali8 = n_ali8;
+                result.L_ali = L_ali;
+                result.TM_ali = TM_ali;
+                result.rmsd_ali = rmsd_ali;
+                result.TM_0 = TM_0;
+                result.d0_0 = d0_0;
+                result.d0A = d0A;
+                result.d0B = d0B;
+                result.d0a = d0a;
+                result.d0u = d0u;
+                result.seqM = seqM_mat[i][j];
+                result.seqxA = seqxA_mat[i][j];
+                result.seqyA = seqyA_mat[i][j];
+                output_results(xname, yname,
+                    chainID_list1[i], chainID_list2[j],
+                    xlen, ylen, result,
+                    Lnorm_ass, d0_scale, "", outfmt_opt, ter_opt, false, split_opt, 0,
+                    "", false, a_opt, false, d_opt, 0, resi_vec1, resi_vec2);
+            }
 
             // clean up
             seqxA.clear();
