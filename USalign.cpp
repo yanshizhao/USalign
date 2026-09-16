@@ -3771,22 +3771,17 @@ int mTMalign(AlignCommonInput& common_inputs)
     }
     // representative related variables
     int r;
-    int repr_idx=0;
-    vector<string>xname_vec;
-    for (i=0;i<chain_num;i++) xname_vec.push_back(
+    MstaIterationState state;
+    // Empty until rebuilt inside the iteration loop (msa.assign(ylen,"")),
+    // so it does not depend on stale xlen/ylen left by the pairwise loop.
+    for (i=0;i<chain_num;i++) state.xname_vec.push_back(
         parsed_input.chain1_list[i].substr(user_opts.dir_opt.size())+chainID_list[i]);
 
     // build and output UPGMA phylogenetic tree
-    output_upgma_tree(xname_vec, TMave_mat, chain_num);
+    output_upgma_tree(state.xname_vec, TMave_mat, chain_num);
 
-    vector<string>yname_vec;
-
-    std::vector<int> assign_list(chain_num);
-    // Empty until rebuilt inside the iteration loop (msa.assign(ylen,"")),
-    // so it does not depend on stale xlen/ylen left by the pairwise loop.
-    vector<string> msa; // row is position along msa; column is sequence
-
-    int compare_num;
+    state.assign_list.assign(chain_num, 0);
+    state.compare_num = 0;
     double TM1_total;
     double TM2_total;
     double TM3_total, TM4_total, TM5_total;     // for a_opt, u_opt, d_opt
@@ -3805,47 +3800,46 @@ int mTMalign(AlignCommonInput& common_inputs)
     int n_ali8_total;
     int xlen_total;
     int ylen_total;
-    double TM4_total_max=0;
+    state.TM4_total_max=0;
 
-    int max_iter=5-static_cast<int>(total_len/200);
-    if (max_iter<2) max_iter=2;
+    state.max_iter=5-static_cast<int>(total_len/200);
+    if (state.max_iter<2) state.max_iter=2;
     int iter=0;
-    vector<double> TM_vec(chain_num,0);
-    vector<double> d0_vec(chain_num,0);
-    vector<double> seqID_vec(chain_num,0);
-    DoubleMatrix TM_mat(chain_num,TM_vec);
-    DoubleMatrix d0_mat(chain_num,d0_vec);
-    DoubleMatrix seqID_mat(chain_num,seqID_vec);
-    for (iter=0; iter<max_iter; iter++)
+    state.TM_vec.assign(chain_num,0);
+    state.d0_vec.assign(chain_num,0);
+    state.seqID_vec.assign(chain_num,0);
+    state.TM_mat.assign(chain_num,state.TM_vec);
+    state.d0_mat.assign(chain_num,state.d0_vec);
+    state.seqID_mat.assign(chain_num,state.seqID_vec);
+    for (iter=0; iter<state.max_iter; iter++)
     {
-        repr_idx=select_representative(TMave_mat, chain_num);
+        state.repr_idx=select_representative(TMave_mat, chain_num);
 
         // superpose
-        user_opts.yname=parsed_input.chain1_list[repr_idx].substr(user_opts.dir_opt.size())+chainID_list[repr_idx];
+        user_opts.yname=parsed_input.chain1_list[state.repr_idx].substr(user_opts.dir_opt.size())+chainID_list[state.repr_idx];
         CoordArray xt;
-        vector<pair<double,int> >TM_pair_vec; // TM vs chain
+        state.TM_pair_vec.clear();
 
-        for (i=0; i<chain_num; i++) assign_list[i]=-1;
-        assign_list[repr_idx]=repr_idx;
-        //ylen = len_vec[repr_idx];
+        for (i=0; i<chain_num; i++) state.assign_list[i]=-1;
+        state.assign_list[state.repr_idx]=state.repr_idx;
         for (r=0;r<parsed_input.sequence.size();r++) parsed_input.sequence[r].clear(); parsed_input.sequence.clear();
         parsed_input.sequence.push_back("");
         parsed_input.sequence.push_back("");
         for (i=0;i<chain_num;i++)
         {
-            yname_vec.push_back(user_opts.yname);
+            state.yname_vec.push_back(user_opts.yname);
             xlen = len_vec[i];
-            if (i==repr_idx || xlen<3) continue;
-            TM_pair_vec.push_back(make_pair(-TMave_mat[i][repr_idx],i));
+            if (i==state.repr_idx || xlen<3) continue;
+            state.TM_pair_vec.push_back(make_pair(-TMave_mat[i][state.repr_idx],i));
         }
-        sort(TM_pair_vec.begin(),TM_pair_vec.end());
+        sort(state.TM_pair_vec.begin(),state.TM_pair_vec.end());
     
         int tm_idx;
         if (user_opts.outfmt_opt<0) cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
                                <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
-        for (tm_idx=0; tm_idx<TM_pair_vec.size(); tm_idx++)
+        for (tm_idx=0; tm_idx<state.TM_pair_vec.size(); tm_idx++)
         {
-            i=TM_pair_vec[tm_idx].second;
+            i=state.TM_pair_vec[tm_idx].second;
             xlen = len_vec[i];
             string seqx;
             secx.resize(xlen+1);
@@ -3853,16 +3847,16 @@ int mTMalign(AlignCommonInput& common_inputs)
             xa.reserve(xlen);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
 
-            double maxTM=TMave_mat[i][repr_idx];
-            int maxj=repr_idx;
+            double maxTM=TMave_mat[i][state.repr_idx];
+            int maxj=state.repr_idx;
             for (j=0;j<chain_num;j++)
             {
-                if (i==j || assign_list[j]<0 || TMave_mat[i][j]<=maxTM) continue;
+                if (i==j || state.assign_list[j]<0 || TMave_mat[i][j]<=maxTM) continue;
                 maxj=j;
                 maxTM=TMave_mat[i][j];
             }
             j=maxj;
-            assign_list[i]=j;
+            state.assign_list[i]=j;
             ylen = len_vec[j];
             string seqy;
             secy.resize(ylen+1);
@@ -3895,7 +3889,7 @@ int mTMalign(AlignCommonInput& common_inputs)
                 user_opts.outfmt_opt);
 
             if (user_opts.outfmt_opt<0) output_results(
-                xname_vec[i].c_str(), xname_vec[j].c_str(), "", "",
+                state.xname_vec[i].c_str(), state.xname_vec[j].c_str(), "", "",
                 xlen, ylen, result,
                 Lnorm_ass, user_opts.d0_scale, 
                 "", 2,//outfmt_opt,
@@ -3921,27 +3915,27 @@ int mTMalign(AlignCommonInput& common_inputs)
             parsed_input.sequence[1].clear();
             result.do_vec.clear();
         }
-        ylen = len_vec[repr_idx];
+        ylen = len_vec[state.repr_idx];
         string seqy;
         secy.resize(ylen+1);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(a_vec[repr_idx],seq_vec[repr_idx],sec_vec[repr_idx], ylen,ya,seqy,secy);
+        copy_chain_data(a_vec[state.repr_idx],seq_vec[state.repr_idx],sec_vec[state.repr_idx], ylen,ya,seqy,secy);
 
         // recover alignment
         int    ylen_ext=ylen;        // chain length
         CoordArray ya_ext;               // structure of single chain
         std::string seqy_ext;            // for the protein sequence
         std::string secy_ext;            // for the secondary structure
-        for (r=0;r<msa.size();r++) msa[r].clear(); msa.clear();
-        msa.assign(ylen,""); // row is position along msa; column is sequence
-        vector<string> msa_ext;      // row is position along msa; column is sequence
-        for (r=0;r<ylen;r++) msa[r]=seqy[r];
-        assign_list[repr_idx]=0;
-        for (tm_idx=0; tm_idx<TM_pair_vec.size(); tm_idx++)
+        for (r=0;r<state.msa.size();r++) state.msa[r].clear(); state.msa.clear();
+        state.msa.assign(ylen,""); // row is position along state.msa; column is sequence
+        vector<string> msa_ext;      // row is position along state.msa; column is sequence
+        for (r=0;r<ylen;r++) state.msa[r]=seqy[r];
+        state.assign_list[state.repr_idx]=0;
+        for (tm_idx=0; tm_idx<state.TM_pair_vec.size(); tm_idx++)
         {
-            i=TM_pair_vec[tm_idx].second;
-            assign_list[i]=tm_idx+1;
+            i=state.TM_pair_vec[tm_idx].second;
+            state.assign_list[i]=tm_idx+1;
 
             xlen = len_vec[i];
             string seqx;
@@ -3984,7 +3978,7 @@ int mTMalign(AlignCommonInput& common_inputs)
             seqy_ext.resize(ylen_ext+1);            // for the protein sequence
             secy_ext.resize(ylen_ext+1);            // for the secondary structure
             string tmp_gap="";
-            for (r=0;r<msa[0].size();r++) tmp_gap+='-';
+            for (r=0;r<state.msa[0].size();r++) tmp_gap+='-';
             for (r=msa_ext.size();r<ylen_ext;r++) msa_ext.push_back("");
             for (r=0;r<ylen_ext;r++)
             {
@@ -3999,7 +3993,7 @@ int mTMalign(AlignCommonInput& common_inputs)
                 }
                 else
                 {
-                    msa_ext[r]=msa[ry]+seqxA[r];
+                    msa_ext[r]=state.msa[ry]+seqxA[r];
                     ya_ext[r][0]=ya[ry][0];
                     ya_ext[r][1]=ya[ry][1];
                     ya_ext[r][2]=ya[ry][2];
@@ -4026,8 +4020,8 @@ int mTMalign(AlignCommonInput& common_inputs)
             }
             for (r=0;r<ylen;r++)
             {
-                if (r<msa.size()) msa[r]=msa_ext[r];
-                else msa.push_back(msa_ext[r]);
+                if (r<state.msa.size()) state.msa[r]=msa_ext[r];
+                else state.msa.push_back(msa_ext[r]);
             }
                     //<<ya[r][0]<<'\t'<<ya[r][1]<<'\t'<<ya[r][2]<<'\t'<<secy[r]<<endl;
 
@@ -4040,22 +4034,22 @@ int mTMalign(AlignCommonInput& common_inputs)
             do_vec.clear();
         }
         vector<string>().swap(msa_ext);
-        vector<pair<double,int> >().swap(TM_pair_vec);
+        vector<pair<double,int> >().swap(state.TM_pair_vec);
         for (i=0; i<chain_num; i++)
         {
-            tm_idx=assign_list[i];
+            tm_idx=state.assign_list[i];
             if (tm_idx<0) continue;
             seqyA_mat[i][i]="";
-            for (r=0 ;r<ylen ; r++) seqyA_mat[i][i]+=msa[r][tm_idx];
+            for (r=0 ;r<ylen ; r++) seqyA_mat[i][i]+=state.msa[r][tm_idx];
             seqxA_mat[i][i]=seqyA_mat[i][i];
         }
         for (i=0;i<chain_num; i++)
         {
-            if (assign_list[i]<0) continue;
+            if (state.assign_list[i]<0) continue;
             string seqxA=seqxA_mat[i][i];
             for (j=0; j<chain_num; j++)
             {
-                if (i==j || assign_list[j]<0) continue;
+                if (i==j || state.assign_list[j]<0) continue;
                 string seqyA=seqyA_mat[j][j];
                 seqxA_mat[i][j]=seqyA_mat[i][j]="";
                 for (r=0;r<ylen;r++)
@@ -4070,7 +4064,7 @@ int mTMalign(AlignCommonInput& common_inputs)
         }
 
         // recover statistics such as TM-score
-        compare_num=0;
+        state.compare_num=0;
         TM1_total=0, TM2_total=0;
         TM3_total=0, TM4_total=0, TM5_total=0;
         d0_0_total=0, TM_0_total=0;
@@ -4096,7 +4090,7 @@ int mTMalign(AlignCommonInput& common_inputs)
             {
                 ylen=len_vec[j];
                 if (ylen<3) continue;
-                compare_num++;
+                state.compare_num++;
                 string seqy;
                 secy.resize(ylen+1);
                 ya.clear();
@@ -4150,12 +4144,12 @@ int mTMalign(AlignCommonInput& common_inputs)
                     d0A_total+=d0B;
                     d0B_total+=d0A;
                 }
-                TM_mat[i][j]=TM2;
-                TM_mat[j][i]=TM1;
-                d0_mat[i][j]=d0B;
-                d0_mat[j][i]=d0A;
-                seqID_mat[i][j]=1.*Liden/xlen;
-                seqID_mat[j][i]=1.*Liden/ylen;
+                state.TM_mat[i][j]=TM2;
+                state.TM_mat[j][i]=TM1;
+                state.d0_mat[i][j]=d0B;
+                state.d0_mat[j][i]=d0A;
+                state.seqID_mat[i][j]=1.*Liden/xlen;
+                state.seqID_mat[j][i]=1.*Liden/ylen;
 
                 TM3_total+=TM3;
                 TM4_total+=TM4;
@@ -4180,42 +4174,42 @@ int mTMalign(AlignCommonInput& common_inputs)
             }
             
         }
-        if (TM4_total<=TM4_total_max) break;
-        TM4_total_max=TM4_total;
+        if (TM4_total<=state.TM4_total_max) break;
+        state.TM4_total_max=TM4_total;
     }
     for (i=0;i<chain_num;i++)
     {
         for (j=0;j<chain_num;j++)
         {
             if (i==j) continue;
-            TM_vec[i]+=TM_mat[i][j];
-            d0_vec[i]+=d0_mat[i][j];
-            seqID_vec[i]+=seqID_mat[i][j];
+            state.TM_vec[i]+=state.TM_mat[i][j];
+            state.d0_vec[i]+=state.d0_mat[i][j];
+            state.seqID_vec[i]+=state.seqID_mat[i][j];
         }
-        TM_vec[i]/=(chain_num-1);
-        d0_vec[i]/=(chain_num-1);
-        seqID_vec[i]/=(chain_num-1);
+        state.TM_vec[i]/=(chain_num-1);
+        state.d0_vec[i]/=(chain_num-1);
+        state.seqID_vec[i]/=(chain_num-1);
     }
-    xlen_total    /=compare_num;
-    ylen_total    /=compare_num;
-    TM1_total     /=compare_num;
-    TM2_total     /=compare_num;
-    d0A_total     /=compare_num;
-    d0B_total     /=compare_num;
-    TM3_total     /=compare_num;
-    TM4_total     /=compare_num;
-    TM5_total     /=compare_num;
-    d0_0_total    /=compare_num;
-    TM_0_total    /=compare_num;
-    d0u_total     /=compare_num;
-    d0_out_total  /=compare_num;
-    rmsd0_total   /=compare_num;
-    L_ali_total   /=compare_num;
-    Liden_total   /=compare_num;
-    TM_ali_total  /=compare_num;
-    rmsd_ali_total/=compare_num;
-    n_ali_total   /=compare_num;
-    n_ali8_total  /=compare_num;
+    xlen_total    /=state.compare_num;
+    ylen_total    /=state.compare_num;
+    TM1_total     /=state.compare_num;
+    TM2_total     /=state.compare_num;
+    d0A_total     /=state.compare_num;
+    d0B_total     /=state.compare_num;
+    TM3_total     /=state.compare_num;
+    TM4_total     /=state.compare_num;
+    TM5_total     /=state.compare_num;
+    d0_0_total    /=state.compare_num;
+    TM_0_total    /=state.compare_num;
+    d0u_total     /=state.compare_num;
+    d0_out_total  /=state.compare_num;
+    rmsd0_total   /=state.compare_num;
+    L_ali_total   /=state.compare_num;
+    Liden_total   /=state.compare_num;
+    TM_ali_total  /=state.compare_num;
+    rmsd_ali_total/=state.compare_num;
+    n_ali_total   /=state.compare_num;
+    n_ali8_total  /=state.compare_num;
     user_opts.xname="shorter";
     user_opts.yname="longer";
     string seqM="";
@@ -4226,18 +4220,17 @@ int mTMalign(AlignCommonInput& common_inputs)
     stringstream buf;
     for (i=0; i<chain_num; i++)
     {
-        if (assign_list[i]<0) continue;
-        buf <<">"<<xname_vec[i]<<"\tL="<<len_vec[i]
-            <<"\td0="<<setiosflags(ios::fixed)<<setprecision(2)<<d0_vec[i]
-            <<"\tseqID="<<setiosflags(ios::fixed)<<setprecision(3)<<seqID_vec[i]
-            <<"\tTM-score="<<setiosflags(ios::fixed)<<setprecision(5)<<TM_vec[i];
-        if (i==repr_idx) buf<<"\t*";
+        if (state.assign_list[i]<0) continue;
+        buf <<">"<<state.xname_vec[i]<<"\tL="<<len_vec[i]
+            <<"\td0="<<setiosflags(ios::fixed)<<setprecision(2)<<state.d0_vec[i]
+            <<"\tseqID="<<setiosflags(ios::fixed)<<setprecision(3)<<state.seqID_vec[i]
+            <<"\tTM-score="<<setiosflags(ios::fixed)<<setprecision(5)<<state.TM_vec[i];
+        if (i==state.repr_idx) buf<<"\t*";
         buf<<'\n'<<seqxA_mat[i][i]<<endl;
     }
     seqM=buf.str();
     seqM=seqM.substr(0,seqM.size()-1);
     buf.str(string());
-    //MergeAlign(seqxA_mat,seqyA_mat,repr_idx,xname_vec,chain_num,seqM);
     if (user_opts.outfmt_opt==0) print_version();
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
@@ -4285,9 +4278,9 @@ int mTMalign(AlignCommonInput& common_inputs)
 
         if (user_opts.m_opt)
         {
-            assign_list[repr_idx]=-1;
+            state.assign_list[state.repr_idx]=-1;
             output_dock_rotation_matrix(user_opts.fname_matrix,
-                xname_vec,yname_vec, ut_mat, assign_list);
+                state.xname_vec,state.yname_vec, ut_mat, state.assign_list);
         }
 
         //if (o_opt) output_dock(chain_list, ter_opt, split_opt,
@@ -4298,19 +4291,19 @@ int mTMalign(AlignCommonInput& common_inputs)
     }
 
     // clean up
-    vector<string>().swap(msa);
+    vector<string>().swap(state.msa);
     vector<string>().swap(tmp_str_vec);
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqyA_mat);
-    vector<string>().swap(xname_vec);
-    vector<string>().swap(yname_vec);
+    vector<string>().swap(state.xname_vec);
+    vector<string>().swap(state.yname_vec);
     DoubleCube().swap(a_vec); // structure of complex
-    vector<double>().swap(TM_vec);
-    vector<double>().swap(d0_vec);
-    vector<double>().swap(seqID_vec);
-    DoubleMatrix().swap(TM_mat);
-    DoubleMatrix().swap(d0_mat);
-    DoubleMatrix().swap(seqID_mat);
+    vector<double>().swap(state.TM_vec);
+    vector<double>().swap(state.d0_vec);
+    vector<double>().swap(state.seqID_vec);
+    DoubleMatrix().swap(state.TM_mat);
+    DoubleMatrix().swap(state.d0_mat);
+    DoubleMatrix().swap(state.seqID_mat);
     return 1;
 }
 

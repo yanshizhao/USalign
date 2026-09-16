@@ -50,6 +50,25 @@ struct TrimmedComplex
     int max_na_len;
 };
 
+struct MstaIterationState
+{
+    std::vector<std::string> msa;
+    std::vector<std::pair<double,int> > TM_pair_vec;
+    int repr_idx;
+    int compare_num;
+    int max_iter;
+    double TM4_total_max;
+    std::vector<double> TM_vec;
+    std::vector<double> d0_vec;
+    std::vector<double> seqID_vec;
+    DoubleMatrix TM_mat;
+    DoubleMatrix d0_mat;
+    DoubleMatrix seqID_mat;
+    std::vector<int> assign_list;
+    std::vector<std::string> xname_vec;
+    std::vector<std::string> yname_vec;
+};
+
 // ---- 单条链对的结构比对结果（mm0-4 的每对链共用）----
 struct ChainPairAlignResult
 {
