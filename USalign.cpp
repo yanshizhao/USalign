@@ -3616,6 +3616,25 @@ static void run_mTMalign_pairwise_parallel(
     }
 }
 
+// ---- Pick the chain with the largest column sum of the TM-score matrix (mm4) ----
+int select_representative(const DoubleMatrix& TMave_mat, int chain_num)
+{
+    std::vector<double> TMave_list(chain_num, 0.0);
+    for (int j=0; j<chain_num; j++) TMave_list[j]=0;
+    for (int i=0; i<chain_num; i++)
+        for (int j=0; j<chain_num; j++)
+            TMave_list[j]+=TMave_mat[i][j];
+    int repr_idx=0;
+    double repr_TM=0;
+    for (int j=0; j<chain_num; j++)
+    {
+        if (TMave_list[j]<repr_TM) continue;
+        repr_TM=TMave_list[j];
+        repr_idx=j;
+    }
+    return repr_idx;
+}
+
 int mTMalign(AlignCommonInput& common_inputs)
 {
     UserOptions& user_opts = common_inputs.user_options;
@@ -3761,7 +3780,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     output_upgma_tree(xname_vec, TMave_mat, chain_num);
 
     vector<string>yname_vec;
-    std::vector<double> TMave_list(chain_num);
 
     std::vector<int> assign_list(chain_num);
     // Empty until rebuilt inside the iteration loop (msa.assign(ylen,"")),
@@ -3800,23 +3818,7 @@ int mTMalign(AlignCommonInput& common_inputs)
     DoubleMatrix seqID_mat(chain_num,seqID_vec);
     for (iter=0; iter<max_iter; iter++)
     {
-        // select representative
-        for (j=0; j<chain_num; j++) TMave_list[j]=0;
-        for (i=0; i<chain_num; i++ )
-        {
-            for (j=0; j<chain_num; j++)
-            {
-                TMave_list[j]+=TMave_mat[i][j];
-            }
-        }
-        repr_idx=0;
-        double repr_TM=0;
-        for (j=0; j<chain_num; j++)
-        {
-            if (TMave_list[j]<repr_TM) continue;
-            repr_TM=TMave_list[j];
-            repr_idx=j;
-        }
+        repr_idx=select_representative(TMave_mat, chain_num);
 
         // superpose
         user_opts.yname=parsed_input.chain1_list[repr_idx].substr(user_opts.dir_opt.size())+chainID_list[repr_idx];
