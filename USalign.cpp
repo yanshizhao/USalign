@@ -2861,18 +2861,8 @@ int MMdock(AlignCommonInput& common_inputs)
     bool fast_opt = user_opts.fast_opt;
 
     // declare previously global variables
-    DoubleCube xa_vec; // structure of complex1
-    DoubleCube ya_vec; // structure of complex2
-    CharMatrix seqx_vec; // sequence of complex1
-    CharMatrix seqy_vec; // sequence of complex2
-    CharMatrix secx_vec; // secondary structure of complex1
-    CharMatrix secy_vec; // secondary structure of complex2
-    vector<int> mol_vec1;          // molecule type of complex1, RNA if >0
-    vector<int> mol_vec2;          // molecule type of complex2, RNA if >0
-    vector<string> chainID_list1;  // list of chainID1
-    vector<string> chainID_list2;  // list of chainID2
-    vector<int> xlen_vec;          // length of complex1
-    vector<int> ylen_vec;          // length of complex2
+    ComplexData complex1;
+    ComplexData complex2;
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
     string seqx, seqy;             // for the protein sequence
@@ -2880,44 +2870,40 @@ int MMdock(AlignCommonInput& common_inputs)
     CoordArray ya;
     string secx;                   // for the secondary structure
     string secy;
-    int    xlen_aa,ylen_aa;        // total length of protein
-    int    xlen_na,ylen_na;        // total length of RNA/DNA
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
 
     // parse complex
-    parse_chain_list(parsed_input.chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
-        xlen_vec, chainID_list1, user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.autojustify, user_opts.mirror_opt, user_opts.het_opt, xlen_aa, xlen_na, user_opts.o_opt,
-        resi_vec1, user_opts.chain2parse1, user_opts.model2parse1);
-    if (xa_vec.size()==0) PrintErrorAndQuit("ERROR! 0 individual chain");
-    parse_chain_list(parsed_input.chain2_list, ya_vec, seqy_vec, secy_vec, mol_vec2,
-        ylen_vec, chainID_list2, user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt2_opt,
-        user_opts.atom_opt, parsed_input.autojustify, 0, user_opts.het_opt, ylen_aa, ylen_na, user_opts.o_opt, resi_vec2,
+    parse_chain_list(parsed_input.chain1_list, complex1,
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, parsed_input.autojustify, user_opts.mirror_opt, user_opts.het_opt, user_opts.o_opt,
+        user_opts.chain2parse1, user_opts.model2parse1);
+    if (complex1.coords.size()==0) PrintErrorAndQuit("ERROR! 0 individual chain");
+    parse_chain_list(parsed_input.chain2_list, complex2,
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt2_opt,
+        user_opts.atom_opt, parsed_input.autojustify, 0, user_opts.het_opt, user_opts.o_opt,
         user_opts.chain2parse2, user_opts.model2parse2);
-    if (xa_vec.size()>ya_vec.size()) 
+    if (complex1.coords.size()>complex2.coords.size()) 
         PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
-    int len_aa=getmin(xlen_aa,ylen_aa);
-    int len_na=getmin(xlen_na,ylen_na);
+    int len_aa=getmin(complex1.total_len_aa,complex2.total_len_aa);
+    int len_na=getmin(complex1.total_len_na,complex2.total_len_na);
     if (user_opts.a_opt)
     {
-        len_aa=(xlen_aa+ylen_aa)/2;
-        len_na=(xlen_na+ylen_na)/2;
+        len_aa=(complex1.total_len_aa+complex2.total_len_aa)/2;
+        len_na=(complex1.total_len_na+complex2.total_len_na)/2;
     }
 
     // perform monomer alignment if there is only one chain
-    if (xa_vec.size()==1 && ya_vec.size()==1)
+    if (complex1.coords.size()==1 && complex2.coords.size()==1)
     {
-        xlen = xlen_vec[0];
-        ylen = ylen_vec[0];
+        xlen = complex1.lengths[0];
+        ylen = complex2.lengths[0];
         secx.resize(xlen+1);
         secy.resize(ylen+1);
         xa.clear();
         xa.reserve(xlen);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
+        copy_chain_data(complex1.coords[0],complex1.seqs[0],complex1.secs[0], xlen,xa,seqx,secx);
+        copy_chain_data(complex2.coords[0],complex2.seqs[0],complex2.secs[0], ylen,ya,seqy,secy);
 
         ChainPairAlignResult result = { 0};
         result.d0_out = 5.0;
@@ -2934,7 +2920,7 @@ int MMdock(AlignCommonInput& common_inputs)
         align_opts.TMcut = user_opts.TMcut;
         align_opts.parallel_threads = 1;
         align_opts.ss_opt = 0;
-        align_opts.mol_type = mol_vec1[0]+mol_vec2[0];
+        align_opts.mol_type = complex1.mol_types[0]+complex2.mol_types[0];
 
         // entry function for structure alignment
         align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
@@ -2944,14 +2930,14 @@ int MMdock(AlignCommonInput& common_inputs)
         output_results(
             user_opts.xname.substr(user_opts.dir1_opt.size()),
             user_opts.yname.substr(user_opts.dir2_opt.size()),
-            chainID_list1[0], chainID_list2[0],
+            complex1.chain_ids[0], complex2.chain_ids[0],
             xlen, ylen, result,
             user_opts.Lnorm_ass, user_opts.d0_scale, (user_opts.m_opt?user_opts.fname_matrix:"").c_str(),
             (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3), user_opts.ter_opt, true, user_opts.split_opt, user_opts.o_opt, user_opts.fname_super,
-            0, user_opts.a_opt, false, user_opts.d_opt, user_opts.mirror_opt, resi_vec1, resi_vec2);
+            0, user_opts.a_opt, false, user_opts.d_opt, user_opts.mirror_opt, complex1.resi, complex2.resi);
         if (user_opts.outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
-            user_opts.xname.substr(user_opts.dir1_opt.size()), chainID_list1[0],
-            user_opts.yname.substr(user_opts.dir2_opt.size()), chainID_list2[0],
+            user_opts.xname.substr(user_opts.dir1_opt.size()), complex1.chain_ids[0],
+            user_opts.yname.substr(user_opts.dir2_opt.size()), complex2.chain_ids[0],
             sqrt((result.TM1*result.TM1+result.TM2*result.TM2)/2));
 
         // clean up
@@ -2960,24 +2946,24 @@ int MMdock(AlignCommonInput& common_inputs)
         result.seqyA.clear();
         result.do_vec.clear();
 
-        DoubleCube().swap(xa_vec); // structure of complex1
-        DoubleCube().swap(ya_vec); // structure of complex2
-        CharMatrix().swap(seqx_vec); // sequence of complex1
-        CharMatrix().swap(seqy_vec); // sequence of complex2
-        CharMatrix().swap(secx_vec); // secondary structure of complex1
-        CharMatrix().swap(secy_vec); // secondary structure of complex2
-        mol_vec1.clear();       // molecule type of complex1, RNA if >0
-        mol_vec2.clear();       // molecule type of complex2, RNA if >0
-        chainID_list1.clear();  // list of chainID1
-        chainID_list2.clear();  // list of chainID2
-        xlen_vec.clear();       // length of complex1
-        ylen_vec.clear();       // length of complex2
+        DoubleCube().swap(complex1.coords); // structure of complex1
+        DoubleCube().swap(complex2.coords); // structure of complex2
+        CharMatrix().swap(complex1.seqs); // sequence of complex1
+        CharMatrix().swap(complex2.seqs); // sequence of complex2
+        CharMatrix().swap(complex1.secs); // secondary structure of complex1
+        CharMatrix().swap(complex2.secs); // secondary structure of complex2
+        complex1.mol_types.clear();       // molecule type of complex1, RNA if >0
+        complex2.mol_types.clear();       // molecule type of complex2, RNA if >0
+        complex1.chain_ids.clear();  // list of chainID1
+        complex2.chain_ids.clear();  // list of chainID2
+        complex1.lengths.clear();       // length of complex1
+        complex2.lengths.clear();       // length of complex2
         return 0;
     }
 
     // declare TM-score tables
-    int chain1_num=xa_vec.size();
-    int chain2_num=ya_vec.size();
+    int chain1_num=complex1.coords.size();
+    int chain2_num=complex2.coords.size();
     vector<string> tmp_str_vec(chain2_num,"");
     DoubleMatrix TMave_mat;
     TMave_mat.assign(chain1_num,vector<double>(chain2_num));
@@ -2991,13 +2977,13 @@ int MMdock(AlignCommonInput& common_inputs)
     trimmed.max_na_len=0;
     for (i=0;i<chain1_num;i++)
     {
-        xlen=xlen_vec[i];
-        if      (mol_vec1[i]>0  && xlen>trimmed.max_na_len) trimmed.max_na_len=xlen;
-        else if (mol_vec1[i]<=0 && xlen>trimmed.max_aa_len) trimmed.max_aa_len=xlen;
+        xlen=complex1.lengths[i];
+        if      (complex1.mol_types[i]>0  && xlen>trimmed.max_na_len) trimmed.max_na_len=xlen;
+        else if (complex1.mol_types[i]<=0 && xlen>trimmed.max_aa_len) trimmed.max_aa_len=xlen;
     }
     trimmed.chain_count=trimComplex(trimmed.coords,trimmed.seqs,
-        trimmed.secs,trimmed.lengths,ya_vec,seqy_vec,secy_vec,ylen_vec,
-        mol_vec2,trimmed.max_aa_len,trimmed.max_na_len);
+        trimmed.secs,trimmed.lengths,complex2.coords,complex2.seqs,complex2.secs,complex2.lengths,
+        complex2.mol_types,trimmed.max_aa_len,trimmed.max_na_len);
 
     // Auto-enable fast mode BEFORE parallel entry to keep both paths consistent
     if (len_aa + len_na > 500) fast_opt = true;
@@ -3006,10 +2992,10 @@ int MMdock(AlignCommonInput& common_inputs)
 #ifdef _OPENMP
     if (ctrl_opts.parallel_threads > 1 && chain1_num > 1) {
         run_mmdock_parallel(
-            xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, xlen_vec, ylen_vec,
-            mol_vec1, mol_vec2,
-            resi_vec1, resi_vec2, TMave_mat,
+            complex1.coords, complex2.coords, complex1.seqs, complex2.seqs,
+            complex1.secs, complex2.secs, complex1.lengths, complex2.lengths,
+            complex1.mol_types, complex2.mol_types,
+            complex1.resi, complex2.resi, TMave_mat,
             seqxA_mat, seqyA_mat,
             chain1_num, chain2_num, len_aa, len_na,
             user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
@@ -3022,7 +3008,7 @@ int MMdock(AlignCommonInput& common_inputs)
     {
         for (i=0;i<chain1_num;i++)
         {
-            xlen=xlen_vec[i];
+            xlen=complex1.lengths[i];
             if (xlen<3)
             {
                 for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
@@ -3031,18 +3017,18 @@ int MMdock(AlignCommonInput& common_inputs)
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
-            copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+            copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i],
                 xlen,xa,seqx,secx);
 
             for (j=0;j<chain2_num;j++)
             {
-                if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+                if (complex1.mol_types[i]*complex2.mol_types[j]<0) //no protein-RNA alignment
                 {
                     TMave_mat[i][j]=-1;
                     continue;
                 }
 
-                ylen=ylen_vec[j];
+                ylen=complex2.lengths[j];
                 if (ylen<3)
                 {
                     TMave_mat[i][j]=-1;
@@ -3051,20 +3037,20 @@ int MMdock(AlignCommonInput& common_inputs)
                 secy.resize(ylen+1);
                 ya.clear();
                 ya.reserve(ylen);
-                copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
                     ylen,ya,seqy,secy);
 
                 ChainPairAlignResult result = { 0};
                 result.d0_out = 5.0;
                 int Lnorm_tmp=len_aa;
-                if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+                if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_tmp=len_na;
 
                 // entry function for structure alignment
                 if (trimmed.chain_count && trimmed.lengths[j]<ylen)
                 {
                     mmdock_align_trimmed(result, xa, ya, seqx, seqy, secx, secy,
                         xlen, ylen, trimmed, j,
-                        mol_vec1[i]+mol_vec2[j], Lnorm_tmp, user_opts.d0_scale, user_opts.TMcut,
+                        complex1.mol_types[i]+complex2.mol_types[j], Lnorm_tmp, user_opts.d0_scale, user_opts.TMcut,
                         fast_opt, ctrl_opts.parallel_threads, parsed_input.sequence);
                 }
                 else
@@ -3082,7 +3068,7 @@ int MMdock(AlignCommonInput& common_inputs)
                     align_opts.TMcut = user_opts.TMcut;
                     align_opts.parallel_threads = 1;
                     align_opts.ss_opt = 0;
-                    align_opts.mol_type = mol_vec1[i]+mol_vec2[j];
+                    align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
                     align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
                         xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
                 }
@@ -3121,10 +3107,10 @@ int MMdock(AlignCommonInput& common_inputs)
     for (i=0;i<chain1_num;i++)
     {
         j=assign1_list[i];
-        xname_vec.push_back(user_opts.xname+chainID_list1[i]);
+        xname_vec.push_back(user_opts.xname+complex1.chain_ids[i]);
         if (j<0)
         {
-            cerr<<"Warning! "<<chainID_list1[i]<<" cannot be alighed"<<endl;
+            cerr<<"Warning! "<<complex1.chain_ids[i]<<" cannot be alighed"<<endl;
             for (ui=0;ui<3;ui++)
             {
                 for (uj=0;uj<4;uj++) ut_mat[i][ui*3+uj]=0;
@@ -3133,19 +3119,19 @@ int MMdock(AlignCommonInput& common_inputs)
             yname_vec.push_back(user_opts.yname);
             continue;
         }
-        yname_vec.push_back(user_opts.yname+chainID_list2[j]);
+        yname_vec.push_back(user_opts.yname+complex2.chain_ids[j]);
 
-        xlen =xlen_vec[i];
+        xlen =complex1.lengths[i];
         secx.resize(xlen+1);
         xa.clear();
         xa.reserve(xlen);
-        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i], xlen,xa,seqx,secx);
+        copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i], xlen,xa,seqx,secx);
 
-        ylen =ylen_vec[j];
+        ylen =complex2.lengths[j];
         secy.resize(ylen+1);
         ya.clear();
         ya.reserve(ylen);
-        copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j], ylen,ya,seqy,secy);
+        copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j], ylen,ya,seqy,secy);
 
         ChainPairAlignResult result = { 0};
         result.d0_out = 5.0;
@@ -3162,7 +3148,7 @@ int MMdock(AlignCommonInput& common_inputs)
         align_opts.TMcut = -1;
         align_opts.parallel_threads = 1;
         align_opts.ss_opt = 0;
-        align_opts.mol_type = mol_vec1[i]+mol_vec2[j];
+        align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
 
         int c;
         for (c=0; c<parsed_input.sequence.size(); c++) parsed_input.sequence[c].clear();
@@ -3182,13 +3168,13 @@ int MMdock(AlignCommonInput& common_inputs)
 
         if (user_opts.outfmt_opt<2) output_results(
             user_opts.xname.c_str(), user_opts.yname.c_str(),
-            chainID_list1[i], chainID_list2[j],
+            complex1.chain_ids[i], complex2.chain_ids[j],
             xlen, ylen, result,
             user_opts.Lnorm_ass, user_opts.d0_scale, 
             "", user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, 
-            false, "",//o_opt, fname_super+chainID_list1[i], 
+            false, "",//o_opt, fname_super+complex1.chain_ids[i], 
             false, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
-            resi_vec1, resi_vec2);
+            complex1.resi, complex2.resi);
         
         // clean up
         result.seqM.clear();
@@ -3208,8 +3194,8 @@ int MMdock(AlignCommonInput& common_inputs)
         {
             j=assign1_list[i];
             if (j<0) continue;
-            query_name   +=chainID_list1[i];
-            template_name+=chainID_list2[j];
+            query_name   +=complex1.chain_ids[i];
+            template_name+=complex2.chain_ids[j];
         }
         fcout("%s\t%s\t%.4f\n", query_name, template_name, TM);
         query_name.clear();
@@ -3233,18 +3219,18 @@ int MMdock(AlignCommonInput& common_inputs)
     vector<vector<string> >().swap(seqyA_mat);
     vector<string>().swap(tmp_str_vec);
 
-    DoubleCube().swap(xa_vec); // structure of complex1
-    DoubleCube().swap(ya_vec); // structure of complex2
-    CharMatrix().swap(seqx_vec); // sequence of complex1
-    CharMatrix().swap(seqy_vec); // sequence of complex2
-    CharMatrix().swap(secx_vec); // secondary structure of complex1
-    CharMatrix().swap(secy_vec); // secondary structure of complex2
-    mol_vec1.clear();       // molecule type of complex1, RNA if >0
-    mol_vec2.clear();       // molecule type of complex2, RNA if >0
-    vector<string>().swap(chainID_list1);  // list of chainID1
-    vector<string>().swap(chainID_list2);  // list of chainID2
-    xlen_vec.clear();       // length of complex1
-    ylen_vec.clear();       // length of complex2
+    DoubleCube().swap(complex1.coords); // structure of complex1
+    DoubleCube().swap(complex2.coords); // structure of complex2
+    CharMatrix().swap(complex1.seqs); // sequence of complex1
+    CharMatrix().swap(complex2.seqs); // sequence of complex2
+    CharMatrix().swap(complex1.secs); // secondary structure of complex1
+    CharMatrix().swap(complex2.secs); // secondary structure of complex2
+    complex1.mol_types.clear();       // molecule type of complex1, RNA if >0
+    complex2.mol_types.clear();       // molecule type of complex2, RNA if >0
+    vector<string>().swap(complex1.chain_ids);  // list of chainID1
+    vector<string>().swap(complex2.chain_ids);  // list of chainID2
+    complex1.lengths.clear();       // length of complex1
+    complex2.lengths.clear();       // length of complex2
     return 1;
 }
 
