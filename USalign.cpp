@@ -322,6 +322,16 @@ void output_do_block(std::ostream& os,
     os << "###############\t###############\t#########" << std::endl;
 }
 
+// ---- Forward declaration of align_chain_pair (defined later in this file; used first by run_mmalign_parallel) ----
+void align_chain_pair(ChainPairAlignResult& result,
+    CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy,
+    int xlen, int ylen,
+    const ChainPairAlignOptions& opts,
+    const std::vector<std::string>& sequence,
+    int outfmt_opt);
+
 // TMalign, RNAalign, CPalign, TMscore
 int run_batch_parallel(
     const vector<string>& chain1_list, const vector<string>& chain2_list,
@@ -409,53 +419,26 @@ int run_batch_parallel(
         auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
         auto& c2 = all_chains[task.chain2_idx];
         CoordArray xa_c = c1.chain_coords; CoordArray ya_c = c2.chain_coords;
-        Vec3 t0; RotMat u0;
-        double TM1, TM2, TM3, TM4, TM5;
-        double d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out = 5.0;
-        string seqM, seqxA, seqyA; vector<double> do_vec;
-        double rmsd0 = 0.0; int L_ali = 0; double Liden = 0;
-        double TM_ali = 0, rmsd_ali = 0; int n_ali = 0, n_ali8 = 0;
         bool force_fast = (min(c1.chain_len, c2.chain_len) > 1500) ? true : fast_opt;
-
-        if (cp_opt) {
-            CPalign_main(xa_c, ya_c, c1.chain_seq, c2.chain_seq, c1.chain_sec, c2.chain_sec,
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                c1.chain_len, c2.chain_len, sequence, Lnorm_ass, d0_scale,
-                i_opt, a_opt, u_opt, d_opt, force_fast,
-                c1.cur_complex_mol_list + c2.cur_complex_mol_list, TMcut);
-        } else if (se_opt) {
-            vector<int> invmap(c2.chain_len + 1, -1);
-            u0[0][0]=u0[1][1]=u0[2][2]=1;
-            u0[0][1]=u0[0][2]=u0[1][0]=u0[1][2]=u0[2][0]=u0[2][1]=0;
-            t0[0]=t0[1]=t0[2]=0;
-            se_main(xa_c, ya_c, c1.chain_seq, c2.chain_seq,
-                TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                c1.chain_len, c2.chain_len, sequence, Lnorm_ass, d0_scale,
-                i_opt, a_opt, u_opt, d_opt,
-                c1.cur_complex_mol_list + c2.cur_complex_mol_list, outfmt_opt, invmap);
-            if (outfmt_opt >= 2) {
-                Liden = L_ali = 0;
-                for (int r2 = 0; r2 < c2.chain_len; r2++) {
-                    int r1 = invmap[r2]; if (r1 < 0) continue;
-                    L_ali++; Liden += (c1.chain_seq[r1] == c2.chain_seq[r2]);
-                }
-            }
-        } else {
-            TMalign_main(xa_c, ya_c, c1.chain_seq, c2.chain_seq, c1.chain_sec, c2.chain_sec,
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                c1.chain_len, c2.chain_len, sequence, Lnorm_ass, d0_scale,
-                i_opt, a_opt, u_opt, d_opt, force_fast,
-                c1.cur_complex_mol_list + c2.cur_complex_mol_list, TMcut);
-        }
+        ChainPairAlignResult result = { 0};
+        result.d0_out = 5.0;
+        ChainPairAlignOptions align_opts;
+        align_opts.i_opt = i_opt;
+        align_opts.a_opt = a_opt;
+        align_opts.u_opt = u_opt;
+        align_opts.d_opt = d_opt;
+        align_opts.fast_opt = force_fast;
+        align_opts.se_opt = se_opt;
+        align_opts.cp_opt = cp_opt;
+        align_opts.Lnorm = Lnorm_ass;
+        align_opts.d0_scale = d0_scale;
+        align_opts.TMcut = TMcut;
+        align_opts.parallel_threads = 1;
+        align_opts.ss_opt = 0;
+        align_opts.mol_type = c1.cur_complex_mol_list + c2.cur_complex_mol_list;
+        align_chain_pair(result, xa_c, ya_c, c1.chain_seq, c2.chain_seq,
+            c1.chain_sec, c2.chain_sec, c1.chain_len, c2.chain_len,
+            align_opts, sequence, outfmt_opt);
 
         stringstream ss;
         string xname_out = c1.filename.substr(
@@ -467,34 +450,9 @@ int run_batch_parallel(
 
         int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
         if (cp_opt) output_cp(xname_out, yname_out,
-            seqxA, seqyA, outfmt_opt, left_num, right_num,
+            result.seqxA, result.seqyA, outfmt_opt, left_num, right_num,
             left_aln_num, right_aln_num, ss);
 
-        ChainPairAlignResult result = { 0};
-        result.t0 = t0;
-        result.u0 = u0;
-        result.TM1 = TM1;
-        result.TM2 = TM2;
-        result.TM3 = TM3;
-        result.TM4 = TM4;
-        result.TM5 = TM5;
-        result.rmsd0 = rmsd0;
-        result.d0_out = d0_out;
-        result.Liden = Liden;
-        result.n_ali8 = n_ali8;
-        result.L_ali = L_ali;
-        result.TM_ali = TM_ali;
-        result.rmsd_ali = rmsd_ali;
-        result.TM_0 = TM_0;
-        result.d0_0 = d0_0;
-        result.d0A = d0A;
-        result.d0B = d0B;
-        result.d0a = d0a;
-        result.d0u = d0u;
-        result.seqM = seqM;
-        result.seqxA = seqxA;
-        result.seqyA = seqyA;
-        result.do_vec = do_vec;
         output_results(xname_out, yname_out,
             c1.chain_id, c2.chain_id,
             c1.chain_len, c2.chain_len, result,
@@ -505,8 +463,8 @@ int run_batch_parallel(
             c1.resi_vec, c2.resi_vec, ss);
 
         if (do_opt || (cp_opt && outfmt_opt <= 0))
-            output_do_block(ss, seqxA, seqyA,
-                c1.pdb_lines, c2.pdb_lines, do_vec, right_num);
+            output_do_block(ss, result.seqxA, result.seqyA,
+                c1.pdb_lines, c2.pdb_lines, result.do_vec, right_num);
 
         out_lines[task.order] = ss.str();
     }
@@ -642,16 +600,6 @@ void save_pair_result(const ChainPairAlignResult& result,
     int chain1_num,
     int chain2_num,
     double norm_len);
-
-// ---- Forward declaration of align_chain_pair (defined later in this file; used first by run_mmalign_parallel) ----
-void align_chain_pair(ChainPairAlignResult& result,
-    CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy,
-    int xlen, int ylen,
-    const ChainPairAlignOptions& opts,
-    const std::vector<std::string>& sequence,
-    int outfmt_opt);
 
 ChainPairAlignOptions mmalign_pair_options(const AlignCommonInput& common_inputs,
     int mol_type, double norm_len, bool fast_opt, int i_opt_val, int u_opt_val,
