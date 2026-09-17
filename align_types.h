@@ -50,6 +50,15 @@ struct TrimmedComplex
     int max_na_len;
 };
 
+struct SoiAlignContext
+{
+    CoordArray k_nearest1;
+    CoordArray k_nearest2;
+    IntPairArray chain1_bonds;
+    IntPairArray chain2_bonds;
+    std::vector<double> pair_distances;
+};
+
 // ---- 单条链对的结构比对结果（mm0-4 的每对链共用）----
 struct ChainPairAlignResult
 {

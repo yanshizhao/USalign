@@ -4324,15 +4324,13 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     string secx;                // for the secondary structure
     string secy;
-    IntPairArray   secx_bond;        // boundary of secondary structure
-    IntPairArray   secy_bond;        // boundary of secondary structure
     string seqx, seqy;         // for the protein sequence
     CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
     CoordArray ya;
                                // ya[0...ylen-1][0..2], in general,
-                               // ya is regarded as native structure 
+                               // ya is regarded as native structure
                                // --> superpose xa onto ya
-    CoordArray xk, yk;             // k closest residues
+    SoiAlignContext soi;
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
 
@@ -4387,18 +4385,18 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
             }
             xa.clear();
             xa.reserve(xlen);
-            if (soi_params.closeK_opt>=3) xk.resize(xlen*soi_params.closeK_opt);
+            if (soi_params.closeK_opt>=3) soi.k_nearest1.resize(xlen*soi_params.closeK_opt);
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, soi_params.read_resi);
             if (user_opts.mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
             if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, user_opts.atom_opt);
             else make_sec(xa, xlen, secx); // secondary structure assignment
-            if (soi_params.closeK_opt>=3) getCloseK(xa, xlen, soi_params.closeK_opt, xk);
+            if (soi_params.closeK_opt>=3) getCloseK(xa, xlen, soi_params.closeK_opt, soi.k_nearest1);
             if (soi_params.mm_opt==6) 
             {
-                secx_bond.resize(xlen);
-                assign_sec_bond(secx_bond, secx, xlen);
+                soi.chain1_bonds.resize(xlen);
+                assign_sec_bond(soi.chain1_bonds, secx, xlen);
             }
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
@@ -4436,18 +4434,18 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                     }
                     ya.clear();
                     ya.reserve(ylen);
-                    if (soi_params.closeK_opt>=3) yk.resize(ylen*soi_params.closeK_opt);
+                    if (soi_params.closeK_opt>=3) soi.k_nearest2.resize(ylen*soi_params.closeK_opt);
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, soi_params.read_resi);
                     if (mol_vec2[chain_j]>0)
                          make_sec(seqy, ya, ylen, secy, user_opts.atom_opt);
                     else make_sec(ya, ylen, secy);
-                    if (soi_params.closeK_opt>=3) getCloseK(ya, ylen, soi_params.closeK_opt, yk);
+                    if (soi_params.closeK_opt>=3) getCloseK(ya, ylen, soi_params.closeK_opt, soi.k_nearest2);
                     if (soi_params.mm_opt==6) 
                     {
-                        secy_bond.resize(ylen);
-                        assign_sec_bond(secy_bond, secy, ylen);
+                        soi.chain2_bonds.resize(ylen);
+                        assign_sec_bond(soi.chain2_bonds, secy, ylen);
                     }
 
                     ChainPairAlignResult result = { 0};
@@ -4455,12 +4453,12 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                     ChainPairAlignOptions soi_align_opts = soi_params.align;
                     soi_align_opts.fast_opt = (getmin(xlen,ylen)>1500)?true:user_opts.fast_opt;
                     soi_align_opts.mol_type = mol_vec1[chain_i]+mol_vec2[chain_j];
-                    std::vector<double> dist_list(ylen+1);
+                    soi.pair_distances.assign(ylen+1, 0.0);
 
                     // entry function for structure alignment
-                    soi_align_pair(result, xa, ya, xk, yk, soi_params.closeK_opt,
+                    soi_align_pair(result, xa, ya, soi.k_nearest1, soi.k_nearest2, soi_params.closeK_opt,
                         seqx, seqy, secx, secy, xlen, ylen, soi_align_opts,
-                        parsed_input.sequence, dist_list, secx_bond, secy_bond,
+                        parsed_input.sequence, soi.pair_distances, soi.chain1_bonds, soi.chain2_bonds,
                         soi_params.mm_opt, user_opts.outfmt_opt);
 
                     // print result
@@ -4469,7 +4467,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         xlen, ylen, result,
                         PDB_lines1[chain_i], PDB_lines2[chain_j],
                         chainID_list1[chain_i], chainID_list2[chain_j],
-                        resi_vec1, resi_vec2, &dist_list);
+                        resi_vec1, resi_vec2, &soi.pair_distances);
 
                     // Done! Free memory
                     result.seqM.clear();
