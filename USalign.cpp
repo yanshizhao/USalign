@@ -4444,7 +4444,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
-    ControlOptions& ctrl_opts = common_inputs.control_options;
 
     // declare previously global variables
     vector<vector<string> >PDB_lines1; // text of chain1
@@ -4468,25 +4467,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     SoiAlignContext soi;
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
-
-
-#ifdef _OPENMP
-    if (ctrl_opts.parallel_threads > 1 && (parsed_input.chain1_list.size() > 1 || parsed_input.chain2_list.size() > 1)) 
-    {
-        return run_batch_parallel(
-            parsed_input.chain1_list, parsed_input.chain2_list, user_opts.chain2parse1, user_opts.chain2parse2,
-            user_opts.model2parse1, user_opts.model2parse2, parsed_input.sequence,
-            user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt,
-            user_opts.fname_matrix, user_opts.fname_super, user_opts.atom_opt, user_opts.mol_opt,
-            user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.TMcut,
-            user_opts.outfmt_opt, user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt,
-            user_opts.i_opt, user_opts.a_opt, user_opts.infmt1_opt, user_opts.infmt2_opt, soi_params.read_resi,
-            user_opts.fast_opt, false, false, false,
-            user_opts.u_opt, user_opts.d_opt, user_opts.m_opt,
-            parsed_input.autojustify, user_opts.het_opt, user_opts.mirror_opt,
-            ctrl_opts.parallel_threads);
-    }
-#endif  // _OPENMP
 
     // loop over file names
     for (i=0;i<parsed_input.chain1_list.size();i++)
