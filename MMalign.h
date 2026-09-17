@@ -1433,6 +1433,68 @@ inline double MMalign_search(
     }
     return total_score;
 }
+inline void mmalign_assemble_complex_alignment(
+    const std::string& seqM,
+    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
+    const std::vector<int>& xlen_vec, const std::vector<int>& ylen_vec,
+    const std::vector<std::string>& chainID_list1, const std::vector<std::string>& chainID_list2,
+    const std::vector<int>& assign1_list, const std::vector<int>& assign2_list,
+    int chain1_num, int chain2_num,
+    std::vector<std::vector<std::string> >& seqxA_mat,
+    std::vector<std::vector<std::string> >& seqyA_mat,
+    std::vector<std::vector<std::string> >& seqM_mat,
+    std::string& chainID1, std::string& chainID2,
+    std::vector<std::string>& sequence)
+{
+    int i;
+    int j;
+    sequence.clear();
+    sequence.push_back(""); // seqxA
+    sequence.push_back(""); // seqyA
+    sequence.push_back(""); // seqM
+    int aln_start=0;
+    int aln_end=0;
+    for (i=0;i<chain1_num;i++)
+    {
+        j=assign1_list[i];
+        if (j<0) continue;
+        chainID1+=chainID_list1[i];
+        chainID2+=chainID_list2[j];
+        sequence[0]+=seqxA_mat[i][j]+'*';
+        sequence[1]+=seqyA_mat[i][j]+'*';
+
+        aln_end+=seqxA_mat[i][j].size();
+        seqM_mat[i][j]=seqM.substr(aln_start,aln_end-aln_start);
+        sequence[2]+=seqM_mat[i][j]+'*';
+        aln_start=aln_end;
+    }
+
+    // prepare unaligned region
+    for (i=0;i<chain1_num;i++)
+    {
+        if (assign1_list[i]>=0) continue;
+        chainID1+=chainID_list1[i];
+        chainID2+=':';
+        string s(seqx_vec[i].begin(),seqx_vec[i].end());
+        sequence[0]+=s.substr(0,xlen_vec[i])+'*';
+        sequence[1]+=string(xlen_vec[i],'-')+'*';
+        s.clear();
+        sequence[2]+=string(xlen_vec[i],' ')+'*';
+    }
+    for (j=0;j<chain2_num;j++)
+    {
+        if (assign2_list[j]>=0) continue;
+        chainID1+=':';
+        chainID2+=chainID_list2[j];
+        string s(seqy_vec[j].begin(),seqy_vec[j].end());
+        sequence[0]+=string(ylen_vec[j],'-')+'*';
+        sequence[1]+=s.substr(0,ylen_vec[j])+'*';
+        s.clear();
+        sequence[2]+=string(ylen_vec[j],' ')+'*';
+    }
+
+}
+
 inline void MMalign_final(
     const string xname, const string yname,
     const vector<string> chainID_list1, const vector<string> chainID_list2,
@@ -1514,51 +1576,10 @@ inline void MMalign_final(
     // prepare full complex alignment
     string chainID1="";
     string chainID2="";
-    sequence.clear();
-    sequence.push_back(""); // seqxA
-    sequence.push_back(""); // seqyA
-    sequence.push_back(""); // seqM
-    int aln_start=0;
-    int aln_end=0;
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        if (j<0) continue;
-        chainID1+=chainID_list1[i];
-        chainID2+=chainID_list2[j];
-        sequence[0]+=seqxA_mat[i][j]+'*';
-        sequence[1]+=seqyA_mat[i][j]+'*';
-
-        aln_end+=seqxA_mat[i][j].size();
-        seqM_mat[i][j]=seqM.substr(aln_start,aln_end-aln_start);
-        sequence[2]+=seqM_mat[i][j]+'*';
-        aln_start=aln_end;
-    }
-
-    // prepare unaligned region
-    for (i=0;i<chain1_num;i++)
-    {
-        if (assign1_list[i]>=0) continue;
-        chainID1+=chainID_list1[i];
-        chainID2+=':';
-        string s(seqx_vec[i].begin(),seqx_vec[i].end());
-        sequence[0]+=s.substr(0,xlen_vec[i])+'*';
-        sequence[1]+=string(xlen_vec[i],'-')+'*';
-        s.clear();
-        sequence[2]+=string(xlen_vec[i],' ')+'*';
-    }
-    for (j=0;j<chain2_num;j++)
-    {
-        if (assign2_list[j]>=0) continue;
-        chainID1+=':';
-        chainID2+=chainID_list2[j];
-        string s(seqy_vec[j].begin(),seqy_vec[j].end());
-        sequence[0]+=string(ylen_vec[j],'-')+'*';
-        sequence[1]+=s.substr(0,ylen_vec[j])+'*';
-        s.clear();
-        sequence[2]+=string(ylen_vec[j],' ')+'*';
-    }
-
+    mmalign_assemble_complex_alignment(seqM, seqx_vec, seqy_vec, xlen_vec, ylen_vec,
+        chainID_list1, chainID_list2, assign1_list, assign2_list,
+        chain1_num, chain2_num, seqxA_mat, seqyA_mat, seqM_mat,
+        chainID1, chainID2, sequence);
     // print alignment
     ChainPairAlignResult result = { 0};
     result.t0 = t0;
@@ -1788,51 +1809,10 @@ inline void MMalign_se_final(
     // prepare full complex alignment
     string chainID1="";
     string chainID2="";
-    sequence.clear();
-    sequence.push_back(""); // seqxA
-    sequence.push_back(""); // seqyA
-    sequence.push_back(""); // seqM
-    int aln_start=0;
-    int aln_end=0;
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        if (j<0) continue;
-        chainID1+=chainID_list1[i];
-        chainID2+=chainID_list2[j];
-        sequence[0]+=seqxA_mat[i][j]+'*';
-        sequence[1]+=seqyA_mat[i][j]+'*';
-
-        aln_end+=seqxA_mat[i][j].size();
-        seqM_mat[i][j]=seqM.substr(aln_start,aln_end-aln_start);
-        sequence[2]+=seqM_mat[i][j]+'*';
-        aln_start=aln_end;
-    }
-
-    // prepare unaligned region
-    for (i=0;i<chain1_num;i++)
-    {
-        if (assign1_list[i]>=0) continue;
-        chainID1+=chainID_list1[i];
-        chainID2+=':';
-        string s(seqx_vec[i].begin(),seqx_vec[i].end());
-        sequence[0]+=s.substr(0,xlen_vec[i])+'*';
-        sequence[1]+=string(xlen_vec[i],'-')+'*';
-        s.clear();
-        sequence[2]+=string(xlen_vec[i],' ')+'*';
-    }
-    for (j=0;j<chain2_num;j++)
-    {
-        if (assign2_list[j]>=0) continue;
-        chainID1+=':';
-        chainID2+=chainID_list2[j];
-        string s(seqy_vec[j].begin(),seqy_vec[j].end());
-        sequence[0]+=string(ylen_vec[j],'-')+'*';
-        sequence[1]+=s.substr(0,ylen_vec[j])+'*';
-        s.clear();
-        sequence[2]+=string(ylen_vec[j],' ')+'*';
-    }
-
+    mmalign_assemble_complex_alignment(seqM, seqx_vec, seqy_vec, xlen_vec, ylen_vec,
+        chainID_list1, chainID_list2, assign1_list, assign2_list,
+        chain1_num, chain2_num, seqxA_mat, seqyA_mat, seqM_mat,
+        chainID1, chainID2, sequence);
     // print alignment
     ChainPairAlignResult result = { 0};
     result.t0 = t0;
