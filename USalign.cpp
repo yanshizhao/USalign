@@ -4151,17 +4151,6 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
 {
     const DoubleMatrix& TMave_mat = ctx.TMave_mat;
     const int chain_num = ctx.chain_num;
-    MstaIterBuffers& buffers = ctx.buffers;
-    int& i = buffers.member_chain_idx;
-    int& j = buffers.partner_chain_idx;
-    int& xlen = buffers.member_len;
-    int& ylen = buffers.partner_len;
-    CoordArray& xa = buffers.member_coords;
-    CoordArray& ya = buffers.partner_coords;
-    string& secx = buffers.member_sec;
-    string& secy = buffers.partner_sec;
-    int& r = buffers.residue_idx;
-    int& tm_idx = buffers.tm_order_idx;
     int iter=0;
 
     for (iter=0; iter<state.max_iter; iter++)
