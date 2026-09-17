@@ -4303,6 +4303,42 @@ int mTMalign(AlignCommonInput& common_inputs)
     return 1;
 }
 
+int parse_chain_for_soi(const vector<string>& pdb_lines, const string& chain_name,
+    int& mol, const UserOptions& user_opts, const SoiAlignParams& soi_params,
+    const bool mirror_opt, CoordArray& a, string& seq, string& sec,
+    vector<string>& resi_vec, CoordArray& k_nearest, IntPairArray& sec_bond)
+{
+    int len=pdb_lines.size();
+    if (user_opts.mol_opt=="RNA") mol=1;
+    else if (user_opts.mol_opt=="protein") mol=-1;
+    if (!len)
+    {
+        cerr<<"Warning! Cannot parse file: "<<chain_name
+            <<". Chain length 0."<<endl;
+        return len;
+    }
+    else if (len<3)
+    {
+        cerr<<"Sequence is too short <3!: "<<chain_name<<endl;
+        return len;
+    }
+    a.clear();
+    a.reserve(len);
+    if (soi_params.closeK_opt>=3) k_nearest.resize(len*soi_params.closeK_opt);
+    sec.resize(len + 1);
+    len = read_PDB(pdb_lines, a, seq, resi_vec, soi_params.read_resi);
+    if (mirror_opt) for (int r=0;r<len;r++) a[r][2]=-a[r][2];
+    if (mol>0) make_sec(seq, a, len, sec, user_opts.atom_opt);
+    else make_sec(a, len, sec); // secondary structure assignment
+    if (soi_params.closeK_opt>=3) getCloseK(a, len, soi_params.closeK_opt, k_nearest);
+    if (soi_params.mm_opt==6)
+    {
+        sec_bond.resize(len);
+        assign_sec_bond(sec_bond, sec, len);
+    }
+    return len;
+}
+
 // sequence order independent alignment
 int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
 {
@@ -4319,7 +4355,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     vector<string> chainID_list2;      // list of chainID2
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
-    int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     string secx;                // for the secondary structure
@@ -4369,35 +4404,10 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
         {
-            xlen=PDB_lines1[chain_i].size();
-            if (user_opts.mol_opt=="RNA") mol_vec1[chain_i]=1;
-            else if (user_opts.mol_opt=="protein") mol_vec1[chain_i]=-1;
-            if (!xlen)
-            {
-                cerr<<"Warning! Cannot parse file: "<<user_opts.xname
-                    <<". Chain length 0."<<endl;
-                continue;
-            }
-            else if (xlen<3)
-            {
-                cerr<<"Sequence is too short <3!: "<<user_opts.xname<<endl;
-                continue;
-            }
-            xa.clear();
-            xa.reserve(xlen);
-            if (soi_params.closeK_opt>=3) soi.k_nearest1.resize(xlen*soi_params.closeK_opt);
-            secx.resize(xlen + 1);
-            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
-                resi_vec1, soi_params.read_resi);
-            if (user_opts.mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
-            if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, user_opts.atom_opt);
-            else make_sec(xa, xlen, secx); // secondary structure assignment
-            if (soi_params.closeK_opt>=3) getCloseK(xa, xlen, soi_params.closeK_opt, soi.k_nearest1);
-            if (soi_params.mm_opt==6) 
-            {
-                soi.chain1_bonds.resize(xlen);
-                assign_sec_bond(soi.chain1_bonds, secx, xlen);
-            }
+            xlen=parse_chain_for_soi(PDB_lines1[chain_i], user_opts.xname,
+                mol_vec1[chain_i], user_opts, soi_params, user_opts.mirror_opt,
+                xa, seqx, secx, resi_vec1, soi.k_nearest1, soi.chain1_bonds);
+            if (xlen<3) continue;
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
             for (j=j_start;j<parsed_input.chain2_list.size();j++)
@@ -4418,35 +4428,10 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                 }
                 for (chain_j=0;chain_j<ychainnum;chain_j++)
                 {
-                    ylen=PDB_lines2[chain_j].size();
-                    if (user_opts.mol_opt=="RNA") mol_vec2[chain_j]=1;
-                    else if (user_opts.mol_opt=="protein") mol_vec2[chain_j]=-1;
-                    if (!ylen)
-                    {
-                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname
-                            <<". Chain length 0."<<endl;
-                        continue;
-                    }
-                    else if (ylen<3)
-                    {
-                        cerr<<"Sequence is too short <3!: "<<user_opts.yname<<endl;
-                        continue;
-                    }
-                    ya.clear();
-                    ya.reserve(ylen);
-                    if (soi_params.closeK_opt>=3) soi.k_nearest2.resize(ylen*soi_params.closeK_opt);
-                    secy.resize(ylen + 1);
-                    ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
-                        resi_vec2, soi_params.read_resi);
-                    if (mol_vec2[chain_j]>0)
-                         make_sec(seqy, ya, ylen, secy, user_opts.atom_opt);
-                    else make_sec(ya, ylen, secy);
-                    if (soi_params.closeK_opt>=3) getCloseK(ya, ylen, soi_params.closeK_opt, soi.k_nearest2);
-                    if (soi_params.mm_opt==6) 
-                    {
-                        soi.chain2_bonds.resize(ylen);
-                        assign_sec_bond(soi.chain2_bonds, secy, ylen);
-                    }
+                    ylen=parse_chain_for_soi(PDB_lines2[chain_j], user_opts.yname,
+                        mol_vec2[chain_j], user_opts, soi_params, false,
+                        ya, seqy, secy, resi_vec2, soi.k_nearest2, soi.chain2_bonds);
+                    if (ylen<3) continue;
 
                     ChainPairAlignResult result = { 0};
                     result.d0_out = 5.0;
