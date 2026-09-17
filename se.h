@@ -6,84 +6,33 @@
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
-inline int se_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    ChainPairAlignResult& res,
-    const int xlen, const int ylen,
-    const std::vector<std::string>& sequence,
-    const ChainPairAlignOptions& opt, const int outfmt_opt, const int hinge=0)
+struct SeSearchState
 {
-    double &TM1 = res.TM1;
-    double &TM2 = res.TM2;
-    double &TM3 = res.TM3;
-    double &TM4 = res.TM4;
-    double &TM5 = res.TM5;
-    double &d0_0 = res.d0_0;
-    double &TM_0 = res.TM_0;
-    double &d0A = res.d0A;
-    double &d0B = res.d0B;
-    double &d0u = res.d0u;
-    double &d0a = res.d0a;
-    double &d0_out = res.d0_out;
-    string &seqM = res.seqM;
-    string &seqxA = res.seqxA;
-    string &seqyA = res.seqyA;
-    vector<double> &do_vec = res.do_vec;
-    double &rmsd0 = res.rmsd0;
-    int &L_ali = res.L_ali;
-    double &Liden = res.Liden;
-    double &TM_ali = res.TM_ali;
-    double &rmsd_ali = res.rmsd_ali;
-    int &n_ali = res.n_ali;
-    int &n_ali8 = res.n_ali8;
-    vector<int> &invmap = res.invmap;
-    const double Lnorm_ass = opt.Lnorm;
-    const double d0_scale = opt.d0_scale;
-    const bool i_opt = opt.i_opt;
-    const bool a_opt = opt.a_opt;
-    const int u_opt = opt.u_opt;
-    const bool d_opt = opt.d_opt;
-    const int mol_type = opt.mol_type;
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
+    double D0_MIN;
+    double Lnorm;
     double score_d8;
     double d0;
     double d0_search;
-    double dcu0; //for TMscore search
-    CharMatrix path;          // for dynamic programming (char: 1/0)
-    DoubleMatrix val;          // for dynamic programming
+    double dcu0;
+};
 
-    std::vector<int> m1;
-    std::vector<int> m2;
-    double d;
-    if (outfmt_opt<2)
-    {
-        m1.resize(xlen); //alignd index in x
-        m2.resize(ylen); //alignd index in y
-    }
 
-    /***********************/
-    // allocate memory
-    /***********************/
-    path.assign(xlen+1, vector<char>(ylen+1));
-    val.assign(xlen+1, vector<double>(ylen+1));
-    std::vector<int> invmap0(ylen+1);
-    int i;
-    int j;
-    if (hinge==0) for (j=0;j<=ylen;j++) invmap0[j]=-1;
-    else for (j=0;j<ylen;j++) invmap0[j]=invmap[j];
-    vector<char> seqM_char;
-    if (hinge)
-    {
-        seqM_char.assign(ylen,hinge+'0');
-        j=-1;
-        for (int r=0;r<seqM.size();r++)
-        {
-            j+=seqyA[r]!='-';
-            if (seqM[r]!=' ') seqM_char[j]=seqM[r];
-        }
-    }
-
+inline void se_prepare_search_parameters(int xlen, int ylen,
+    const ChainPairAlignOptions& opt, int mol_type, ChainPairAlignResult& res, SeSearchState& search)
+{
+    double &D0_MIN = search.D0_MIN;
+    double &Lnorm = search.Lnorm;
+    double &score_d8 = search.score_d8;
+    double &d0 = search.d0;
+    double &d0_search = search.d0_search;
+    double &dcu0 = search.dcu0;
+    double &d0A = res.d0A;
+    double &d0B = res.d0B;
+    double &d0a = res.d0a;
+    double &d0u = res.d0u;
+    const bool a_opt = opt.a_opt;
+    const int u_opt = opt.u_opt;
+    const double Lnorm_ass = opt.Lnorm;
     // set d0
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
         score_d8, d0, d0_search, dcu0); // set score_d8
@@ -105,6 +54,17 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
         }
     }
 
+}
+
+inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
+    CoordArray& xa, CoordArray& ya, int xlen, int ylen,
+    const std::vector<std::string>& sequence, const ChainPairAlignOptions& opt,
+    const SeSearchState& search, ChainPairAlignResult& res, const int hinge)
+{
+    const double d0 = search.d0;
+    const bool i_opt = opt.i_opt;
+    vector<int> &invmap = res.invmap;
+    int j;
     // perform alignment
     if (hinge==0) for(j=0; j<ylen; j++) invmap[j]=-1;
     if (!i_opt) NWDP_SE(path, val, xa, ya, xlen, ylen, d0*d0, 0, invmap, hinge);
@@ -127,6 +87,34 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
         }
     }
     
+}
+
+inline void se_score_alignment(CoordArray& xa, CoordArray& ya, int xlen, int ylen,
+    const ChainPairAlignOptions& opt, const SeSearchState& search, const std::vector<int>& invmap0,
+    ChainPairAlignResult& res, std::vector<int>& m1, std::vector<int>& m2,
+    const int outfmt_opt, const int hinge)
+{
+    double &TM1 = res.TM1;
+    double &TM2 = res.TM2;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    double &rmsd0 = res.rmsd0;
+    int &n_ali = res.n_ali;
+    int &n_ali8 = res.n_ali8;
+    vector<int> &invmap = res.invmap;
+    const double Lnorm_ass = opt.Lnorm;
+    const double d0_scale = opt.d0_scale;
+    const double d0A = res.d0A;
+    const double d0B = res.d0B;
+    const double d0a = res.d0a;
+    const double d0u = res.d0u;
+    const double score_d8 = search.score_d8;
+    const bool a_opt = opt.a_opt;
+    const int u_opt = opt.u_opt;
+    const bool d_opt = opt.d_opt;
+    const bool i_opt = opt.i_opt;
+    double d;
     if (hinge==0) rmsd0=TM1=TM2=TM3=TM4=TM5=0;
     else
     {
@@ -174,13 +162,22 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
     TM5/=ylen;
     if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
 
-    if (outfmt_opt>=2)
-    {
-        if (hinge) seqM_char.clear();    
+}
 
-        return 0;
-    }
-
+inline void se_extract_alignment_strings(CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy, int xlen, int ylen,
+    const std::vector<int>& m1, const std::vector<int>& m2, const std::vector<char>& seqM_char,
+    ChainPairAlignResult& res, const int hinge)
+{
+    string &seqM = res.seqM;
+    string &seqxA = res.seqxA;
+    string &seqyA = res.seqyA;
+    vector<double> &do_vec = res.do_vec;
+    double &Liden = res.Liden;
+    const double d0_out = res.d0_out;
+    const int n_ali8 = res.n_ali8;
+    int j;
+    double d;
     // extract aligned sequence
     int ali_len=xlen+ylen; //maximum length of alignment
     seqxA.assign(ali_len,'-');
@@ -256,8 +253,70 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
         }
     }
 
+}
+
+inline int se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& opt, const int outfmt_opt, const int hinge=0)
+{
+    string &seqM = res.seqM;
+    string &seqyA = res.seqyA;
+    vector<int> &invmap = res.invmap;
+    const int mol_type = opt.mol_type;
+    SeSearchState search;
+    CharMatrix path;          // for dynamic programming (char: 1/0)
+    DoubleMatrix val;          // for dynamic programming
+
+    std::vector<int> m1;
+    std::vector<int> m2;
+    double d;
+    if (outfmt_opt<2)
+    {
+        m1.resize(xlen); //alignd index in x
+        m2.resize(ylen); //alignd index in y
+    }
+
+    /***********************/
+    // allocate memory
+    /***********************/
+    path.assign(xlen+1, vector<char>(ylen+1));
+    val.assign(xlen+1, vector<double>(ylen+1));
+    std::vector<int> invmap0(ylen+1);
+    int i;
+    int j;
+    if (hinge==0) for (j=0;j<=ylen;j++) invmap0[j]=-1;
+    else for (j=0;j<ylen;j++) invmap0[j]=invmap[j];
+    vector<char> seqM_char;
+    if (hinge)
+    {
+        seqM_char.assign(ylen,hinge+'0');
+        j=-1;
+        for (int r=0;r<seqM.size();r++)
+        {
+            j+=seqyA[r]!='-';
+            if (seqM[r]!=' ') seqM_char[j]=seqM[r];
+        }
+    }
+
+    se_prepare_search_parameters(xlen, ylen, opt, mol_type, res, search);
+    se_build_initial_alignment(path, val, xa, ya, xlen, ylen, sequence, opt, search, res, hinge);
+    se_score_alignment(xa, ya, xlen, ylen, opt, search, invmap0, res, m1, m2, outfmt_opt, hinge);
+    if (outfmt_opt>=2)
+    {
+        if (hinge) seqM_char.clear();    
+
+        return 0;
+    }
+
+    se_extract_alignment_strings(xa, ya, seqx, seqy, xlen, ylen, m1, m2, seqM_char, res, hinge);
+    return 0; // zero for no exception
+    se_extract_alignment_strings(xa, ya, seqx, seqy, xlen, ylen, m1, m2, seqM_char, res, hinge);
     return 0; // zero for no exception
 }
+
 
 int se_main(
     CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
