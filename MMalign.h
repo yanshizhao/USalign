@@ -1477,6 +1477,8 @@ inline void MMalign_final(
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
+    seqx.resize(xlen+1);
+    seqy.resize(ylen+1);
 
     // declare variable specific to this pair of TMalign
     Vec3 t0;
@@ -1742,6 +1744,8 @@ inline void MMalign_se_final(
         secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
+    seqx.resize(xlen+1);
+    seqy.resize(ylen+1);
 
     // declare variable specific to this pair of TMalign
     Vec3 t0;
