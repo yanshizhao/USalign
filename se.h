@@ -6,19 +6,44 @@
  * u_opt corresponds to option -L
  *       if u_opt==2, use d0 from Lnorm_ass for alignment
  * if hinge>0, append to original invmap */
-int se_main(
-    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen, const vector<string> &sequence,
-    const double Lnorm_ass, const double d0_scale, const bool i_opt,
-    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, std::vector<int>& invmap, const int hinge=0)
+inline int se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& opt, const int outfmt_opt, const int hinge=0)
 {
+    double &TM1 = res.TM1;
+    double &TM2 = res.TM2;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    double &d0_0 = res.d0_0;
+    double &TM_0 = res.TM_0;
+    double &d0A = res.d0A;
+    double &d0B = res.d0B;
+    double &d0u = res.d0u;
+    double &d0a = res.d0a;
+    double &d0_out = res.d0_out;
+    string &seqM = res.seqM;
+    string &seqxA = res.seqxA;
+    string &seqyA = res.seqyA;
+    vector<double> &do_vec = res.do_vec;
+    double &rmsd0 = res.rmsd0;
+    int &L_ali = res.L_ali;
+    double &Liden = res.Liden;
+    double &TM_ali = res.TM_ali;
+    double &rmsd_ali = res.rmsd_ali;
+    int &n_ali = res.n_ali;
+    int &n_ali8 = res.n_ali8;
+    vector<int> &invmap = res.invmap;
+    const double Lnorm_ass = opt.Lnorm;
+    const double d0_scale = opt.d0_scale;
+    const bool i_opt = opt.i_opt;
+    const bool a_opt = opt.a_opt;
+    const int u_opt = opt.u_opt;
+    const bool d_opt = opt.d_opt;
+    const int mol_type = opt.mol_type;
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8;
@@ -234,19 +259,83 @@ int se_main(
     return 0; // zero for no exception
 }
 
-inline int se_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    ChainPairAlignResult& res,
-    const int xlen, const int ylen,
-    const std::vector<std::string>& sequence,
-    const ChainPairAlignOptions& opt, const int outfmt_opt)
+int se_main(
+    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &d0_0, double &TM_0,
+    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    double &rmsd0, int &L_ali, double &Liden,
+    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const int xlen, const int ylen, const vector<string> &sequence,
+    const double Lnorm_ass, const double d0_scale, const bool i_opt,
+    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
+    const int outfmt_opt, std::vector<int>& invmap, const int hinge=0)
 {
-    return se_main(xa, ya, seqx, seqy,
-        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
-        res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
-        res.seqM, res.seqxA, res.seqyA, res.do_vec,
-        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
-        xlen, ylen, sequence, opt.Lnorm, opt.d0_scale,
-        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt,
-        opt.mol_type, outfmt_opt, res.invmap);
+    ChainPairAlignResult res = { 0};
+    res.TM1 = TM1;
+    res.TM2 = TM2;
+    res.TM3 = TM3;
+    res.TM4 = TM4;
+    res.TM5 = TM5;
+    res.d0_0 = d0_0;
+    res.TM_0 = TM_0;
+    res.d0A = d0A;
+    res.d0B = d0B;
+    res.d0u = d0u;
+    res.d0a = d0a;
+    res.d0_out = d0_out;
+    res.seqM = seqM;
+    res.seqxA = seqxA;
+    res.seqyA = seqyA;
+    res.do_vec = do_vec;
+    res.rmsd0 = rmsd0;
+    res.L_ali = L_ali;
+    res.Liden = Liden;
+    res.TM_ali = TM_ali;
+    res.rmsd_ali = rmsd_ali;
+    res.n_ali = n_ali;
+    res.n_ali8 = n_ali8;
+    res.invmap = invmap;
+    ChainPairAlignOptions opt;
+    opt.i_opt = i_opt;
+    opt.a_opt = a_opt;
+    opt.u_opt = u_opt;
+    opt.d_opt = d_opt;
+    opt.fast_opt = false;
+    opt.se_opt = false;
+    opt.cp_opt = false;
+    opt.Lnorm = Lnorm_ass;
+    opt.d0_scale = d0_scale;
+    opt.TMcut = -1;
+    opt.parallel_threads = 1;
+    opt.ss_opt = 0;
+    opt.mol_type = mol_type;
+    int rc = se_main(xa, ya, seqx, seqy, res, xlen, ylen, sequence, opt, outfmt_opt, hinge);
+    TM1 = res.TM1;
+    TM2 = res.TM2;
+    TM3 = res.TM3;
+    TM4 = res.TM4;
+    TM5 = res.TM5;
+    d0_0 = res.d0_0;
+    TM_0 = res.TM_0;
+    d0A = res.d0A;
+    d0B = res.d0B;
+    d0u = res.d0u;
+    d0a = res.d0a;
+    d0_out = res.d0_out;
+    seqM = res.seqM;
+    seqxA = res.seqxA;
+    seqyA = res.seqyA;
+    do_vec = res.do_vec;
+    rmsd0 = res.rmsd0;
+    L_ali = res.L_ali;
+    Liden = res.Liden;
+    TM_ali = res.TM_ali;
+    rmsd_ali = res.rmsd_ali;
+    n_ali = res.n_ali;
+    n_ali8 = res.n_ali8;
+    invmap = res.invmap;
+    return rc;
 }
+
