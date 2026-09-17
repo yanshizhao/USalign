@@ -3635,164 +3635,29 @@ int select_representative(const DoubleMatrix& TMave_mat, int chain_num)
     return repr_idx;
 }
 
-int mTMalign(AlignCommonInput& common_inputs)
+void msta_iterate(MstaIterationState& state, AlignCommonInput& common_inputs,
+    const ComplexData& complex, DoubleCube& a_vec, const DoubleMatrix& TMave_mat,
+    vector<vector<string> >& seqxA_mat, vector<vector<string> >& seqyA_mat,
+    int chain_num, double Lnorm_ass, bool u_opt, bool fast_opt,
+    int cur_complex_mol_list)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
-    double Lnorm_ass = user_opts.Lnorm_ass;
-    bool u_opt = user_opts.u_opt;
-    bool fast_opt = user_opts.fast_opt;
-
-    // declare previously global variables
-    int    i,j;                    // chain index
-    int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
-    CoordArray xa;                     // structure of single chain
-    CoordArray ya;
-    string secx;                   // for the secondary structure
-    string secy;
-
-    // parse chain list
-    ComplexData complex;
-    parse_chain_list(parsed_input.chain1_list, complex,
-        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, user_opts.o_opt,
-        user_opts.chain2parse1, user_opts.model2parse1);
-    int chain_num=complex.coords.size();
-    if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
-    DoubleCube a_vec = complex.coords;
-    DoubleCube ua_vec = complex.coords;
     const CharMatrix& seq_vec = complex.seqs;
     const CharMatrix& sec_vec = complex.secs;
-    const vector<int>& mol_vec = complex.mol_types;
-    const vector<string>& chainID_list = complex.chain_ids;
     const vector<int>& len_vec = complex.lengths;
+    const vector<string>& chainID_list = complex.chain_ids;
     const vector<string>& resi_vec = complex.resi;
-    int    len_aa = complex.total_len_aa;
-    int    len_na = complex.total_len_na;
-    int    cur_complex_mol_list=0;
-    int    total_len=0;
-    xlen=0;
-    for (i=0; i<chain_num; i++)
-    {
-        if (len_vec[i]>xlen) xlen=len_vec[i];
-        total_len+=len_vec[i];
-        cur_complex_mol_list+=mol_vec[i];
-    }
-    if (!u_opt) Lnorm_ass=total_len/chain_num;
-    u_opt=true;
-    total_len-=xlen;
-    if (total_len>750) fast_opt=true;
-
-    // get all-against-all alignment
-    DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain_num,vector<double>(chain_num));
-    vector<string> tmp_str_vec(chain_num,"");
-    vector<vector<string> >seqxA_mat(chain_num,tmp_str_vec);
-    vector<vector<string> >seqyA_mat(chain_num,tmp_str_vec);
-    for (i=0;i<chain_num;i++) for (j=0;j<chain_num;j++) TMave_mat[i][j]=0;
-    bool pair_parallel_done = false;
-#ifdef _OPENMP
-    if (ctrl_opts.parallel_threads > 1) {
-        run_mTMalign_pairwise_parallel(
-            a_vec, seq_vec, sec_vec, len_vec,
-            parsed_input.chain1_list, chainID_list, seqxA_mat, seqyA_mat,
-            TMave_mat, resi_vec, chain_num, Lnorm_ass, user_opts.d0_scale,
-            u_opt, cur_complex_mol_list, user_opts.outfmt_opt, fast_opt, user_opts.TMcut,
-            ctrl_opts.full_opt, ctrl_opts.se_opt, user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt,
-            ctrl_opts.parallel_threads);
-        pair_parallel_done = true;
-    }
-#endif
-    if (!pair_parallel_done) 
-    {
-        // serial fallback
-        for (i=0;i<chain_num;i++)
-        {
-            xlen=len_vec[i];
-            if (xlen<3) continue;
-            string seqx;
-            secx.resize(xlen+1);
-            xa.clear();
-            xa.reserve(xlen);
-            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
-            seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
-            for (j=i+1;j<chain_num;j++)
-            {
-                ylen=len_vec[j];
-                if (ylen<3) continue;
-                string seqy;
-                secy.resize(ylen+1);
-                ya.clear();
-                ya.reserve(ylen);
-                copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
-
-                ChainPairAlignResult result = { 0};
-                result.d0_out = 5.0;
-                ChainPairAlignOptions align_opts;
-                align_opts.i_opt = 0;
-                align_opts.a_opt = 0;
-                align_opts.u_opt = u_opt;
-                align_opts.d_opt = false;
-                align_opts.fast_opt = fast_opt;
-                align_opts.se_opt = ctrl_opts.se_opt;
-                align_opts.cp_opt = false;
-                align_opts.Lnorm = Lnorm_ass;
-                align_opts.d0_scale = user_opts.d0_scale;
-                align_opts.TMcut = user_opts.TMcut;
-                align_opts.parallel_threads = 1;
-                align_opts.ss_opt = 0;
-                align_opts.mol_type = cur_complex_mol_list;
-                // entry function for structure alignment
-                align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
-                    xlen, ylen, align_opts, parsed_input.sequence,
-                    user_opts.outfmt_opt);
-
-                // store result
-                TMave_mat[i][j]=result.TM4; TMave_mat[j][i]=result.TM4;
-                seqxA_mat[i][j]=seqyA_mat[j][i]=result.seqxA;
-                seqyA_mat[i][j]=seqxA_mat[j][i]=result.seqyA;
-                    //<<chain_list[j]<<':'<<chainID_list[j]<<"\tTM4="<<TM4<<endl;
-                if (ctrl_opts.full_opt) output_results(
-                    parsed_input.chain1_list[i],parsed_input.chain1_list[j], chainID_list[i], chainID_list[j],
-                    xlen, ylen, result,
-                    Lnorm_ass, user_opts.d0_scale, "",
-                    user_opts.outfmt_opt, user_opts.ter_opt, true, user_opts.split_opt, user_opts.o_opt, "",
-                    0, user_opts.a_opt, false, user_opts.d_opt, false, resi_vec, resi_vec);
-
-                // clean up
-                result.seqM.clear();
-                result.seqxA.clear();
-                result.seqyA.clear();
-                result.do_vec.clear();
-            }
-        }
-
-    }
-    // representative related variables
+    int i,j;
+    int xlen=0, ylen=0;
+    CoordArray xa;
+    CoordArray ya;
+    string secx;
+    string secy;
     int r;
-    MstaIterationState state;
-    // Empty until rebuilt inside the iteration loop (msa.assign(ylen,"")),
-    // so it does not depend on stale xlen/ylen left by the pairwise loop.
-    for (i=0;i<chain_num;i++) state.xname_vec.push_back(
-        parsed_input.chain1_list[i].substr(user_opts.dir_opt.size())+chainID_list[i]);
-
-    // build and output UPGMA phylogenetic tree
-    output_upgma_tree(state.xname_vec, TMave_mat, chain_num);
-
-    state.assign_list.assign(chain_num, 0);
-    state.compare_num = 0;
-    state.TM4_total_max=0;
-
-    state.max_iter=5-static_cast<int>(total_len/200);
-    if (state.max_iter<2) state.max_iter=2;
     int iter=0;
-    state.TM_vec.assign(chain_num,0);
-    state.d0_vec.assign(chain_num,0);
-    state.seqID_vec.assign(chain_num,0);
-    state.TM_mat.assign(chain_num,state.TM_vec);
-    state.d0_mat.assign(chain_num,state.d0_vec);
-    state.seqID_mat.assign(chain_num,state.seqID_vec);
+
     for (iter=0; iter<state.max_iter; iter++)
     {
         state.repr_idx=select_representative(TMave_mat, chain_num);
@@ -4159,6 +4024,167 @@ int mTMalign(AlignCommonInput& common_inputs)
         if (state.totals.TM4<=state.TM4_total_max) break;
         state.TM4_total_max=state.totals.TM4;
     }
+}
+
+int mTMalign(AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+    double Lnorm_ass = user_opts.Lnorm_ass;
+    bool u_opt = user_opts.u_opt;
+    bool fast_opt = user_opts.fast_opt;
+
+    // declare previously global variables
+    int    i,j;                    // chain index
+    int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
+    string secx;                   // for the secondary structure
+    string secy;
+
+    // parse chain list
+    ComplexData complex;
+    parse_chain_list(parsed_input.chain1_list, complex,
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, user_opts.o_opt,
+        user_opts.chain2parse1, user_opts.model2parse1);
+    int chain_num=complex.coords.size();
+    if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
+    DoubleCube a_vec = complex.coords;
+    DoubleCube ua_vec = complex.coords;
+    const CharMatrix& seq_vec = complex.seqs;
+    const CharMatrix& sec_vec = complex.secs;
+    const vector<int>& mol_vec = complex.mol_types;
+    const vector<string>& chainID_list = complex.chain_ids;
+    const vector<int>& len_vec = complex.lengths;
+    const vector<string>& resi_vec = complex.resi;
+    int    len_aa = complex.total_len_aa;
+    int    len_na = complex.total_len_na;
+    int    cur_complex_mol_list=0;
+    int    total_len=0;
+    xlen=0;
+    for (i=0; i<chain_num; i++)
+    {
+        if (len_vec[i]>xlen) xlen=len_vec[i];
+        total_len+=len_vec[i];
+        cur_complex_mol_list+=mol_vec[i];
+    }
+    if (!u_opt) Lnorm_ass=total_len/chain_num;
+    u_opt=true;
+    total_len-=xlen;
+    if (total_len>750) fast_opt=true;
+
+    // get all-against-all alignment
+    DoubleMatrix TMave_mat;
+    TMave_mat.assign(chain_num,vector<double>(chain_num));
+    vector<string> tmp_str_vec(chain_num,"");
+    vector<vector<string> >seqxA_mat(chain_num,tmp_str_vec);
+    vector<vector<string> >seqyA_mat(chain_num,tmp_str_vec);
+    for (i=0;i<chain_num;i++) for (j=0;j<chain_num;j++) TMave_mat[i][j]=0;
+    bool pair_parallel_done = false;
+#ifdef _OPENMP
+    if (ctrl_opts.parallel_threads > 1) {
+        run_mTMalign_pairwise_parallel(
+            a_vec, seq_vec, sec_vec, len_vec,
+            parsed_input.chain1_list, chainID_list, seqxA_mat, seqyA_mat,
+            TMave_mat, resi_vec, chain_num, Lnorm_ass, user_opts.d0_scale,
+            u_opt, cur_complex_mol_list, user_opts.outfmt_opt, fast_opt, user_opts.TMcut,
+            ctrl_opts.full_opt, ctrl_opts.se_opt, user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt,
+            ctrl_opts.parallel_threads);
+        pair_parallel_done = true;
+    }
+#endif
+    if (!pair_parallel_done) 
+    {
+        // serial fallback
+        for (i=0;i<chain_num;i++)
+        {
+            xlen=len_vec[i];
+            if (xlen<3) continue;
+            string seqx;
+            secx.resize(xlen+1);
+            xa.clear();
+            xa.reserve(xlen);
+            copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
+            seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
+            for (j=i+1;j<chain_num;j++)
+            {
+                ylen=len_vec[j];
+                if (ylen<3) continue;
+                string seqy;
+                secy.resize(ylen+1);
+                ya.clear();
+                ya.reserve(ylen);
+                copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
+
+                ChainPairAlignResult result = { 0};
+                result.d0_out = 5.0;
+                ChainPairAlignOptions align_opts;
+                align_opts.i_opt = 0;
+                align_opts.a_opt = 0;
+                align_opts.u_opt = u_opt;
+                align_opts.d_opt = false;
+                align_opts.fast_opt = fast_opt;
+                align_opts.se_opt = ctrl_opts.se_opt;
+                align_opts.cp_opt = false;
+                align_opts.Lnorm = Lnorm_ass;
+                align_opts.d0_scale = user_opts.d0_scale;
+                align_opts.TMcut = user_opts.TMcut;
+                align_opts.parallel_threads = 1;
+                align_opts.ss_opt = 0;
+                align_opts.mol_type = cur_complex_mol_list;
+                // entry function for structure alignment
+                align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
+                    xlen, ylen, align_opts, parsed_input.sequence,
+                    user_opts.outfmt_opt);
+
+                // store result
+                TMave_mat[i][j]=result.TM4; TMave_mat[j][i]=result.TM4;
+                seqxA_mat[i][j]=seqyA_mat[j][i]=result.seqxA;
+                seqyA_mat[i][j]=seqxA_mat[j][i]=result.seqyA;
+                    //<<chain_list[j]<<':'<<chainID_list[j]<<"\tTM4="<<TM4<<endl;
+                if (ctrl_opts.full_opt) output_results(
+                    parsed_input.chain1_list[i],parsed_input.chain1_list[j], chainID_list[i], chainID_list[j],
+                    xlen, ylen, result,
+                    Lnorm_ass, user_opts.d0_scale, "",
+                    user_opts.outfmt_opt, user_opts.ter_opt, true, user_opts.split_opt, user_opts.o_opt, "",
+                    0, user_opts.a_opt, false, user_opts.d_opt, false, resi_vec, resi_vec);
+
+                // clean up
+                result.seqM.clear();
+                result.seqxA.clear();
+                result.seqyA.clear();
+                result.do_vec.clear();
+            }
+        }
+
+    }
+    // representative related variables
+    int r;
+    MstaIterationState state;
+    // Empty until rebuilt inside the iteration loop (msa.assign(ylen,"")),
+    // so it does not depend on stale xlen/ylen left by the pairwise loop.
+    for (i=0;i<chain_num;i++) state.xname_vec.push_back(
+        parsed_input.chain1_list[i].substr(user_opts.dir_opt.size())+chainID_list[i]);
+
+    // build and output UPGMA phylogenetic tree
+    output_upgma_tree(state.xname_vec, TMave_mat, chain_num);
+
+    state.assign_list.assign(chain_num, 0);
+    state.compare_num = 0;
+    state.TM4_total_max=0;
+
+    state.max_iter=5-static_cast<int>(total_len/200);
+    if (state.max_iter<2) state.max_iter=2;
+    state.TM_vec.assign(chain_num,0);
+    state.d0_vec.assign(chain_num,0);
+    state.seqID_vec.assign(chain_num,0);
+    state.TM_mat.assign(chain_num,state.TM_vec);
+    state.d0_mat.assign(chain_num,state.d0_vec);
+    state.seqID_mat.assign(chain_num,state.seqID_vec);
+    msta_iterate(state, common_inputs, complex, a_vec, TMave_mat, seqxA_mat,
+        seqyA_mat, chain_num, Lnorm_ass, u_opt, fast_opt, cur_complex_mol_list);
     for (i=0;i<chain_num;i++)
     {
         for (j=0;j<chain_num;j++)
