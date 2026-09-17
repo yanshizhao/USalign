@@ -3691,7 +3691,7 @@ struct MstaIterContext
 };
 
 
-void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
+void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext& ctx)
 {
     UserOptions& user_opts = ctx.user_opts;
     ParsedInput& parsed_input = ctx.parsed_input;
@@ -3720,14 +3720,7 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
     string& secx = buffers.member_sec;
     string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
-    int& tm_idx = buffers.tm_order_idx;
-    int iter=0;
 
-    for (iter=0; iter<state.max_iter; iter++)
-    {
-        state.repr_idx=select_representative(TMave_mat, chain_num);
-
-        // superpose
         user_opts.yname=parsed_input.chain1_list[state.repr_idx].substr(user_opts.dir_opt.size())+chainID_list[state.repr_idx];
         CoordArray xt;
         state.TM_pair_vec.clear();
@@ -3827,6 +3820,47 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
             parsed_input.sequence[1].clear();
             result.do_vec.clear();
         }
+}
+
+
+void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
+{
+    UserOptions& user_opts = ctx.user_opts;
+    ParsedInput& parsed_input = ctx.parsed_input;
+    ControlOptions& ctrl_opts = ctx.ctrl_opts;
+    const CharMatrix& seq_vec = ctx.complex.seqs;
+    const CharMatrix& sec_vec = ctx.complex.secs;
+    const vector<int>& len_vec = ctx.complex.lengths;
+    const vector<string>& chainID_list = ctx.chainID_list;
+    const vector<string>& resi_vec = ctx.resi_vec;
+    DoubleCube& a_vec = ctx.a_vec;
+    const DoubleMatrix& TMave_mat = ctx.TMave_mat;
+    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
+    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
+    const int chain_num = ctx.chain_num;
+    const double Lnorm_ass = ctx.Lnorm_ass;
+    const bool u_opt = ctx.u_opt;
+    const bool fast_opt = ctx.fast_opt;
+    const int cur_complex_mol_list = ctx.mol_type_sum;
+    MstaIterBuffers& buffers = ctx.buffers;
+    int& i = buffers.member_chain_idx;
+    int& j = buffers.partner_chain_idx;
+    int& xlen = buffers.member_len;
+    int& ylen = buffers.partner_len;
+    CoordArray& xa = buffers.member_coords;
+    CoordArray& ya = buffers.partner_coords;
+    string& secx = buffers.member_sec;
+    string& secy = buffers.partner_sec;
+    int& r = buffers.residue_idx;
+    int& tm_idx = buffers.tm_order_idx;
+    int iter=0;
+
+    for (iter=0; iter<state.max_iter; iter++)
+    {
+        state.repr_idx=select_representative(TMave_mat, chain_num);
+
+        // superpose
+        msta_superpose_to_representative(state, ctx);
         ylen = len_vec[state.repr_idx];
         string seqy;
         secy.resize(ylen+1);
