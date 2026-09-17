@@ -3791,32 +3791,27 @@ void msta_iterate(MstaIterationState& state, AlignCommonInput& common_inputs,
             xa.reserve(xlen);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
         
-            // declare variable specific to this pair of TMalign
-            double TM1;
-            double TM2;
-            double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-            double d0_0;
-            double TM_0;
-            double d0A;
-            double d0B;
-            double d0u;
-            double d0a;
-            double d0_out=5.0;
-            string seqM, seqxA, seqyA;// for output alignment
-            double rmsd0 = 0.0;
-            int L_ali;                // Aligned length in standard_TMscore
-            double Liden=0;
-            double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-            int n_ali=0;
-            int n_ali8=0;
-            std::vector<int> invmap(ylen+1);
-            vector<double> do_vec;
-
-            se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-                do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, parsed_input.sequence, Lnorm_ass, user_opts.d0_scale,
-                0, user_opts.a_opt, u_opt, user_opts.d_opt, cur_complex_mol_list, 1, invmap);
+            ChainPairAlignResult result = { 0};
+            result.d0_out = 5.0;
+            result.invmap.assign(ylen + 1, 0);
+            string& seqxA = result.seqxA;
+            string& seqyA = result.seqyA;
+            ChainPairAlignOptions align_opts;
+            align_opts.i_opt = 0;
+            align_opts.a_opt = user_opts.a_opt;
+            align_opts.u_opt = u_opt;
+            align_opts.d_opt = user_opts.d_opt;
+            align_opts.fast_opt = fast_opt;
+            align_opts.se_opt = true;
+            align_opts.cp_opt = false;
+            align_opts.Lnorm = Lnorm_ass;
+            align_opts.d0_scale = user_opts.d0_scale;
+            align_opts.TMcut = user_opts.TMcut;
+            align_opts.parallel_threads = 1;
+            align_opts.ss_opt = 0;
+            align_opts.mol_type = cur_complex_mol_list;
+            se_main(xa, ya, seqx, seqy, result, xlen, ylen,
+                parsed_input.sequence, align_opts, 1);
 
             int rx=0;
             int ry=0;
@@ -3875,10 +3870,10 @@ void msta_iterate(MstaIterationState& state, AlignCommonInput& common_inputs,
             // clean up
             tmp_gap.clear();
 
-            seqM.clear();
-            seqxA.clear();
-            seqyA.clear();
-            do_vec.clear();
+            result.seqM.clear();
+            result.seqxA.clear();
+            result.seqyA.clear();
+            result.do_vec.clear();
         }
         vector<string>().swap(msa_ext);
         vector<pair<double,int> >().swap(state.TM_pair_vec);
@@ -3946,78 +3941,71 @@ void msta_iterate(MstaIterationState& state, AlignCommonInput& common_inputs,
                 parsed_input.sequence[0]=seqxA_mat[i][j];
                 parsed_input.sequence[1]=seqyA_mat[i][j];
             
-                // declare variable specific to this pair of TMalign
-                double TM1;
-                double TM2;
-                double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                double d0_0;
-                double TM_0;
-                double d0A;
-                double d0B;
-                double d0u;
-                double d0a;
-                double d0_out=5.0;
-                string seqM, seqxA, seqyA;// for output alignment
-                double rmsd0 = 0.0;
-                int L_ali=0;              // Aligned length in standard_TMscore
-                double Liden=0;
-                double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                int n_ali=0;
-                int n_ali8=0;
-                std::vector<int> invmap(ylen+1);
-                vector<double> do_vec;
-
-                se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-                    do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, parsed_input.sequence, Lnorm_ass, user_opts.d0_scale,
-                    true, user_opts.a_opt, u_opt, user_opts.d_opt, cur_complex_mol_list, 1, invmap);
+                ChainPairAlignResult result = { 0};
+                result.d0_out = 5.0;
+                result.invmap.assign(ylen + 1, 0);
+                ChainPairAlignOptions align_opts;
+                align_opts.i_opt = 1;
+                align_opts.a_opt = user_opts.a_opt;
+                align_opts.u_opt = u_opt;
+                align_opts.d_opt = user_opts.d_opt;
+                align_opts.fast_opt = fast_opt;
+                align_opts.se_opt = true;
+                align_opts.cp_opt = false;
+                align_opts.Lnorm = Lnorm_ass;
+                align_opts.d0_scale = user_opts.d0_scale;
+                align_opts.TMcut = user_opts.TMcut;
+                align_opts.parallel_threads = 1;
+                align_opts.ss_opt = 0;
+                align_opts.mol_type = cur_complex_mol_list;
+                se_main(xa, ya, seqx, seqy, result, xlen, ylen,
+                    parsed_input.sequence, align_opts, 1);
 
                 if (xlen<=ylen)
                 {
                     state.xlen_total+=xlen;
                     state.ylen_total+=ylen;
-                    state.totals.TM1+=TM1;
-                    state.totals.TM2+=TM2;
-                    state.totals.d0A+=d0A;
-                    state.totals.d0B+=d0B;
+                    state.totals.TM1+=result.TM1;
+                    state.totals.TM2+=result.TM2;
+                    state.totals.d0A+=result.d0A;
+                    state.totals.d0B+=result.d0B;
                 }
                 else
                 {
                     state.xlen_total+=ylen;
                     state.ylen_total+=xlen;
-                    state.totals.TM1+=TM2;
-                    state.totals.TM2+=TM1;
-                    state.totals.d0A+=d0B;
-                    state.totals.d0B+=d0A;
+                    state.totals.TM1+=result.TM2;
+                    state.totals.TM2+=result.TM1;
+                    state.totals.d0A+=result.d0B;
+                    state.totals.d0B+=result.d0A;
                 }
-                state.TM_mat[i][j]=TM2;
-                state.TM_mat[j][i]=TM1;
-                state.d0_mat[i][j]=d0B;
-                state.d0_mat[j][i]=d0A;
-                state.seqID_mat[i][j]=1.*Liden/xlen;
-                state.seqID_mat[j][i]=1.*Liden/ylen;
+                state.TM_mat[i][j]=result.TM2;
+                state.TM_mat[j][i]=result.TM1;
+                state.d0_mat[i][j]=result.d0B;
+                state.d0_mat[j][i]=result.d0A;
+                state.seqID_mat[i][j]=1.*result.Liden/xlen;
+                state.seqID_mat[j][i]=1.*result.Liden/ylen;
 
-                state.totals.TM3+=TM3;
-                state.totals.TM4+=TM4;
-                state.totals.TM5+=TM5;
-                state.totals.d0_0+=d0_0;
-                state.totals.TM_0+=TM_0;
-                state.totals.d0u+=d0u;
-                state.totals.d0_out+=d0_out;
-                state.totals.rmsd0+=rmsd0;
-                state.totals.L_ali+=L_ali;        // Aligned length in standard_TMscore
-                state.totals.Liden+=Liden;
-                state.totals.TM_ali+=TM_ali;
-                state.totals.rmsd_ali+=rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                state.totals.n_ali+=n_ali;
-                state.totals.n_ali8+=n_ali8;
+                state.totals.TM3+=result.TM3;
+                state.totals.TM4+=result.TM4;
+                state.totals.TM5+=result.TM5;
+                state.totals.d0_0+=result.d0_0;
+                state.totals.TM_0+=result.TM_0;
+                state.totals.d0u+=result.d0u;
+                state.totals.d0_out+=result.d0_out;
+                state.totals.rmsd0+=result.rmsd0;
+                state.totals.L_ali+=result.L_ali;        // Aligned length in standard_TMscore
+                state.totals.Liden+=result.Liden;
+                state.totals.TM_ali+=result.TM_ali;
+                state.totals.rmsd_ali+=result.rmsd_ali;  // TMscore and rmsd in standard_TMscore
+                state.totals.n_ali+=result.n_ali;
+                state.totals.n_ali8+=result.n_ali8;
 
                 // clean up
-                seqM.clear();
-                seqxA.clear();
-                seqyA.clear(); 
-                do_vec.clear();
+                result.seqM.clear();
+                result.seqxA.clear();
+                result.seqyA.clear();
+                result.do_vec.clear();
             }
             
         }
