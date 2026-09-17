@@ -3823,21 +3823,14 @@ void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext
 }
 
 
-void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
+void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
 {
     UserOptions& user_opts = ctx.user_opts;
     ParsedInput& parsed_input = ctx.parsed_input;
-    ControlOptions& ctrl_opts = ctx.ctrl_opts;
     const CharMatrix& seq_vec = ctx.complex.seqs;
     const CharMatrix& sec_vec = ctx.complex.secs;
     const vector<int>& len_vec = ctx.complex.lengths;
-    const vector<string>& chainID_list = ctx.chainID_list;
-    const vector<string>& resi_vec = ctx.resi_vec;
     DoubleCube& a_vec = ctx.a_vec;
-    const DoubleMatrix& TMave_mat = ctx.TMave_mat;
-    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
-    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
-    const int chain_num = ctx.chain_num;
     const double Lnorm_ass = ctx.Lnorm_ass;
     const bool u_opt = ctx.u_opt;
     const bool fast_opt = ctx.fast_opt;
@@ -3853,14 +3846,7 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
     string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
     int& tm_idx = buffers.tm_order_idx;
-    int iter=0;
 
-    for (iter=0; iter<state.max_iter; iter++)
-    {
-        state.repr_idx=select_representative(TMave_mat, chain_num);
-
-        // superpose
-        msta_superpose_to_representative(state, ctx);
         ylen = len_vec[state.repr_idx];
         string seqy;
         secy.resize(ylen+1);
@@ -3976,6 +3962,25 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
         }
         vector<string>().swap(msa_ext);
         vector<pair<double,int> >().swap(state.TM_pair_vec);
+}
+
+void msta_rebuild_pair_matrices(MstaIterationState& state, MstaIterContext& ctx)
+{
+    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
+    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
+    const int chain_num = ctx.chain_num;
+    MstaIterBuffers& buffers = ctx.buffers;
+    int& i = buffers.member_chain_idx;
+    int& j = buffers.partner_chain_idx;
+    int& xlen = buffers.member_len;
+    int& ylen = buffers.partner_len;
+    CoordArray& xa = buffers.member_coords;
+    CoordArray& ya = buffers.partner_coords;
+    string& secx = buffers.member_sec;
+    string& secy = buffers.partner_sec;
+    int& r = buffers.residue_idx;
+    int& tm_idx = buffers.tm_order_idx;
+
         for (i=0; i<chain_num; i++)
         {
             tm_idx=state.assign_list[i];
@@ -4003,6 +4008,34 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
             }
             seqxA.clear();
         }
+}
+
+bool msta_accumulate_stats(MstaIterationState& state, MstaIterContext& ctx)
+{
+    UserOptions& user_opts = ctx.user_opts;
+    ParsedInput& parsed_input = ctx.parsed_input;
+    const CharMatrix& seq_vec = ctx.complex.seqs;
+    const CharMatrix& sec_vec = ctx.complex.secs;
+    const vector<int>& len_vec = ctx.complex.lengths;
+    DoubleCube& a_vec = ctx.a_vec;
+    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
+    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
+    const int chain_num = ctx.chain_num;
+    const double Lnorm_ass = ctx.Lnorm_ass;
+    const bool u_opt = ctx.u_opt;
+    const bool fast_opt = ctx.fast_opt;
+    const int cur_complex_mol_list = ctx.mol_type_sum;
+    MstaIterBuffers& buffers = ctx.buffers;
+    int& i = buffers.member_chain_idx;
+    int& j = buffers.partner_chain_idx;
+    int& xlen = buffers.member_len;
+    int& ylen = buffers.partner_len;
+    CoordArray& xa = buffers.member_coords;
+    CoordArray& ya = buffers.partner_coords;
+    string& secx = buffers.member_sec;
+    string& secy = buffers.partner_sec;
+    int& r = buffers.residue_idx;
+    int& tm_idx = buffers.tm_order_idx;
 
         // recover statistics such as TM-score
         state.compare_num=0;
@@ -4108,8 +4141,39 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
             }
             
         }
-        if (state.totals.TM4<=state.TM4_total_max) break;
+        if (state.totals.TM4<=state.TM4_total_max) return false;
         state.TM4_total_max=state.totals.TM4;
+        return true;
+}
+
+
+void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
+{
+    const DoubleMatrix& TMave_mat = ctx.TMave_mat;
+    const int chain_num = ctx.chain_num;
+    MstaIterBuffers& buffers = ctx.buffers;
+    int& i = buffers.member_chain_idx;
+    int& j = buffers.partner_chain_idx;
+    int& xlen = buffers.member_len;
+    int& ylen = buffers.partner_len;
+    CoordArray& xa = buffers.member_coords;
+    CoordArray& ya = buffers.partner_coords;
+    string& secx = buffers.member_sec;
+    string& secy = buffers.partner_sec;
+    int& r = buffers.residue_idx;
+    int& tm_idx = buffers.tm_order_idx;
+    int iter=0;
+
+    for (iter=0; iter<state.max_iter; iter++)
+    {
+        state.repr_idx=select_representative(TMave_mat, chain_num);
+
+        // superpose
+        msta_superpose_to_representative(state, ctx);
+        msta_build_msa(state, ctx);
+        msta_rebuild_pair_matrices(state, ctx);
+
+        if (!msta_accumulate_stats(state, ctx)) break;
     }
 }
 
