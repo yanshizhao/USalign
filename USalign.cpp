@@ -4157,7 +4157,6 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
     {
         state.repr_idx=select_representative(TMave_mat, chain_num);
 
-        // superpose
         msta_superpose_to_representative(state, ctx);
         msta_build_msa(state, ctx);
         msta_rebuild_pair_matrices(state, ctx);
