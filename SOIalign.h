@@ -658,35 +658,23 @@ inline void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
     }
 }
 
+inline void soi_align_final_tmscore_inv(CoordArray& xa_c, CoordArray& ya_c,
+    int xlen, int ylen, const ChainPairAlignOptions& opt,
+    SoiAlignSearchState& st, ChainPairAlignResult& res);
+
 inline void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
     int xlen, int ylen, const ChainPairAlignOptions& opt,
     SoiAlignSearchState& st, ChainPairAlignResult& res)
 {
     Vec3& t0 = res.t0;
     RotMat& u0 = res.u0;
-    double &TM1 = res.TM1;
     double &TM2 = res.TM2;
-    double &TM3 = res.TM3;
-    double &TM4 = res.TM4;
-    double &TM5 = res.TM5;
-    double &d0_0 = res.d0_0;
-    double &TM_0 = res.TM_0;
-    double &d0A = res.d0A;
     double &d0B = res.d0B;
-    double &d0u = res.d0u;
-    double &d0a = res.d0a;
-    double &d0_out = res.d0_out;
     double &rmsd0 = res.rmsd0;
     int &n_ali = res.n_ali;
     int &n_ali8 = res.n_ali8;
-    std::vector<int> &invmap = res.invmap;
-    const double Lnorm_ass = opt.Lnorm;
-    const double d0_scale = opt.d0_scale;
-    const int a_opt = opt.a_opt;
-    const bool u_opt = opt.u_opt;
-    const bool d_opt = opt.d_opt;
-    const bool fast_opt = opt.fast_opt;
     const int mol_type = opt.mol_type;
+    const bool fast_opt = opt.fast_opt;
     double &D0_MIN = st.D0_MIN;
     double &Lnorm = st.Lnorm;
     double &score_d8 = st.score_d8;
@@ -782,7 +770,55 @@ inline void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
     local_d0_search = d0_search;
     TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
         score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
+    soi_align_final_tmscore_inv(xa_c, ya_c, xlen, ylen, opt, st, res);
+}
 
+inline void soi_align_final_tmscore_inv(CoordArray& xa_c, CoordArray& ya_c,
+    int xlen, int ylen, const ChainPairAlignOptions& opt,
+    SoiAlignSearchState& st, ChainPairAlignResult& res)
+{
+    Vec3& t0 = res.t0;
+    RotMat& u0 = res.u0;
+    double &TM1 = res.TM1;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    double &d0_0 = res.d0_0;
+    double &TM_0 = res.TM_0;
+    double &d0A = res.d0A;
+    double &d0u = res.d0u;
+    double &d0a = res.d0a;
+    double &d0_out = res.d0_out;
+    int &n_ali8 = res.n_ali8;
+    std::vector<int> &invmap = res.invmap;
+    const double Lnorm_ass = opt.Lnorm;
+    const double d0_scale = opt.d0_scale;
+    const int a_opt = opt.a_opt;
+    const bool u_opt = opt.u_opt;
+    const bool d_opt = opt.d_opt;
+    const int mol_type = opt.mol_type;
+    double &D0_MIN = st.D0_MIN;
+    double &Lnorm = st.Lnorm;
+    double &score_d8 = st.score_d8;
+    double &d0 = st.d0;
+    double &d0_search = st.d0_search;
+    double &local_d0_search = st.local_d0_search;
+    int &simplify_step = st.simplify_step;
+    int &score_sum_method = st.score_sum_method;
+    CoordArray &xtm = st.xtm;
+    CoordArray &ytm = st.ytm;
+    CoordArray &xt = st.xt;
+    CoordArray &r1 = st.r1;
+    CoordArray &r2 = st.r2;
+    std::vector<int> &invmap0 = st.invmap0;
+    double rmsd;
+    double Lnorm_0=ylen;
+    int i;
+    int j;
+    int k;
+    double d;
+    std::vector<int> m1(xlen);
+    std::vector<int> m2(ylen);
     //****************************************//
     //              Final TMscore 2           //
     //****************************************//
@@ -872,6 +908,7 @@ inline void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
         TM_0=TM5;
     }
 }
+
 
 inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &seqx, const std::string &seqy, int xlen, int ylen,
