@@ -476,27 +476,6 @@ int run_batch_parallel(
     return 0;
 }
 
-// ---- Data of a complex / chain set (isomorphic to parse_chain_list output, transitional) ----
-// ---- All-against-all chain-level scoring results (stage B, shared across flows) ----
-struct AllChainPairsResult
-{
-    DoubleMatrix tm_matrix;                 // TM-score matrix of chain pairs (was TMave_mat)
-    RotArray rotations;                     // rotation of each chain pair (was ut_mat)
-    vector<vector<string> > aligned_seq1;   // chain-pair residue alignment 1 (was seqxA_mat)
-    vector<vector<string> > aligned_seq2;   // chain-pair residue alignment 2 (was seqyA_mat)
-    vector<vector<string> > aligned_consensus;  // consensus sequence (was seqM_mat)
-    double best_pair_tm;                 // best monomer chain-pair TM (was maxTMmono)
-    int best_pair_chain1_idx;                     // was maxTMmono_i
-    int best_pair_chain2_idx;                     // was maxTMmono_j
-};
-
-// ---- Chain assignment result (stage C, shared across flows) ----
-struct ChainAssignResult
-{
-    vector<int> chain2_of_chain1;   // index in structure 2 for each chain of structure 1 (was assign1_list)
-    vector<int> chain1_of_chain2;   // index in structure 1 for each chain of structure 2 (was assign2_list)
-};
-
 // ---- Count the number of paired chains in the assignment (free function, pure external data operation) ----
 int count_assign_pair(const ChainAssignResult& assign_result)
 {
