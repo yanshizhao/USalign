@@ -234,6 +234,33 @@ struct ChainAssignResult
     std::vector<int> chain1_of_chain2;   // index in structure 1 for each chain of structure 2 (was assign2_list)
 };
 
+// ---- mm1 最终输出（MMalign_final）的逐调用命名/长度/选项 ----
+struct MMalignFinalParams
+{
+    std::string xname;
+    std::string yname;
+    std::string fname_super;
+    std::string fname_lign;
+    std::string fname_matrix;
+    std::string seqx_arg;
+    std::string seqy_arg;
+    int    len_aa;
+    int    len_na;
+    int    chain1_num;
+    int    chain2_num;
+    double d0_scale;
+    bool   m_opt;
+    int    o_opt;
+    int    outfmt_opt;
+    int    ter_opt;
+    int    split_opt;
+    bool   a_opt;
+    bool   d_opt;
+    bool   fast_opt;
+    bool   full_opt;
+    int    mirror_opt;
+};
+
 // ---- 单条链对结构比对的引擎选项（per-pair，跨模式共享）----
 struct ChainPairAlignOptions
 {

@@ -692,16 +692,44 @@ std::vector<int> assign2_init(chain2_num);
 
     if (aln_chain_num>=4 && is_oligomer && chainmap.size()==0) // oligomer alignment
     {
-        MMalign_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
-            chainID_list1, chainID_list2,
-            fname_super, fname_lign, fname_matrix,
-            xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            string(), string(), string(), string(), len_aa, len_na,
-            chain1_num, chain2_num, TMave_mat,
-            seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-            d0_scale, 1, 0, 5, ter_opt, split_opt,
-            0, 0, true, true, mirror_opt, resi_vec1, resi_vec2);
+        {
+            ComplexData final_complex1 = {xa_vec, seqx_vec, secx_vec, mol_vec1, xlen_vec, chainID_list1, resi_vec1, len_aa, len_na};
+            ComplexData final_complex2 = {ya_vec, seqy_vec, secy_vec, mol_vec2, ylen_vec, chainID_list2, resi_vec2, len_aa, len_na};
+            AllChainPairsResult final_pairs;
+            final_pairs.tm_matrix = TMave_mat;
+            final_pairs.aligned_seq1 = seqxA_mat;
+            final_pairs.aligned_seq2 = seqyA_mat;
+            final_pairs.aligned_consensus = seqM_mat;
+            ChainAssignResult final_assign;
+            final_assign.chain2_of_chain1 = assign1_list;
+            final_assign.chain1_of_chain2 = assign2_list;
+            MMalignFinalParams final_params;
+            final_params.xname = xname.substr(dir1_opt.size());
+            final_params.yname = yname.substr(dir2_opt.size());
+            final_params.fname_super = fname_super;
+            final_params.fname_lign = fname_lign;
+            final_params.fname_matrix = fname_matrix;
+            final_params.seqx_arg = string();
+            final_params.seqy_arg = string();
+            final_params.len_aa = len_aa;
+            final_params.len_na = len_na;
+            final_params.chain1_num = chain1_num;
+            final_params.chain2_num = chain2_num;
+            final_params.d0_scale = d0_scale;
+            final_params.m_opt = 1;
+            final_params.o_opt = 0;
+            final_params.outfmt_opt = 5;
+            final_params.ter_opt = ter_opt;
+            final_params.split_opt = split_opt;
+            final_params.a_opt = 0;
+            final_params.d_opt = 0;
+            final_params.fast_opt = true;
+            final_params.full_opt = true;
+            final_params.mirror_opt = mirror_opt;
+            MMalign_final(final_complex1, final_complex2, final_pairs, final_assign,
+                final_params, sequence, false);
+            TMave_mat = final_pairs.tm_matrix;
+        }
 
         // extract centroid coordinates
         CoordArray xcentroids;
@@ -782,16 +810,43 @@ std::vector<int> assign2_init(chain2_num);
 
     // final alignment
     if (outfmt_opt==0) print_version();
-    MMalign_final(xname.substr(dir1_opt.size()), yname.substr(dir2_opt.size()),
-        chainID_list1, chainID_list2,
-        fname_super, fname_lign, fname_matrix,
-        xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        string(), string(), string(), string(), len_aa, len_na,
-        chain1_num, chain2_num, TMave_mat,
-        seqxA_mat, seqM_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-        d0_scale, m_opt, o_opt, outfmt_opt, ter_opt, split_opt,
-        a_opt, d_opt, fast_opt, full_opt, mirror_opt, resi_vec1, resi_vec2);
+    {
+        ComplexData final_complex1 = {xa_vec, seqx_vec, secx_vec, mol_vec1, xlen_vec, chainID_list1, resi_vec1, len_aa, len_na};
+        ComplexData final_complex2 = {ya_vec, seqy_vec, secy_vec, mol_vec2, ylen_vec, chainID_list2, resi_vec2, len_aa, len_na};
+        AllChainPairsResult final_pairs;
+        final_pairs.tm_matrix = TMave_mat;
+        final_pairs.aligned_seq1 = seqxA_mat;
+        final_pairs.aligned_seq2 = seqyA_mat;
+        final_pairs.aligned_consensus = seqM_mat;
+        ChainAssignResult final_assign;
+        final_assign.chain2_of_chain1 = assign1_list;
+        final_assign.chain1_of_chain2 = assign2_list;
+        MMalignFinalParams final_params;
+        final_params.xname = xname.substr(dir1_opt.size());
+        final_params.yname = yname.substr(dir2_opt.size());
+        final_params.fname_super = fname_super;
+        final_params.fname_lign = fname_lign;
+        final_params.fname_matrix = fname_matrix;
+        final_params.seqx_arg = string();
+        final_params.seqy_arg = string();
+        final_params.len_aa = len_aa;
+        final_params.len_na = len_na;
+        final_params.chain1_num = chain1_num;
+        final_params.chain2_num = chain2_num;
+        final_params.d0_scale = d0_scale;
+        final_params.m_opt = m_opt;
+        final_params.o_opt = o_opt;
+        final_params.outfmt_opt = outfmt_opt;
+        final_params.ter_opt = ter_opt;
+        final_params.split_opt = split_opt;
+        final_params.a_opt = a_opt;
+        final_params.d_opt = d_opt;
+        final_params.fast_opt = fast_opt;
+        final_params.full_opt = full_opt;
+        final_params.mirror_opt = mirror_opt;
+        MMalign_final(final_complex1, final_complex2, final_pairs, final_assign,
+            final_params, sequence, false);
+    }
 
     vector<vector<string> >().swap(seqxA_mat);
     vector<vector<string> >().swap(seqM_mat);

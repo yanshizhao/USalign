@@ -2588,6 +2588,24 @@ void output_chain_pairing_summary(const MMalignContext& ctx,
     out_unpaired_chain_info(unpaired_groups, group_info);
 }
 
+void fill_mmalign_final_params(MMalignFinalParams& params, const AlignCommonInput& common_inputs)
+{
+    const UserOptions& uo = common_inputs.user_options;
+    params.fname_super = uo.fname_super;
+    params.fname_lign = uo.fname_lign;
+    params.fname_matrix = uo.fname_matrix;
+    params.d0_scale = uo.d0_scale;
+    params.m_opt = uo.m_opt;
+    params.o_opt = uo.o_opt;
+    params.outfmt_opt = uo.outfmt_opt;
+    params.ter_opt = uo.ter_opt;
+    params.split_opt = uo.split_opt;
+    params.a_opt = uo.a_opt;
+    params.d_opt = uo.d_opt;
+    params.mirror_opt = uo.mirror_opt;
+    params.full_opt = common_inputs.control_options.full_opt;
+}
+
 void output_final_results(MMalignContext& ctx,
     int chain1_num,
     int chain2_num)
@@ -2599,48 +2617,21 @@ void output_final_results(MMalignContext& ctx,
     
     string xname = get_basename(ctx.common_inputs.user_options.xname);
     string yname = get_basename(ctx.common_inputs.user_options.yname);
-    if (ctx.common_inputs.control_options.se_opt)
-    {
-        MMalign_se_final(xname,
-            yname,
-            ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-            ctx.common_inputs.user_options.fname_super, ctx.common_inputs.user_options.fname_lign, ctx.common_inputs.user_options.fname_matrix,
-            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
-            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
-            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
-            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
-            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
-            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
-            ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
-            ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
-            ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale,
-            ctx.common_inputs.user_options.m_opt, ctx.common_inputs.user_options.o_opt, ctx.common_inputs.user_options.outfmt_opt, ctx.common_inputs.user_options.ter_opt, ctx.common_inputs.user_options.split_opt,
-            ctx.common_inputs.user_options.a_opt, ctx.common_inputs.user_options.d_opt, ctx.fast_opt, ctx.common_inputs.control_options.full_opt,
-            ctx.common_inputs.user_options.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
-    }
-    else
-    {
-        MMalign_final(xname,
-            yname,
-            ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-            ctx.common_inputs.user_options.fname_super, ctx.common_inputs.user_options.fname_lign, ctx.common_inputs.user_options.fname_matrix,
-            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
-            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
-            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
-            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
-            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
-            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-            ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
-            ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
-            ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
-            ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-            ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale,
-            ctx.common_inputs.user_options.m_opt, ctx.common_inputs.user_options.o_opt, ctx.common_inputs.user_options.outfmt_opt, ctx.common_inputs.user_options.ter_opt, ctx.common_inputs.user_options.split_opt,
-            ctx.common_inputs.user_options.a_opt, ctx.common_inputs.user_options.d_opt, ctx.fast_opt, ctx.common_inputs.control_options.full_opt,
-            ctx.common_inputs.user_options.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
-    }
+    MMalignFinalParams final_params;
+    fill_mmalign_final_params(final_params, ctx.common_inputs);
+    final_params.xname = xname;
+    final_params.yname = yname;
+    final_params.seqx_arg = ctx.iter_seqx;
+    final_params.seqy_arg = ctx.iter_seqy;
+    final_params.len_aa = ctx.parsed.protein_norm_len;
+    final_params.len_na = ctx.parsed.na_norm_len;
+    final_params.chain1_num = chain1_num;
+    final_params.chain2_num = chain2_num;
+    final_params.fast_opt = ctx.fast_opt;
+    MMalign_final(ctx.parsed.complex1, ctx.parsed.complex2,
+        ctx.pair_result, ctx.assign_result, final_params,
+        ctx.common_inputs.parsed_input.sequence,
+        ctx.common_inputs.control_options.se_opt);
 
     // Print the chain pairing summary
     output_chain_pairing_summary(ctx, chain1_num, chain2_num);
@@ -2721,23 +2712,26 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
         ctx.is_oligomer, ctx.common_inputs.control_options.se_opt);
     if (is_byresi_optimize)
     {
-            MMalign_final(ctx.common_inputs.user_options.xname.substr(ctx.mm_params.dir1_opt.size()),
-                    ctx.common_inputs.user_options.yname.substr(ctx.mm_params.dir2_opt.size()),
-                    ctx.parsed.complex1.chain_ids, ctx.parsed.complex2.chain_ids,
-                    ctx.common_inputs.user_options.fname_super, ctx.common_inputs.user_options.fname_lign, ctx.common_inputs.user_options.fname_matrix,
-                    ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
-                    ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
-                    ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
-                    ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
-                    ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
-                    ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
-                    ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, struct1_chain_num, struct2_chain_num,
-                    ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
-                    ctx.pair_result.aligned_consensus, ctx.pair_result.aligned_seq2,
-                    ctx.assign_result.chain2_of_chain1, ctx.assign_result.chain1_of_chain2,
-                    ctx.common_inputs.parsed_input.sequence, ctx.common_inputs.user_options.d0_scale, 1, 0, 5,
-                    ctx.common_inputs.user_options.ter_opt, ctx.common_inputs.user_options.split_opt, 0, 0, true, true,
-                    ctx.common_inputs.user_options.mirror_opt, ctx.parsed.complex1.resi, ctx.parsed.complex2.resi);
+            MMalignFinalParams final_params;
+            fill_mmalign_final_params(final_params, ctx.common_inputs);
+            final_params.xname = ctx.common_inputs.user_options.xname.substr(ctx.mm_params.dir1_opt.size());
+            final_params.yname = ctx.common_inputs.user_options.yname.substr(ctx.mm_params.dir2_opt.size());
+            final_params.seqx_arg = ctx.iter_seqx;
+            final_params.seqy_arg = ctx.iter_seqy;
+            final_params.len_aa = ctx.parsed.protein_norm_len;
+            final_params.len_na = ctx.parsed.na_norm_len;
+            final_params.chain1_num = struct1_chain_num;
+            final_params.chain2_num = struct2_chain_num;
+            final_params.m_opt = 1;
+            final_params.o_opt = 0;
+            final_params.outfmt_opt = 5;
+            final_params.a_opt = 0;
+            final_params.d_opt = 0;
+            final_params.fast_opt = true;
+            final_params.full_opt = true;
+            MMalign_final(ctx.parsed.complex1, ctx.parsed.complex2,
+                ctx.pair_result, ctx.assign_result, final_params,
+                ctx.common_inputs.parsed_input.sequence, false);
 
                 // extract centroid coordinates
                 CoordArray xcentroids;
