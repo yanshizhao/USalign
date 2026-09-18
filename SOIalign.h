@@ -442,14 +442,41 @@ inline void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Co
 
 
 
-inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
-    CoordArray& xk, CoordArray& yk, const int closeK_opt,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    ChainPairAlignResult& res,
-    const int xlen, const int ylen,
-    const vector<string> sequence,
-    const ChainPairAlignOptions& opt,
-    std::vector<double>& dist_list,
+struct SoiAlignSearchState
+{
+    double D0_MIN;
+    double Lnorm;
+    double score_d8;
+    double d0;
+    double d0_search;
+    double dcu0;
+    double local_d0_search;
+    int simplify_step;
+    int score_sum_method;
+    int iteration_max;
+    double TM;
+    double TMmax;
+    Vec3 t;
+    RotMat u;
+    DoubleMatrix score;
+    DoubleMatrix scoret;
+    CharMatrix path;
+    DoubleMatrix val;
+    CoordArray xtm;
+    CoordArray ytm;
+    CoordArray xt;
+    CoordArray yt;
+    CoordArray r1;
+    CoordArray r2;
+    std::vector<int> fwdmap0;
+    std::vector<int> invmap0;
+};
+
+inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    int xlen, int ylen, const vector<string> sequence,
+    const ChainPairAlignOptions& opt, SoiAlignSearchState& st, ChainPairAlignResult& res,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     Vec3& t0 = res.t0;
@@ -469,7 +496,6 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     string &seqM = res.seqM;
     string &seqxA = res.seqxA;
     string &seqyA = res.seqyA;
-    std::vector<int>& invmap = res.invmap;
     double &rmsd0 = res.rmsd0;
     int &L_ali = res.L_ali;
     double &Liden = res.Liden;
@@ -485,62 +511,27 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const bool d_opt = opt.d_opt;
     const bool fast_opt = opt.fast_opt;
     const int mol_type = opt.mol_type;
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
-    Vec3 t;
-    RotMat u;
-    DoubleMatrix score;       // Input score table for enhanced greedy search
-    DoubleMatrix scoret;      // Transposed score table for enhanced greedy search
-    CharMatrix  path;        // for dynamic programming
-    DoubleMatrix val;         // for dynamic programming
-    CoordArray xtm, ytm;     // for TMscore search engine
-    CoordArray xt;            //for saving the superposed version of r_1 or xtm
-    CoordArray yt;            //for saving the superposed version of r_2 or ytm
-    CoordArray r1, r2;        // for Kabsch rotation
-
-    /***********************/
-    // allocate memory
-    /***********************/
-    int minlen = min(xlen, ylen);
-    int maxlen = (xlen>ylen)?xlen:ylen;
-    score.assign( xlen+1, std::vector<double>(ylen+1));
-    scoret.assign(ylen+1, std::vector<double>(xlen+1));
-    path.assign( maxlen+1, std::vector<char>(maxlen+1));
-    val.assign(  maxlen+1, std::vector<double>(maxlen+1));
-    xtm.resize(minlen);
-
-
-    ytm.resize(minlen);
-    xt.resize(xlen);
-    yt.resize(ylen);
-    r1.resize(minlen);
-    r2.resize(minlen);
-
-    /***********************/
-    //    parameter set   
-    /***********************/
-    parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
-        score_d8, d0, d0_search, dcu0);
-    int simplify_step    = 40; //for simplified search engine
-    int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
-
+    double &Lnorm = st.Lnorm;
+    double &score_d8 = st.score_d8;
+    double &d0 = st.d0;
+    double &local_d0_search = st.local_d0_search;
+    DoubleMatrix &score = st.score;
+    DoubleMatrix &scoret = st.scoret;
+    CharMatrix &path = st.path;
+    DoubleMatrix &val = st.val;
+    CoordArray &xtm = st.xtm;
+    CoordArray &ytm = st.ytm;
+    CoordArray &xt = st.xt;
+    CoordArray &yt = st.yt;
+    CoordArray &r1 = st.r1;
+    CoordArray &r2 = st.r2;
+    std::vector<int> &fwdmap0 = st.fwdmap0;
+    std::vector<int> &invmap0 = st.invmap0;
+    double &TMmax = st.TMmax;
+    double &TM = st.TM;
+    int &iteration_max = st.iteration_max;
     int i;
     int j;
-    std::vector<int> fwdmap0(xlen+1);
-    std::vector<int> invmap0(ylen+1);
-    
-    double TMmax=-1;
-    double TM=-1;
-    fwdmap0.assign(xlen+1, -1);
-    invmap0.assign(ylen+1, -1);
-    double local_d0_search = d0_search;
-    int iteration_max=(fast_opt)?2:30;
-    //if (mm_opt==6) iteration_max=1;
-
-    /*************************************************************/
-    // initial alignment with sequence order dependent alignment
-    /*************************************************************/
     vector<double> do_vec;
     CPalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
@@ -595,7 +586,37 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
             if (j>=0) invmap0[j]=i;
         }
     }
-    
+}
+
+inline void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
+    int xlen, int ylen, SoiAlignSearchState& st, ChainPairAlignResult& res,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+{
+    std::vector<int> &invmap = res.invmap;
+    Vec3 &t = st.t;
+    RotMat &u = st.u;
+    double &Lnorm = st.Lnorm;
+    double &score_d8 = st.score_d8;
+    double &d0 = st.d0;
+    double &local_d0_search = st.local_d0_search;
+    DoubleMatrix &score = st.score;
+    DoubleMatrix &scoret = st.scoret;
+    CharMatrix &path = st.path;
+    DoubleMatrix &val = st.val;
+    CoordArray &xtm = st.xtm;
+    CoordArray &ytm = st.ytm;
+    CoordArray &xt = st.xt;
+    CoordArray &yt = st.yt;
+    CoordArray &r1 = st.r1;
+    CoordArray &r2 = st.r2;
+    std::vector<int> &fwdmap0 = st.fwdmap0;
+    std::vector<int> &invmap0 = st.invmap0;
+    double &TMmax = st.TMmax;
+    double &TM = st.TM;
+    int &iteration_max = st.iteration_max;
+    int i;
+    int j;
     /***************************************************************/
     // initial alignment with sequence order independent alignment
     /***************************************************************/
@@ -635,33 +656,57 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
             }
         }
     }
+}
 
-    //*******************************************************************//
-    //    The alignment will not be changed any more in the following    //
-    //*******************************************************************//
-    //check if the initial alignment is generated appropriately
-    bool flag=false;
-    for (i=0; i<xlen; i++) fwdmap0[i]=-1;
-    for (j=0; j<ylen; j++)
-    {
-        i=invmap0[j];
-        invmap[j]=i;
-        if (i>=0)
-        {
-            fwdmap0[i]=j;
-            flag=true;
-        }
-    }
-    if(!flag)
-    {
-        cout << "There is no alignment between the two structures! "
-             << "Program stop with no result!" << endl;
-        TM1=TM2=TM3=TM4=TM5=0;
-        t0 = {0, 0, 0};                            // zero translation
-        u0 = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};  // identity rotation
-        return 1;
-    }
-
+inline void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
+    int xlen, int ylen, const ChainPairAlignOptions& opt,
+    SoiAlignSearchState& st, ChainPairAlignResult& res)
+{
+    Vec3& t0 = res.t0;
+    RotMat& u0 = res.u0;
+    double &TM1 = res.TM1;
+    double &TM2 = res.TM2;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    double &d0_0 = res.d0_0;
+    double &TM_0 = res.TM_0;
+    double &d0A = res.d0A;
+    double &d0B = res.d0B;
+    double &d0u = res.d0u;
+    double &d0a = res.d0a;
+    double &d0_out = res.d0_out;
+    double &rmsd0 = res.rmsd0;
+    int &n_ali = res.n_ali;
+    int &n_ali8 = res.n_ali8;
+    std::vector<int> &invmap = res.invmap;
+    const double Lnorm_ass = opt.Lnorm;
+    const double d0_scale = opt.d0_scale;
+    const int a_opt = opt.a_opt;
+    const bool u_opt = opt.u_opt;
+    const bool d_opt = opt.d_opt;
+    const bool fast_opt = opt.fast_opt;
+    const int mol_type = opt.mol_type;
+    double &D0_MIN = st.D0_MIN;
+    double &Lnorm = st.Lnorm;
+    double &score_d8 = st.score_d8;
+    double &d0 = st.d0;
+    double &d0_search = st.d0_search;
+    double &local_d0_search = st.local_d0_search;
+    int &simplify_step = st.simplify_step;
+    int &score_sum_method = st.score_sum_method;
+    CoordArray &xtm = st.xtm;
+    CoordArray &ytm = st.ytm;
+    CoordArray &xt = st.xt;
+    CoordArray &r1 = st.r1;
+    CoordArray &r2 = st.r2;
+    std::vector<int> &fwdmap0 = st.fwdmap0;
+    std::vector<int> &invmap0 = st.invmap0;
+    Vec3 &t = st.t;
+    RotMat &u = st.u;
+    double &TM = st.TM;
+    int i;
+    int j;
 
     //********************************************************************//
     //    Detailed TMscore search engine --> prepare for final TMscore    //
@@ -826,7 +871,26 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
             score_d8, d0);
         TM_0=TM5;
     }
+}
 
+inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
+    const std::string &seqx, const std::string &seqy, int xlen, int ylen,
+    SoiAlignSearchState& st, ChainPairAlignResult& res, std::vector<double>& dist_list)
+{
+    string &seqM = res.seqM;
+    string &seqxA = res.seqxA;
+    string &seqyA = res.seqyA;
+    double &Liden = res.Liden;
+    const double d0_out = res.d0_out;
+    Vec3& t0 = res.t0;
+    RotMat& u0 = res.u0;
+    CoordArray &xt = st.xt;
+    std::vector<int> &fwdmap0 = st.fwdmap0;
+    std::vector<int> &invmap0 = st.invmap0;
+    int i;
+    int j;
+    int k;
+    double d;
     // derive alignment from superposition
     int ali_len=xlen+ylen;
     for (j=0;j<ylen;j++) ali_len-=(invmap0[j]>=0);
@@ -870,8 +934,100 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
 
 
+}
+
+inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const vector<string> sequence,
+    const ChainPairAlignOptions& opt,
+    std::vector<double>& dist_list,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+{
+    Vec3& t0 = res.t0;
+    RotMat& u0 = res.u0;
+    double &TM1 = res.TM1;
+    double &TM2 = res.TM2;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    std::vector<int>& invmap = res.invmap;
+    const bool fast_opt = opt.fast_opt;
+    int i;
+    int j;
+    SoiAlignSearchState st;
+
+    /***********************/
+    // allocate memory
+    /***********************/
+    int minlen = min(xlen, ylen);
+    int maxlen = (xlen>ylen)?xlen:ylen;
+    st.score.assign( xlen+1, std::vector<double>(ylen+1));
+    st.scoret.assign(ylen+1, std::vector<double>(xlen+1));
+    st.path.assign( maxlen+1, std::vector<char>(maxlen+1));
+    st.val.assign(  maxlen+1, std::vector<double>(maxlen+1));
+    st.xtm.resize(minlen);
+    st.ytm.resize(minlen);
+    st.xt.resize(xlen);
+    st.yt.resize(ylen);
+    st.r1.resize(minlen);
+    st.r2.resize(minlen);
+
+    /***********************/
+    //    parameter set
+    /***********************/
+    parameter_set4search(xlen, ylen, st.D0_MIN, st.Lnorm,
+        st.score_d8, st.d0, st.d0_search, st.dcu0);
+    st.simplify_step    = 40; //for simplified search engine
+    st.score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
+
+    st.fwdmap0.assign(xlen+1, -1);
+    st.invmap0.assign(ylen+1, -1);
+    st.TMmax=-1;
+    st.TM=-1;
+    st.local_d0_search = st.d0_search;
+    st.iteration_max=(fast_opt)?2:30;
+
+    soi_align_initial_seq_dependent(xa_c, ya_c, seqx, seqy, secx, secy,
+        xlen, ylen, sequence, opt, st, res, secx_bond, secy_bond, mm_opt);
+    soi_align_initial_closek(xa_c, ya_c, xk, yk, closeK_opt,
+        xlen, ylen, st, res, secx_bond, secy_bond, mm_opt);
+
+    //*******************************************************************//
+    //    The alignment will not be changed any more in the following    //
+    //*******************************************************************//
+    //check if the initial alignment is generated appropriately
+    bool flag=false;
+    for (i=0; i<xlen; i++) st.fwdmap0[i]=-1;
+    for (j=0; j<ylen; j++)
+    {
+        i=st.invmap0[j];
+        invmap[j]=i;
+        if (i>=0)
+        {
+            st.fwdmap0[i]=j;
+            flag=true;
+        }
+    }
+    if(!flag)
+    {
+        cout << "There is no alignment between the two structures! "
+             << "Program stop with no result!" << endl;
+        TM1=TM2=TM3=TM4=TM5=0;
+        t0 = {0, 0, 0};                            // zero translation
+        u0 = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};  // identity rotation
+        return 1;
+    }
+
+    soi_align_final_tmscore(xa_c, ya_c, xlen, ylen, opt, st, res);
+    soi_derive_alignment_strings(xa_c, ya_c, seqx, seqy, xlen, ylen, st, res, dist_list);
+
     return 0;
 }
+
+
 
 
 inline void soi_se_prepare_alignment(CoordArray& xa, CoordArray& ya,
