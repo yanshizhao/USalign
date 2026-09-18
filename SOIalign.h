@@ -847,58 +847,27 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     return 0;
 }
 
-inline int soi_se_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    ChainPairAlignResult& res,
-    const int xlen, const int ylen,
-    const ChainPairAlignOptions& opt, const int outfmt_opt,
-    std::vector<double>& dist_list,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+inline void soi_se_prepare_alignment(CoordArray& xa, CoordArray& ya,
+    int xlen, int ylen, const ChainPairAlignOptions& opt,
+    ChainPairAlignResult& res, IntPairArray& secx_bond, IntPairArray& secy_bond,
+    const int mm_opt, DoubleMatrix& score)
 {
-    double &TM1 = res.TM1;
-    double &TM2 = res.TM2;
-    double &TM3 = res.TM3;
-    double &TM4 = res.TM4;
-    double &TM5 = res.TM5;
     double &d0A = res.d0A;
     double &d0B = res.d0B;
     double &d0u = res.d0u;
     double &d0a = res.d0a;
-    double &d0_out = res.d0_out;
-    std::string &seqM = res.seqM;
-    std::string &seqxA = res.seqxA;
-    std::string &seqyA = res.seqyA;
-    double &rmsd0 = res.rmsd0;
-    double &Liden = res.Liden;
-    int &n_ali = res.n_ali;
-    int &n_ali8 = res.n_ali8;
     std::vector<int> &invmap = res.invmap;
     const double Lnorm_ass = opt.Lnorm;
-    const double d0_scale = opt.d0_scale;
     const bool a_opt = opt.a_opt;
     const int u_opt = opt.u_opt;
-    const bool d_opt = opt.d_opt;
     const int mol_type = opt.mol_type;
-
-
-
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
-    DoubleMatrix score;       // score for aligning a residue pair
-    CharMatrix  path;        // for dynamic programming
-    DoubleMatrix val;         // for dynamic programming
-
-    std::vector<int> m1;
-    std::vector<int> m2;
+    double D0_MIN;
+    double Lnorm;
+    double score_d8,d0,d0_search,dcu0;
+    CharMatrix  path;
+    DoubleMatrix val;
     int i;
     int j;
-    double d;
-    if (outfmt_opt<2)
-    {
-        m1.resize(xlen);
-        m2.resize(ylen);
-    }
 
     /***********************/
     // allocate memory
@@ -946,7 +915,40 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
 
     soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+}
 
+inline bool soi_se_score_alignment(CoordArray& xa, CoordArray& ya,
+    int xlen, int ylen, const ChainPairAlignOptions& opt, const int outfmt_opt,
+    const DoubleMatrix& score, ChainPairAlignResult& res, std::vector<double>& dist_list)
+{
+    double &TM1 = res.TM1;
+    double &TM2 = res.TM2;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    double &d0A = res.d0A;
+    double &d0B = res.d0B;
+    double &d0u = res.d0u;
+    double &d0a = res.d0a;
+    double &rmsd0 = res.rmsd0;
+    int &n_ali = res.n_ali;
+    int &n_ali8 = res.n_ali8;
+    std::vector<int> &invmap = res.invmap;
+    const double Lnorm_ass = opt.Lnorm;
+    const double d0_scale = opt.d0_scale;
+    const bool a_opt = opt.a_opt;
+    const int u_opt = opt.u_opt;
+    const bool d_opt = opt.d_opt;
+    std::vector<int> m1;
+    std::vector<int> m2;
+    int i;
+    int j;
+    double d;
+    if (outfmt_opt<2)
+    {
+        m1.resize(xlen);
+        m2.resize(ylen);
+    }
 
     rmsd0=TM1=TM2=TM3=TM4=TM5=0;
     int k=0;
@@ -985,11 +987,27 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
     TM4/=Lnorm_ass;
     TM5/=ylen;
     if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
-
     if (outfmt_opt>=2)
     {
-        return 0;
+        return true;
     }
+    return false;
+}
+
+inline void soi_se_extract_alignment_strings(CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy, int xlen, int ylen,
+    ChainPairAlignResult& res)
+{
+    std::string &seqM = res.seqM;
+    std::string &seqxA = res.seqxA;
+    std::string &seqyA = res.seqyA;
+    double &Liden = res.Liden;
+    const double d0_out = res.d0_out;
+    std::vector<int> &invmap = res.invmap;
+    int i;
+    int j;
+    int k = res.n_ali8;
+    double d;
 
     // extract aligned sequence
     int ali_len=xlen+ylen;
@@ -1019,8 +1037,23 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
         seqxA[ylen+k]=seqx[i];
         k++;
     }
+}
 
-    return 0; // zero for no exception
+inline int soi_se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const ChainPairAlignOptions& opt, const int outfmt_opt,
+    std::vector<double>& dist_list,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+{
+    DoubleMatrix score;
+    soi_se_prepare_alignment(xa, ya, xlen, ylen, opt, res,
+        secx_bond, secy_bond, mm_opt, score);
+    if (soi_se_score_alignment(xa, ya, xlen, ylen, opt, outfmt_opt,
+        score, res, dist_list)) return 0;
+    soi_se_extract_alignment_strings(xa, ya, seqx, seqy, xlen, ylen, res);
+    return 0;
 }
 
 
