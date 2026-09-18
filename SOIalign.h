@@ -180,173 +180,93 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
     const bool a_opt, const int u_opt, const bool d_opt,
     const int mol_type, const int outfmt_opt, std::vector<int>& invmap,
     std::vector<double>& dist_list, IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
+inline int soi_se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& res,
+    const int xlen, const int ylen,
+    const ChainPairAlignOptions& opt, const int outfmt_opt,
+    std::vector<double>& dist_list,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
-inline int soi_se_main(
-    CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
+inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
+    const std::string &seqy, double &TM1, double &TM2, double &TM3,
+    double &TM4, double &TM5, double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
     string &seqM, string &seqxA, string &seqyA,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
-    const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
-    const int outfmt_opt, std::vector<int>& invmap, std::vector<double>& dist_list,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+    const bool a_opt, const int u_opt, const bool d_opt,
+    const int mol_type, const int outfmt_opt, std::vector<int>& invmap,
+    std::vector<double>& dist_list, IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
-
-
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
-    DoubleMatrix score;       // score for aligning a residue pair
-    CharMatrix  path;        // for dynamic programming
-    DoubleMatrix val;         // for dynamic programming
-
-    std::vector<int> m1;
-    std::vector<int> m2;
-    int i;
-    int j;
-    double d;
-    if (outfmt_opt<2)
-    {
-        m1.resize(xlen);
-        m2.resize(ylen);
-    }
-
-    /***********************/
-    // allocate memory
-    /***********************/
-    score.assign(xlen+1, std::vector<double>(ylen+1));
-    path.assign( xlen+1, std::vector<char>(ylen+1));
-    val.assign(  xlen+1, std::vector<double>(ylen+1));
-
-
-    // set d0
-    parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
-        score_d8, d0, d0_search, dcu0); // set score_d8
-    parameter_set4final(xlen, D0_MIN, Lnorm,
-        d0B, d0_search, mol_type); // set d0B
-    parameter_set4final(ylen, D0_MIN, Lnorm,
-        d0A, d0_search, mol_type); // set d0A
-    if (a_opt)
-        parameter_set4final((xlen+ylen)*0.5, D0_MIN, Lnorm,
-            d0a, d0_search, mol_type); // set d0a
-    if (u_opt)
-    {
-        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
-            d0u, d0_search, mol_type); // set d0u
-        if (u_opt==2)
-        {
-            parameter_set4search(Lnorm_ass, Lnorm_ass, D0_MIN, Lnorm,
-                score_d8, d0, d0_search, dcu0); // set score_d8
-        }
-    }
-
-    // perform alignment
-    for(j=0; j<ylen; j++) invmap[j]=-1;
-    double d02=d0*d0;
-    double score_d82=score_d8*score_d8;
-    double d2;
-    for(i=0; i<xlen; i++)
-    {
-        for(j=0; j<ylen; j++)
-        {
-            d2=dist(xa[i], ya[j]);
-            if (d2>score_d82) score[i+1][j+1]=0;
-            else score[i+1][j+1]=1./(1+ d2/d02);
-        }
-    }
-    if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
-
-    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
-
-
-    rmsd0=TM1=TM2=TM3=TM4=TM5=0;
-    int k=0;
-    n_ali=0;
-    n_ali8=0;
-    for(j=0; j<ylen; j++)
-    {
-        i=invmap[j];
-        dist_list[j]=-1;
-        if(i>=0)//aligned
-        {
-            n_ali++;
-            d=sqrt(dist(xa[i], ya[j]));
-            dist_list[j]=d;
-            if (score[i+1][j+1]>0)
-            {
-                if (outfmt_opt<2)
-                {
-                    m1[k]=i;
-                    m2[k]=j;
-                }
-                k++;
-                TM2+=1/(1+(d/d0B)*(d/d0B)); // chain_1
-                TM1+=1/(1+(d/d0A)*(d/d0A)); // chain_2
-                if (a_opt) TM3+=1/(1+(d/d0a)*(d/d0a)); // -a
-                if (u_opt) TM4+=1/(1+(d/d0u)*(d/d0u)); // -u
-                if (d_opt) TM5+=1/(1+(d/d0_scale)*(d/d0_scale)); // -d
-                rmsd0+=d*d;
-            }
-        }
-    }
-    n_ali8=k;
-    TM2/=xlen;
-    TM1/=ylen;
-    TM3/=(xlen+ylen)*0.5;
-    TM4/=Lnorm_ass;
-    TM5/=ylen;
-    if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
-
-    if (outfmt_opt>=2)
-    {
-        return 0;
-    }
-
-    // extract aligned sequence
-    int ali_len=xlen+ylen;
-    for (j=0;j<ylen;j++) ali_len-=(invmap[j]>=0);
-    seqxA.assign(ali_len,'-');
-    seqM.assign( ali_len,' ');
-    seqyA.assign(ali_len,'-');
-
-    std::vector<int> fwdmap(xlen+1, -1);
-    for (j=0;j<ylen;j++)
-    {
-        seqyA[j]=seqy[j];
-        i=invmap[j];
-        if (i<0) continue;
-        d=sqrt(dist(xa[i], ya[j]));
-        if (d<d0_out) seqM[j]=':';
-        else seqM[j]='.';
-        fwdmap[i]=j;
-        seqxA[j]=seqx[i];
-        Liden+=(seqxA[k]==seqyA[k]);
-    }
-    k=0;
-    for (i=0;i<xlen;i++)
-    {
-        j=fwdmap[i];
-        if (j>=0) continue;
-        seqxA[ylen+k]=seqx[i];
-        k++;
-    }
-
-    return 0; // zero for no exception
+    ChainPairAlignResult res = { 0};
+    res.TM1 = TM1;
+    res.TM2 = TM2;
+    res.TM3 = TM3;
+    res.TM4 = TM4;
+    res.TM5 = TM5;
+    res.d0_0 = d0_0;
+    res.TM_0 = TM_0;
+    res.d0A = d0A;
+    res.d0B = d0B;
+    res.d0u = d0u;
+    res.d0a = d0a;
+    res.d0_out = d0_out;
+    res.seqM = seqM;
+    res.seqxA = seqxA;
+    res.seqyA = seqyA;
+    res.rmsd0 = rmsd0;
+    res.L_ali = L_ali;
+    res.Liden = Liden;
+    res.TM_ali = TM_ali;
+    res.rmsd_ali = rmsd_ali;
+    res.n_ali = n_ali;
+    res.n_ali8 = n_ali8;
+    res.invmap = invmap;
+    ChainPairAlignOptions opt;
+    opt.i_opt = i_opt;
+    opt.a_opt = a_opt;
+    opt.u_opt = u_opt;
+    opt.d_opt = d_opt;
+    opt.fast_opt = false;
+    opt.se_opt = false;
+    opt.cp_opt = false;
+    opt.Lnorm = Lnorm_ass;
+    opt.d0_scale = d0_scale;
+    opt.TMcut = -1;
+    opt.parallel_threads = 1;
+    opt.ss_opt = 0;
+    opt.mol_type = mol_type;
+    int rc = soi_se_main(xa, ya, seqx, seqy, res, xlen, ylen, opt, outfmt_opt,
+        dist_list, secx_bond, secy_bond, mm_opt);
+    TM1 = res.TM1;
+    TM2 = res.TM2;
+    TM3 = res.TM3;
+    TM4 = res.TM4;
+    TM5 = res.TM5;
+    d0_0 = res.d0_0;
+    TM_0 = res.TM_0;
+    d0A = res.d0A;
+    d0B = res.d0B;
+    d0u = res.d0u;
+    d0a = res.d0a;
+    d0_out = res.d0_out;
+    seqM = res.seqM;
+    seqxA = res.seqxA;
+    seqyA = res.seqyA;
+    rmsd0 = res.rmsd0;
+    L_ali = res.L_ali;
+    Liden = res.Liden;
+    TM_ali = res.TM_ali;
+    rmsd_ali = res.rmsd_ali;
+    n_ali = res.n_ali;
+    n_ali8 = res.n_ali8;
+    invmap = res.invmap;
+    return rc;
 }
-
-
-
-
-
-
-
-
-
 
 
 inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const int xlen,
@@ -935,16 +855,174 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
     std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
-    return soi_se_main(xa, ya, seqx, seqy,
-        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
-        res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
-        res.seqM, res.seqxA, res.seqyA,
-        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
-        xlen, ylen, opt.Lnorm, opt.d0_scale,
-        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt,
-        opt.mol_type, outfmt_opt, res.invmap,
-        dist_list, secx_bond, secy_bond, mm_opt);
+    double &TM1 = res.TM1;
+    double &TM2 = res.TM2;
+    double &TM3 = res.TM3;
+    double &TM4 = res.TM4;
+    double &TM5 = res.TM5;
+    double &d0A = res.d0A;
+    double &d0B = res.d0B;
+    double &d0u = res.d0u;
+    double &d0a = res.d0a;
+    double &d0_out = res.d0_out;
+    std::string &seqM = res.seqM;
+    std::string &seqxA = res.seqxA;
+    std::string &seqyA = res.seqyA;
+    double &rmsd0 = res.rmsd0;
+    double &Liden = res.Liden;
+    int &n_ali = res.n_ali;
+    int &n_ali8 = res.n_ali8;
+    std::vector<int> &invmap = res.invmap;
+    const double Lnorm_ass = opt.Lnorm;
+    const double d0_scale = opt.d0_scale;
+    const bool a_opt = opt.a_opt;
+    const int u_opt = opt.u_opt;
+    const bool d_opt = opt.d_opt;
+    const int mol_type = opt.mol_type;
+
+
+
+    double D0_MIN;        //for d0
+    double Lnorm;         //normalization length
+    double score_d8,d0,d0_search,dcu0;//for TMscore search
+    DoubleMatrix score;       // score for aligning a residue pair
+    CharMatrix  path;        // for dynamic programming
+    DoubleMatrix val;         // for dynamic programming
+
+    std::vector<int> m1;
+    std::vector<int> m2;
+    int i;
+    int j;
+    double d;
+    if (outfmt_opt<2)
+    {
+        m1.resize(xlen);
+        m2.resize(ylen);
+    }
+
+    /***********************/
+    // allocate memory
+    /***********************/
+    score.assign(xlen+1, std::vector<double>(ylen+1));
+    path.assign( xlen+1, std::vector<char>(ylen+1));
+    val.assign(  xlen+1, std::vector<double>(ylen+1));
+
+
+    // set d0
+    parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
+        score_d8, d0, d0_search, dcu0); // set score_d8
+    parameter_set4final(xlen, D0_MIN, Lnorm,
+        d0B, d0_search, mol_type); // set d0B
+    parameter_set4final(ylen, D0_MIN, Lnorm,
+        d0A, d0_search, mol_type); // set d0A
+    if (a_opt)
+        parameter_set4final((xlen+ylen)*0.5, D0_MIN, Lnorm,
+            d0a, d0_search, mol_type); // set d0a
+    if (u_opt)
+    {
+        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
+            d0u, d0_search, mol_type); // set d0u
+        if (u_opt==2)
+        {
+            parameter_set4search(Lnorm_ass, Lnorm_ass, D0_MIN, Lnorm,
+                score_d8, d0, d0_search, dcu0); // set score_d8
+        }
+    }
+
+    // perform alignment
+    for(j=0; j<ylen; j++) invmap[j]=-1;
+    double d02=d0*d0;
+    double score_d82=score_d8*score_d8;
+    double d2;
+    for(i=0; i<xlen; i++)
+    {
+        for(j=0; j<ylen; j++)
+        {
+            d2=dist(xa[i], ya[j]);
+            if (d2>score_d82) score[i+1][j+1]=0;
+            else score[i+1][j+1]=1./(1+ d2/d02);
+        }
+    }
+    if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
+
+    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+
+
+    rmsd0=TM1=TM2=TM3=TM4=TM5=0;
+    int k=0;
+    n_ali=0;
+    n_ali8=0;
+    for(j=0; j<ylen; j++)
+    {
+        i=invmap[j];
+        dist_list[j]=-1;
+        if(i>=0)//aligned
+        {
+            n_ali++;
+            d=sqrt(dist(xa[i], ya[j]));
+            dist_list[j]=d;
+            if (score[i+1][j+1]>0)
+            {
+                if (outfmt_opt<2)
+                {
+                    m1[k]=i;
+                    m2[k]=j;
+                }
+                k++;
+                TM2+=1/(1+(d/d0B)*(d/d0B)); // chain_1
+                TM1+=1/(1+(d/d0A)*(d/d0A)); // chain_2
+                if (a_opt) TM3+=1/(1+(d/d0a)*(d/d0a)); // -a
+                if (u_opt) TM4+=1/(1+(d/d0u)*(d/d0u)); // -u
+                if (d_opt) TM5+=1/(1+(d/d0_scale)*(d/d0_scale)); // -d
+                rmsd0+=d*d;
+            }
+        }
+    }
+    n_ali8=k;
+    TM2/=xlen;
+    TM1/=ylen;
+    TM3/=(xlen+ylen)*0.5;
+    TM4/=Lnorm_ass;
+    TM5/=ylen;
+    if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
+
+    if (outfmt_opt>=2)
+    {
+        return 0;
+    }
+
+    // extract aligned sequence
+    int ali_len=xlen+ylen;
+    for (j=0;j<ylen;j++) ali_len-=(invmap[j]>=0);
+    seqxA.assign(ali_len,'-');
+    seqM.assign( ali_len,' ');
+    seqyA.assign(ali_len,'-');
+
+    std::vector<int> fwdmap(xlen+1, -1);
+    for (j=0;j<ylen;j++)
+    {
+        seqyA[j]=seqy[j];
+        i=invmap[j];
+        if (i<0) continue;
+        d=sqrt(dist(xa[i], ya[j]));
+        if (d<d0_out) seqM[j]=':';
+        else seqM[j]='.';
+        fwdmap[i]=j;
+        seqxA[j]=seqx[i];
+        Liden+=(seqxA[k]==seqyA[k]);
+    }
+    k=0;
+    for (i=0;i<xlen;i++)
+    {
+        j=fwdmap[i];
+        if (j>=0) continue;
+        seqxA[ylen+k]=seqx[i];
+        k++;
+    }
+
+    return 0; // zero for no exception
 }
+
 
 inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xk, CoordArray& yk, const int closeK_opt,
