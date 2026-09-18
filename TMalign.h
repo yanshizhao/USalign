@@ -3473,23 +3473,11 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
-    std::vector<double*> sv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++) sv[_i]=score[_i].data();
-    std::vector<double*> vv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++) vv[_i]=val[_i].data();
-    std::vector<char*> pv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++) pv[_i]=path[_i].data();
 
     /***********************/
     //    parameter set
     /***********************/
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
-        score_d8, d0, d0_search, dcu0);
-
-    /***********************/
-    //    parameter set   
-    /***********************/
-    parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
         score_d8, d0, d0_search, dcu0);
     int simplify_step    = 40; //for simplified search engine
     int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
@@ -3759,7 +3747,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
         score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
 
-    double Lnorm_d0;
     if (a_opt>0)
     {
         //normalized by average length of structures A, B
@@ -3794,8 +3781,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
         d0_out=d0_scale;
         d0_0=d0_scale;
-        //Lnorm_0=ylen;
-        Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
         TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
@@ -3818,7 +3803,6 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     int j_old=0;
     d=0;
     Liden=0;
-    //double SO=0;
     for(int k=0; k<n_ali8; k++)
     {
         for(int i=i_old; i<m1[k]; i++)
@@ -3846,15 +3830,10 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         if(d<d0_out) seqM[kk]=':';
         else         seqM[kk]='.';
         do_vec[kk]=d;
-        //SO+=(d<3.5);
-        kk++;  
+        kk++;
         i_old=m1[k]+1;
         j_old=m2[k]+1;
     }
-    //SO/=getmin(xlen,ylen);
-        //<<rmsd0<<'\t'
-        //<<100.*SO<<endl;
-
 
     //tail
     for(int i=i_old; i<xlen; i++)
