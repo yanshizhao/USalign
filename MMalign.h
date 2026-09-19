@@ -1692,7 +1692,7 @@ inline void MMalign_final(
             d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
             do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
             xlen, ylen, sequence, Lnorm_ass, params.d0_scale,
-            3, params.a_opt, false, params.d_opt, params.fast_opt, mol_type, invmap);
+            3, params.a_opt, false, params.d_opt, mol_type, 1, invmap);
     else
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
             t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
