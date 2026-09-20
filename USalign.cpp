@@ -713,7 +713,7 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                     chain1_len, chain2_len,
                     mmalign_pair_options(common_inputs, mol_types, norm_len, fast_opt,
                         i_opt, 1, common_inputs.control_options.parallel_threads),
-                    pair_sequence, common_inputs.user_options.outfmt_opt);
+                    pair_sequence, 1);
 
                 // save align_result (reuses the common function save_pair_result)
                 save_pair_result(align_result, pairwise,
@@ -1822,7 +1822,7 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
                 chain1_sec, chain2_sec, chain1_len, chain2_len,
                 mmalign_pair_options(common_inputs, mol_types, norm_len, fast_opt,
                     i_opt, 1, common_inputs.control_options.parallel_threads),
-                common_inputs.parsed_input.sequence, common_inputs.user_options.outfmt_opt);
+                common_inputs.parsed_input.sequence, 1);
 
             // save align_result
             save_pair_result(align_result, pairwise,
