@@ -2754,7 +2754,7 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     }
 
     // ---- Fallback: recover the best monomer pair when iteration score is below monomer best ----
-    bool is_fallback = !ctx.common_inputs.control_options.se_opt && need_monomer_fallback(ctx.common_inputs.user_options.byresi_opt,
+    bool is_fallback = need_monomer_fallback(ctx.common_inputs.user_options.byresi_opt,
         ctx.iteration_score, ctx.pair_result.best_pair_tm);
     if (is_fallback)
     {
@@ -2762,10 +2762,7 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     }
 
     // ---- Cross-chain alignment (mask-constrained intra-chain pairing, homodimer improvement) ----
-    if (!ctx.common_inputs.control_options.se_opt)
-    {
-        run_cross_chain_alignment(ctx, struct1_chain_num, struct2_chain_num);
-    }
+    run_cross_chain_alignment(ctx, struct1_chain_num, struct2_chain_num);
 
     // ---- Final output (MMalign_final / MMalign_se_final) ----
     output_final_results(ctx, struct1_chain_num, struct2_chain_num);
