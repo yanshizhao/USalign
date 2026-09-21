@@ -814,41 +814,45 @@ void mmdock_align_trimmed(ChainPairAlignResult& result,
     copy_chain_data(trimmed.coords[trim_idx], trimmed.seqs[trim_idx], trimmed.secs[trim_idx],
         ylen_trim, ya_trim, seqy_trim, secy_trim);
 
+    ChainPairAlignOptions trim_opts;
+    trim_opts.i_opt = 0;
+    trim_opts.a_opt = false;
+    trim_opts.u_opt = true;
+    trim_opts.d_opt = false;
+    trim_opts.fast_opt = fast_opt;
+    trim_opts.se_opt = false;
+    trim_opts.cp_opt = false;
+    trim_opts.Lnorm = Lnorm_tmp;
+    trim_opts.d0_scale = d0_scale;
+    trim_opts.TMcut = TMcut;
+    trim_opts.parallel_threads = parallel_threads;
+    trim_opts.ss_opt = 0;
+    trim_opts.mol_type = mol_type;
+
     TMalign_main(xa, ya_trim, seqx, seqy_trim, secx, secy_trim,
-        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-        result.seqM, result.seqxA, result.seqyA, result.do_vec,
-        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-        xlen, ylen_trim, sequence, Lnorm_tmp, d0_scale,
-        0, false, true, false, fast_opt,
-        mol_type, TMcut, parallel_threads);
+        result, xlen, ylen_trim, sequence, trim_opts);
     result.seqxA.clear();
     result.seqyA.clear();
 
     CoordArray xt(xlen);
     do_rotation(xa, xt, xlen, result.t0, result.u0);
-    std::vector<int> invmap(ylen + 1);
+    result.invmap.assign(ylen + 1, 0);
+    trim_opts.i_opt = 0;
+    trim_opts.u_opt = 2;
+    trim_opts.parallel_threads = parallel_threads;
     se_main(xt, ya, seqx, seqy,
-        result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-        result.seqM, result.seqxA, result.seqyA, result.do_vec,
-        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-        0, false, 2, false, mol_type, 1, invmap);
+        result, xlen, ylen, sequence, trim_opts, 1);
 
     if (sequence.size() < 2) sequence.push_back("");
     if (sequence.size() < 2) sequence.push_back("");
     sequence[0] = result.seqxA;
     sequence[1] = result.seqyA;
 
+    trim_opts.i_opt = 2;
+    trim_opts.u_opt = true;
+    trim_opts.parallel_threads = 1;
     TMalign_main(xt, ya, seqx, seqy, secx.c_str(), secy.c_str(),
-        result.t0, result.u0, result.TM1, result.TM2, result.TM3, result.TM4, result.TM5,
-        result.d0_0, result.TM_0, result.d0A, result.d0B, result.d0u, result.d0a, result.d0_out,
-        result.seqM, result.seqxA, result.seqyA, result.do_vec,
-        result.rmsd0, result.L_ali, result.Liden, result.TM_ali, result.rmsd_ali, result.n_ali, result.n_ali8,
-        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-        2, false, true, false, fast_opt,
-        mol_type, TMcut);
+        result, xlen, ylen, sequence, trim_opts);
 }
 
 inline void run_mmdock_parallel(
