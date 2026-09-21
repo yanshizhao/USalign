@@ -5320,18 +5320,18 @@ int main(int argc, char *argv[])
     {
         if (user_opts.dir_opt.size()>0 || user_opts.dir1_opt.size()>0 || user_opts.dir2_opt.size()>0)
         {
+            std::string norm_dir1;
+            std::string norm_dir2;
+            normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
             for (int chain1_idx=0; chain1_idx<(int)parsed_input.chain1_list.size(); chain1_idx++)
             {
                 user_opts.xname = parsed_input.chain1_list[chain1_idx];
                 std::vector<std::string> tmp_vec1(1, user_opts.xname);
-                for (int chain2_idx=0; chain2_idx<(int)parsed_input.chain2_list.size(); chain2_idx++)
+                int j_start = (user_opts.dir_opt.size() > 0) * (chain1_idx + 1);
+                for (int chain2_idx=j_start; chain2_idx<(int)parsed_input.chain2_list.size(); chain2_idx++)
                 {
-                    if (user_opts.dir_opt.size()>0 && chain2_idx<=chain1_idx) continue;
                     user_opts.yname = parsed_input.chain2_list[chain2_idx];
                     std::vector<std::string> tmp_vec2(1, user_opts.yname);
-                    std::string norm_dir1;
-                    std::string norm_dir2;
-                    normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
                     MMalignParams mm_params;
                     mm_params.dir1_opt = norm_dir1;
                     mm_params.dir2_opt = norm_dir2;
