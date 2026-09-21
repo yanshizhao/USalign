@@ -2703,6 +2703,14 @@ void output_final_results(MMalignContext& ctx,
     output_chain_pairing_summary(ctx, chain1_num, chain2_num);
 }
 
+void fill_mmalign_params(MMalignParams& params, const AlignCommonInput& common_inputs)
+{
+    params.dir1_opt = common_inputs.user_options.dir1_opt;
+    params.dir2_opt = common_inputs.user_options.dir2_opt;
+    params.chain1_list = common_inputs.parsed_input.chain1_list;
+    params.chain2_list = common_inputs.parsed_input.chain2_list;
+}
+
 // MMalign if more than two chains. TMalign if only one chain
 int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 {
@@ -5338,10 +5346,7 @@ int main(int argc, char *argv[])
         else if (user_opts.dirpair_opt.size()==0)
         {
             MMalignParams mm_params;
-            mm_params.dir1_opt = user_opts.dir1_opt;
-            mm_params.dir2_opt = user_opts.dir2_opt;
-            mm_params.chain1_list = parsed_input.chain1_list;
-            mm_params.chain2_list = parsed_input.chain2_list;
+            fill_mmalign_params(mm_params, common_inputs);
             MMalign(common_inputs, mm_params);
         }
         else
