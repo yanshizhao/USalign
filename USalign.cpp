@@ -2850,7 +2850,7 @@ void normalize_dir_options(const std::string& dir_opt,
     std::string& out_dir1_opt,
     std::string& out_dir2_opt);
 
-int run_mmalign_over_inputs(AlignCommonInput& common_inputs)
+int MMalign(AlignCommonInput& common_inputs)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
@@ -5385,7 +5385,7 @@ int main(int argc, char *argv[])
     }
     else if (ctrl_opts.mm_opt==1)
     {
-        run_mmalign_over_inputs(common_inputs);
+        MMalign(common_inputs);
     }
     else if (ctrl_opts.mm_opt==2)
         MMdock(common_inputs);
