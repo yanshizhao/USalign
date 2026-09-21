@@ -2841,7 +2841,74 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
     // ---- Final output (MMalign_final / MMalign_se_final) ----
     output_final_results(ctx, struct1_chain_num, struct2_chain_num);
 
-    return 1; 
+    return 1;
+}
+
+void normalize_dir_options(const std::string& dir_opt,
+    const std::string& dir1_opt,
+    const std::string& dir2_opt,
+    std::string& out_dir1_opt,
+    std::string& out_dir2_opt);
+
+int run_mmalign_over_inputs(AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+
+    if (user_opts.dir_opt.size()>0 || user_opts.dir1_opt.size()>0 || user_opts.dir2_opt.size()>0)
+    {
+        std::string norm_dir1;
+        std::string norm_dir2;
+        normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
+        for (int chain1_idx=0; chain1_idx<(int)parsed_input.chain1_list.size(); chain1_idx++)
+        {
+            user_opts.xname = parsed_input.chain1_list[chain1_idx];
+            std::vector<std::string> tmp_vec1(1, user_opts.xname);
+            int j_start = (user_opts.dir_opt.size() > 0) * (chain1_idx + 1);
+            for (int chain2_idx=j_start; chain2_idx<(int)parsed_input.chain2_list.size(); chain2_idx++)
+            {
+                user_opts.yname = parsed_input.chain2_list[chain2_idx];
+                std::vector<std::string> tmp_vec2(1, user_opts.yname);
+                MMalignParams mm_params;
+                mm_params.dir1_opt = norm_dir1;
+                mm_params.dir2_opt = norm_dir2;
+                mm_params.chain1_list = tmp_vec1;
+                mm_params.chain2_list = tmp_vec2;
+                MMalign(common_inputs, mm_params);
+                std::vector<std::string>().swap(tmp_vec2);
+            }
+            std::vector<std::string>().swap(tmp_vec1);
+        }
+    }
+    else if (user_opts.dirpair_opt.size()==0)
+    {
+        MMalignParams mm_params;
+        fill_mmalign_params(mm_params, common_inputs);
+        MMalign(common_inputs, mm_params);
+    }
+    else
+    {
+        std::vector<std::string> tmp_vec1;
+        std::vector<std::string> tmp_vec2;
+        for (int i=0;i<parsed_input.chain1_list.size();i++)
+        {
+            user_opts.xname=parsed_input.chain1_list[i];
+            user_opts.yname=parsed_input.chain2_list[i];
+            tmp_vec1.push_back(user_opts.xname);
+            tmp_vec2.push_back(user_opts.yname);
+            MMalignParams mm_params;
+            mm_params.dir1_opt = user_opts.dirpair_opt;
+            mm_params.dir2_opt = user_opts.dirpair_opt;
+            mm_params.chain1_list = tmp_vec1;
+            mm_params.chain2_list = tmp_vec2;
+            MMalign(common_inputs, mm_params);
+            tmp_vec1[0].clear(); tmp_vec1.clear();
+            tmp_vec2[0].clear(); tmp_vec2.clear();
+        }
+    }
+    ctrl_opts.chainmapfile.clear();
+    return 0;
 }
 
 // alignment individual chains to a complex.
@@ -5318,58 +5385,7 @@ int main(int argc, char *argv[])
     }
     else if (ctrl_opts.mm_opt==1)
     {
-        if (user_opts.dir_opt.size()>0 || user_opts.dir1_opt.size()>0 || user_opts.dir2_opt.size()>0)
-        {
-            std::string norm_dir1;
-            std::string norm_dir2;
-            normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
-            for (int chain1_idx=0; chain1_idx<(int)parsed_input.chain1_list.size(); chain1_idx++)
-            {
-                user_opts.xname = parsed_input.chain1_list[chain1_idx];
-                std::vector<std::string> tmp_vec1(1, user_opts.xname);
-                int j_start = (user_opts.dir_opt.size() > 0) * (chain1_idx + 1);
-                for (int chain2_idx=j_start; chain2_idx<(int)parsed_input.chain2_list.size(); chain2_idx++)
-                {
-                    user_opts.yname = parsed_input.chain2_list[chain2_idx];
-                    std::vector<std::string> tmp_vec2(1, user_opts.yname);
-                    MMalignParams mm_params;
-                    mm_params.dir1_opt = norm_dir1;
-                    mm_params.dir2_opt = norm_dir2;
-                    mm_params.chain1_list = tmp_vec1;
-                    mm_params.chain2_list = tmp_vec2;
-                    MMalign(common_inputs, mm_params);
-                    std::vector<std::string>().swap(tmp_vec2);
-                }
-                std::vector<std::string>().swap(tmp_vec1);
-            }
-        }
-        else if (user_opts.dirpair_opt.size()==0)
-        {
-            MMalignParams mm_params;
-            fill_mmalign_params(mm_params, common_inputs);
-            MMalign(common_inputs, mm_params);
-        }
-        else
-        {
-            std::vector<std::string> tmp_vec1;
-            std::vector<std::string> tmp_vec2;
-            for (int i=0;i<parsed_input.chain1_list.size();i++)
-            {
-                user_opts.xname=parsed_input.chain1_list[i];
-                user_opts.yname=parsed_input.chain2_list[i];
-                tmp_vec1.push_back(user_opts.xname);
-                tmp_vec2.push_back(user_opts.yname);
-                MMalignParams mm_params;
-                mm_params.dir1_opt = user_opts.dirpair_opt;
-                mm_params.dir2_opt = user_opts.dirpair_opt;
-                mm_params.chain1_list = tmp_vec1;
-                mm_params.chain2_list = tmp_vec2;
-                MMalign(common_inputs, mm_params);
-                tmp_vec1[0].clear(); tmp_vec1.clear();
-                tmp_vec2[0].clear(); tmp_vec2.clear();
-            }
-        }
-        ctrl_opts.chainmapfile.clear();
+        run_mmalign_over_inputs(common_inputs);
     }
     else if (ctrl_opts.mm_opt==2)
         MMdock(common_inputs);
