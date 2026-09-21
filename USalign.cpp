@@ -2712,7 +2712,7 @@ void fill_mmalign_params(MMalignParams& params, const AlignCommonInput& common_i
 }
 
 // MMalign if more than two chains. TMalign if only one chain
-int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
+int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 {
 
     MMalignContext ctx(common_inputs, mm_params);
@@ -2875,7 +2875,7 @@ int run_mmalign_over_inputs(AlignCommonInput& common_inputs)
                 mm_params.dir2_opt = norm_dir2;
                 mm_params.chain1_list = tmp_vec1;
                 mm_params.chain2_list = tmp_vec2;
-                MMalign(common_inputs, mm_params);
+                MMalign_main(common_inputs, mm_params);
                 std::vector<std::string>().swap(tmp_vec2);
             }
             std::vector<std::string>().swap(tmp_vec1);
@@ -2885,7 +2885,7 @@ int run_mmalign_over_inputs(AlignCommonInput& common_inputs)
     {
         MMalignParams mm_params;
         fill_mmalign_params(mm_params, common_inputs);
-        MMalign(common_inputs, mm_params);
+        MMalign_main(common_inputs, mm_params);
     }
     else
     {
@@ -2902,7 +2902,7 @@ int run_mmalign_over_inputs(AlignCommonInput& common_inputs)
             mm_params.dir2_opt = user_opts.dirpair_opt;
             mm_params.chain1_list = tmp_vec1;
             mm_params.chain2_list = tmp_vec2;
-            MMalign(common_inputs, mm_params);
+            MMalign_main(common_inputs, mm_params);
             tmp_vec1[0].clear(); tmp_vec1.clear();
             tmp_vec2[0].clear(); tmp_vec2.clear();
         }
