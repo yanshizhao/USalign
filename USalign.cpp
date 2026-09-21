@@ -2703,12 +2703,15 @@ void output_final_results(MMalignContext& ctx,
     output_chain_pairing_summary(ctx, chain1_num, chain2_num);
 }
 
-void fill_mmalign_params(MMalignParams& params, const AlignCommonInput& common_inputs)
+void fill_mmalign_params(MMalignParams& params,
+    const std::string& dir1_opt, const std::string& dir2_opt,
+    const std::vector<std::string>& chain1_list,
+    const std::vector<std::string>& chain2_list)
 {
-    params.dir1_opt = common_inputs.user_options.dir1_opt;
-    params.dir2_opt = common_inputs.user_options.dir2_opt;
-    params.chain1_list = common_inputs.parsed_input.chain1_list;
-    params.chain2_list = common_inputs.parsed_input.chain2_list;
+    params.dir1_opt = dir1_opt;
+    params.dir2_opt = dir2_opt;
+    params.chain1_list = chain1_list;
+    params.chain2_list = chain2_list;
 }
 
 // MMalign if more than two chains. TMalign if only one chain
@@ -2871,10 +2874,7 @@ int MMalign(AlignCommonInput& common_inputs)
                 user_opts.yname = parsed_input.chain2_list[chain2_idx];
                 std::vector<std::string> tmp_vec2(1, user_opts.yname);
                 MMalignParams mm_params;
-                mm_params.dir1_opt = norm_dir1;
-                mm_params.dir2_opt = norm_dir2;
-                mm_params.chain1_list = tmp_vec1;
-                mm_params.chain2_list = tmp_vec2;
+                fill_mmalign_params(mm_params, norm_dir1, norm_dir2, tmp_vec1, tmp_vec2);
                 MMalign_main(common_inputs, mm_params);
                 std::vector<std::string>().swap(tmp_vec2);
             }
@@ -2884,7 +2884,8 @@ int MMalign(AlignCommonInput& common_inputs)
     else if (user_opts.dirpair_opt.size()==0)
     {
         MMalignParams mm_params;
-        fill_mmalign_params(mm_params, common_inputs);
+        fill_mmalign_params(mm_params, user_opts.dir1_opt, user_opts.dir2_opt,
+            parsed_input.chain1_list, parsed_input.chain2_list);
         MMalign_main(common_inputs, mm_params);
     }
     else
@@ -2898,10 +2899,7 @@ int MMalign(AlignCommonInput& common_inputs)
             tmp_vec1.push_back(user_opts.xname);
             tmp_vec2.push_back(user_opts.yname);
             MMalignParams mm_params;
-            mm_params.dir1_opt = user_opts.dirpair_opt;
-            mm_params.dir2_opt = user_opts.dirpair_opt;
-            mm_params.chain1_list = tmp_vec1;
-            mm_params.chain2_list = tmp_vec2;
+            fill_mmalign_params(mm_params, user_opts.dirpair_opt, user_opts.dirpair_opt, tmp_vec1, tmp_vec2);
             MMalign_main(common_inputs, mm_params);
             tmp_vec1[0].clear(); tmp_vec1.clear();
             tmp_vec2[0].clear(); tmp_vec2.clear();
