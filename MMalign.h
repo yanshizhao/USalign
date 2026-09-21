@@ -6,7 +6,7 @@
 // Params: chain_pair_map - chain mapping table (structure 1 chain index maps to structure 2 chain index)
 //         struct1_chain_idx - structure 1 chain index
 // Return: true means this chain is a mapping key
-  inline bool is_chain_map_key(const map<int,int>& chain_pair_map, int struct1_chain_idx)
+  inline bool is_chain_map_key(const std::map<int,int>& chain_pair_map, int struct1_chain_idx)
   {
       return chain_pair_map.find(struct1_chain_idx) != chain_pair_map.end();
   }
@@ -15,10 +15,10 @@
 // Params: chain_pair_map - chain mapping table (structure 1 chain index maps to structure 2 chain index)
 //         chain2_idx - structure 2 chain index
 // Return: true means this chain is a mapping target
-inline bool is_chain_map_value(const map<int,int>& chain_pair_map,
+inline bool is_chain_map_value(const std::map<int,int>& chain_pair_map,
     int chain2_idx)
 {
-    for (map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
+    for (std::map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
     {
         if (kv->second == chain2_idx)
         {
@@ -35,7 +35,7 @@ inline bool is_chain_map_value(const map<int,int>& chain_pair_map,
 //         chain1_idx - chain index of structure 1
 //         chain2_idx - chain index of structure 2
 // Return: true means this chain pair is allowed to pair
-inline bool is_chain_pair_allowed(const map<int,int>& chain_pair_map,
+inline bool is_chain_pair_allowed(const std::map<int,int>& chain_pair_map,
     int chain1_idx,
     int chain2_idx)
 {
@@ -55,8 +55,8 @@ inline bool is_chain_pair_allowed(const map<int,int>& chain_pair_map,
 
 
 inline void print_assign_list(const std::vector<int>& assign1_list, const int chain1_num,
-    const vector<string> &chainID_list1,
-    const vector<string> &chainID_list2)
+    const std::vector<std::string> &chainID_list1,
+    const std::vector<std::string> &chainID_list2)
 {
     int i;
     int j;
@@ -64,14 +64,14 @@ inline void print_assign_list(const std::vector<int>& assign1_list, const int ch
     {
         j=assign1_list[i];
         if (j>=0)
-            cout<<chainID_list1[i]<<'\t'<<chainID_list2[j]<<endl;
+            std::cout<<chainID_list1[i]<<'\t'<<chainID_list2[j]<<std::endl;
     }
 }
 
 /* count the number of nucleic acid chains (na_chain_num) and
  * protein chains (aa_chain_num) in a complex */
 inline int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
-    const vector<int>&mol_vec)
+    const std::vector<int>&mol_vec)
 {
     na_chain_num=0;
     aa_chain_num=0;
@@ -88,11 +88,11 @@ inline int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
 inline bool adjust_dimer_assignment(        
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
-    const vector<int>&xlen_vec, const vector<int>&ylen_vec,
-    const vector<int>&mol_vec1, const vector<int>&mol_vec2,
+    const std::vector<int>&xlen_vec, const std::vector<int>&ylen_vec,
+    const std::vector<int>&mol_vec1, const std::vector<int>&mol_vec2,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list,
-    const vector<vector<string> >&seqxA_mat,
-    const vector<vector<string> >&seqyA_mat)
+    const std::vector<std::vector<std::string> >&seqxA_mat,
+    const std::vector<std::vector<std::string> >&seqyA_mat)
 {
     // check currently assigned chains
     int i1;
@@ -375,7 +375,7 @@ inline double calculate_centroids(const DoubleCube&a_vec,
         centroids[c][2]/=L;
     }
 
-    vector<double> d0_vec(chain_num,-1);
+    std::vector<double> d0_vec(chain_num,-1);
     int c2=0;
     double d0MM=0;
     for (c=0; c<chain_num; c++)
@@ -511,7 +511,7 @@ inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vect
 
     size_t  total_pair=chain1_num*chain2_num; // total pair
     std::vector<double> ut_tmc_mat(total_pair, 0.0); // chain level TM-score
-    vector<pair<double,int> > ut_tm_vec(total_pair,make_pair(0.0,0)); // product of both
+    std::vector<std::pair<double,int> > ut_tm_vec(total_pair,std::make_pair(0.0,0)); // product of both
 
     for (c1=0;c1<chain1_num;c1++)
     {
@@ -552,7 +552,7 @@ inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vect
             TMscore=ut_tmc_mat[c1*chain2_num+c2];
 
             // further assignment
-            sort(ut_tm_vec.begin(), ut_tm_vec.end()); // sort in ascending order
+            std::sort(ut_tm_vec.begin(), ut_tm_vec.end()); // sort in ascending order
             for (ut_idx=total_pair-1;ut_idx>=0;ut_idx--)
             {
                 j=ut_tm_vec[ut_idx].second % chain2_num;
@@ -670,7 +670,7 @@ inline double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::ve
 }
 
 inline void copy_chain_data(const DoubleMatrix&a_vec_i,
-    const vector<char>&seq_vec_i,const vector<char>&sec_vec_i,
+    const std::vector<char>&seq_vec_i,const std::vector<char>&sec_vec_i,
     const int len,CoordArray& a,std::string &seq,std::string &sec)
 {
     int r;
@@ -689,13 +689,13 @@ inline void copy_chain_data(const DoubleMatrix&a_vec_i,
 }
 
 // clear chains with L<3
-inline void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string atom_opt)
+inline void clear_full_PDB_lines(std::vector<std::vector<std::string> > PDB_lines,const std::string atom_opt)
 {
     int chain_i;
     int Lch;
     int a;
     bool select_atom;
-    string line;
+    std::string line;
     for (chain_i=0;chain_i<PDB_lines.size();chain_i++)
     {
         Lch=0;
@@ -721,19 +721,19 @@ inline void clear_full_PDB_lines(vector<vector<string> > PDB_lines,const string 
     line.clear();
 }
 
-inline size_t get_full_PDB_lines(const string filename,
-    vector<vector<string> >&PDB_lines, const int ter_opt,
+inline size_t get_full_PDB_lines(const std::string filename,
+    std::vector<std::vector<std::string> >&PDB_lines, const int ter_opt,
     const int infmt_opt, const int split_opt, const int het_opt)
 {
     size_t i=0; // resi i.e. atom index
-    string line;
+    std::string line;
     char chainID=0;
-    vector<string> tmp_str_vec;
+    std::vector<std::string> tmp_str_vec;
     
     int compress_type=0; // uncompressed file
-    ifstream fin;
+    std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
-    ifstream fin_gz;
+    std::ifstream fin_gz;
 #else
     redi::ipstream fin_gz; // if file is compressed
     if (filename.size()>=3 && 
@@ -756,8 +756,8 @@ inline size_t get_full_PDB_lines(const string filename,
     {
         while (compress_type?fin_gz.good():fin.good())
         {
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
             if (infmt_opt==-1 && line.compare(0,5,"loop_")==0) // PDBx/mmCIF
                 return get_full_PDB_lines(filename,PDB_lines,
                     ter_opt, 3, split_opt,het_opt);
@@ -796,53 +796,53 @@ inline size_t get_full_PDB_lines(const string filename,
         float x;
         float y;
         float z;
-        stringstream i8_stream;
+        std::stringstream i8_stream;
         while (compress_type?fin_gz.good():fin.good())
         {
             if (compress_type) fin_gz>>L>>x>>y>>z;
             else               fin   >>L>>x>>y>>z;
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
             if (!(compress_type?fin_gz.good():fin.good())) break;
             for (i=0;i<L;i++)
             {
                 if (compress_type) fin_gz>>x>>y>>z;
                 else               fin   >>x>>y>>z;
-                i8_stream<<"ATOM   "<<setw(4)<<i+1<<"  CA  UNK  "<<setw(4)
-                    <<i+1<<"    "<<setiosflags(ios::fixed)<<setprecision(3)
-                    <<setw(8)<<x<<setw(8)<<y<<setw(8)<<z;
+                i8_stream<<"ATOM   "<<std::setw(4)<<i+1<<"  CA  UNK  "<<std::setw(4)
+                    <<i+1<<"    "<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setw(8)<<x<<std::setw(8)<<y<<std::setw(8)<<z;
                 line=i8_stream.str();
-                i8_stream.str(string());
+                i8_stream.str(std::string());
                 PDB_lines.back().push_back(line);
             }
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
         }
     }
     else if (infmt_opt==2) // xyz format
     {
         size_t L=0;
-        stringstream i8_stream;
+        std::stringstream i8_stream;
         while (compress_type?fin_gz.good():fin.good())
         {
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
             L=safe_stoi(line.c_str());
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
             for (i=0;i<line.size();i++)
                 if (line[i]==' '||line[i]=='\t') break;
             if (!(compress_type?fin_gz.good():fin.good())) break;
             PDB_lines.push_back(tmp_str_vec);
             for (i=0;i<L;i++)
             {
-                if (compress_type) getline(fin_gz, line);
-                else               getline(fin, line);
-                i8_stream<<"ATOM   "<<setw(4)<<i+1<<"  CA  "
-                    <<AAmap(line[0])<<"  "<<setw(4)<<i+1<<"    "
+                if (compress_type) std::getline(fin_gz, line);
+                else               std::getline(fin, line);
+                i8_stream<<"ATOM   "<<std::setw(4)<<i+1<<"  CA  "
+                    <<AAmap(line[0])<<"  "<<std::setw(4)<<i+1<<"    "
                     <<line.substr(2,8)<<line.substr(11,8)<<line.substr(20,8);
                 line=i8_stream.str();
-                i8_stream.str(string());
+                i8_stream.str(std::string());
                 PDB_lines.back().push_back(line);
             }
         }
@@ -850,23 +850,23 @@ inline size_t get_full_PDB_lines(const string filename,
     else if (infmt_opt==3) // PDBx/mmCIF format
     {
         bool loop_ = false; // not reading following content
-        map<string,int> _atom_site;
+        std::map<std::string,int> _atom_site;
         int atom_site_pos;
-        vector<string> line_vec;
-        string alt_id=".";  // alternative location indicator
-        string asym_id="."; // this is similar to chainID, except that
+        std::vector<std::string> line_vec;
+        std::string alt_id=".";  // alternative location indicator
+        std::string asym_id="."; // this is similar to chainID, except that
                             // chainID is char while asym_id is a string
                             // with possibly multiple char
-        string prev_asym_id="";
-        string AA="";       // residue name
-        string atom="";
-        string resi="";
-        string model_index=""; // the same as model_idx but type is string
-        stringstream i8_stream;
+        std::string prev_asym_id="";
+        std::string AA="";       // residue name
+        std::string atom="";
+        std::string resi="";
+        std::string model_index=""; // the same as model_idx but type is string
+        std::stringstream i8_stream;
         while (compress_type?fin_gz.good():fin.good())
         {
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
             if (line.size()==0) continue;
             if (loop_) loop_ = (line.size()>=2)?(line.compare(0,2,"# ")):(line.compare(0,1,"#"));
             if (!loop_)
@@ -876,12 +876,12 @@ inline size_t get_full_PDB_lines(const string filename,
                 {
                     if (compress_type)
                     {
-                        if (fin_gz.good()) getline(fin_gz, line);
+                        if (fin_gz.good()) std::getline(fin_gz, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                     }
                     else
                     {
-                        if (fin.good()) getline(fin, line);
+                        if (fin.good()) std::getline(fin, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                     }
                     if (line.size()) break;
@@ -895,8 +895,8 @@ inline size_t get_full_PDB_lines(const string filename,
 
                 while(1)
                 {
-                    if (compress_type) getline(fin_gz, line);
-                    else               getline(fin, line);
+                    if (compress_type) std::getline(fin_gz, line);
+                    else               std::getline(fin, line);
                     if (line.size()==0) continue;
                     if (line.compare(0,11,"_atom_site.")) break;
                     _atom_site[Trim(line.substr(11))]=++atom_site_pos;
@@ -915,7 +915,7 @@ inline size_t get_full_PDB_lines(const string filename,
                     _atom_site.count("Cartn_z")==0)
                 {
                     loop_ = false;
-                    cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                    std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                     continue;
                 }
             }
@@ -983,13 +983,13 @@ inline size_t get_full_PDB_lines(const string filename,
 
             i++;
             i8_stream<<"ATOM  "
-                <<setw(5)<<i<<" "<<atom<<" "<<AA<<setw(2)<<asym_id.substr(0,2)
-                <<setw(5)<<resi.substr(0,5)<<"   "
-                <<setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
-                <<setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
-                <<setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
+                <<std::setw(5)<<i<<" "<<atom<<" "<<AA<<std::setw(2)<<asym_id.substr(0,2)
+                <<std::setw(5)<<resi.substr(0,5)<<"   "
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
             PDB_lines.back().push_back(i8_stream.str());
-            i8_stream.str(string());
+            i8_stream.str(std::string());
         }
         _atom_site.clear();
         line_vec.clear();
@@ -1004,26 +1004,26 @@ inline size_t get_full_PDB_lines(const string filename,
     return PDB_lines.size();
 }
 
-inline void output_dock(const vector<string>&chain_list, const int ter_opt,
-    const int split_opt, const int infmt_opt, const string atom_opt,
-    const int mirror_opt, const RotArray& ut_mat, const string&fname_super)
+inline void output_dock(const std::vector<std::string>&chain_list, const int ter_opt,
+    const int split_opt, const int infmt_opt, const std::string atom_opt,
+    const int mirror_opt, const RotArray& ut_mat, const std::string&fname_super)
 {
     size_t i;
     int chain_i;
     int a;
-    string name;
+    std::string name;
     int chainnum;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
-    string line;
-    vector<vector<string> >PDB_lines;
+    std::string line;
+    std::vector<std::vector<std::string> >PDB_lines;
     int m=0;
     Vec3 t;
     RotMat u;
     int ui;
     int uj;
-    stringstream buf;
-    string filename;
+    std::stringstream buf;
+    std::string filename;
     int het_opt=1;
     for (i=0;i<chain_list.size();i++)
     {
@@ -1037,7 +1037,7 @@ inline void output_dock(const vector<string>&chain_list, const int ter_opt,
             if (PDB_lines[chain_i].size()<3) continue;
             buf<<fname_super<<'.'<<m<<".pdb";
             filename=buf.str();
-            buf.str(string());
+            buf.str(std::string());
             for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
             for (uj=0;uj<3;uj++) t[uj]=ut_mat[m][9+uj];
             for (a=0;a<PDB_lines[chain_i].size();a++)
@@ -1048,51 +1048,51 @@ inline void output_dock(const vector<string>&chain_list, const int ter_opt,
                 x[2]=safe_stod(line.substr(46,8).c_str());
                 if (mirror_opt) x[2]=-x[2];
                 transform(t, u, x, x1);
-                buf<<line.substr(0,30)<<setiosflags(ios::fixed)
-                   <<setprecision(3)
-                   <<setw(8)<<x1[0]<<setw(8)<<x1[1]<<setw(8)<<x1[2]
+                buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+                   <<std::setprecision(3)
+                   <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1]<<std::setw(8)<<x1[2]
                    <<line.substr(54)<<'\n';
             }
-            buf<<"TER"<<endl;
-            ofstream fp;
+            buf<<"TER"<<std::endl;
+            std::ofstream fp;
             fp.open(filename.c_str());
             fp<<buf.str();
             fp.close();
-            buf.str(string());
+            buf.str(std::string());
             PDB_lines[chain_i].clear();
             m++;
         } // chain_i
         name.clear();
         PDB_lines.clear();
     } // i
-    vector<vector<string> >().swap(PDB_lines);
+    std::vector<std::vector<std::string> >().swap(PDB_lines);
     line.clear();
 }
 
-inline void parse_chain_list(const vector<string>&chain_list,
+inline void parse_chain_list(const std::vector<std::string>&chain_list,
     DoubleCube&a_vec, CharMatrix&seq_vec,
-    CharMatrix&sec_vec, vector<int>&mol_vec, vector<int>&len_vec,
-    vector<string>&chainID_list, const int ter_opt, const int split_opt,
-    const string mol_opt, const int infmt_opt, const string atom_opt,
+    CharMatrix&sec_vec, std::vector<int>&mol_vec, std::vector<int>&len_vec,
+    std::vector<std::string>&chainID_list, const int ter_opt, const int split_opt,
+    const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
     const bool autojustify, const int mirror_opt, const int het_opt,
-    int &len_aa, int &len_na,  const int o_opt, vector<string>&resi_vec,
-    const vector<string> &chain2parse, const vector<string> &model2parse)
+    int &len_aa, int &len_na,  const int o_opt, std::vector<std::string>&resi_vec,
+    const std::vector<std::string> &chain2parse, const std::vector<std::string> &model2parse)
 {
     size_t i;
     int chain_i;
     int r;
-    string name;
+    std::string name;
     int chainnum;
     CoordArray xa;
     int len;
     std::string seq;
     std::string sec;
 
-    vector<vector<string> >PDB_lines;
-    vector<double> tmp_atom_array(3,0);
+    std::vector<std::vector<std::string> >PDB_lines;
+    std::vector<double> tmp_atom_array(3,0);
     DoubleMatrix tmp_chain_array;
-    vector<char>tmp_seq_array;
-    vector<char>tmp_sec_array;
+    std::vector<char>tmp_seq_array;
+    std::vector<char>tmp_sec_array;
     int read_resi=2;
 
     for (i=0;i<chain_list.size();i++)
@@ -1103,8 +1103,8 @@ inline void parse_chain_list(const vector<string>&chain_list,
             chain2parse, model2parse);
         if (!chainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<get_basename(name)
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<get_basename(name)
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         for (chain_i=0;chain_i<chainnum;chain_i++)
@@ -1112,13 +1112,13 @@ inline void parse_chain_list(const vector<string>&chain_list,
             len=PDB_lines[chain_i].size();
             if (!len)
             {
-                cerr<<"Warning! Cannot parse file: "<<name
-                    <<". Chain length 0."<<endl;
+                std::cerr<<"Warning! Cannot parse file: "<<name
+                    <<". Chain length 0."<<std::endl;
                 continue;
             }
             else if (len<3)
             {
-                cerr<<"Sequence is too short <3!: "<<name<<endl;
+                std::cerr<<"Sequence is too short <3!: "<<name<<std::endl;
                 continue;
             }
             xa.clear();
@@ -1132,8 +1132,8 @@ inline void parse_chain_list(const vector<string>&chain_list,
             
             // store in vector
             tmp_chain_array.assign(len,tmp_atom_array);
-            vector<char>tmp_seq_array(len+1,0);
-            vector<char>tmp_sec_array(len+1,0);
+            std::vector<char>tmp_seq_array(len+1,0);
+            std::vector<char>tmp_sec_array(len+1,0);
             for (r=0;r<len;r++)
             {
                 tmp_chain_array[r][0]=xa[r][0];
@@ -1183,13 +1183,13 @@ inline void parse_chain_list(const vector<string>&chain_list,
     }
 }
 
-inline void parse_chain_list(const vector<string>&chain_list,
+inline void parse_chain_list(const std::vector<std::string>&chain_list,
     ComplexData& complex,
     const int ter_opt, const int split_opt,
-    const string mol_opt, const int infmt_opt, const string atom_opt,
+    const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
     const bool autojustify, const int mirror_opt, const int het_opt,
-    const int o_opt, const vector<string> &chain2parse,
-    const vector<string> &model2parse)
+    const int o_opt, const std::vector<std::string> &chain2parse,
+    const std::vector<std::string> &model2parse)
 {
     parse_chain_list(chain_list,
         complex.coords, complex.seqs, complex.secs,
@@ -1205,12 +1205,12 @@ inline int copy_chain_pair_data(
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
     const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
+    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
     CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int chain1_num, int chain2_num,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence)
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence)
 {
     int i;
     int j;
@@ -1258,14 +1258,14 @@ inline double MMalign_search(
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
     const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
+    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
     const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0,
-    const map<int,int>& chain_pair_map = map<int,int>())
+    const std::map<int,int>& chain_pair_map = std::map<int,int>())
 {
     double total_score=0;
     int i;
@@ -1309,7 +1309,7 @@ inline double MMalign_search(
     double d0u;
     double d0a;
     double d0_out=5.0;
-    string seqM, seqxA, seqyA;// for output alignment
+    std::string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
     int L_ali;                // Aligned length in standard_TMscore
     double Liden=0;
@@ -1318,7 +1318,7 @@ inline double MMalign_search(
     int n_ali8=0;
 
     double Lnorm_ass=len_aa+len_na;
-    vector<double> do_vec;
+    std::vector<double> do_vec;
 
     // entry function for structure alignment
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
@@ -1385,7 +1385,7 @@ inline double MMalign_search(
 
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
-            vector<string> sequence_tmp;
+            std::vector<std::string> sequence_tmp;
             if (byresi_opt)
             {
                 sequence_tmp.push_back(seqxA_mat[i][j]);
@@ -1410,7 +1410,7 @@ inline double MMalign_search(
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
-            vector<string>().swap(sequence_tmp);
+            std::vector<std::string>().swap(sequence_tmp);
 
             do_vec.clear();
         }
@@ -1475,22 +1475,22 @@ inline void mmalign_assemble_complex_alignment(
         if (assign1_list[i]>=0) continue;
         chainID1+=chainID_list1[i];
         chainID2+=':';
-        string s(seqx_vec[i].begin(),seqx_vec[i].end());
+        std::string s(seqx_vec[i].begin(),seqx_vec[i].end());
         sequence[0]+=s.substr(0,xlen_vec[i])+'*';
-        sequence[1]+=string(xlen_vec[i],'-')+'*';
+        sequence[1]+=std::string(xlen_vec[i],'-')+'*';
         s.clear();
-        sequence[2]+=string(xlen_vec[i],' ')+'*';
+        sequence[2]+=std::string(xlen_vec[i],' ')+'*';
     }
     for (j=0;j<chain2_num;j++)
     {
         if (assign2_list[j]>=0) continue;
         chainID1+=':';
         chainID2+=chainID_list2[j];
-        string s(seqy_vec[j].begin(),seqy_vec[j].end());
-        sequence[0]+=string(ylen_vec[j],'-')+'*';
+        std::string s(seqy_vec[j].begin(),seqy_vec[j].end());
+        sequence[0]+=std::string(ylen_vec[j],'-')+'*';
         sequence[1]+=s.substr(0,ylen_vec[j])+'*';
         s.clear();
-        sequence[2]+=string(ylen_vec[j],' ')+'*';
+        sequence[2]+=std::string(ylen_vec[j],' ')+'*';
     }
 
 }
@@ -1521,14 +1521,14 @@ inline void mmalign_output_per_chain_alignments(
     double d0u;
     double d0a;
     double d0_out=5.0;
-    string seqM, seqxA, seqyA;
+    std::string seqM, seqxA, seqyA;
     double rmsd0 = 0.0;
     int L_ali;
     double Liden=0;
     double TM_ali, rmsd_ali;
     int n_ali=0;
     int n_ali8=0;
-    vector<double>do_vec;
+    std::vector<double>do_vec;
 
     // re-compute chain level alignment
     for (i=0;i<params.chain1_num;i++)
@@ -1669,14 +1669,14 @@ inline void MMalign_final(
     double d0u;
     double d0a;
     double d0_out=5.0;
-    string seqM, seqxA, seqyA;// for output alignment
+    std::string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
     int L_ali;                // Aligned length in standard_TMscore
     double Liden=0;
     double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
     int n_ali=0;
     int n_ali8=0;
-    vector<double>do_vec;
+    std::vector<double>do_vec;
     double Lnorm_ass=params.len_aa+params.len_na;
 
     u0[0][0]=u0[1][1]=u0[2][2]=1;
@@ -1702,8 +1702,8 @@ inline void MMalign_final(
             3, params.a_opt, false, params.d_opt, params.fast_opt, mol_type, -1);
 
     // prepare full complex alignment
-    string chainID1="";
-    string chainID2="";
+    std::string chainID1="";
+    std::string chainID2="";
     mmalign_assemble_complex_alignment(seqM, complex1.seqs, complex2.seqs, complex1.lengths, complex2.lengths,
         complex1.chain_ids, complex2.chain_ids, assign.chain2_of_chain1, assign.chain1_of_chain2,
         params.chain1_num, params.chain2_num, pairs.aligned_seq1, pairs.aligned_seq2, pairs.aligned_consensus,
@@ -1750,7 +1750,7 @@ inline void MMalign_final(
 
     if (!params.full_opt) return;
 
-    if (params.outfmt_opt<=2) cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<endl;
+    if (params.outfmt_opt<=2) std::cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
 
     mmalign_output_per_chain_alignments(complex1, complex2, pairs, assign,
         params, sequence, t0, u0);
@@ -1761,10 +1761,10 @@ inline void MMalign_final(
 
 
 inline void copy_chain_assign_data(int chain1_num, int chain2_num,
-    vector<string> &sequence,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
+    std::vector<std::string> &sequence,
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, DoubleMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_tmp, vector<vector<string> >&seqyA_tmp,
+    std::vector<std::vector<std::string> >&seqxA_tmp, std::vector<std::vector<std::string> >&seqyA_tmp,
     std::vector<int>& assign1_tmp,  std::vector<int>& assign2_tmp,  DoubleMatrix& TMave_tmp)
 {
     int i;
@@ -1797,13 +1797,13 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
     const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
+    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
     std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
-    double d0_scale, bool fast_opt, map<int,int> &chain_pair_map,
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
+    double d0_scale, bool fast_opt, std::map<int,int> &chain_pair_map,
     const int byresi_opt=0)
 {
     // tmp assignment
@@ -1812,10 +1812,10 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
     std::vector<int> assign2_tmp(chain2_num);
     DoubleMatrix TMave_tmp;
     TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
-    vector<string> tmp_str_vec(chain2_num,"");
-    vector<vector<string> >seqxA_tmp(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_tmp(chain1_num,tmp_str_vec);
-    vector<string> sequence_tmp;
+    std::vector<std::string> tmp_str_vec(chain2_num,"");
+    std::vector<std::vector<std::string> >seqxA_tmp(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqyA_tmp(chain1_num,tmp_str_vec);
+    std::vector<std::string> sequence_tmp;
     copy_chain_assign_data(chain1_num, chain2_num, sequence_tmp,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
         seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp);
@@ -1850,7 +1850,7 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
         if (chain_pair_map.size())
         {
             // 映射链强制保持配对（用户指定强制约束，即使重打分分数<=0 也保留）
-            for (map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
+            for (std::map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
             {
                 assign1_tmp[kv->first]=kv->second;
                 assign2_tmp[kv->second]=kv->first;
@@ -1863,9 +1863,9 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
             seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
             seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
     }
-    vector<string>().swap(tmp_str_vec);
-    vector<vector<string> >().swap(seqxA_tmp);
-    vector<vector<string> >().swap(seqyA_tmp);
+    std::vector<std::string>().swap(tmp_str_vec);
+    std::vector<std::vector<std::string> >().swap(seqxA_tmp);
+    std::vector<std::vector<std::string> >().swap(seqyA_tmp);
 }
 
 
@@ -2127,12 +2127,12 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
+    std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
     CharMatrix& mask,
-    const vector<string> sequence, const double Lnorm_ass,
+    const std::vector<std::string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1)
@@ -2156,7 +2156,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     /***********************/
     // allocate memory
     /***********************/
-    int minlen = min(xlen, ylen);
+    int minlen = std::min(xlen, ylen);
     score.assign(xlen+1, std::vector<double>(ylen+1));
     path.assign( xlen+1, std::vector<char>(ylen+1));
     val.assign(  xlen+1, std::vector<double>(ylen+1));
@@ -2204,7 +2204,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
         int i2 = -1;
         int L1 = sequence[0].size();
         int L2 = sequence[1].size();
-        int L = min(L1, L2);// Get positions for aligned residues
+        int L = std::min(L1, L2);// Get positions for aligned residues
         for (int kk1 = 0; kk1 < L; kk1++)
         {
             if (sequence[0][kk1] != '-') i1++;
@@ -2343,7 +2343,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             }
         }
         else
-            cerr << "\n\nWarning: initial alignment from local superposition fail!\n\n" << endl;
+            std::cerr << "\n\nWarning: initial alignment from local superposition fail!\n\n" << std::endl;
 
         if (TMcut>0) // pre-terminate if TM-score is too low
         {
@@ -2455,7 +2455,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
             int i2 = -1;
             int L1 = sequence[0].size();
             int L2 = sequence[1].size();
-            int L = min(L1, L2);// Get positions for aligned residues
+            int L = std::min(L1, L2);// Get positions for aligned residues
             for (int kk1 = 0; kk1 < L; kk1++)
             {
                 if (sequence[0][kk1] != '-')
@@ -2516,8 +2516,8 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     if(!flag)
     {
-        cout << "There is no alignment between the two structures! "
-             << "Program stop with no result!" << endl;
+        std::cout << "There is no alignment between the two structures! "
+             << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
         return 1;
     }
@@ -2735,21 +2735,21 @@ inline void MMalign_dimer(double & total_score,
     const DoubleCube&ya_vec,
     const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
     const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const vector<int> &mol_vec1, const vector<int> &mol_vec2,
-    const vector<int> &xlen_vec, const vector<int> &ylen_vec,
+    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
+    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
     const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
-    vector<vector<string> >&seqxA_mat, vector<vector<string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, vector<string>&sequence,
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
+    std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
     double d0_scale, bool fast_opt,
-    const map<int,int>& chain_pair_map = map<int,int>())
+    const std::map<int,int>& chain_pair_map = std::map<int,int>())
 {
     int i;
     int j;
     int xlen=0;
     int ylen=0;
-    vector<int> xlen_dimer;
-    vector<int> ylen_dimer;
+    std::vector<int> xlen_dimer;
+    std::vector<int> ylen_dimer;
     for (i=0;i<chain1_num;i++)
     {
         j=assign1_list[i];
@@ -2781,8 +2781,8 @@ inline void MMalign_dimer(double & total_score,
         prev_xlen+=xlen_dimer[c];
         prev_ylen+=ylen_dimer[c];
     }
-    vector<int>().swap(xlen_dimer);
-    vector<int>().swap(ylen_dimer);
+    std::vector<int>().swap(xlen_dimer);
+    std::vector<int>().swap(ylen_dimer);
 
     std::string secx;
     std::string secy;
@@ -2810,7 +2810,7 @@ inline void MMalign_dimer(double & total_score,
     double d0u;
     double d0a;
     double d0_out=5.0;
-    string seqM, seqxA, seqyA;// for output alignment
+    std::string seqM, seqxA, seqyA;// for output alignment
     double rmsd0 = 0.0;
     int L_ali;                // Aligned length in standard_TMscore
     double Liden=0;
@@ -2885,7 +2885,7 @@ inline void MMalign_dimer(double & total_score,
             rmsd0 = 0.0;
             Liden=0;
             std::vector<int> invmap(ylen+1);
-            vector<double> do_vec;
+            std::vector<double> do_vec;
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
 
@@ -2931,10 +2931,10 @@ inline void MMalign_dimer(double & total_score,
 // return the number of chains that are trimmed
 inline int trimComplex(DoubleCube&a_trim_vec,
     CharMatrix&seq_trim_vec, CharMatrix&sec_trim_vec,
-    vector<int>&len_trim_vec,
+    std::vector<int>&len_trim_vec,
     const DoubleCube&a_vec,
     const CharMatrix&seq_vec, const CharMatrix&sec_vec,
-    const vector<int> &len_vec, const vector<int> &mol_vec,
+    const std::vector<int> &len_vec, const std::vector<int> &mol_vec,
     const int Lchain_aa_max, const int Lchain_na_max)
 {
     int trim_chain_count=0;
@@ -2945,12 +2945,12 @@ inline int trimComplex(DoubleCube&a_trim_vec,
     int r2;
     double dinter;
     double dinter_min;
-    vector<pair<double,int> >dinter_vec;
-    vector<bool> include_vec;
-    vector<char> seq_empty;
+    std::vector<std::pair<double,int> >dinter_vec;
+    std::vector<bool> include_vec;
+    std::vector<char> seq_empty;
     DoubleMatrix  a_empty;
-    vector<double> xcoor(3,0);
-    vector<double> ycoor(3,0);
+    std::vector<double> xcoor(3,0);
+    std::vector<double> ycoor(3,0);
     int xlen;
     int ylen;
     int Lchain_max;
@@ -2991,9 +2991,9 @@ inline int trimComplex(DoubleCube&a_trim_vec,
                     if (dinter<dinter_min) dinter_min=dinter;
                 }
             }
-            dinter_vec.push_back(make_pair(dinter,r1));
+            dinter_vec.push_back(std::make_pair(dinter,r1));
         }
-        sort(dinter_vec.begin(),dinter_vec.end());
+        std::sort(dinter_vec.begin(),dinter_vec.end());
         include_vec.assign(xlen,false);
         for (r1=0;r1<Lchain_max;r1++)
             include_vec[dinter_vec[r1].second]=true;
@@ -3012,24 +3012,24 @@ inline int trimComplex(DoubleCube&a_trim_vec,
         }
         include_vec.clear();
     }
-    vector<pair<double,int> >().swap(dinter_vec);
-    vector<bool>().swap(include_vec);
-    vector<double> ().swap(xcoor);
-    vector<double> ().swap(ycoor);
+    std::vector<std::pair<double,int> >().swap(dinter_vec);
+    std::vector<bool>().swap(include_vec);
+    std::vector<double> ().swap(xcoor);
+    std::vector<double> ().swap(ycoor);
     return trim_chain_count;
 }
 
 inline void writeTrimComplex(DoubleCube&a_trim_vec,
-    CharMatrix&seq_trim_vec, vector<int>&len_trim_vec,
-    vector<string>&chainID_list, vector<int>&mol_vec,
-    const string &atom_opt, string filename)
+    CharMatrix&seq_trim_vec, std::vector<int>&len_trim_vec,
+    std::vector<std::string>&chainID_list, std::vector<int>&mol_vec,
+    const std::string &atom_opt, std::string filename)
 {
     int c;
     int r;
     int a=0;
-    string chainID;
-    string atom;
-    ofstream fp(filename.c_str());
+    std::string chainID;
+    std::string atom;
+    std::ofstream fp(filename.c_str());
     for (c=0;c<chainID_list.size();c++)
     {
         chainID=chainID_list[c];
@@ -3044,13 +3044,13 @@ inline void writeTrimComplex(DoubleCube&a_trim_vec,
         }
 
         for (r=0;r<len_trim_vec[c];r++)
-            fp<<"ATOM  "<<resetiosflags(ios::right)<<setw(5)<<++a<<' '
+            fp<<"ATOM  "<<std::resetiosflags(std::ios::right)<<std::setw(5)<<++a<<' '
               <<atom<<' '<<AAmap(seq_trim_vec[c][r])<<chainID
-              <<setw(4)<<r+1<<"    "
-              <<setiosflags(ios::fixed)<<setprecision(3)
-              <<setw(8)<<a_trim_vec[c][r][0]
-              <<setw(8)<<a_trim_vec[c][r][1]
-              <<setw(8)<<a_trim_vec[c][r][2]<<endl;
+              <<std::setw(4)<<r+1<<"    "
+              <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+              <<std::setw(8)<<a_trim_vec[c][r][0]
+              <<std::setw(8)<<a_trim_vec[c][r][1]
+              <<std::setw(8)<<a_trim_vec[c][r][2]<<std::endl;
     }
     fp.close();
     atom.clear();
@@ -3059,10 +3059,10 @@ inline void writeTrimComplex(DoubleCube&a_trim_vec,
 }
 
 inline void output_dock_rotation_matrix(const std::string& fname_matrix,
-    const vector<string>&xname_vec, const vector<string>&yname_vec,
+    const std::vector<std::string>&xname_vec, const std::vector<std::string>&yname_vec,
     const RotArray& ut_mat, const std::vector<int>& assign1_list)
 {
-    stringstream ss;
+    std::stringstream ss;
     int i;
     int k;
     for (i=0;i<xname_vec.size();i++)
@@ -3072,11 +3072,11 @@ inline void output_dock_rotation_matrix(const std::string& fname_matrix,
              <<xname_vec[i]<<" to "<<yname_vec[i]<<" ------\n"
              << "m               t[m]        u[m][0]        u[m][1]        u[m][2]\n";
         for (k = 0; k < 3; k++)
-            ss<<k<<setiosflags(ios::fixed)<<setprecision(10)
-              <<' '<<setw(18)<<clean_fmt(ut_mat[i][9+k])
-              <<' '<<setw(14)<<clean_fmt(ut_mat[i][3*k+0])
-              <<' '<<setw(14)<<clean_fmt(ut_mat[i][3*k+1])
-              <<' '<<setw(14)<<clean_fmt(ut_mat[i][3*k+2])<<'\n';
+            ss<<k<<std::setiosflags(std::ios::fixed)<<std::setprecision(10)
+              <<' '<<std::setw(18)<<clean_fmt(ut_mat[i][9+k])
+              <<' '<<std::setw(14)<<clean_fmt(ut_mat[i][3*k+0])
+              <<' '<<std::setw(14)<<clean_fmt(ut_mat[i][3*k+1])
+              <<' '<<std::setw(14)<<clean_fmt(ut_mat[i][3*k+2])<<'\n';
     }
     ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"
           "for(i=0; i<L; i++)\n"
@@ -3084,19 +3084,19 @@ inline void output_dock_rotation_matrix(const std::string& fname_matrix,
           "   X[i] = t[0] + u[0][0]*x[i] + u[0][1]*y[i] + u[0][2]*z[i];\n"
           "   Y[i] = t[1] + u[1][0]*x[i] + u[1][1]*y[i] + u[1][2]*z[i];\n"
           "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
-          "}"<<endl;
+          "}"<<std::endl;
     if (fname_matrix == "-")
-       cout<<ss.str();
+       std::cout<<ss.str();
     else
     {
-        fstream fout;
-        fout.open(fname_matrix, ios::out | ios::trunc);
+        std::fstream fout;
+        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
         if (fout)
         {
             fout<<ss.str();
             fout.close();
         }
-        else cout << "Open file to output rotation matrix fail.\n";
+        else std::cout << "Open file to output rotation matrix fail.\n";
     }
-    ss.str(string());
+    ss.str(std::string());
 }

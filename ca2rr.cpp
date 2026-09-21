@@ -1,10 +1,8 @@
 #include "ca2rr.h"
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "Calculate C beta atom contact map from C alpha atoms in PDB file(s).\n"
 "\n"
 "Usage: ca2rr pdb.pdb > pdb.rr\n"
@@ -47,7 +45,7 @@ void print_help()
 "             0: (default) only align 'ATOM  ' residues\n"
 "             1: align both 'ATOM  ' and 'HETATM' residues\n"
 "\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
@@ -59,7 +57,7 @@ int main(int argc, char *argv[])
     /**********************/
     /*    get argument    */
     /**********************/
-    string xname     = "";
+    std::string xname     = "";
     int    ter_opt   =3;     // TER, END, or different chainID
     int    infmt_opt =-1;    // PDB format
     int    outfmt_opt=1;     // set -outfmt to CASP RR output
@@ -68,10 +66,10 @@ int main(int argc, char *argv[])
     int    split_opt =0;     // do not split chain
     int    het_opt   =0;     // do not read HETATM residues
     int    hinge_opt =9;     // maximum number of hinge allowed for flexible
-    string atom_opt  =" CA ";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="protein";// auto-detect the molecule type as protein/RNA
-    vector<string> chain2parse;
-    vector<string> model2parse;
+    std::string atom_opt  =" CA ";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="protein";// auto-detect the molecule type as protein/RNA
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
 
     int nameIdx = 0;
     for(int i = 1; i < argc; i++)
@@ -155,9 +153,9 @@ int main(int argc, char *argv[])
         PrintErrorAndQuit("ERROR! -hinge must be >=2");
 
     /* declare previously global variables */
-    vector<vector<string> >PDB_lines; // text of chain
-    vector<int> mol_vec;              // molecule type of chain
-    vector<string> chainID_list;      // list of chainID1
+    std::vector<std::vector<std::string> >PDB_lines; // text of chain
+    std::vector<int> mol_vec;              // molecule type of chain
+    std::vector<std::string> chainID_list;      // list of chainID1
     int    i;                         // file index
     int    r,r1,r2;                   // residue index
     int    chain_i;                   // chain index
@@ -168,7 +166,7 @@ int main(int argc, char *argv[])
     double **xa;                      // CA atom
     double **ya;                      // CB atom
     bool   **ct;                      // contact map
-    vector<string> resi_vec;          // residue index for chain
+    std::vector<std::string> resi_vec;          // residue index for chain
     int    l;
     long   N1,N2,N12;
 
@@ -178,16 +176,16 @@ int main(int argc, char *argv[])
         chain2parse, model2parse);
     if (!xchainnum)
     {
-        cerr<<"Warning! Cannot parse file: "<<xname
-            <<". Chain number 0."<<endl;
+        std::cerr<<"Warning! Cannot parse file: "<<xname
+            <<". Chain number 0."<<std::endl;
     }
     for (chain_i=0;chain_i<xchainnum;chain_i++)
     {
         xlen=PDB_lines[chain_i].size();
         if (!xlen)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
-                <<". Chain length 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<xname
+                <<". Chain length 0."<<std::endl;
             continue;
         }
         if (xlen<=1 && outfmt_opt>=1) continue;
@@ -208,18 +206,18 @@ int main(int argc, char *argv[])
             if (outfmt_opt==0)
             {
                 for (r=0;r<xlen;r++)
-                    cout<<PDB_lines[chain_i][r]<<endl;
+                    std::cout<<PDB_lines[chain_i][r]<<std::endl;
             }
             else if (outfmt_opt==1)
             {
                 for (r1=0;r1<xlen;r1++)
                     for (r2=r1+sep_opt;r2<xlen;r2++)
                         if (dist(xa[r1],xa[r2])<=64) // dij<=8
-                            cout<<Trim(PDB_lines[chain_i][r1].substr(22,5))
-                                <<(split_opt?chainID_list[chain_i]:string())
+                            std::cout<<Trim(PDB_lines[chain_i][r1].substr(22,5))
+                                <<(split_opt?chainID_list[chain_i]:std::string())
                                 <<' '<<Trim(PDB_lines[chain_i][r2].substr(22,5))
-                                <<(split_opt?chainID_list[chain_i]:string())
-                                <<" 0 8 1"<<endl;
+                                <<(split_opt?chainID_list[chain_i]:std::string())
+                                <<" 0 8 1"<<std::endl;
             }
             else if (outfmt_opt==2)
             {
@@ -238,15 +236,15 @@ int main(int argc, char *argv[])
             {
                 for (r=0;r<xlen;r++)
                 {
-                    cout<<PDB_lines[chain_i][r]<<endl;
+                    std::cout<<PDB_lines[chain_i][r]<<std::endl;
                     if (seqx[r]=='G') continue;
-                    cout<<PDB_lines[chain_i][r].substr(0,12)<<" CB "
+                    std::cout<<PDB_lines[chain_i][r].substr(0,12)<<" CB "
                         <<PDB_lines[chain_i][r].substr(16,14)
-                        <<setiosflags(ios::fixed)<<setprecision(3)
-                        <<setw(8)<<ya[r][0]
-                        <<setw(8)<<ya[r][1]
-                        <<setw(8)<<ya[r][2]
-                        <<PDB_lines[chain_i][r].substr(54)<<endl;
+                        <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                        <<std::setw(8)<<ya[r][0]
+                        <<std::setw(8)<<ya[r][1]
+                        <<std::setw(8)<<ya[r][2]
+                        <<PDB_lines[chain_i][r].substr(54)<<std::endl;
                 }
             }
             else if (outfmt_opt==1)
@@ -254,11 +252,11 @@ int main(int argc, char *argv[])
                 for (r1=0;r1<xlen;r1++)
                     for (r2=r1+sep_opt;r2<xlen;r2++)
                         if (dist(ya[r1],ya[r2])<=64) // dij<=8
-                            cout<<Trim(PDB_lines[chain_i][r1].substr(22,5))
-                                <<(split_opt?chainID_list[chain_i]:string())
+                            std::cout<<Trim(PDB_lines[chain_i][r1].substr(22,5))
+                                <<(split_opt?chainID_list[chain_i]:std::string())
                                 <<' '<<Trim(PDB_lines[chain_i][r2].substr(22,5))
-                                <<(split_opt?chainID_list[chain_i]:string())
-                                <<" 0 8 1"<<endl;
+                                <<(split_opt?chainID_list[chain_i]:std::string())
+                                <<" 0 8 1"<<std::endl;
             }
             else if (outfmt_opt>=2)
             {
@@ -270,12 +268,12 @@ int main(int argc, char *argv[])
 
         if (outfmt_opt>=2)
         {
-            vector<int> l_vec;
+            std::vector<int> l_vec;
             iterative_calFUscore(ct, l_vec, xlen, hinge_opt, mdl_opt, true);
             if (outfmt_opt==3)
             {
                 if (l_vec.size()==0)
-                    cout<<"#cannot partition "<<xname<<endl;
+                    std::cout<<"#cannot partition "<<xname<<std::endl;
                 else
                 {
                     int d_start=0;
@@ -284,21 +282,21 @@ int main(int argc, char *argv[])
                     {
                         d_start=(r1==0)?0:l_vec[r1-1];
                         d_end  =(r1==l_vec.size())?xlen:l_vec[r1];
-                        string suffix=to_string(r1);
-                        string filename=xname+'_'+suffix+".pdb";
-                        cout<<'('<<1+d_start<<','<<d_end<<") "<<filename<<endl;
-                        ofstream fout(filename);
+                        std::string suffix=std::to_string(r1);
+                        std::string filename=xname+'_'+suffix+".pdb";
+                        std::cout<<'('<<1+d_start<<','<<d_end<<") "<<filename<<std::endl;
+                        std::ofstream fout(filename);
                         for (r=d_start;r<d_end;r++)
                         {
-                            fout<<PDB_lines[chain_i][r]<<endl;
+                            fout<<PDB_lines[chain_i][r]<<std::endl;
                             if (atom_opt==" CA ") fout
                                 <<PDB_lines[chain_i][r].substr(0,12)<<" CB "
                                 <<PDB_lines[chain_i][r].substr(16,14)
-                                <<setiosflags(ios::fixed)<<setprecision(3)
-                                <<setw(8)<<ya[r][0]
-                                <<setw(8)<<ya[r][1]
-                                <<setw(8)<<ya[r][2]
-                                <<PDB_lines[chain_i][r].substr(54)<<endl;
+                                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<ya[r][0]
+                                <<std::setw(8)<<ya[r][1]
+                                <<std::setw(8)<<ya[r][2]
+                                <<PDB_lines[chain_i][r].substr(54)<<std::endl;
 
                         }
                         fout.close();
@@ -317,7 +315,7 @@ int main(int argc, char *argv[])
     PDB_lines.clear();
     resi_vec.clear();
     mol_vec.clear();
-    vector<string>().swap(chain2parse);
-    vector<string>().swap(model2parse);
+    std::vector<std::string>().swap(chain2parse);
+    std::vector<std::string>().swap(model2parse);
     return 0;
 }

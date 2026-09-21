@@ -1,10 +1,8 @@
 #include "basic_fun.h"
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "Converting PDB file(s) into FASTA format sequence.\n"
 "\n"
 "Usage: pdb2fasta pdb.pdb > seq.fasta\n"
@@ -45,7 +43,7 @@ void print_help()
 "             0: PDB format\n"
 "             2: xyz format\n"
 "             3: PDBx/mmCIF format\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
@@ -57,64 +55,64 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname     = "";
+    std::string xname     = "";
     int    ter_opt   =1;     // TER, END, or different chainID
     int    infmt_opt =-1;    // PDB or PDBx/mmCIF format
     int    split_opt =2;     // do not split chain
     int    het_opt=0;        // do not read HETATM residues
-    string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    string suffix_opt="";    // set -suffix to empty
-    string dir_opt   ="";    // set -dir to empty
-    vector<string> chain_list; // only when -dir1 is set
-    vector<string> chain2parse;
-    vector<string> model2parse;
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir_opt   ="";    // set -dir to empty
+    std::vector<std::string> chain_list; // only when -dir1 is set
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
 
     int nameIdx = 0;
     for(int i = 1; i < argc; i++)
     {
-        if ( string(argv[i]) == "-ter" && i < (argc-1) )
+        if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
             ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-split" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
             split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-mol" )
+        else if ( std::string(argv[i]) == "-mol" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -mol");
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-infmt" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
             infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-het" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
             het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if (string(argv[i]) == "-chain" )
+        else if (std::string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
             split(argv[i+1],chain2parse,',');
             i++;
         }
-        else if (string(argv[i]) == "-model" )
+        else if (std::string(argv[i]) == "-model" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model");
@@ -154,16 +152,16 @@ int main(int argc, char *argv[])
         chain_list.push_back(xname);
     else
     {
-        ifstream fp(xname.c_str());
+        std::ifstream fp(xname.c_str());
         if (! fp.is_open())
         {
             std::string message = "Can not open file: " + xname + "\n";
             PrintErrorAndQuit(message.c_str());
         }
-        string line;
+        std::string line;
         while (fp.good())
         {
-            getline(fp, line);
+            std::getline(fp, line);
             if (! line.size()) continue;
             chain_list.push_back(dir_opt+Trim(line)+suffix_opt);
         }
@@ -172,16 +170,16 @@ int main(int argc, char *argv[])
     }
 
     // declare previously global variables
-    vector<vector<string> >PDB_lines; // text of chain
-    vector<int> mol_vec;              // molecule type of chain
-    vector<string> chainID_list;      // list of chainID1
-    vector<string> resi_vec;          // residue index for chain
+    std::vector<std::vector<std::string> >PDB_lines; // text of chain
+    std::vector<int> mol_vec;              // molecule type of chain
+    std::vector<std::string> chainID_list;      // list of chainID1
+    std::vector<std::string> resi_vec;          // residue index for chain
     int    i;                         // file index
     int    l;                         // residue index
     int    chain_i;                   // chain index
     int    xlen;                      // chain length
     int    xchainnum;                 // number of chains in a PDB file
-    string sequence;                  // amino acid sequence
+    std::string sequence;                  // amino acid sequence
 
     // loop over file names
     for (i=0;i<chain_list.size();i++)
@@ -192,8 +190,8 @@ int main(int argc, char *argv[])
             chain2parse, model2parse);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
@@ -201,16 +199,16 @@ int main(int argc, char *argv[])
             xlen=PDB_lines[chain_i].size();
             if (!xlen)
             {
-                cerr<<"Warning! Cannot parse file: "<<xname
-                    <<". Chain length 0."<<endl;
+                std::cerr<<"Warning! Cannot parse file: "<<xname
+                    <<". Chain length 0."<<std::endl;
                 continue;
             }
             
             for (l=0;l<PDB_lines[chain_i].size();l++)
                 sequence+=AAmap(PDB_lines[chain_i][l].substr(17,3));
-            cout<<'>'<<xname.substr(dir_opt.size(),
+            std::cout<<'>'<<xname.substr(dir_opt.size(),
                 xname.size()-dir_opt.size()-suffix_opt.size())
-                <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<sequence<<endl;
+                <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<sequence<<std::endl;
             sequence.clear();
             PDB_lines[chain_i].clear();
         } // chain_i

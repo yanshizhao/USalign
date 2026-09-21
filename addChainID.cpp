@@ -7,19 +7,17 @@
 #include <cstdlib>
 #include "pstream.h"
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "Add chain ID to PDB format file.\n"
 "\n"
 "Usage: addChainID input.pdb output.pdb chainID\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
-void splitlines(const string &line, vector<string> &lines,
+void splitlines(const std::string &line, std::vector<std::string> &lines,
     const char delimiter='\n')
 {
     bool within_word = false;
@@ -39,11 +37,11 @@ void splitlines(const string &line, vector<string> &lines,
     }
 }
 
-void addChainID(const string &infile,const string &outfile,
-    const string &chainID)
+void addChainID(const std::string &infile,const std::string &outfile,
+    const std::string &chainID)
 {
-    stringstream buf;
-    if (infile=="-") buf<<cin.rdbuf();
+    std::stringstream buf;
+    if (infile=="-") buf<<std::cin.rdbuf();
 #if defined(REDI_PSTREAM_H_SEEN)
     else if (infile.size()>3 && infile.substr(infile.size()-3)==".gz")
     {
@@ -55,14 +53,14 @@ void addChainID(const string &infile,const string &outfile,
 #endif
     else
     {
-        ifstream fp;
-        fp.open(infile.c_str(),ios::in); //ifstream fp(filename,ios::in);
+        std::ifstream fp;
+        fp.open(infile.c_str(),std::ios::in); //ifstream fp(filename,ios::in);
         buf<<fp.rdbuf();
         fp.close();
     }
-    vector<string> lines;
+    std::vector<std::string> lines;
     splitlines(buf.str(),lines);
-    buf.str(string());
+    buf.str(std::string());
     size_t l;
 
     for (l=0;l<lines.size();l++)
@@ -72,27 +70,27 @@ void addChainID(const string &infile,const string &outfile,
         {
             if (lines[l].size()<22)
             {
-                cerr<<"incomplete:"<<lines[l]<<endl;
+                std::cerr<<"incomplete:"<<lines[l]<<std::endl;
                 continue;
             }
-            buf<<lines[l].substr(0,20)<<chainID<<lines[l].substr(22)<<endl;
+            buf<<lines[l].substr(0,20)<<chainID<<lines[l].substr(22)<<std::endl;
         }
         else if (lines[l].size())
-            buf<<lines[l]<<endl;
+            buf<<lines[l]<<std::endl;
         lines[l].clear();
     }
 
     if (outfile=="-")
-        cout<<buf.str();
+        std::cout<<buf.str();
     else
     {
-        ofstream fout;
-        fout.open(outfile.c_str(),ios::out);
+        std::ofstream fout;
+        fout.open(outfile.c_str(),std::ios::out);
         fout<<buf.str();
         fout.close();
     }
-    buf.str(string());
-    vector<string>().swap(lines);
+    buf.str(std::string());
+    std::vector<std::string>().swap(lines);
     return;
 }
 
@@ -100,9 +98,9 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    string infile ="";
-    string outfile="";
-    string chainID="";
+    std::string infile ="";
+    std::string outfile="";
+    std::string chainID="";
 
     for (int i=1; i<argc; i++)
     {
@@ -111,7 +109,7 @@ int main(int argc, char *argv[])
         else if (chainID.size()==0) chainID=argv[i];
         else
         {
-            cerr<<"ERROR! no such option "<<argv[i]<<endl;
+            std::cerr<<"ERROR! no such option "<<argv[i]<<std::endl;
             exit(1);
         }
     }

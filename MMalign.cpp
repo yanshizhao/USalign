@@ -2,23 +2,21 @@
 
 #include "MMalign.h"
 
-using namespace std;
-
 void print_version()
 {
-    cout << 
+    std::cout << 
 "\n"
 " **********************************************************************\n"
 " * MM-align (Version 20231222): complex structure alignment           *\n"
 " * References: S Mukherjee, Y Zhang. Nucl Acids Res 37(11):e83 (2009) *\n"
 " * Please email comments and suggestions to yangzhanglab@umich.edu    *\n"
 " **********************************************************************"
-    << endl;
+    << std::endl;
 }
 
 void print_extra_help()
 {
-    cout <<
+    std::cout <<
 "Additional options:\n"
 "    -fast    Fast but slightly inaccurate alignment\n"
 "\n"
@@ -78,13 +76,13 @@ void print_extra_help()
 "             1: SPICKER format\n"
 "             2: xyz format\n"
 "             3: PDBx/mmCIF format\n"
-    <<endl;
+    <<std::endl;
 }
 
 void print_help(bool h_opt=false)
 {
     print_version();
-    cout <<
+    std::cout <<
 "\n"
 "Usage: MMalign complex1.pdb complex2.pdb [Options]\n"
 "\n"
@@ -120,7 +118,7 @@ void print_help(bool h_opt=false)
 "    MMalign complex1.pdb complex2.pdb -d 5.0\n"
 "    MMalign complex1.pdb complex2.pdb -a T -o complex1.sup\n"
 "    MMalign complex1.pdb complex2.pdb -m matrix.txt\n"
-    <<endl;
+    <<std::endl;
 
     if (h_opt) print_extra_help();
 
@@ -137,12 +135,12 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname       = "";
-    string yname       = "";
-    string fname_super = ""; // file name for superposed structure
-    string fname_lign  = ""; // file name for user alignment
-    string fname_matrix= ""; // file name for output matrix
-    vector<string> sequence; // get value from alignment file
+    std::string xname       = "";
+    std::string yname       = "";
+    std::string fname_super = ""; // file name for superposed structure
+    std::string fname_lign  = ""; // file name for user alignment
+    std::string fname_matrix= ""; // file name for output matrix
+    std::vector<std::string> sequence; // get value from alignment file
     double d0_scale    =0;
 
     bool h_opt = false; // print full help message
@@ -162,28 +160,28 @@ int main(int argc, char *argv[])
     bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
     int    mirror_opt=0;     // do not align mirror
     int    het_opt   =0;     // do not read HETATM residues
-    string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    string suffix_opt="";    // set -suffix to empty
-    string dir1_opt  ="";    // set -dir1 to empty
-    string dir2_opt  ="";    // set -dir2 to empty
-    vector<string> chain1_list; // only when -dir1 is set
-    vector<string> chain2_list; // only when -dir2 is set
-    vector<string> chain2parse1;
-    vector<string> chain2parse2;
-    vector<string> model2parse1;
-    vector<string> model2parse2;
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir1_opt  ="";    // set -dir1 to empty
+    std::string dir2_opt  ="";    // set -dir2 to empty
+    std::vector<std::string> chain1_list; // only when -dir1 is set
+    std::vector<std::string> chain2_list; // only when -dir2 is set
+    std::vector<std::string> chain2parse1;
+    std::vector<std::string> chain2parse2;
+    std::vector<std::string> model2parse1;
+    std::vector<std::string> model2parse2;
 
     for(int i = 1; i < argc; i++)
     {
-        if ( string(argv[i]) == "-o" && i < (argc-1) )
+        if ( std::string(argv[i]) == "-o" && i < (argc-1) )
         {
             fname_super = argv[i + 1];     o_opt = true; i++;
         }
-        else if ( string(argv[i]) == "-a" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-a" && i < (argc-1) )
         {
-            if (string(argv[i + 1]) == "T")      a_opt=true;
-            else if (string(argv[i + 1]) == "F") a_opt=false;
+            if (std::string(argv[i + 1]) == "T")      a_opt=true;
+            else if (std::string(argv[i + 1]) == "F") a_opt=false;
             else 
             {
                 a_opt=safe_stoi(argv[i + 1]);
@@ -192,112 +190,112 @@ int main(int argc, char *argv[])
             }
             i++;
         }
-        else if ( string(argv[i]) == "-full" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-full" && i < (argc-1) )
         {
-            if (string(argv[i + 1]) == "T")      full_opt=true;
-            else if (string(argv[i + 1]) == "F") full_opt=false;
+            if (std::string(argv[i + 1]) == "T")      full_opt=true;
+            else if (std::string(argv[i + 1]) == "F") full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
             i++;
         }
-        else if ( string(argv[i]) == "-d" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
         {
             d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if ( string(argv[i]) == "-v" )
+        else if ( std::string(argv[i]) == "-v" )
         {
             v_opt = true;
         }
-        else if ( string(argv[i]) == "-h" )
+        else if ( std::string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if (string(argv[i]) == "-chain1" )
+        else if (std::string(argv[i]) == "-chain1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
-        else if (string(argv[i]) == "-chain2" )
+        else if (std::string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
-        else if (string(argv[i]) == "-model1" )
+        else if (std::string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
-        else if (string(argv[i]) == "-model2" )
+        else if (std::string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
             split(argv[i+1],model2parse2,',');
             i++;
         }
-        else if (string(argv[i]) == "-m" && i < (argc-1) )
+        else if (std::string(argv[i]) == "-m" && i < (argc-1) )
         {
             fname_matrix = argv[i + 1];    m_opt = true; i++;
         }// get filename for rotation matrix
-        else if (string(argv[i]) == "-fast")
+        else if (std::string(argv[i]) == "-fast")
         {
             fast_opt = true;
         }
-        else if ( string(argv[i]) == "-infmt1" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt1" && i < (argc-1) )
         {
             infmt1_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-infmt2" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt2" && i < (argc-1) )
         {
             infmt2_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
             ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-split" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
             split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir1" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir1" && i < (argc-1) )
         {
             dir1_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir2" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir2" && i < (argc-1) )
         {
             dir2_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-outfmt" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-outfmt" && i < (argc-1) )
         {
             outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-TMcut" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-TMcut" && i < (argc-1) )
         {
             TMcut=safe_stod(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-het" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
             het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
-        else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
 
     if(yname.size()==0)
@@ -348,29 +346,29 @@ int main(int argc, char *argv[])
     else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
 
     if (outfmt_opt==2)
-        cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
+        std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
 
     // declare previously global variables
-    vector<vector<vector<double> > > xa_vec; // structure of complex1
-    vector<vector<vector<double> > > ya_vec; // structure of complex2
+    std::vector<std::vector<std::vector<double> > > xa_vec; // structure of complex1
+    std::vector<std::vector<std::vector<double> > > ya_vec; // structure of complex2
     CharMatrix seqx_vec; // sequence of complex1
     CharMatrix seqy_vec; // sequence of complex2
     CharMatrix secx_vec; // secondary structure of complex1
     CharMatrix secy_vec; // secondary structure of complex2
-    vector<int> mol_vec1;          // molecule type of complex1, RNA if >0
-    vector<int> mol_vec2;          // molecule type of complex2, RNA if >0
-    vector<string> chainID_list1;  // list of chainID1
-    vector<string> chainID_list2;  // list of chainID2
-    vector<int> xlen_vec;          // length of complex1
-    vector<int> ylen_vec;          // length of complex2
+    std::vector<int> mol_vec1;          // molecule type of complex1, RNA if >0
+    std::vector<int> mol_vec2;          // molecule type of complex2, RNA if >0
+    std::vector<std::string> chainID_list1;  // list of chainID1
+    std::vector<std::string> chainID_list2;  // list of chainID2
+    std::vector<int> xlen_vec;          // length of complex1
+    std::vector<int> ylen_vec;          // length of complex2
     int    xlen, ylen;             // chain length
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
     int    xlen_aa,ylen_aa;        // total length of protein
     int    xlen_na,ylen_na;        // total length of RNA/DNA
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
+    std::vector<std::string> resi_vec1;  // residue index for chain1
+    std::vector<std::string> resi_vec2;  // residue index for chain2
 
     // parse complex
     parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
@@ -391,17 +389,17 @@ int main(int argc, char *argv[])
         len_na=(xlen_na+ylen_na)/2;
     }
 
-    map<int,int> chainmap;
+    std::map<int,int> chainmap;
 
     // perform monomer alignment if there is only one chain
     if (xa_vec.size()==1 && ya_vec.size()==1)
     {
         xlen = xlen_vec[0];
         ylen = ylen_vec[0];
-        string secx;
-        string secy;
-        string seqx;
-        string seqy;
+        std::string secx;
+        std::string secy;
+        std::string seqx;
+        std::string seqy;
         secx.resize(xlen+1);
         secy.resize(ylen+1);
         xa.clear();
@@ -423,14 +421,14 @@ int main(int argc, char *argv[])
         double d0u;
         double d0a;
         double d0_out=5.0;
-        string seqM, seqxA, seqyA;// for output alignment
+        std::string seqM, seqxA, seqyA;// for output alignment
         double rmsd0 = 0.0;
         int L_ali;                // Aligned length in standard_TMscore
         double Liden=0;
         double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
         int n_ali=0;
         int n_ali8=0;
-        vector<double> do_vec;
+        std::vector<double> do_vec;
 
         // entry function for structure alignment
         TMalign_main(xa, ya, seqx, seqy, secx, secy,
@@ -464,8 +462,8 @@ int main(int argc, char *argv[])
         sequence.clear();
         do_vec.clear();
 
-        vector<vector<vector<double> > >().swap(xa_vec); // structure of complex1
-        vector<vector<vector<double> > >().swap(ya_vec); // structure of complex2
+        std::vector<std::vector<std::vector<double> > >().swap(xa_vec); // structure of complex1
+        std::vector<std::vector<std::vector<double> > >().swap(ya_vec); // structure of complex2
         CharMatrix().swap(seqx_vec); // sequence of complex1
         CharMatrix().swap(seqy_vec); // sequence of complex2
         CharMatrix().swap(secx_vec); // secondary structure of complex1
@@ -486,15 +484,15 @@ int main(int argc, char *argv[])
     // declare TM-score tables
     int chain1_num=xa_vec.size();
     int chain2_num=ya_vec.size();
-    vector<string> tmp_str_vec(chain2_num,"");
+    std::vector<std::string> tmp_str_vec(chain2_num,"");
     DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain1_num,vector<double>(chain2_num));
+    TMave_mat.assign(chain1_num,std::vector<double>(chain2_num));
     RotArray ut_mat; // rotation matrices for all-against-all alignment
     ut_mat.resize(chain1_num*chain2_num);
     int ut_idx;
-    vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
-    vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqxA_mat(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> > seqM_mat(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqyA_mat(chain1_num,tmp_str_vec);
 
     double maxTMmono=-1;
     int maxTMmono_i;
@@ -502,10 +500,10 @@ int main(int argc, char *argv[])
 
     // get all-against-all alignment
     if (len_aa+len_na>500) fast_opt=true;
-    string seqx;
-    string seqy;
-    string secx;
-    string secy;
+    std::string seqx;
+    std::string seqy;
+    std::string secx;
+    std::string secy;
     for (int i=0;i<chain1_num;i++)
     {
         xlen=xlen_vec[i];
@@ -559,14 +557,14 @@ int main(int argc, char *argv[])
             double d0u;
             double d0a;
             double d0_out=5.0;
-            string seqM, seqxA, seqyA;// for output alignment
+            std::string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
             int L_ali;                // Aligned length in standard_TMscore
             double Liden=0;
             double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
             int n_ali=0;
             int n_ali8=0;
-            vector<double> do_vec;
+            std::vector<double> do_vec;
             int Lnorm_tmp=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
 
@@ -669,10 +667,10 @@ std::vector<int> assign2_list(chain2_num);
 std::vector<int> assign1_init(chain1_num);
 std::vector<int> assign2_init(chain2_num);
     DoubleMatrix TMave_init;
-    TMave_init.assign(chain1_num,vector<double>(chain2_num));
-    vector<vector<string> >seqxA_init(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_init(chain1_num,tmp_str_vec);
-    vector<string> sequence_init;
+    TMave_init.assign(chain1_num,std::vector<double>(chain2_num));
+    std::vector<std::vector<std::string> >seqxA_init(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqyA_init(chain1_num,tmp_str_vec);
+    std::vector<std::string> sequence_init;
     copy_chain_assign_data(chain1_num, chain2_num, sequence_init,
         seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat,
         seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init);
@@ -709,8 +707,8 @@ std::vector<int> assign2_init(chain2_num);
             final_params.fname_super = fname_super;
             final_params.fname_lign = fname_lign;
             final_params.fname_matrix = fname_matrix;
-            final_params.seqx_arg = string();
-            final_params.seqy_arg = string();
+            final_params.seqx_arg = std::string();
+            final_params.seqy_arg = std::string();
             final_params.len_aa = len_aa;
             final_params.len_na = len_na;
             final_params.chain1_num = chain1_num;
@@ -796,7 +794,7 @@ std::vector<int> assign2_init(chain2_num);
     {
         MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
             secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-            string(), string(), string(), string(), len_aa, len_na, chain1_num, chain2_num,
+            std::string(), std::string(), std::string(), std::string(), len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
@@ -827,8 +825,8 @@ std::vector<int> assign2_init(chain2_num);
         final_params.fname_super = fname_super;
         final_params.fname_lign = fname_lign;
         final_params.fname_matrix = fname_matrix;
-        final_params.seqx_arg = string();
-        final_params.seqy_arg = string();
+        final_params.seqx_arg = std::string();
+        final_params.seqy_arg = std::string();
         final_params.len_aa = len_aa;
         final_params.len_na = len_na;
         final_params.chain1_num = chain1_num;
@@ -848,37 +846,37 @@ std::vector<int> assign2_init(chain2_num);
             final_params, sequence, false);
     }
 
-    vector<vector<string> >().swap(seqxA_mat);
-    vector<vector<string> >().swap(seqM_mat);
-    vector<vector<string> >().swap(seqyA_mat);
-    vector<string>().swap(tmp_str_vec);
+    std::vector<std::vector<std::string> >().swap(seqxA_mat);
+    std::vector<std::vector<std::string> >().swap(seqM_mat);
+    std::vector<std::vector<std::string> >().swap(seqyA_mat);
+    std::vector<std::string>().swap(tmp_str_vec);
 
 
 
-    vector<vector<string> >().swap(seqxA_init);
-    vector<vector<string> >().swap(seqyA_init);
+    std::vector<std::vector<std::string> >().swap(seqxA_init);
+    std::vector<std::vector<std::string> >().swap(seqyA_init);
 
-    vector<vector<vector<double> > >().swap(xa_vec); // structure of complex1
-    vector<vector<vector<double> > >().swap(ya_vec); // structure of complex2
+    std::vector<std::vector<std::vector<double> > >().swap(xa_vec); // structure of complex1
+    std::vector<std::vector<std::vector<double> > >().swap(ya_vec); // structure of complex2
     CharMatrix().swap(seqx_vec); // sequence of complex1
     CharMatrix().swap(seqy_vec); // sequence of complex2
     CharMatrix().swap(secx_vec); // secondary structure of complex1
     CharMatrix().swap(secy_vec); // secondary structure of complex2
     mol_vec1.clear();       // molecule type of complex1, RNA if >0
     mol_vec2.clear();       // molecule type of complex2, RNA if >0
-    vector<string>().swap(chainID_list1);  // list of chainID1
-    vector<string>().swap(chainID_list2);  // list of chainID2
+    std::vector<std::string>().swap(chainID_list1);  // list of chainID1
+    std::vector<std::string>().swap(chainID_list2);  // list of chainID2
     xlen_vec.clear();       // length of complex1
     ylen_vec.clear();       // length of complex2
-    vector<string>().swap(chain1_list);
-    vector<string>().swap(chain2_list);
-    vector<string>().swap(sequence);
-    vector<string>().swap(resi_vec1);  // residue index for chain1
-    vector<string>().swap(resi_vec2);  // residue index for chain2
-    vector<string>().swap(chain2parse1);
-    vector<string>().swap(chain2parse2);
-    vector<string>().swap(model2parse1);
-    vector<string>().swap(model2parse2);
+    std::vector<std::string>().swap(chain1_list);
+    std::vector<std::string>().swap(chain2_list);
+    std::vector<std::string>().swap(sequence);
+    std::vector<std::string>().swap(resi_vec1);  // residue index for chain1
+    std::vector<std::string>().swap(resi_vec2);  // residue index for chain2
+    std::vector<std::string>().swap(chain2parse1);
+    std::vector<std::string>().swap(chain2parse2);
+    std::vector<std::string>().swap(model2parse1);
+    std::vector<std::string>().swap(model2parse2);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;

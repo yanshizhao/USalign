@@ -11,9 +11,9 @@ void print_invmap(const std::vector<int>& invmap, const int ylen)
     for (j=0;j<ylen;j++)
     {
         i=invmap[j];
-        if (i>=0) cout<<" ("<<i<<","<<j<<")";
+        if (i>=0) std::cout<<" ("<<i<<","<<j<<")";
     }
-    cout<<endl;
+    std::cout<<std::endl;
 }
 
 inline void assign_sec_bond(IntPairArray& secx_bond, const std::string& secx, const int xlen)
@@ -33,8 +33,8 @@ inline void assign_sec_bond(IntPairArray& secx_bond, const std::string& secx, co
 inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt, CoordArray& xk)
 {
     DoubleMatrix score;
-    score.assign(xlen+1, vector<double>(xlen+1, 0));
-    vector<pair<double,int> > close_idx_vec(xlen, make_pair(0,0));
+    score.assign(xlen+1, std::vector<double>(xlen+1, 0));
+    std::vector<std::pair<double,int> > close_idx_vec(xlen, std::make_pair(0,0));
     int i,j,k;
     for(i=0;i<xlen;i++) {
         score[i+1][i+1]=0;
@@ -42,13 +42,13 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
     }
     for(i=0;i<xlen;i++) {
         for(j=0;j<xlen;j++) { close_idx_vec[j].first=score[i+1][j+1]; close_idx_vec[j].second=j; }
-        sort(close_idx_vec.begin(), close_idx_vec.end());
+        std::sort(close_idx_vec.begin(), close_idx_vec.end());
         for(k=0;k<closeK_opt;k++) {
             j=close_idx_vec[k % xlen].second;
             xk[i*closeK_opt+k][0]=xa[j][0]; xk[i*closeK_opt+k][1]=xa[j][1]; xk[i*closeK_opt+k][2]=xa[j][2];
         }
     }
-    vector<pair<double,int> >().swap(close_idx_vec);
+    std::vector<std::pair<double,int> >().swap(close_idx_vec);
 }
 
 // check if pairing i to j conform to sequantiality within the SSE
@@ -172,7 +172,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
     const std::string &seqy, double &TM1, double &TM2, double &TM3,
     double &TM4, double &TM5, double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
+    std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
@@ -193,7 +193,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx,
     const std::string &seqy, double &TM1, double &TM2, double &TM3,
     double &TM4, double &TM5, double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
+    std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
@@ -475,7 +475,7 @@ struct SoiAlignSearchState
 inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
-    int xlen, int ylen, const vector<string> sequence,
+    int xlen, int ylen, const std::vector<std::string> sequence,
     const ChainPairAlignOptions& opt, SoiAlignSearchState& st, ChainPairAlignResult& res,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
@@ -493,9 +493,9 @@ inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
     double &d0u = res.d0u;
     double &d0a = res.d0a;
     double &d0_out = res.d0_out;
-    string &seqM = res.seqM;
-    string &seqxA = res.seqxA;
-    string &seqyA = res.seqyA;
+    std::string &seqM = res.seqM;
+    std::string &seqxA = res.seqxA;
+    std::string &seqyA = res.seqyA;
     double &rmsd0 = res.rmsd0;
     int &L_ali = res.L_ali;
     double &Liden = res.Liden;
@@ -532,7 +532,7 @@ inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
     int &iteration_max = st.iteration_max;
     int i;
     int j;
-    vector<double> do_vec;
+    std::vector<double> do_vec;
     CPalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
         d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
@@ -914,9 +914,9 @@ inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &seqx, const std::string &seqy, int xlen, int ylen,
     SoiAlignSearchState& st, ChainPairAlignResult& res, std::vector<double>& dist_list)
 {
-    string &seqM = res.seqM;
-    string &seqxA = res.seqxA;
-    string &seqyA = res.seqyA;
+    std::string &seqM = res.seqM;
+    std::string &seqxA = res.seqxA;
+    std::string &seqyA = res.seqyA;
     double &Liden = res.Liden;
     const double d0_out = res.d0_out;
     Vec3& t0 = res.t0;
@@ -978,7 +978,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
     ChainPairAlignResult& res,
     const int xlen, const int ylen,
-    const vector<string> sequence,
+    const std::vector<std::string> sequence,
     const ChainPairAlignOptions& opt,
     std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
@@ -999,7 +999,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     /***********************/
     // allocate memory
     /***********************/
-    int minlen = min(xlen, ylen);
+    int minlen = std::min(xlen, ylen);
     int maxlen = (xlen>ylen)?xlen:ylen;
     st.score.assign( xlen+1, std::vector<double>(ylen+1));
     st.scoret.assign(ylen+1, std::vector<double>(xlen+1));
@@ -1050,8 +1050,8 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     if(!flag)
     {
-        cout << "There is no alignment between the two structures! "
-             << "Program stop with no result!" << endl;
+        std::cout << "There is no alignment between the two structures! "
+             << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
         t0 = {0, 0, 0};                            // zero translation
         u0 = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};  // identity rotation
@@ -1284,11 +1284,11 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
+    std::string &seqM, std::string &seqxA, std::string &seqyA,
     std::vector<int>& invmap, double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
+    const std::vector<std::string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, std::vector<double>& dist_list,

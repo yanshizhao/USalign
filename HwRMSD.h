@@ -43,14 +43,14 @@ double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     return RMSD;
 }
 
-void parse_alignment_into_invmap(const string seqxA_tmp,
-    const string seqyA_tmp, const int xlen, const int ylen, std::vector<int>& invmap_tmp)
+void parse_alignment_into_invmap(const std::string seqxA_tmp,
+    const std::string seqyA_tmp, const int xlen, const int ylen, std::vector<int>& invmap_tmp)
 {
     if (seqxA_tmp.size()==0) return;
     int i1=-1;
     int i2=-1;
     int j = 0;
-    int L = min(seqxA_tmp.size(), seqyA_tmp.size());
+    int L = std::min(seqxA_tmp.size(), seqyA_tmp.size());
     for (j = 0; j < ylen; j++) invmap_tmp[j] = -1;
     for (j = 0; j<L; j++)
     {
@@ -70,10 +70,10 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     const std::string& secx, const std::string& secy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
-    double &d0a, double &d0_out, string &seqM, string &seqxA, string &seqyA,
+    double &d0a, double &d0_out, std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden, double &TM_ali,
     double &rmsd_ali, int &n_ali, int &n_ali8, const int xlen, const int ylen,
-    const vector<string>&sequence, const double Lnorm_ass,
+    const std::vector<std::string>&sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt,
     const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
     std::vector<int>& invmap, const int glocal=0, const int iter_opt=10,
@@ -85,7 +85,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     Vec3 t; RotMat u;
     CoordArray xt;
     CoordArray r1, r2;
-    int minlen = min(xlen, ylen);
+    int minlen = std::min(xlen, ylen);
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
@@ -102,9 +102,9 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     double TM4_tmp;
     double TM5_tmp;
     double TM_ali_tmp;
-    string seqxA_tmp;
-    string seqyA_tmp;
-    string seqM_tmp;
+    std::string seqxA_tmp;
+    std::string seqyA_tmp;
+    std::string seqM_tmp;
     double rmsd0_tmp;
     int L_ali_tmp;
     int n_ali_tmp;
@@ -113,7 +113,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     double rmsd_ali_tmp;
     double max_TM=0;
     double cur_TM=0;
-    vector<double>do_vec;
+    std::vector<double>do_vec;
 
     TM1=TM2=TM1_tmp=TM2_tmp=L_ali=-1;
 

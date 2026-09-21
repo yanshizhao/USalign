@@ -13,11 +13,9 @@
 #include <algorithm>
 #include <string>
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "Usage: xyz_sfetch ca.xyz\n"
 "    Index all entries in xyz file 'ca.xyz' into 'ca.xyz.index'.\n"
 "    Output file name inferred from input file name.\n"
@@ -25,7 +23,7 @@ void print_help()
 "Usage: xyz_sfetch ca.xyz list > subset.xyz\n"
 "    From xyz file 'ca.xyz' and respective index file 'ca.xyz.index',\n"
 "    fetch all entries listed by 'list'. Output them to 'subset.xyz'.\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
@@ -34,8 +32,8 @@ int main(int argc, char *argv[])
     if (argc < 2) print_help();
 
     // get argument
-    string filename="";
-    string list_opt="";
+    std::string filename="";
+    std::string list_opt="";
 
     for(int i=1; i<argc; i++)
     {
@@ -47,33 +45,33 @@ int main(int argc, char *argv[])
     if ((filename.size()>=3 && filename.substr(filename.size()-3,3)==".gz")||
         (filename.size()>=4 && filename.substr(filename.size()-4,4)==".bz2"))
     {
-        cerr<<"ERROR! This program does not support .gz or .bz2 file"<<endl;
+        std::cerr<<"ERROR! This program does not support .gz or .bz2 file"<<std::endl;
         exit(EXIT_SUCCESS);
     }
 
-    ifstream fin(filename.c_str());
+    std::ifstream fin(filename.c_str());
 
     // list all entries in xyz file
-    string line;
+    std::string line;
     int L;
     int i;
     int start_pos,end_pos; // position of starting and ending character
     if (list_opt.size()==0)
     {
-        ofstream fp((filename+".index").c_str());
+        std::ofstream fp((filename+".index").c_str());
         while (fin.good())
         {
             start_pos=fin.tellg();
-            getline(fin, line);
-            L=stoi(line);
+            std::getline(fin, line);
+            L=std::stoi(line);
             getline(fin, line);
             if (!fin.good()) break;
             for(i=0;i<line.size();i++) if(line[i]==' '||line[i]=='\t') break;
-            cout<<line.substr(0,i)<<'\t'<<L<<endl;
+            std::cout<<line.substr(0,i)<<'\t'<<L<<std::endl;
             fp<<line.substr(0,i)<<'\t'<<start_pos;
             for (i=0;i<L;i++) getline(fin, line);
             end_pos=fin.tellg();
-            fp<<'\t'<<end_pos<<endl;
+            fp<<'\t'<<end_pos<<std::endl;
         }
         fin.close();
         fp.close();
@@ -85,23 +83,23 @@ int main(int argc, char *argv[])
     }
 
     // read entry list
-    vector<string> chain_list;
-    ifstream fp;
+    std::vector<std::string> chain_list;
+    std::ifstream fp;
     if (list_opt=="-")
     {
-        while (cin.good())
+        while (std::cin.good())
         {
-            getline(cin, line);
+            std::getline(std::cin, line);
             for (i=0;i<line.size();i++) if (line[i]==' '||line[i]=='\t') break;
             if (line.size() && i) chain_list.push_back(line.substr(0,i));
         }
     }
     else
     {
-        fp.open(list_opt.c_str(),ios::in);
+        fp.open(list_opt.c_str(),std::ios::in);
         while (fp.good())
         {
-            getline(fp, line);
+            std::getline(fp, line);
             for (i=0;i<line.size();i++) if (line[i]==' '||line[i]=='\t') break;
             if (line.size() && i) chain_list.push_back(line.substr(0,i));
         }
@@ -115,24 +113,24 @@ int main(int argc, char *argv[])
     fp.open((filename+".index").c_str());
     if (!fp.is_open())
     {
-        cerr<<"ERROR! No index file at "+filename+".index"<<endl;
-        cerr<<"Run the following command to create the index file:"<<endl;
-        cerr<<argv[0]<<" "<<filename<<endl;
+        std::cerr<<"ERROR! No index file at "+filename+".index"<<std::endl;
+        std::cerr<<"Run the following command to create the index file:"<<std::endl;
+        std::cerr<<argv[0]<<" "<<filename<<std::endl;
         exit(EXIT_SUCCESS);
     }
     std::string buf;
     buf.resize(300000);
-    string chain;
+    std::string chain;
     while (fp.good())
     {
         fp>>chain>>start_pos>>end_pos;
         if (!fp.good()) break;
-        if (find(chain_list.begin(), chain_list.end(),
+        if (std::find(chain_list.begin(), chain_list.end(),
             chain)==chain_list.end()) continue;
         fin.seekg(start_pos);
         fin.read(&buf[0],end_pos-start_pos);
         buf.resize(end_pos-start_pos); // ensures old text beyond this is ignored
-        cout<<buf;
+        std::cout<<buf;
     }
     fp.close();
     fin.close();
@@ -142,6 +140,6 @@ int main(int argc, char *argv[])
      * or program termination forces cout.flush() */
     filename.clear();
     list_opt.clear();
-    vector<string>().swap(chain_list);
+    std::vector<std::string>().swap(chain_list);
     return 0;
 }

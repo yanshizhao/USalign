@@ -1,10 +1,8 @@
 #include "HwRMSD.h"
 
-using namespace std;
-
 void print_extra_help()
 {
-    cout <<
+    std::cout <<
 "Additional options:\n"
 "    -dir     Perform all-against-all alignment among the list of PDB\n"
 "             chains listed by 'chain_list' under 'chain_folder'. Note\n"
@@ -80,12 +78,12 @@ void print_extra_help()
 "             1: SPICKER format\n"
 "             2: xyz format\n"
 "             3: PDBx/mmCIF format\n"
-    <<endl;
+    <<std::endl;
 }
 
 void print_help(bool h_opt=false)
 {
-    cout <<
+    std::cout <<
 "Partial implement of HwRMSD method for sequence-guided structure alignment.\n"
 "\n"
 "Usage: HwRMSD PDB1.pdb PDB2.pdb [Options]\n"
@@ -120,7 +118,7 @@ void print_help(bool h_opt=false)
 "    HwRMSD PDB1.pdb PDB2.pdb -a T -o PDB1.sup\n"
 "    HwRMSD PDB1.pdb PDB2.pdb -i align.txt\n"
 "    HwRMSD PDB1.pdb PDB2.pdb -m matrix.txt\n"
-    <<endl;
+    <<std::endl;
 
     if (h_opt) print_extra_help();
 
@@ -134,12 +132,12 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname       = "";
-    string yname       = "";
-    string fname_super = ""; // file name for superposed structure
-    string fname_lign  = ""; // file name for user alignment
-    string fname_matrix= ""; // file name for output matrix
-    vector<string> sequence; // get value from alignment file
+    std::string xname       = "";
+    std::string yname       = "";
+    std::string fname_super = ""; // file name for superposed structure
+    std::string fname_lign  = ""; // file name for user alignment
+    std::string fname_matrix= ""; // file name for output matrix
+    std::vector<std::string> sequence; // get value from alignment file
     double Lnorm_ass;
     double d0_scale;
 
@@ -157,19 +155,19 @@ int main(int argc, char *argv[])
     int    split_opt =0;     // do not split chain
     int    outfmt_opt=0;     // set -outfmt to full output
     int    het_opt=0;        // do not read HETATM residues
-    string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    string suffix_opt="";    // set -suffix to empty
-    string dir_opt   ="";    // set -dir to empty
-    string dir1_opt  ="";    // set -dir1 to empty
-    string dir2_opt  ="";    // set -dir2 to empty
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir_opt   ="";    // set -dir to empty
+    std::string dir1_opt  ="";    // set -dir1 to empty
+    std::string dir2_opt  ="";    // set -dir2 to empty
     int    byresi_opt=0;     // set -byresi to 0
-    vector<string> chain1_list; // only when -dir1 is set
-    vector<string> chain2_list; // only when -dir2 is set
-    vector<string> chain2parse1;
-    vector<string> chain2parse2;
-    vector<string> model2parse1;
-    vector<string> model2parse2;
+    std::vector<std::string> chain1_list; // only when -dir1 is set
+    std::vector<std::string> chain2_list; // only when -dir2 is set
+    std::vector<std::string> chain2parse1;
+    std::vector<std::string> chain2parse2;
+    std::vector<std::string> model2parse1;
+    std::vector<std::string> model2parse2;
     int    glocal    =0;
     int    iter_opt  =10;
     double early_opt =0.01;
@@ -177,136 +175,136 @@ int main(int argc, char *argv[])
 
     for(int i = 1; i < argc; i++)
     {
-        if ( string(argv[i]) == "-o" && i < (argc-1) )
+        if ( std::string(argv[i]) == "-o" && i < (argc-1) )
         {
             fname_super = argv[i + 1];     o_opt = true; i++;
         }
-        else if ( (string(argv[i]) == "-u" || 
-                   string(argv[i]) == "-L") && i < (argc-1) )
+        else if ( (std::string(argv[i]) == "-u" || 
+                   std::string(argv[i]) == "-L") && i < (argc-1) )
         {
             Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
         }
-        else if ( string(argv[i]) == "-a" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-a" && i < (argc-1) )
         {
-            if (string(argv[i + 1]) == "T")      a_opt=true;
-            else if (string(argv[i + 1]) == "F") a_opt=false;
+            if (std::string(argv[i + 1]) == "T")      a_opt=true;
+            else if (std::string(argv[i + 1]) == "F") a_opt=false;
             else PrintErrorAndQuit("Wrong value for option -a! It should be T or F");
             i++;
         }
-        else if ( string(argv[i]) == "-d" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
         {
             d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if ( string(argv[i]) == "-h" )
+        else if ( std::string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if ( string(argv[i]) == "-i" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-i" && i < (argc-1) )
         {
             if (i_opt==3)
                 PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
             fname_lign = argv[i + 1];      i_opt = 1; i++;
         }
-        else if (string(argv[i]) == "-I" && i < (argc-1) )
+        else if (std::string(argv[i]) == "-I" && i < (argc-1) )
         {
             if (i_opt==1)
                 PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
             fname_lign = argv[i + 1];      i_opt = 3; i++;
         }
-        else if (string(argv[i]) == "-m" && i < (argc-1) )
+        else if (std::string(argv[i]) == "-m" && i < (argc-1) )
         {
             fname_matrix = argv[i + 1];    m_opt = true; i++;
         }// get filename for rotation matrix
-        else if ( string(argv[i]) == "-infmt1" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt1" && i < (argc-1) )
         {
             infmt1_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-infmt2" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt2" && i < (argc-1) )
         {
             infmt2_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
             ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-split" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
             split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir1" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir1" && i < (argc-1) )
         {
             dir1_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir2" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir2" && i < (argc-1) )
         {
             dir2_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-outfmt" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-outfmt" && i < (argc-1) )
         {
             outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-byresi" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-byresi" && i < (argc-1) )
         {
             byresi_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-glocal" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-glocal" && i < (argc-1) )
         {
             glocal=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-iter" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-iter" && i < (argc-1) )
         {
             iter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-early" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-early" && i < (argc-1) )
         {
             early_opt=safe_stod(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-seq" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-seq" && i < (argc-1) )
         {
             seq_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-het" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
             het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if (string(argv[i]) == "-chain1" )
+        else if (std::string(argv[i]) == "-chain1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
-        else if (string(argv[i]) == "-chain2" )
+        else if (std::string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
-        else if (string(argv[i]) == "-model1" )
+        else if (std::string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
-        else if (string(argv[i]) == "-model2" )
+        else if (std::string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
@@ -315,7 +313,7 @@ int main(int argc, char *argv[])
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
-        else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
 
     if(xname.size()==0 || (yname.size()==0 && dir_opt.size()==0) || 
@@ -394,26 +392,26 @@ int main(int argc, char *argv[])
     else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
 
     if (outfmt_opt==2)
-        cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
+        std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
 
     // declare previously global variables
-    vector<vector<string> >PDB_lines1; // text of chain1
-    vector<vector<string> >PDB_lines2; // text of chain2
-    vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
-    vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
-    vector<string> chainID_list1;      // list of chainID1
-    vector<string> chainID_list2;      // list of chainID2
+    std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
+    std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
+    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    std::vector<std::string> chainID_list1;      // list of chainID1
+    std::vector<std::string> chainID_list2;      // list of chainID2
     int    xlen, ylen;         // chain length
     int    xchainnum,ychainnum;// number of chains in a PDB file
-    string secx;                // for the secondary structure
-    string secy;
+    std::string secx;                // for the secondary structure
+    std::string secy;
     CoordArray xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
+    std::vector<std::string> resi_vec1;  // residue index for chain1
+    std::vector<std::string> resi_vec2;  // residue index for chain2
 
     // loop over file names
     for (int i=0;i<chain1_list.size();i++)
@@ -425,8 +423,8 @@ int main(int argc, char *argv[])
             chain2parse1,model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         for (int chain_i=0;chain_i<xchainnum;chain_i++)
@@ -436,11 +434,11 @@ int main(int argc, char *argv[])
             else if (mol_opt=="protein") mol_vec1[chain_i]=-1;
             if (!xlen)
             {
-                cerr<<"Warning! Cannot parse file: "<<xname
-                    <<". Chain length 0."<<endl;
+                std::cerr<<"Warning! Cannot parse file: "<<xname
+                    <<". Chain length 0."<<std::endl;
                 continue;
             }
-            string seqx;
+            std::string seqx;
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
                 resi_vec1, byresi_opt);
             if (seq_opt==2 || (seq_opt==3 && iter_opt>=2))  // SS assignment
@@ -462,8 +460,8 @@ int main(int argc, char *argv[])
                         split_opt, het_opt, chain2parse2,model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<yname
-                            <<". Chain number 0."<<endl;
+                        std::cerr<<"Warning! Cannot parse file: "<<yname
+                            <<". Chain number 0."<<std::endl;
                         continue;
                     }
                 }
@@ -474,11 +472,11 @@ int main(int argc, char *argv[])
                     else if (mol_opt=="protein") mol_vec2[chain_j]=-1;
                     if (!ylen)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<yname
-                            <<". Chain length 0."<<endl;
+                        std::cerr<<"Warning! Cannot parse file: "<<yname
+                            <<". Chain length 0."<<std::endl;
                         continue;
                     }
-                    string seqy;
+                    std::string seqy;
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, byresi_opt);
                     if (seq_opt==2 || (seq_opt==3 && iter_opt>=2))  // SS assignment
@@ -503,7 +501,7 @@ int main(int argc, char *argv[])
                     double d0u;
                     double d0a;
                     double d0_out=5.0;
-                    string seqM, seqxA, seqyA;// for output alignment
+                    std::string seqM, seqxA, seqyA;// for output alignment
                     double rmsd0 = 0.0;
                     int L_ali;                // Aligned length in standard_TMscore
                     double Liden=0;
@@ -582,10 +580,10 @@ int main(int argc, char *argv[])
     }
     chain1_list.clear();
     chain2_list.clear();
-    vector<string>().swap(chain2parse1);
-    vector<string>().swap(chain2parse2);
-    vector<string>().swap(model2parse1);
-    vector<string>().swap(model2parse2);
+    std::vector<std::string>().swap(chain2parse1);
+    std::vector<std::string>().swap(chain2parse2);
+    std::vector<std::string>().swap(model2parse1);
+    std::vector<std::string>().swap(model2parse2);
     sequence.clear();
     return 0;
 }

@@ -6,11 +6,9 @@
 #include "HwRMSD.h"
 #include "TMalign.h"
 
-using namespace std;
-
 void print_extra_help()
 {
-    cout <<
+    std::cout <<
 "Additional options:\n"
 "    -fast    Fast but slightly inaccurate final alignment\n"
 "\n"
@@ -35,12 +33,12 @@ void print_extra_help()
 "             Multiple chains can be separated by commas, e.g.,\n"
 "             USalign -chain1 C,D,E,F 5jdo.pdb -chain2 A,B,C,D 3wtg.pdb -ter 0\n"
 "\n"
-    <<endl;
+    <<std::endl;
 }
 
 void print_help(bool h_opt=false)
 {
-    cout << "\n"
+    std::cout << "\n"
 "qTMclust: Structure Clustering by Sequence-Indepedent Structure Alignment\n"
 "\n"
 "Usage 1: (alignment within a folder of PDB files)\n"
@@ -88,7 +86,7 @@ void print_help(bool h_opt=false)
 "\n"
 "    -h       Print the full help message, including additional options.\n"
 "\n"
-    <<endl;
+    <<std::endl;
 
     if (h_opt) print_extra_help();
 
@@ -116,29 +114,29 @@ void filter_lower_bound(double &lb_HwRMSD, double &lb_TMfast,
     return;
 }
 
-void read_init_cluster(const string&filename, 
-    map<string, map<string,bool> > &init_cluster)
+void read_init_cluster(const std::string&filename, 
+    std::map<std::string, std::map<std::string,bool> > &init_cluster)
 {
-    ifstream fin;
-    string line;
-    vector<string> line_vec;
-    map<string, bool> tmp_map;
+    std::ifstream fin;
+    std::string line;
+    std::vector<std::string> line_vec;
+    std::map<std::string, bool> tmp_map;
     fin.open(filename.c_str());
     while (fin.good())
     {
-        getline(fin,line);
+        std::getline(fin,line);
         split(line,line_vec,'\t');
         for (size_t i=0;i<line_vec.size();i++)
         {
             for (size_t j=0;j<line_vec.size();j++)
                 if (i!=j) tmp_map[line_vec[j]]=1;
             init_cluster[line_vec[i]]=tmp_map;
-            map<string, bool> ().swap(tmp_map);
+            std::map<std::string, bool> ().swap(tmp_map);
         }
         for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
     }
     fin.close();
-    vector<string>().swap(line_vec);
+    std::vector<std::string>().swap(line_vec);
 }
 
 int main(int argc, char *argv[])
@@ -152,12 +150,12 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname       = "";
+    std::string xname       = "";
     double TMcut       = 0.5;
-    string fname_clust = ""; // file name for output cluster result
-    string fname_init  = "";
-    string fname_lign  = ""; // file name for user alignment
-    vector<string> sequence; // get value from alignment file
+    std::string fname_clust = ""; // file name for output cluster result
+    std::string fname_init  = "";
+    std::string fname_lign  = ""; // file name for user alignment
+    std::vector<std::string> sequence; // get value from alignment file
     double Lnorm_ass;
     double d0_scale;
 
@@ -173,109 +171,109 @@ int main(int argc, char *argv[])
     int    split_opt =0;     // do not split chain
     bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
     int    het_opt   =0;     // do not read HETATM residues
-    string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    string suffix_opt="";    // set -suffix to empty
-    string dir_opt   ="";    // set -dir to empty
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir_opt   ="";    // set -dir to empty
     int    byresi_opt=0;     // set -byresi to 0
-    vector<string> chain_list;
-    vector<string> chain2parse;
-    vector<string> model2parse;
-    map<string, map<string,bool> > init_cluster;
+    std::vector<std::string> chain_list;
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
+    std::map<std::string, std::map<std::string,bool> > init_cluster;
 
     for(int i = 1; i < argc; i++)
     {
-        if ( (string(argv[i]) == "-u"||string(argv[i]) == "-L") && i < (argc-1) )
+        if ( (std::string(argv[i]) == "-u"||std::string(argv[i]) == "-L") && i < (argc-1) )
         {
             PrintErrorAndQuit("Sorry! -u has not been implemented yet");
             Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
         }
-        else if ( string(argv[i]) == "-d" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
         {
             PrintErrorAndQuit("Sorry! -d has not been implemented yet");
             d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
         }
-        else if (string(argv[i]) == "-I" && i < (argc-1) )
+        else if (std::string(argv[i]) == "-I" && i < (argc-1) )
         {
             fname_lign = argv[i + 1];      i_opt = 3; i++;
         }
-        else if ( string(argv[i]) == "-o" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-o" && i < (argc-1) )
         {
             fname_clust = argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-a" && i < (argc-1))
+        else if ( std::string(argv[i]) == "-a" && i < (argc-1))
         {
             PrintErrorAndQuit("Sorry! -a is not used for clustering");
         }
-        else if ( string(argv[i]) == "-s" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-s" && i < (argc-1) )
         {
             s_opt=safe_stoi(argv[i + 1]); i++;
             if (s_opt<1 || s_opt>6)
                 PrintErrorAndQuit("-s must be within 1 to 6");
         }
-        else if ( string(argv[i]) == "-h" )
+        else if ( std::string(argv[i]) == "-h" )
         {
             h_opt = true;
         }
-        else if (string(argv[i]) == "-fast")
+        else if (std::string(argv[i]) == "-fast")
         {
             fast_opt = true;
         }
-        else if ( string(argv[i]) == "-infmt" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
             infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-ter" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
             ter_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-split" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
             split_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-atom" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
         {
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-TMcut" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-TMcut" && i < (argc-1) )
         {
             TMcut=safe_stod(argv[i + 1]); i++;
             if (TMcut>1 or TMcut<0.45)
                 PrintErrorAndQuit("TMcut must be in the range of [0.45,1)");
         }
-        else if ( string(argv[i]) == "-byresi" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-byresi" && i < (argc-1) )
         {
             PrintErrorAndQuit("Sorry! -byresi has not been implemented yet");
             byresi_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-het" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
             het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-init" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-init" && i < (argc-1) )
         {
             read_init_cluster(argv[i+1],init_cluster); i++;
         }
-        else if (string(argv[i]) == "-chain" )
+        else if (std::string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
             split(argv[i+1],chain2parse,',');
             i++;
         }
-        else if (string(argv[i]) == "-model" )
+        else if (std::string(argv[i]) == "-model" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -model");
@@ -283,7 +281,7 @@ int main(int argc, char *argv[])
             i++;
         }
         else if (xname.size() == 0) xname=argv[i];
-        else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
 
     if(xname.size()==0) print_help(h_opt);
@@ -320,25 +318,25 @@ int main(int argc, char *argv[])
     else file2chainlist(chain_list, xname, dir_opt, suffix_opt);
 
     // declare previously global variables
-    vector<vector<string> >PDB_lines; // text of chain
-    vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
-    vector<string> chainID_list;      // list of chainID
+    std::vector<std::vector<std::string> >PDB_lines; // text of chain
+    std::vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
+    std::vector<std::string> chainID_list;      // list of chainID
     size_t xchainnum=0;         // number of chains in a PDB file
     int    xlen,ylen;           // chain length
     CoordArray xa;
     CoordArray ya;           // xyz coordinate
-    vector<string> resi_vec;    // residue index for chain, dummy variable
-    vector<pair<int,size_t> >chainLen_list; // vector of (length,index) pair
+    std::vector<std::string> resi_vec;    // residue index for chain, dummy variable
+    std::vector<std::pair<int,size_t> >chainLen_list; // vector of (length,index) pair
     CharMatrix seq_vec;
-    vector<string> sec_vec;
-    vector<vector<vector<float> > >xyz_vec;
+    std::vector<std::string> sec_vec;
+    std::vector<std::vector<std::vector<float> > >xyz_vec;
 
     // parse files
-    string chain_name;
-    vector<char>  seq_tmp;
-    string  sec_tmp;
-    vector<float> flt_tmp(3,0);
-    vector<vector<float> >xyz_tmp;
+    std::string chain_name;
+    std::vector<char>  seq_tmp;
+    std::string  sec_tmp;
+    std::vector<float> flt_tmp(3,0);
+    std::vector<std::vector<float> >xyz_tmp;
     size_t newchainnum;
     double ub_HwRMSD=0.90*TMcut+0.10;
     double lb_HwRMSD=0.5*TMcut;
@@ -371,8 +369,8 @@ int main(int argc, char *argv[])
             chain2parse, model2parse);
         if (!newchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         chain_name=xname.substr(dir_opt.size(),
@@ -381,8 +379,8 @@ int main(int argc, char *argv[])
         {
             chainID_list[j+xchainnum]=chain_name+chainID_list[j+xchainnum];
             xlen=PDB_lines[j].size();
-            cout<<"Parsing "<<xname<<'\t'<<chainID_list[j+xchainnum]
-                <<" ("<<xlen<<" residues)."<<endl;
+            std::cout<<"Parsing "<<xname<<'\t'<<chainID_list[j+xchainnum]
+                <<" ("<<xlen<<" residues)."<<std::endl;
             if (mol_opt=="RNA") mol_vec[j+xchainnum]=1;
             else if (mol_opt=="protein") mol_vec[j+xchainnum]=-1;
 
@@ -411,7 +409,7 @@ int main(int argc, char *argv[])
             xyz_vec.push_back(xyz_tmp);
 
             chainLen_list.push_back(
-                make_pair(PDB_lines[j].size(),j+xchainnum));
+                std::make_pair(PDB_lines[j].size(),j+xchainnum));
 
             seq_tmp.clear();
             sec_tmp.clear();
@@ -425,26 +423,26 @@ int main(int argc, char *argv[])
     chain_list.clear();
 
     // swap completely destroy the vector and free up the memory capacity
-    vector<vector<string> >().swap(PDB_lines);
+    std::vector<std::vector<std::string> >().swap(PDB_lines);
     size_t Nstruct=chainLen_list.size();
 
     // sort by chain length
-    stable_sort(chainLen_list.begin(),chainLen_list.end(),
-        greater<pair<int,int> >());
-    cout<<"Clustering "<<chainLen_list.size()
+    std::stable_sort(chainLen_list.begin(),chainLen_list.end(),
+        std::greater<std::pair<int,int> >());
+    std::cout<<"Clustering "<<chainLen_list.size()
         <<" chains with TM-score cutoff >="<<TMcut<<'\n'
         <<"Longest chain "<<chainID_list[chainLen_list[0].second]<<'\t'
         <<chainLen_list[0].first<<" residues.\n"
         <<"Shortest chain "<<chainID_list[chainLen_list.back().second]<<'\t'
-        <<chainLen_list.back().first<<" residues."<<endl;
+        <<chainLen_list.back().first<<" residues."<<std::endl;
 
     // set the first cluster
-    vector<size_t> clust_mem_vec(Nstruct,-1); // cluster membership
-    vector<size_t> clust_repr_vec; // the same as number of clusters
+    std::vector<size_t> clust_mem_vec(Nstruct,-1); // cluster membership
+    std::vector<size_t> clust_repr_vec; // the same as number of clusters
     size_t chain_i=chainLen_list[0].second;
     clust_repr_vec.push_back(chain_i);
     clust_mem_vec[chain_i]=0;
-    map<size_t,size_t> clust_repr_map;
+    std::map<size_t,size_t> clust_repr_map;
 
     // perform alignment
     size_t chain_j;
@@ -452,7 +450,7 @@ int main(int argc, char *argv[])
     const double fast_ub=1000.;// proteins longer than fast_ub always use -fast
     double Lave;               // average protein length for chain_i and chain_j
     size_t sizePROT;           // number of representatives for current chain
-    vector<size_t> index_vec;  // index of cluster representatives for the chain
+    std::vector<size_t> index_vec;  // index of cluster representatives for the chain
     bool found_clust;          // whether current chain hit previous cluster
 
     for (size_t i=1;i<Nstruct;i++)
@@ -493,20 +491,20 @@ int main(int argc, char *argv[])
         }
         sizePROT=index_vec.size();
 
-        string key=chainID_list[chain_i];
-        cout<<'>'<<chainID_list[chain_i]<<'\t'<<xlen<<'\t'
-            <<setiosflags(ios::fixed)<<setprecision(2)
+        std::string key=chainID_list[chain_i];
+        std::cout<<'>'<<chainID_list[chain_i]<<'\t'<<xlen<<'\t'
+            <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)
             <<100.*i/Nstruct<<"%(#"<<i<<")\t"
-            <<"#repr="<<sizePROT<<"/"<<clust_repr_vec.size()<<endl;
+            <<"#repr="<<sizePROT<<"/"<<clust_repr_vec.size()<<std::endl;
 
 #ifdef TMalign_HwRMSD_h
-        vector<pair<double,size_t> > HwRMSDscore_list;
+        std::vector<std::pair<double,size_t> > HwRMSDscore_list;
         double TM;
         size_t init_count=0;
         for (size_t j=0;j<sizePROT;j++)
         {
             chain_j=index_vec[j];
-            string value=chainID_list[chain_j];
+            std::string value=chainID_list[chain_j];
             if (init_cluster.count(key) && init_count>=2 && 
                 HwRMSDscore_list.size()>=init_cluster[key].size() && !init_cluster[key].count(value))
                 continue;
@@ -543,7 +541,7 @@ int main(int argc, char *argv[])
             double d0u;
             double d0a;
             double d0_out=5.0;
-            string seqM, seqxA, seqyA;// for output alignment
+            std::string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
             int L_ali;                // Aligned length in standard_TMscore
             double Liden=0;
@@ -584,12 +582,12 @@ int main(int argc, char *argv[])
             {
                 if (init_cluster.count(key) && init_cluster[key].count(value))
                 {
-                    HwRMSDscore_list.push_back(make_pair(TM+1,index_vec[j]));
+                    HwRMSDscore_list.push_back(std::make_pair(TM+1,index_vec[j]));
                     init_count++;
                     if (init_count==init_cluster[key].size()) break;
                 }
                 else
-                    HwRMSDscore_list.push_back(make_pair(TM,index_vec[j]));
+                    HwRMSDscore_list.push_back(std::make_pair(TM,index_vec[j]));
             }
 
             // clean up after each HwRMSD
@@ -602,8 +600,8 @@ int main(int argc, char *argv[])
             if (TM>=ub_HwRMSD) break;
         }
 
-        stable_sort(HwRMSDscore_list.begin(),HwRMSDscore_list.end(),
-            greater<pair<double,size_t> >());
+        std::stable_sort(HwRMSDscore_list.begin(),HwRMSDscore_list.end(),
+            std::greater<std::pair<double,size_t> >());
 
         int cur_repr_num_cutoff=min_repr_num;
         if (xlen<=fast_lb) cur_repr_num_cutoff=max_repr_num;
@@ -621,11 +619,11 @@ int main(int argc, char *argv[])
             if (Lave>fast_lb && TM<TMcut*0.5 && 
                 index_vec.size()>=cur_repr_num_cutoff) break;
             index_vec.push_back(chain_j);
-            cout<<"#"<<chain_j<<"\t"<<chainID_list[chain_j]<<"\t"
-                <<setiosflags(ios::fixed)<<setprecision(4)<<TM<<endl;
+            std::cout<<"#"<<chain_j<<"\t"<<chainID_list[chain_j]<<"\t"
+                <<setiosflags(std::ios::fixed)<<std::setprecision(4)<<TM<<std::endl;
         }
-        cout<<index_vec.size()<<" out of "
-            <<HwRMSDscore_list.size()<<" entries"<<endl;
+        std::cout<<index_vec.size()<<" out of "
+            <<HwRMSDscore_list.size()<<" entries"<<std::endl;
         HwRMSDscore_list.clear();
 #endif
 
@@ -667,14 +665,14 @@ int main(int argc, char *argv[])
             double d0u;
             double d0a;
             double d0_out=5.0;
-            string seqM, seqxA, seqyA;// for output alignment
+            std::string seqM, seqxA, seqyA;// for output alignment
             double rmsd0 = 0.0;
             int L_ali;                // Aligned length in standard_TMscore
             double Liden=0;
             double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
             int n_ali=0;
             int n_ali8=0;
-            vector<double> do_vec;
+            std::vector<double> do_vec;
             
             // entry function for structure alignment
             int status=TMalign_main(
@@ -688,9 +686,9 @@ int main(int argc, char *argv[])
                 i_opt, a_opt, u_opt, d_opt, overwrite_fast_opt,
                 mol_vec[chain_i]+mol_vec[chain_j],TMcut);
 
-            cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
-                <<setiosflags(ios::fixed)<<setprecision(4)
-                <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<endl;
+            std::cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
+                <<setiosflags(std::ios::fixed)<<std::setprecision(4)
+                <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<std::endl;
 
             seqM.clear();
             seqxA.clear();
@@ -743,7 +741,7 @@ int main(int argc, char *argv[])
                 else if (s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
                 else if (s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
                 else if (s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
-                cout<<"*\t"<<chainID_list[chain_j]<<'\t'<<TM2<<'\t'<<TM1<<endl;
+                std::cout<<"*\t"<<chainID_list[chain_j]<<'\t'<<TM2<<'\t'<<TM1<<std::endl;
                 if (TM>=TMcut)
                 {
                     clust_mem_vec[chain_i]=clust_repr_map[chain_j];
@@ -762,9 +760,9 @@ int main(int argc, char *argv[])
         }
         else // member structures are not used further
         {
-            vector<char> ().swap(seq_vec[chain_i]);
-            string().swap(sec_vec[chain_i]);
-            vector<vector<float> > ().swap(xyz_vec[chain_i]);
+            std::vector<char> ().swap(seq_vec[chain_i]);
+            std::string().swap(sec_vec[chain_i]);
+            std::vector<std::vector<float> > ().swap(xyz_vec[chain_i]);
         }
     }
 
@@ -775,7 +773,7 @@ int main(int argc, char *argv[])
     sec_vec.clear();
 
     // print out cluster
-    stringstream txt;
+    std::stringstream txt;
     for (size_t j=0;j<clust_repr_vec.size();j++)
     {
         chain_j=clust_repr_vec[j]; // cluster representative
@@ -789,21 +787,21 @@ int main(int argc, char *argv[])
     }
     if (fname_clust.size() && fname_clust!="-")
     {
-        ofstream fp(fname_clust.c_str());
+        std::ofstream fp(fname_clust.c_str());
         fp<<txt.str();
         fp.close();
     }
-    else cout<<txt.str()<<endl;
+    else std::cout<<txt.str()<<std::endl;
 
     // clean up
-    txt.str(string());
+    txt.str(std::string());
     clust_repr_vec.clear();
     clust_mem_vec.clear();
     chainID_list.clear();
     clust_repr_map.clear();
-    vector<string>().swap(chain2parse);
-    vector<string>().swap(model2parse);
-    map<string, map<string,bool> >().swap(init_cluster);
+    std::vector<std::string>().swap(chain2parse);
+    std::vector<std::string>().swap(model2parse);
+    std::map<std::string, std::map<std::string,bool> >().swap(init_cluster);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;

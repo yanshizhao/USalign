@@ -63,7 +63,7 @@ inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
 {
     const double d0 = search.d0;
     const bool i_opt = opt.i_opt;
-    vector<int> &invmap = res.invmap;
+    std::vector<int> &invmap = res.invmap;
     int j;
     // perform alignment
     if (hinge==0) for(j=0; j<ylen; j++) invmap[j]=-1;
@@ -74,7 +74,7 @@ inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
         int i2 = -1;
         int L1 = sequence[0].size();
         int L2 = sequence[1].size();
-        int L = min(L1, L2);// Get positions for aligned residues
+        int L = std::min(L1, L2);// Get positions for aligned residues
         for (int kk1 = 0; kk1 < L; kk1++)
         {
             if (sequence[0][kk1] != '-') i1++;
@@ -102,7 +102,7 @@ inline void se_score_alignment(CoordArray& xa, CoordArray& ya, int xlen, int yle
     double &rmsd0 = res.rmsd0;
     int &n_ali = res.n_ali;
     int &n_ali8 = res.n_ali8;
-    vector<int> &invmap = res.invmap;
+    std::vector<int> &invmap = res.invmap;
     const double Lnorm_ass = opt.Lnorm;
     const double d0_scale = opt.d0_scale;
     const double d0A = res.d0A;
@@ -169,10 +169,10 @@ inline void se_extract_alignment_strings(CoordArray& xa, CoordArray& ya,
     const std::vector<int>& m1, const std::vector<int>& m2, const std::vector<char>& seqM_char,
     ChainPairAlignResult& res, const int hinge)
 {
-    string &seqM = res.seqM;
-    string &seqxA = res.seqxA;
-    string &seqyA = res.seqyA;
-    vector<double> &do_vec = res.do_vec;
+    std::string &seqM = res.seqM;
+    std::string &seqxA = res.seqxA;
+    std::string &seqyA = res.seqyA;
+    std::vector<double> &do_vec = res.do_vec;
     double &Liden = res.Liden;
     const double d0_out = res.d0_out;
     const int n_ali8 = res.n_ali8;
@@ -262,9 +262,9 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
     const std::vector<std::string>& sequence,
     const ChainPairAlignOptions& opt, const int outfmt_opt, const int hinge=0)
 {
-    string &seqM = res.seqM;
-    string &seqyA = res.seqyA;
-    vector<int> &invmap = res.invmap;
+    std::string &seqM = res.seqM;
+    std::string &seqyA = res.seqyA;
+    std::vector<int> &invmap = res.invmap;
     const int mol_type = opt.mol_type;
     SeSearchState search;
     CharMatrix path;          // for dynamic programming (char: 1/0)
@@ -282,14 +282,14 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
     /***********************/
     // allocate memory
     /***********************/
-    path.assign(xlen+1, vector<char>(ylen+1));
-    val.assign(xlen+1, vector<double>(ylen+1));
+    path.assign(xlen+1, std::vector<char>(ylen+1));
+    val.assign(xlen+1, std::vector<double>(ylen+1));
     std::vector<int> invmap0(ylen+1);
     int i;
     int j;
     if (hinge==0) for (j=0;j<=ylen;j++) invmap0[j]=-1;
     else for (j=0;j<ylen;j++) invmap0[j]=invmap[j];
-    vector<char> seqM_char;
+    std::vector<char> seqM_char;
     if (hinge)
     {
         seqM_char.assign(ylen,hinge+'0');
@@ -323,10 +323,10 @@ int se_main(
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    std::string &seqM, std::string &seqxA, std::string &seqyA, std::vector<double> &do_vec,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen, const vector<string> &sequence,
+    const int xlen, const int ylen, const std::vector<std::string> &sequence,
     const double Lnorm_ass, const double d0_scale, const bool i_opt,
     const bool a_opt, const int u_opt, const bool d_opt, const int mol_type,
     const int outfmt_opt, std::vector<int>& invmap, const int hinge=0)

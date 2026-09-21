@@ -526,8 +526,8 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 
 
 void output_TMscore_results(
-    const string xname, const string yname,
-    const string chainID1, const string chainID2,
+    const std::string xname, const std::string yname,
+    const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
@@ -542,7 +542,7 @@ void output_TMscore_results(
     const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
     int L_lt_d, const double rmsd_d0_out,
     double GDT_list[5], double maxsub, const int split_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2)
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2)
 {
     if (outfmt_opt<=0)
     {
@@ -581,14 +581,14 @@ void output_TMscore_results(
             fcout("TM-score    = %5.5f  (if scaled by user-specified d0= %.2f, and LN= %d)\n", TM5, d0_scale, ylen);
     
 
-        cout << "\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n";
-        cout << " i          t(i)         u(i,1)         u(i,2)         u(i,3)\n";
+        std::cout << "\n -------- rotation matrix to rotate Chain-1 to Chain-2 ------\n";
+        std::cout << " i          t(i)         u(i,1)         u(i,2)         u(i,3)\n";
         fcout(" 1 %17.10f %14.10f %14.10f %14.10f\n",clean_fmt(t[0]),clean_fmt(u[0][0]),clean_fmt(u[0][1]),clean_fmt(u[0][2]));
         fcout(" 2 %17.10f %14.10f %14.10f %14.10f\n",clean_fmt(t[1]),clean_fmt(u[1][0]),clean_fmt(u[1][1]),clean_fmt(u[1][2]));
         fcout(" 3 %17.10f %14.10f %14.10f %14.10f\n",clean_fmt(t[2]),clean_fmt(u[2][0]),clean_fmt(u[2][1]),clean_fmt(u[2][2]));
 
         //output alignment
-        string seq_scale=seqM;
+        std::string seq_scale=seqM;
         for (i=0;i<seqM.size();i++)
         {
             L_lt_d+=seqM[i]==':';
@@ -597,20 +597,20 @@ void output_TMscore_results(
         fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d\n", d0_out, L_lt_d);
         //fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d  RMSD=%6.2f\n", d0_out, L_lt_d, rmsd_d0_out);
         fcout("(\":\" denotes the residue pairs of distance <%4.1f Angstrom)\n", d0_out);
-        cout << seqxA << "\n";
-        cout << seqM << "\n";
-        cout << seqyA << "\n";
-        cout << seq_scale.c_str() << "\n";
+        std::cout << seqxA << "\n";
+        std::cout << seqM << "\n";
+        std::cout << seqyA << "\n";
+        std::cout << seq_scale.c_str() << "\n";
         seq_scale.clear();
     }
     else if (outfmt_opt==1)
     {
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname, chainID1, xlen, d0B, Liden/xlen, TM2);
-        cout << seqxA << "\n";
+        std::cout << seqxA << "\n";
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             yname, chainID2, ylen, d0A, Liden/ylen, TM1);
-        cout << seqyA << "\n";
+        std::cout << seqyA << "\n";
 
         fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
@@ -624,7 +624,7 @@ void output_TMscore_results(
         if(d_opt)
             fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
 
-        cout << "$$$$\n";
+        std::cout << "$$$$\n";
     }
     else if (outfmt_opt==2)
     {
@@ -633,7 +633,7 @@ void output_TMscore_results(
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
             xlen, ylen, n_ali8);
     }
-    cout << endl;
+    std::cout << std::endl;
 
     if (!fname_matrix.empty()) 
         output_rotation_matrix(fname_matrix, t, u);
@@ -649,11 +649,11 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA,
+    std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
+    const std::vector<std::string> sequence, const double Lnorm_ass,
     const double d0_scale, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double GDT_list[5], double &maxsub,
@@ -673,7 +673,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     /***********************/
     // allocate memory
     /***********************/
-    int minlen = min(xlen, ylen);
+    int minlen = std::min(xlen, ylen);
     score.assign(xlen+1, std::vector<double>(ylen+1));
     path.assign(xlen+1, std::vector<char>(ylen+1));
     val.assign(xlen+1, std::vector<double>(ylen+1));
@@ -711,7 +711,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     int i2 = -1;
     int L1 = sequence[0].size();
     int L2 = sequence[1].size();
-    int L = min(L1, L2);// Get positions for aligned residues
+    int L = std::min(L1, L2);// Get positions for aligned residues
     for (int kk1 = 0; kk1 < L; kk1++)
     {
         if (sequence[0][kk1] != '-') i1++;
@@ -756,8 +756,8 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     }
     if(!flag)
     {
-        cout << "There is no alignment between the two structures! "
-             << "Program stop with no result!" << endl;
+        std::cout << "There is no alignment between the two structures! "
+             << "Program stop with no result!" << std::endl;
         return 1;
     }
 

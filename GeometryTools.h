@@ -4,8 +4,6 @@
 
 #include "basic_fun.h" // For reading gzip and bz2 compressed files
 
-using namespace std;
-
 const double Extra=1.0e-4; // pseudocount
 const float PI=3.141592653589793;
 

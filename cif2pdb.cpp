@@ -17,11 +17,9 @@
 
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "Converting mmCIF file to PDB file(s)\n"
 "\n"
 "Usage: cif2pdb input.cif output.pdb\n"
@@ -44,20 +42,20 @@ void print_help()
 "             2: 'ATOM  ' and all 'HETATM', excluding HOH\n"
 "             3: 'ATOM  ' and all 'HETATM', including HOH\n"
 "             If -het >=1, MSE will be converted to MET\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
-void PrintErrorAndQuit(const string sErrorString)
+void PrintErrorAndQuit(const std::string sErrorString)
 {
-    cout << sErrorString << endl;
+    std::cout << sErrorString << std::endl;
     exit(1);
 }
 
 // strip white space at the begining or end of string
-string Trim(const string &inputString)
+std::string Trim(const std::string &inputString)
 {
-    string result = inputString;
+    std::string result = inputString;
     int idxBegin = inputString.find_first_not_of(" \n\r\t");
     int idxEnd = inputString.find_last_not_of(" \n\r\t");
     if (idxBegin >= 0 && idxEnd >= 0)
@@ -69,7 +67,7 @@ string Trim(const string &inputString)
  * line          - input string
  * line_vec      - output vector 
  * delimiter     - delimiter */
-void split(const string &line, vector<string> &line_vec,
+void split(const std::string &line, std::vector<std::string> &line_vec,
     const char delimiter=' ')
 {
     bool within_word = false;
@@ -89,14 +87,14 @@ void split(const string &line, vector<string> &line_vec,
     }
 }
 
-void write_mmcif_to_pdb(const string filename,
-    const vector<vector<string> >&PDB_lines,
-    const vector<string> &chainID_list, const int split_opt)
+void write_mmcif_to_pdb(const std::string filename,
+    const std::vector<std::vector<std::string> >&PDB_lines,
+    const std::vector<std::string> &chainID_list, const int split_opt)
 {
     size_t c;
     size_t r;
     
-    ofstream fout;
+    std::ofstream fout;
     if (split_opt)
     {
         for (c=0;c<PDB_lines.size();c++)
@@ -104,16 +102,16 @@ void write_mmcif_to_pdb(const string filename,
             if (PDB_lines[c].size()==0) continue;
             if (filename=="-")
             {
-                cout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<endl;
-                for (r=0;r<PDB_lines[c].size();r++) cout<<PDB_lines[c][r];
-                cout<<"TER"<<endl;
+                std::cout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
+                for (r=0;r<PDB_lines[c].size();r++) std::cout<<PDB_lines[c][r];
+                std::cout<<"TER"<<std::endl;
                 continue;    
             }
-            cout<<     filename+Trim(chainID_list[c])+".pdb"<<endl;
+            std::cout<<     filename+Trim(chainID_list[c])+".pdb"<<std::endl;
             fout.open((filename+Trim(chainID_list[c])+".pdb").c_str());
-            fout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<endl;
+            fout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
             for (r=0;r<PDB_lines[c].size();r++) fout<<PDB_lines[c][r];
-            fout<<"TER"<<endl;
+            fout<<"TER"<<std::endl;
             fout.close();
         }
     }
@@ -122,15 +120,15 @@ void write_mmcif_to_pdb(const string filename,
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            cout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<endl;
+            std::cout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
         }
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            for (r=0;r<PDB_lines[c].size();r++) cout<<PDB_lines[c][r];
-            cout<<"TER"<<endl;
+            for (r=0;r<PDB_lines[c].size();r++) std::cout<<PDB_lines[c][r];
+            std::cout<<"TER"<<std::endl;
         }
-        cout<<"END"<<endl;
+        std::cout<<"END"<<std::endl;
     }
     else
     {
@@ -138,32 +136,32 @@ void write_mmcif_to_pdb(const string filename,
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            fout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<endl;
+            fout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
         }
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
             for (r=0;r<PDB_lines[c].size();r++) fout<<PDB_lines[c][r];
-            fout<<"TER"<<endl;
+            fout<<"TER"<<std::endl;
         }
-        fout<<"END"<<endl;
+        fout<<"END"<<std::endl;
         fout.close();
     }
     return;
 }
 
-size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
-    const vector<string> &chainID_list)
+size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_lines,
+    const std::vector<std::string> &chainID_list)
 {
     size_t changed_chains=0;
     size_t c;
     size_t r;
     size_t i;
-    string chainID;
+    std::string chainID;
     
-    string chainID_string="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    vector<bool> chainID_taken(chainID_string.size(),false);
-    vector<bool> chainID_accept(chainID_list.size(),false);
+    std::string chainID_string="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    std::vector<bool> chainID_taken(chainID_string.size(),false);
+    std::vector<bool> chainID_accept(chainID_list.size(),false);
 
     // accept all single character chain ID
     for (c=0;c<PDB_lines.size();c++)
@@ -210,10 +208,10 @@ size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
         }
         if (chainID=="")
         {
-            cerr<<"WARNING! Cannot parse "<<chainID_list[c]<<" with "
+            std::cerr<<"WARNING! Cannot parse "<<chainID_list[c]<<" with "
                 <<PDB_lines[c].size()<<" atoms due to chain ID conflict. "
-                <<"Please consider -split 1"<<endl;
-            vector<string>().swap(PDB_lines[c]);
+                <<"Please consider -split 1"<<std::endl;
+            std::vector<std::string>().swap(PDB_lines[c]);
         }
         else
         {
@@ -223,29 +221,29 @@ size_t resolve_chainID_for_mmcif(vector<vector<string> >&PDB_lines,
         }
     }
     if (changed_chains)
-        cerr<<"WARNING! Changed "<<changed_chains<<" chain ID(s)"<<endl;
+        std::cerr<<"WARNING! Changed "<<changed_chains<<" chain ID(s)"<<std::endl;
     
     // clean up
     chainID.clear();
-    string().swap(chainID_string);
-    vector<bool>().swap(chainID_taken);
-    vector<bool>().swap(chainID_accept);
+    std::string().swap(chainID_string);
+    std::vector<bool>().swap(chainID_taken);
+    std::vector<bool>().swap(chainID_accept);
     return changed_chains;
 }
 
-size_t get_all_mmcif_lines(const string filename, const string chain_opt,
-    vector<vector<string> >&PDB_lines, vector<string> &chainID_list,
+size_t get_all_mmcif_lines(const std::string filename, const std::string chain_opt,
+    std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list,
     const bool dna_opt, const bool rna_opt, const bool protein_opt,
     const bool hoh_opt,  const bool lig_opt, const bool mse_opt)
 {
     size_t a=0; // atom index
-    string line;
+    std::string line;
     bool select_atom=false;
     size_t model_idx=0;
-    vector<string> tmp_str_vec;
+    std::vector<std::string> tmp_str_vec;
     
     int compress_type=0; // uncompressed file
-    ifstream fin;
+    std::ifstream fin;
 #ifndef NO_PSTREAM
     redi::ipstream fin_gz; // if file is compressed
     if (filename.size()>=3 &&
@@ -280,35 +278,35 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
 #endif
 
     bool loop_ = false; // not reading following content
-    map<string,int> _atom_site;
+    std::map<std::string,int> _atom_site;
     int atom_site_pos;
-    vector<string> line_vec;
-    string group_PDB="ATOM  ";
-    string alt_id=" ";  // alternative location indicator
-    string asym_id="."; // this is similar to chainID, except that
+    std::vector<std::string> line_vec;
+    std::string group_PDB="ATOM  ";
+    std::string alt_id=" ";  // alternative location indicator
+    std::string asym_id="."; // this is similar to chainID, except that
                         // chainID is char while asym_id is a string
                        // with possibly multiple char
-    string prev_asym_id="";
-    string resn="";       // residue name
-    string resi="";
-    string atom="";
-    string model_index=""; // the same as model_idx but type is string
-    stringstream i8_stream;
-    map<string, string> alt_id_dict; // resi -> alt_id
-    string resi_chain;
+    std::string prev_asym_id="";
+    std::string resn="";       // residue name
+    std::string resi="";
+    std::string atom="";
+    std::string model_index=""; // the same as model_idx but type is string
+    std::stringstream i8_stream;
+    std::map<std::string, std::string> alt_id_dict; // resi -> alt_id
+    std::string resi_chain;
     while (
 #ifndef NO_PSTREAM
         (compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good())
 #else
-        (compress_type==-1)?cin.good():fin.good()
+        (compress_type==-1)?std::cin.good():fin.good()
 #endif
     )
     {
-        if  (compress_type==-1) getline(cin, line);
+        if  (compress_type==-1) std::getline(std::cin, line);
 #ifndef NO_PSTREAM
         else if (compress_type) getline(fin_gz, line);
 #endif
-        else                    getline(fin, line);
+        else                    std::getline(fin, line);
         if (line.size()==0) continue;
         if (loop_) loop_ = (line.size()>=2)?(line.compare(0,2,"# ")):(line.compare(0,1,"#"));
         if (!loop_)
@@ -318,7 +316,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
             {
                 if (compress_type==-1)
                 {
-                    if (cin.good()) getline(cin, line);
+                    if (std::cin.good()) std::getline(std::cin, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                 }
 #ifndef NO_PSTREAM
@@ -330,7 +328,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
 #endif
                 else
                 {
-                    if (fin.good()) getline(fin, line);
+                    if (fin.good()) std::getline(fin, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
                 }
                 if (line.size()) break;
@@ -344,11 +342,11 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
 
             while(1)
             {
-                if  (compress_type==-1) getline(cin, line);
+                if  (compress_type==-1) std::getline(std::cin, line);
 #ifndef NO_PSTREAM
                 else if (compress_type) getline(fin_gz, line);
 #endif
-                else                    getline(fin, line);
+                else                    std::getline(fin, line);
                 if (line.size()==0) continue;
                 if (line.compare(0,11,"_atom_site.")) break;
                 _atom_site[Trim(line.substr(11))]=++atom_site_pos;
@@ -366,7 +364,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
                 _atom_site.count("Cartn_z")==0)
             {
                 loop_ = false;
-                cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                 continue;
             }
         }
@@ -425,7 +423,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
         else resi+=" ";
         if (resi.size()>5)
         {
-            cerr<<"WARNING! Cannot parse line due to long residue index\n"<<line<<endl;
+            std::cerr<<"WARNING! Cannot parse line due to long residue index\n"<<line<<std::endl;
             continue;
         }
 
@@ -441,7 +439,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
         {
             if (PDB_lines.size()) break;
             model_index=line_vec[_atom_site["pdbx_PDB_model_num"]];
-            map<string, string>().swap(alt_id_dict);
+            std::map<std::string, std::string>().swap(alt_id_dict);
         }
 
         if (_atom_site.count("label_alt_id")) // in 39.4 % of entries
@@ -468,20 +466,20 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
         a++;
         a%=100000;
         i8_stream<<group_PDB
-            <<setw(5)<<a<<" "<<atom<<alt_id<<resn<<" "<<asym_id[asym_id.size()-1]
-            <<setw(5)<<resi<<"   "
-            <<setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
-            <<setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
-            <<setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
+            <<std::setw(5)<<a<<" "<<atom<<alt_id<<resn<<" "<<asym_id[asym_id.size()-1]
+            <<std::setw(5)<<resi<<"   "
+            <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
+            <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
+            <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
         if (_atom_site.count("B_iso_or_equiv"))
         {
-            i8_stream<<"  1.00"<<setw(6)<<line_vec[_atom_site["B_iso_or_equiv"]].substr(0,6);
+            i8_stream<<"  1.00"<<std::setw(6)<<line_vec[_atom_site["B_iso_or_equiv"]].substr(0,6);
             if (_atom_site.count("type_symbol"))
-                i8_stream<<setw(12)<<line_vec[_atom_site["type_symbol"]].substr(0,12);
+                i8_stream<<std::setw(12)<<line_vec[_atom_site["type_symbol"]].substr(0,12);
         }
-        i8_stream<<endl;
+        i8_stream<<std::endl;
         PDB_lines.back().push_back(i8_stream.str());
-        i8_stream.str(string());
+        i8_stream.str(std::string());
     }
     group_PDB.clear();
     _atom_site.clear();
@@ -489,7 +487,7 @@ size_t get_all_mmcif_lines(const string filename, const string chain_opt,
     alt_id.clear();
     asym_id.clear();
     resn.clear();
-    map<string, string>().swap(alt_id_dict);
+    std::map<std::string, std::string>().swap(alt_id_dict);
     resi_chain.clear();
 
     if (compress_type>=0)
@@ -513,35 +511,35 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname       = "";
-    string yname       = "";
+    std::string xname       = "";
+    std::string yname       = "";
 
     int    split_opt =0;     // do not split chain
     int    het_opt   =0;     // do not read HETATM residues
     int    mol_opt   =7;     // auto-detect the molecule type as protein/RNA
-    string chain_opt ="";    // read all chains
+    std::string chain_opt ="";    // read all chains
 
     for(int i = 1; i < argc; i++)
     {
-        if ( string(argv[i]) == "-split" && i < (argc-1) )
+        if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=stoi(argv[i + 1]); i++;
+            split_opt=std::stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-mol" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
         {
-            mol_opt=stoi(argv[i + 1]); i++;
+            mol_opt=std::stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-chain" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-chain" && i < (argc-1) )
         {
             chain_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-het" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=stoi(argv[i + 1]); i++;
+            het_opt=std::stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
-        else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
 
     if(yname.size()==0)
@@ -567,16 +565,16 @@ int main(int argc, char *argv[])
     bool mse_opt=(het_opt>=1);
 
     // parse structure
-    vector<vector<string> >PDB_lines;
-    vector<string> chainID_list;
+    std::vector<std::vector<std::string> >PDB_lines;
+    std::vector<std::string> chainID_list;
     get_all_mmcif_lines(xname, chain_opt, PDB_lines, chainID_list,
         dna_opt, rna_opt, protein_opt, hoh_opt, lig_opt, mse_opt);
     if (!split_opt) resolve_chainID_for_mmcif(PDB_lines,chainID_list);
     write_mmcif_to_pdb(yname, PDB_lines, chainID_list, split_opt);
     
     // clean up
-    vector<vector<string> >().swap(PDB_lines);
-    vector<string>().swap(chainID_list);
+    std::vector<std::vector<std::string> >().swap(PDB_lines);
+    std::vector<std::string>().swap(chainID_list);
     chain_opt.clear();
     return 0;
 }

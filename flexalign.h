@@ -9,7 +9,7 @@
 
 #define MAX_SEC_STRUCT_OPT 1
 
-inline void t_u2tu(const Vec3& t0, const RotMat& u0, vector<double> &tu_tmp)
+inline void t_u2tu(const Vec3& t0, const RotMat& u0, std::vector<double> &tu_tmp)
 {
     for (int i=0;i<3;i++) tu_tmp[i]=t0[i];
     int k=3;
@@ -20,7 +20,7 @@ inline void t_u2tu(const Vec3& t0, const RotMat& u0, vector<double> &tu_tmp)
     }
 }
 
-inline void tu2t_u(vector<double> tu_tmp, Vec3& t0, RotMat& u0)
+inline void tu2t_u(std::vector<double> tu_tmp, Vec3& t0, RotMat& u0)
 {
     for (int i=0;i<3;i++) t0[i]=tu_tmp[i];
     int k=3;
@@ -31,7 +31,7 @@ inline void tu2t_u(vector<double> tu_tmp, Vec3& t0, RotMat& u0)
     }
 }
 
-void aln2invmap(const string &seqxA, const string &seqyA, std::vector<int>& invmap)
+void aln2invmap(const std::string &seqxA, const std::string &seqyA, std::vector<int>& invmap)
 {
     int i;
     int j;
@@ -55,7 +55,7 @@ inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
     const DoubleMatrix&tu_vec)
 {
     Vec3 t; RotMat u;
-    stringstream ss;
+    std::stringstream ss;
     for (int hinge=0;hinge<tu_vec.size();hinge++)
     {
         tu2t_u(tu_vec[hinge],t,u);
@@ -74,45 +74,45 @@ inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
             "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
             "}\n";
     if (fname_matrix == "-")
-       cout<<ss.str();
+       std::cout<<ss.str();
     else
     {
-        fstream fout;
-        fout.open(fname_matrix, ios::out | ios::trunc);
+        std::fstream fout;
+        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
         if (fout)
         {
             fout<<ss.str();
             fout.close();
         }
-        else cout << "Open file to output rotation matrix fail.\n";
+        else std::cout << "Open file to output rotation matrix fail.\n";
     }
-    ss.str(string());
+    ss.str(std::string());
 }
 
-inline void output_flexalign_rasmol(const string xname, const string yname,
-    const string fname_super,const DoubleMatrix&tu_vec,
+inline void output_flexalign_rasmol(const std::string xname, const std::string yname,
+    const std::string fname_super,const DoubleMatrix&tu_vec,
     const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
-    const string chainID1, const string chainID2,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const double d0A, const int n_ali8,
     const double rmsd, const double TM1, const double Liden)
 {
     Vec3 t; RotMat u;
-    stringstream buf;
-    stringstream buf_all;
-    stringstream buf_atm;
-    stringstream buf_all_atm;
-    stringstream buf_all_atm_lig;
-    stringstream buf_tm;
-    string line;
+    std::stringstream buf;
+    std::stringstream buf_all;
+    std::stringstream buf_atm;
+    std::stringstream buf_all_atm;
+    std::stringstream buf_all_atm_lig;
+    std::stringstream buf_tm;
+    std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
     bool after_ter; // true if passed the "TER" line in PDB
-    string asym_id; // chain ID
+    std::string asym_id; // chain ID
     
-    map<string,int> resi2hinge_dict;
+    std::map<std::string,int> resi2hinge_dict;
     int r;
     int i;
     int j;
@@ -137,21 +137,21 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
         }
         resi2hinge_dict[resi_vec1[j]]=hinge_char-'0';
     }
-    string resi=resi_vec1[0];
+    std::string resi=resi_vec1[0];
     int read_resi=resi.size()-4;
 
     buf_tm<<"REMARK US-align"
-        <<"\nREMARK Structure 1:"<<setw(11)<<left<<xname+chainID1<<" Size= "<<xlen
-        <<"\nREMARK Structure 2:"<<setw(11)<<yname+chainID2<<right<<" Size= "<<ylen
-        <<" (TM-score is normalized by "<<setw(4)<<ylen<<", d0="
-        <<setiosflags(ios::fixed)<<setprecision(2)<<setw(6)<<d0A<<")"
-        <<"\nREMARK Aligned length="<<setw(4)<<n_ali8<<", RMSD="
-        <<setw(6)<<setiosflags(ios::fixed)<<setprecision(2)<<rmsd
-        <<", TM-score="<<setw(7)<<setiosflags(ios::fixed)<<setprecision(5)<<TM1
-        <<", ID="<<setw(5)<<setiosflags(ios::fixed)<<setprecision(3)
-        <<((n_ali8>0)?Liden/n_ali8:0)<<endl;
-    string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
-    string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+buf_tm.str();
+        <<"\nREMARK Structure 1:"<<std::setw(11)<<std::left<<xname+chainID1<<" Size= "<<xlen
+        <<"\nREMARK Structure 2:"<<std::setw(11)<<yname+chainID2<<std::right<<" Size= "<<ylen
+        <<" (TM-score is normalized by "<<std::setw(4)<<ylen<<", d0="
+        <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<std::setw(6)<<d0A<<")"
+        <<"\nREMARK Aligned length="<<std::setw(4)<<n_ali8<<", RMSD="
+        <<std::setw(6)<<setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
+        <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
+        <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
+    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
+    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+buf_tm.str();
     if (!mm_opt) buf<<rasmol_CA_header;
     buf_all<<rasmol_CA_header;
     if (!mm_opt) buf_atm<<rasmol_cartoon_header;
@@ -159,8 +159,8 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     buf_all_atm_lig<<rasmol_cartoon_header;
 
     // selecting chains for -mol
-    string chain1_sele;
-    string chain2_sele;
+    std::string chain1_sele;
+    std::string chain2_sele;
     if (!mm_opt)
     {
         if (split_opt==2 && ter_opt>=1) // align one chain from model 1
@@ -179,27 +179,27 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
 
 
     // for PDBx/mmCIF only
-    map<string,int> _atom_site;
+    std::map<std::string,int> _atom_site;
     int atom_site_pos;
-    vector<string> line_vec;
-    string atom; // 4-character atom name
-    string AA;   // 3-character residue name
-    string inscode; // 1-character insertion code
-    string model_index; // model index
+    std::vector<std::string> line_vec;
+    std::string atom; // 4-character atom name
+    std::string AA;   // 3-character residue name
+    std::string inscode; // 1-character insertion code
+    std::string model_index; // model index
     bool is_mmcif=false;
 
     // used for CONECT record of chain1
     int ca_idx1=0; // all CA atoms
     int lig_idx1=0; // all atoms
-    vector <int> idx_vec;
+    std::vector <int> idx_vec;
 
     // used for CONECT record of chain2
     int ca_idx2=0; // all CA atoms
     int lig_idx2=0; // all atoms
 
     // extract aligned region
-    vector<string> resi_aln1;
-    vector<string> resi_aln2;
+    std::vector<std::string> resi_aln1;
+    std::vector<std::string> resi_aln2;
     int i1=-1;
     int i2=-1;
     if (!mm_opt)
@@ -221,7 +221,7 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     }
     buf_all<<"select all\nexit\n"<<buf_tm.str();
 
-    ifstream fin;
+    std::ifstream fin;
     // read first file
     after_ter=false;
     asym_id="";
@@ -229,7 +229,7 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     int hinge=0;
     while (fin.good())
     {
-        getline(fin, line);
+        std::getline(fin, line);
         if (ter_opt>=3 && line.compare(0,3,"TER")==0) after_ter=true;
         if (is_mmcif==false && line.size()>=54 &&
            (line.compare(0, 6, "ATOM  ")==0 ||
@@ -252,10 +252,10 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
 
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
             lig_idx1++;
-            buf_all_atm_lig<<line.substr(0,6)<<setw(5)<<lig_idx1
+            buf_all_atm_lig<<line.substr(0,6)<<std::setw(5)<<lig_idx1
                 <<line.substr(11,9)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1] <<setw(8)<<x1[2]<<'\n';
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]<<'\n';
             if (chain1_sele.size() && line[21]!=chain1_sele[0]) continue;
             if (after_ter || line.compare(0,6,"ATOM  ")) continue;
             if (ter_opt>=2)
@@ -267,30 +267,30 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
                 }
                 asym_id=line[21];
             }
-            buf_all_atm<<"ATOM  "<<setw(5)<<lig_idx1
+            buf_all_atm<<"ATOM  "<<std::setw(5)<<lig_idx1
                 <<line.substr(11,9)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1] <<setw(8)<<x1[2]<<'\n';
-            if (!mm_opt && find(resi_aln1.begin(),resi_aln1.end(),
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]<<'\n';
+            if (!mm_opt && std::find(resi_aln1.begin(),resi_aln1.end(),
                 line.substr(22,4))!=resi_aln1.end())
             {
-                buf_atm<<"ATOM  "<<setw(5)<<lig_idx1
+                buf_atm<<"ATOM  "<<std::setw(5)<<lig_idx1
                     <<line.substr(11,9)<<" A"<<line.substr(22,8)
-                    <<setiosflags(ios::fixed)<<setprecision(3)
-                    <<setw(8)<<x1[0]<<setw(8)<<x1[1] <<setw(8)<<x1[2]<<'\n';
+                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]<<'\n';
             }
             if (line.substr(12,4)!=" CA " && line.substr(12,4)!=" C3'") continue;
             ca_idx1++;
-            buf_all<<"ATOM  "<<setw(5)<<ca_idx1<<' '
+            buf_all<<"ATOM  "<<std::setw(5)<<ca_idx1<<' '
                 <<line.substr(12,4)<<' '<<line.substr(17,3)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1]<<setw(8)<<x1[2]<<'\n';
-            if (find(resi_aln1.begin(),resi_aln1.end(),
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1]<<std::setw(8)<<x1[2]<<'\n';
+            if (std::find(resi_aln1.begin(),resi_aln1.end(),
                 line.substr(22,4))==resi_aln1.end()) continue;
-            if (!mm_opt) buf<<"ATOM  "<<setw(5)<<ca_idx1<<' '
+            if (!mm_opt) buf<<"ATOM  "<<std::setw(5)<<ca_idx1<<' '
                 <<line.substr(12,4)<<' '<<line.substr(17,3)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1]<<setw(8)<<x1[2]<<'\n';
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1]<<std::setw(8)<<x1[2]<<'\n';
             idx_vec.push_back(ca_idx1);
         }
         else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
@@ -418,56 +418,56 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
                         line_vec[_atom_site["group_pdb"]]=="HETATM")
                     {
                         lig_idx1++;
-                        buf_all_atm_lig<<left<<setw(6)
-                            <<line_vec[_atom_site["group_PDB"]]<<right
-                            <<setw(5)<<lig_idx1%100000<<' '<<atom<<' '
+                        buf_all_atm_lig<<std::left<<std::setw(6)
+                            <<line_vec[_atom_site["group_PDB"]]<<std::right
+                            <<std::setw(5)<<lig_idx1%100000<<' '<<atom<<' '
                             <<AA<<" A"<<resi<<inscode<<"   "
-                            <<setiosflags(ios::fixed)<<setprecision(3)
-                            <<setw(8)<<x1[0]
-                            <<setw(8)<<x1[1]
-                            <<setw(8)<<x1[2]<<'\n';
+                            <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                            <<std::setw(8)<<x1[0]
+                            <<std::setw(8)<<x1[1]
+                            <<std::setw(8)<<x1[2]<<'\n';
                         if (after_ter==false &&
                             line_vec[_atom_site["group_PDB"]]=="ATOM")
                         {
-                            buf_all_atm<<"ATOM  "<<setw(6)
-                                <<setw(5)<<lig_idx1%100000<<' '<<atom<<' '
+                            buf_all_atm<<"ATOM  "<<std::setw(6)
+                                <<std::setw(5)<<lig_idx1%100000<<' '<<atom<<' '
                                 <<AA<<" A"<<resi<<inscode<<"   "
-                                <<setiosflags(ios::fixed)<<setprecision(3)
-                                <<setw(8)<<x1[0]
-                                <<setw(8)<<x1[1]
-                                <<setw(8)<<x1[2]<<'\n';
-                            if (!mm_opt && find(resi_aln1.begin(),
+                                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<x1[0]
+                                <<std::setw(8)<<x1[1]
+                                <<std::setw(8)<<x1[2]<<'\n';
+                            if (!mm_opt && std::find(resi_aln1.begin(),
                                 resi_aln1.end(),resi)!=resi_aln1.end())
                             {
-                                buf_atm<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<lig_idx1%100000<<' '
+                                buf_atm<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<lig_idx1%100000<<' '
                                     <<atom<<' '<<AA<<" A"<<resi<<inscode<<"   "
-                                    <<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<setw(8)<<x1[0]
-                                    <<setw(8)<<x1[1]
-                                    <<setw(8)<<x1[2]<<'\n';
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<x1[0]
+                                    <<std::setw(8)<<x1[1]
+                                    <<std::setw(8)<<x1[2]<<'\n';
                             }
                             if (atom==" CA " || atom==" C3'")
                             {
                                 ca_idx1++;
             //mm_opt, split_opt, mirror_opt, chainID1,chainID2);
-                                buf_all<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<ca_idx1%100000<<' '<<atom<<' '
+                                buf_all<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<ca_idx1%100000<<' '<<atom<<' '
                                     <<AA<<" A"<<resi<<inscode<<"   "
-                                    <<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<setw(8)<<x1[0]
-                                    <<setw(8)<<x1[1]
-                                    <<setw(8)<<x1[2]<<'\n';
-                                if (!mm_opt && find(resi_aln1.begin(),
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<x1[0]
+                                    <<std::setw(8)<<x1[1]
+                                    <<std::setw(8)<<x1[2]<<'\n';
+                                if (!mm_opt && std::find(resi_aln1.begin(),
                                     resi_aln1.end(),resi)!=resi_aln1.end())
                                 {
-                                    buf<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<ca_idx1%100000<<' '<<atom<<' '
+                                    buf<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<ca_idx1%100000<<' '<<atom<<' '
                                     <<AA<<" A"<<resi<<inscode<<"   "
-                                    <<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<setw(8)<<x1[0]
-                                    <<setw(8)<<x1[1]
-                                    <<setw(8)<<x1[2]<<'\n';
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<x1[0]
+                                    <<std::setw(8)<<x1[1]
+                                    <<std::setw(8)<<x1[2]<<'\n';
                                     idx_vec.push_back(ca_idx1);
                                 }
                             }
@@ -496,9 +496,9 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     buf_all_atm<<"TER\n";
     buf_all_atm_lig<<"TER\n";
     for (i=1;i<ca_idx1;i++) buf_all<<"CONECT"
-        <<setw(5)<<i%100000<<setw(5)<<(i+1)%100000<<'\n';
+        <<std::setw(5)<<i%100000<<std::setw(5)<<(i+1)%100000<<'\n';
     if (!mm_opt) for (i=1;i<idx_vec.size();i++) buf<<"CONECT"
-        <<setw(5)<<idx_vec[i-1]%100000<<setw(5)<<idx_vec[i]%100000<<'\n';
+        <<std::setw(5)<<idx_vec[i-1]%100000<<std::setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
     // read second file
@@ -507,7 +507,7 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     fin.open(yname.c_str());
     while (fin.good())
     {
-        getline(fin, line);
+        std::getline(fin, line);
         if (ter_opt>=3 && line.compare(0,3,"TER")==0) after_ter=true;
         if (line.size()>=54 && (line.compare(0, 6, "ATOM  ")==0 ||
             line.compare(0, 6, "HETATM")==0)) // PDB format
@@ -515,7 +515,7 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
             if (line[16]!='A' && line[16]!=' ') continue;
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
             lig_idx2++;
-            buf_all_atm_lig<<line.substr(0,6)<<setw(5)<<lig_idx1+lig_idx2
+            buf_all_atm_lig<<line.substr(0,6)<<std::setw(5)<<lig_idx1+lig_idx2
                 <<line.substr(11,9)<<" B"<<line.substr(22,32)<<'\n';
             if (chain1_sele.size() && line[21]!=chain1_sele[0]) continue;
             if (after_ter || line.compare(0,6,"ATOM  ")) continue;
@@ -528,21 +528,21 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
                 }
                 asym_id=line[21];
             }
-            buf_all_atm<<"ATOM  "<<setw(5)<<lig_idx1+lig_idx2
+            buf_all_atm<<"ATOM  "<<std::setw(5)<<lig_idx1+lig_idx2
                 <<line.substr(11,9)<<" B"<<line.substr(22,32)<<'\n';
-            if (!mm_opt && find(resi_aln2.begin(),resi_aln2.end(),
+            if (!mm_opt && std::find(resi_aln2.begin(),resi_aln2.end(),
                 line.substr(22,4))!=resi_aln2.end())
             {
-                buf_atm<<"ATOM  "<<setw(5)<<lig_idx1+lig_idx2
+                buf_atm<<"ATOM  "<<std::setw(5)<<lig_idx1+lig_idx2
                     <<line.substr(11,9)<<" B"<<line.substr(22,32)<<'\n';
             }
             if (line.substr(12,4)!=" CA " && line.substr(12,4)!=" C3'") continue;
             ca_idx2++;
-            buf_all<<"ATOM  "<<setw(5)<<ca_idx1+ca_idx2<<' '<<line.substr(12,4)
+            buf_all<<"ATOM  "<<std::setw(5)<<ca_idx1+ca_idx2<<' '<<line.substr(12,4)
                 <<' '<<line.substr(17,3)<<" B"<<line.substr(22,32)<<'\n';
-            if (find(resi_aln2.begin(),resi_aln2.end(),line.substr(22,4)
+            if (std::find(resi_aln2.begin(),resi_aln2.end(),line.substr(22,4)
                 )==resi_aln2.end()) continue;
-            if (!mm_opt) buf<<"ATOM  "<<setw(5)<<ca_idx1+ca_idx2<<' '
+            if (!mm_opt) buf<<"ATOM  "<<std::setw(5)<<ca_idx1+ca_idx2<<' '
                 <<line.substr(12,4)<<' '<<line.substr(17,3)<<" B"
                 <<line.substr(22,32)<<'\n';
             idx_vec.push_back(ca_idx1+ca_idx2);
@@ -634,54 +634,54 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
                         line_vec[_atom_site["group_PDB"]]=="HETATM")
                     {
                         lig_idx2++;
-                        buf_all_atm_lig<<left<<setw(6)
-                            <<line_vec[_atom_site["group_PDB"]]<<right
-                            <<setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
+                        buf_all_atm_lig<<std::left<<std::setw(6)
+                            <<line_vec[_atom_site["group_PDB"]]<<std::right
+                            <<std::setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
                             <<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                            <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                            <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                            <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                            <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                            <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                            <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                             <<'\n';
                         if (after_ter==false &&
                             line_vec[_atom_site["group_PDB"]]=="ATOM")
                         {
-                            buf_all_atm<<"ATOM  "<<setw(6)
-                                <<setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
+                            buf_all_atm<<"ATOM  "<<std::setw(6)
+                                <<std::setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
                                 <<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                 <<'\n';
-                            if (!mm_opt && find(resi_aln2.begin(),
+                            if (!mm_opt && std::find(resi_aln2.begin(),
                                 resi_aln2.end(),resi)!=resi_aln2.end())
                             {
-                                buf_atm<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
+                                buf_atm<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
                                     <<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                     <<'\n';
                             }
                             if (atom==" CA " || atom==" C3'")
                             {
                                 ca_idx2++;
-                                buf_all<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<(ca_idx1+ca_idx2)%100000
+                                buf_all<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(ca_idx1+ca_idx2)%100000
                                     <<' '<<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                     <<'\n';
-                                if (!mm_opt && find(resi_aln2.begin(),
+                                if (!mm_opt && std::find(resi_aln2.begin(),
                                     resi_aln2.end(),resi)!=resi_aln2.end())
                                 {
-                                    buf<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<(ca_idx1+ca_idx2)%100000
+                                    buf<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(ca_idx1+ca_idx2)%100000
                                     <<' '<<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                     <<'\n';
                                     idx_vec.push_back(ca_idx1+ca_idx2);
                                 }
@@ -706,13 +706,13 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     buf_all_atm<<"TER\n";
     buf_all_atm_lig<<"TER\n";
     for (i=ca_idx1+1;i<ca_idx1+ca_idx2;i++) buf_all<<"CONECT"
-        <<setw(5)<<i%100000<<setw(5)<<(i+1)%100000<<'\n';
+        <<std::setw(5)<<i%100000<<std::setw(5)<<(i+1)%100000<<'\n';
     for (i=1;i<idx_vec.size();i++) buf<<"CONECT"
-        <<setw(5)<<idx_vec[i-1]%100000<<setw(5)<<idx_vec[i]%100000<<'\n';
+        <<std::setw(5)<<idx_vec[i-1]%100000<<std::setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
     // write pymol script
-    ofstream fp;
+    std::ofstream fp;
     /*
     stringstream buf_pymol;
     vector<string> pml_list;
@@ -774,13 +774,13 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     //fp.close();
 
     // clear stream
-    buf.str(string());
-    buf_all.str(string());
-    buf_atm.str(string());
-    buf_all_atm.str(string());
-    buf_all_atm_lig.str(string());
+    buf.str(std::string());
+    buf_all.str(std::string());
+    buf_atm.str(std::string());
+    buf_all_atm.str(std::string());
+    buf_all_atm_lig.str(std::string());
     //buf_pdb.str(string());
-    buf_tm.str(string());
+    buf_tm.str(std::string());
     resi_aln1.clear();
     resi_aln2.clear();
     asym_id.clear();
@@ -792,19 +792,19 @@ inline void output_flexalign_rasmol(const string xname, const string yname,
     model_index.clear();
 }
 
-inline void output_flexalign_pymol(const string xname, const string yname,
-    const string fname_super, const DoubleMatrix&tu_vec,
+inline void output_flexalign_pymol(const std::string xname, const std::string yname,
+    const std::string fname_super, const DoubleMatrix&tu_vec,
     const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
-    const string chainID1, const string chainID2)
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2)
 {
     Vec3 t; RotMat u;
     int compress_type=0; // uncompressed file
-    ifstream fin;
+    std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
-    ifstream fin_gz;
+    std::ifstream fin_gz;
 #else
     redi::ipstream fin_gz; // if file is compressed
     if (xname.size()>=3 &&
@@ -823,7 +823,7 @@ inline void output_flexalign_pymol(const string xname, const string yname,
 #endif
         fin.open(xname.c_str());
 
-    map<string,int> resi2hinge_dict;
+    std::map<std::string,int> resi2hinge_dict;
     int r;
     int i;
     int j;
@@ -849,28 +849,28 @@ inline void output_flexalign_pymol(const string xname, const string yname,
         }
         resi2hinge_dict[resi_vec1[j]]=hinge_char-'0';
     }
-    string resi=resi_vec1[0];
+    std::string resi=resi_vec1[0];
     int read_resi=resi.size()-4;
 
-    stringstream buf;
-    stringstream buf_pymol;
-    string line;
+    std::stringstream buf;
+    std::stringstream buf_pymol;
+    std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
 
     // for PDBx/mmCIF only
-    map<string,int> _atom_site;
+    std::map<std::string,int> _atom_site;
     size_t atom_site_pos;
-    vector<string> line_vec;
+    std::vector<std::string> line_vec;
     int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
     int hinge=0;
-    string asym_id="."; // this is similar to chainID, except that
+    std::string asym_id="."; // this is similar to chainID, except that
                         // chainID is char while asym_id is a string
                         // with possibly multiple char
     while (compress_type?fin_gz.good():fin.good())
     {
-        if (compress_type) getline(fin_gz, line);
-        else               getline(fin, line);
+        if (compress_type) std::getline(fin_gz, line);
+        else               std::getline(fin, line);
         if (line.compare(0, 6, "ATOM  ")==0 ||
             line.compare(0, 6, "HETATM")==0) // PDB format
         {
@@ -885,9 +885,9 @@ inline void output_flexalign_pymol(const string xname, const string yname,
             if (resi2hinge_dict.count(resi)) hinge=resi2hinge_dict[resi];
             tu2t_u(tu_vec[hinge],t,u);
             transform(t, u, x, x1);
-            buf<<line.substr(0,30)<<setiosflags(ios::fixed)
-                <<setprecision(3)
-                <<setw(8)<<x1[0] <<setw(8)<<x1[1] <<setw(8)<<x1[2]
+            buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+                <<std::setprecision(3)
+                <<std::setw(8)<<x1[0] <<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]
                 <<line.substr(54)<<'\n';
         }
         else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
@@ -898,12 +898,12 @@ inline void output_flexalign_pymol(const string xname, const string yname,
             {
                 if (compress_type)
                 {
-                    if (fin_gz.good()) getline(fin_gz, line);
+                    if (fin_gz.good()) std::getline(fin_gz, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                 }
                 else
                 {
-                    if (fin.good()) getline(fin, line);
+                    if (fin.good()) std::getline(fin, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                 }
                 if (line.size()) break;
@@ -919,12 +919,12 @@ inline void output_flexalign_pymol(const string xname, const string yname,
                 {
                     if (compress_type)
                     {
-                        if (fin_gz.good()) getline(fin_gz, line);
+                        if (fin_gz.good()) std::getline(fin_gz, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                     }
                     else
                     {
-                        if (fin.good()) getline(fin, line);
+                        if (fin.good()) std::getline(fin, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                     }
                     if (line.size()) break;
@@ -940,7 +940,7 @@ inline void output_flexalign_pymol(const string xname, const string yname,
                 _atom_site.count("Cartn_z")==0)
             {
                 buf<<line<<'\n';
-                cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                 continue;
             }
 
@@ -979,20 +979,20 @@ inline void output_flexalign_pymol(const string xname, const string yname,
                 for (atom_site_pos=0; atom_site_pos<_atom_site.size(); atom_site_pos++)
                 {
                     if (atom_site_pos==_atom_site["Cartn_x"])
-                        buf<<setiosflags(ios::fixed)<<setprecision(3)
-                           <<setw(8)<<x1[0]<<' ';
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[0]<<' ';
                     else if (atom_site_pos==_atom_site["Cartn_y"])
-                        buf<<setiosflags(ios::fixed)<<setprecision(3)
-                           <<setw(8)<<x1[1]<<' ';
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[1]<<' ';
                     else if (atom_site_pos==_atom_site["Cartn_z"])
-                        buf<<setiosflags(ios::fixed)<<setprecision(3)
-                           <<setw(8)<<x1[2]<<' ';
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[2]<<' ';
                     else buf<<line_vec[atom_site_pos]<<' ';
                 }
                 buf<<'\n';
 
-                if (compress_type && fin_gz.good()) getline(fin_gz, line);
-                else if (!compress_type && fin.good()) getline(fin, line);
+                if (compress_type && fin_gz.good()) std::getline(fin_gz, line);
+                else if (!compress_type && fin.good()) std::getline(fin, line);
                 else break;
             }
             if (compress_type?fin_gz.good():fin.good()) buf<<line<<'\n';
@@ -1006,17 +1006,17 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     if (compress_type) fin_gz.close();
     else               fin.close();
 
-    string fname_super_full=fname_super;
+    std::string fname_super_full=fname_super;
     if (infmt==0)      fname_super_full+=".pdb";
     else if (infmt==3) fname_super_full+=".cif";
-    ofstream fp;
+    std::ofstream fp;
     fp.open(fname_super_full.c_str());
     fp<<buf.str();
     fp.close();
-    buf.str(string()); // clear stream
+    buf.str(std::string()); // clear stream
 
-    string chain1_sele;
-    string chain2_sele;
+    std::string chain1_sele;
+    std::string chain2_sele;
     if (!mm_opt)
     {
         if (split_opt==2 && ter_opt>=1) // align one chain from model 1
@@ -1036,14 +1036,14 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     // extract aligned region
     int i1=-1;
     int i2=-1;
-    string resi1_sele;
-    string resi2_sele;
-    string resi1_bond;
-    string resi2_bond;
-    string prev_resi1;
-    string prev_resi2;
-    string curr_resi1;
-    string curr_resi2;
+    std::string resi1_sele;
+    std::string resi2_sele;
+    std::string resi1_bond;
+    std::string resi2_bond;
+    std::string prev_resi1;
+    std::string prev_resi2;
+    std::string curr_resi1;
+    std::string curr_resi2;
     if (mm_opt)
     {
         ;
@@ -1064,17 +1064,17 @@ inline void output_flexalign_pymol(const string xname, const string yname,
                 {
                     // check if residue range is continuous
                     int prev_num1=0,prev_num2=0,curr_num1=0,curr_num2=0;
-                    istringstream(prev_resi1.substr(0,4)) >> prev_num1;
-                    istringstream(prev_resi2.substr(0,4)) >> prev_num2;
-                    istringstream(curr_resi1.substr(0,4)) >> curr_num1;
-                    istringstream(curr_resi2.substr(0,4)) >> curr_num2;
+                    std::istringstream(prev_resi1.substr(0,4)) >> prev_num1;
+                    std::istringstream(prev_resi2.substr(0,4)) >> prev_num2;
+                    std::istringstream(curr_resi1.substr(0,4)) >> curr_num1;
+                    std::istringstream(curr_resi2.substr(0,4)) >> curr_num2;
                     if (curr_num1==prev_num1+1 || curr_num2==prev_num2+1) //continuous
                     {
                         if (curr_resi1>prev_resi1)
                         {
                             for (int r=prev_num1+1;r<curr_num1;r++)
                             {
-                                ostringstream oss;
+                                std::ostringstream oss;
                                 oss<<r;
                                 resi1_sele+='+'+oss.str();
                                 resi2_sele+='+'+oss.str();
@@ -1108,7 +1108,7 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     int cut;
     for (cut=fname_super.size()-1;cut>=0;cut--)
         if (fname_super[cut]=='/' || fname_super[cut]=='\\') break;
-    string fname_super_no_path=fname_super.substr(cut+1);
+    std::string fname_super_no_path=fname_super.substr(cut+1);
     for (cut=fname_super_no_path.size()-1;cut>=0;cut--)
         if (fname_super_no_path[cut]=='.') break;
     if (cut>=0) fname_super_no_path=fname_super_no_path.substr(0,cut);
@@ -1144,8 +1144,8 @@ inline void output_flexalign_pymol(const string xname, const string yname,
     fp.close();
 
     // clear stream
-    buf.str(string());
-    buf_pymol.str(string());
+    buf.str(std::string());
+    buf_pymol.str(std::string());
     chain1_sele.clear();
     chain2_sele.clear();
     resi2hinge_dict.clear();
@@ -1154,7 +1154,7 @@ inline void output_flexalign_pymol(const string xname, const string yname,
 //output the final results
 struct FlexAlignResult : ChainPairAlignResult
 {
-    vector<vector<double> > tu_vec;
+    std::vector<std::vector<double> > tu_vec;
     int hingeNum;
 
     FlexAlignResult()
@@ -1193,15 +1193,15 @@ inline void output_flexalign_results(
     const UserOptions& opts,
     const int mm_opt)
 {
-    const string xname = opts.xname.substr(opts.dir1_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
-    const string yname = opts.yname.substr(opts.dir2_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
+    const std::string xname = opts.xname.substr(opts.dir1_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
+    const std::string yname = opts.yname.substr(opts.dir2_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
 
-    const string& chainID1 = chain1_data.chain_id;
-    const string& chainID2 = chain2_data.chain_id;
+    const std::string& chainID1 = chain1_data.chain_id;
+    const std::string& chainID2 = chain2_data.chain_id;
     const int xlen = chain1_data.chain_len;
     const int ylen = chain2_data.chain_len;
-    const vector<string>& resi_vec1 = chain1_data.resi_vec;
-    const vector<string>& resi_vec2 = chain2_data.resi_vec;
+    const std::vector<std::string>& resi_vec1 = chain1_data.resi_vec;
+    const std::vector<std::string>& resi_vec2 = chain2_data.resi_vec;
 
     if (opts.outfmt_opt<=0)
     {
@@ -1224,22 +1224,22 @@ inline void output_flexalign_results(
             fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", res.TM4, opts.Lnorm_ass, res.d0u);
         if (opts.d_opt)
             fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", res.TM5, opts.d0_scale, ylen);
-        cout << "(You should use TM-score normalized by length of the reference structure)\n";
+        std::cout << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
-        cout << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
-        cout << res.seqxA << "\n";
-        cout << res.seqM << "\n";
-        cout << res.seqyA << "\n";
+        std::cout << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
+        std::cout << res.seqxA << "\n";
+        std::cout << res.seqM << "\n";
+        std::cout << res.seqyA << "\n";
     }
     else if (opts.outfmt_opt==1)
     {
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname, chainID1, xlen, res.d0B, res.Liden/xlen, res.TM2);
-        cout << res.seqxA << "\n";
+        std::cout << res.seqxA << "\n";
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             yname, chainID2, ylen, res.d0A, res.Liden/ylen, res.TM1);
-        cout << res.seqyA << "\n";
+        std::cout << res.seqyA << "\n";
 
         fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             res.n_ali8, res.rmsd0, (res.n_ali8>0)?res.Liden/res.n_ali8:0);
@@ -1256,7 +1256,7 @@ inline void output_flexalign_results(
         if(opts.d_opt)
             fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", res.TM5, opts.d0_scale, ylen);
 
-        cout << "$$$$\n";
+        std::cout << "$$$$\n";
     }
     else if (opts.outfmt_opt==2)
     {
@@ -1265,7 +1265,7 @@ inline void output_flexalign_results(
             res.TM2, res.TM1, res.rmsd0, res.Liden/xlen, res.Liden/ylen, (res.n_ali8>0)?res.Liden/res.n_ali8:0,
             xlen, ylen, res.n_ali8);
     }
-    cout << endl;
+    std::cout << std::endl;
 
     if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_rotation_matrix(
             opts.fname_matrix, res.tu_vec);
@@ -1284,8 +1284,8 @@ inline void output_flexalign_results(
 inline void reassign_segments_by_distance(CoordArray& xa, CoordArray& ya,
     CoordArray& xt, std::vector<int>& invmap, DoubleMatrix& tu_vec,
     Vec3& t0, RotMat& u0, const int xlen, const int ylen,
-    string &seqM, const string &seqyA,
-    vector<char>& seqM_char, vector<double>& di_vec)
+    std::string &seqM, const std::string &seqyA,
+    std::vector<char>& seqM_char, std::vector<double>& di_vec)
 {
     for (int hinge = (int)tu_vec.size() - 1; hinge >= 0; hinge--)
     {
@@ -1313,8 +1313,8 @@ inline void reassign_segments_by_distance(CoordArray& xa, CoordArray& ya,
     }
 }
 
-inline void smooth_singleton_insert(string &seqM, vector<char>& seqM_char,
-    const string &seqyA, const int n_segments)
+inline void smooth_singleton_insert(std::string &seqM, std::vector<char>& seqM_char,
+    const std::string &seqyA, const int n_segments)
 {
     for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
@@ -1342,7 +1342,7 @@ inline void smooth_singleton_insert(string &seqM, vector<char>& seqM_char,
     }
 }
 
-inline char find_nearest_seg_char(const string &seqM, int r, int step)
+inline char find_nearest_seg_char(const std::string &seqM, int r, int step)
 {
     for (int i = r + step; i >= 0 && i < (int)seqM.size(); i += step) {
         if (seqM[i] != ' ') return seqM[i];
@@ -1350,7 +1350,7 @@ inline char find_nearest_seg_char(const string &seqM, int r, int step)
     return ' ';
 }
 
-inline char find_nearest_seg_and_dist(const string &seqM, int r, int step, int &dist)
+inline char find_nearest_seg_and_dist(const std::string &seqM, int r, int step, int &dist)
 {
     for (int i = r + step; i >= 0 && i < (int)seqM.size(); i += step) {
         if (seqM[i] != ' ') {
@@ -1362,8 +1362,8 @@ inline char find_nearest_seg_and_dist(const string &seqM, int r, int step, int &
     return ' ';
 }
 
-inline void smooth_singleton_at_end(string &seqM, vector<char>& seqM_char,
-    const string &seqyA, const int n_segments)
+inline void smooth_singleton_at_end(std::string &seqM, std::vector<char>& seqM_char,
+    const std::string &seqyA, const int n_segments)
 {
     for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
@@ -1395,8 +1395,8 @@ inline void smooth_singleton_at_end(string &seqM, vector<char>& seqM_char,
     }
 }
 
-inline void smooth_dimer_insert(string &seqM, vector<char>& seqM_char,
-    const string &seqyA, const int n_segments)
+inline void smooth_dimer_insert(std::string &seqM, std::vector<char>& seqM_char,
+    const std::string &seqyA, const int n_segments)
 {
     for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
@@ -1421,8 +1421,8 @@ inline void smooth_dimer_insert(string &seqM, vector<char>& seqM_char,
     }
 }
 
-inline void smooth_disconnected_singleton(string &seqM, vector<char>& seqM_char,
-    const string &seqyA, const int n_segments)
+inline void smooth_disconnected_singleton(std::string &seqM, std::vector<char>& seqM_char,
+    const std::string &seqyA, const int n_segments)
 {
     for (int hinge=n_segments-1; hinge>=0; hinge--)
     {
@@ -1452,8 +1452,8 @@ inline void smooth_disconnected_singleton(string &seqM, vector<char>& seqM_char,
     }
 }
 
-inline void smooth_segment_assignment(string &seqM, vector<char>& seqM_char,
-    const string &seqyA, const int n_segments)
+inline void smooth_segment_assignment(std::string &seqM, std::vector<char>& seqM_char,
+    const std::string &seqyA, const int n_segments)
 {
     smooth_singleton_insert(seqM, seqM_char, seqyA, n_segments);
     smooth_singleton_at_end(seqM, seqM_char, seqyA, n_segments);
@@ -1461,8 +1461,8 @@ inline void smooth_segment_assignment(string &seqM, vector<char>& seqM_char,
     smooth_disconnected_singleton(seqM, seqM_char, seqyA, n_segments);
 }
 
-inline void recompute_flexalign_scores(const string &seqM, const string &seqxA,
-    const string &seqyA, vector<char>& seqM_char, vector<double>& di_vec,
+inline void recompute_flexalign_scores(const std::string &seqM, const std::string &seqxA,
+    const std::string &seqyA, std::vector<char>& seqM_char, std::vector<double>& di_vec,
     const std::vector<int>& invmap, DoubleMatrix& tu_vec, CoordArray& xa,
     CoordArray& ya, CoordArray& xt, Vec3& t0, RotMat& u0,
     const int xlen, const int ylen,
@@ -1518,7 +1518,7 @@ inline void recompute_flexalign_scores(const string &seqM, const string &seqxA,
     if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
 }
 
-inline void remove_unused_segments(const string &seqM, DoubleMatrix& tu_vec)
+inline void remove_unused_segments(const std::string &seqM, DoubleMatrix& tu_vec)
 {
     for (int hinge = (int)tu_vec.size() - 1; hinge > 0; hinge--)
     {
@@ -1536,12 +1536,12 @@ inline void score_with_cur_transform(
     const std::string &seqx, const std::string &seqy,
     std::vector<double>& do_vec,
     const int xlen, const int ylen,
-    const vector<string> &sequence,
+    const std::vector<std::string> &sequence,
     const double Lnorm_ass, const double d0_scale,
     const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt,
     const int mol_type, const int hinge,
-    string &seqM, string &seqxA, string &seqyA,
+    std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
@@ -1602,7 +1602,7 @@ inline void extract_split_substruct(
         const CoordArray& xa, const CoordArray& ya,
         const std::string &seqx, const std::string &seqy,
         const std::string &secx, const std::string &secy,
-        const string &seqxA, const string &seqyA,
+        const std::string &seqxA, const std::string &seqyA,
         const int xlen, const int ylen, const int n_ali8,
         AlignSubstruct sub[NUM_SPLIT_VARIANTS])
 {
@@ -1676,7 +1676,7 @@ inline void score_alignedA_unalignB(
         const std::string &seqx, const std::string &seqy,
         std::vector<double>& do_vec,
         const int xlen, const int ylen,
-        const vector<string> &sequence,
+        const std::vector<std::string> &sequence,
         const double Lnorm_ass, const double d0_scale,
         const int i_opt, const int a_opt,
         const bool u_opt, const bool d_opt,
@@ -1686,7 +1686,7 @@ inline void score_alignedA_unalignB(
 {
     double TM1, TM2, TM3, TM4, TM5, rmsd0;
     double d0_0_h, TM_0_h, d0A_h, d0B_h, d0u_h, d0a_h, d0_out_h;
-    string seqM_h, seqxA_h, seqyA_h;
+    std::string seqM_h, seqxA_h, seqyA_h;
     int L_ali_h, n_ali_h, n_ali8_h;
     double Liden_h, TM_ali_h, rmsd_ali_h;
     TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
@@ -1730,7 +1730,7 @@ inline void score_unalignA_alignedB(
     AlignSubstruct& sub, CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     std::vector<double>& do_vec, const int xlen, const int ylen,
-    const vector<string> &sequence, const double Lnorm_ass,
+    const std::vector<std::string> &sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const int ss_opt, Vec3& t0, RotMat& u0,
@@ -1738,7 +1738,7 @@ inline void score_unalignA_alignedB(
 {
     double TM1, TM2, TM3, TM4, TM5, rmsd0;
     double d0_0_h, TM_0_h, d0A_h, d0B_h, d0u_h, d0a_h, d0_out_h;
-    string seqM_h, seqxA_h, seqyA_h;
+    std::string seqM_h, seqxA_h, seqyA_h;
     int L_ali_h, n_ali_h, n_ali8_h;
     double Liden_h, TM_ali_h, rmsd_ali_h;
     d0_out_h=5.0;
@@ -1792,9 +1792,9 @@ inline void fill_sub_struct_align_result(
         Vec3& t0,
         RotMat& u0,
         std::vector<int>& invmap,
-        string &seqM,
-        string &seqxA,
-        string &seqyA,
+        std::string &seqM,
+        std::string &seqxA,
+        std::string &seqyA,
         double &TM1,
         double &TM2,
         double &TM3,
@@ -1862,14 +1862,14 @@ inline void refine_via_split_alignment(
         const std::string &seqy,
         const std::string &secx,
         const std::string &secy,
-        string &seqM,
-        string &seqxA,
-        string &seqyA,
+        std::string &seqM,
+        std::string &seqxA,
+        std::string &seqyA,
         std::vector<double>& do_vec,
         const int xlen,
         const int ylen,
         const int hinge_opt,
-        const vector<string> &sequence,
+        const std::vector<std::string> &sequence,
         const double Lnorm_ass,
         const double d0_scale,
         const int i_opt,
@@ -1929,7 +1929,7 @@ static inline void extract_unalign_subcoords(
         CoordArray& xa_h, CoordArray& ya_h,
         std::string& seqx_h, std::string& seqy_h,
         std::string& secx_h, std::string& secy_h,
-        vector<int>& r1toi, vector<int>& r2toj)
+        std::vector<int>& r1toi, std::vector<int>& r2toj)
 {
     xa_h.resize(xlen_h);
     ya_h.resize(ylen_h);
@@ -2011,7 +2011,7 @@ static inline void update_global_res(
     seqyA = cur_hing_res.tmalign_res.seqyA;
     n_ali  = cur_hing_res.tmalign_res.n_ali;
     n_ali8 = cur_hing_res.tmalign_res.n_ali8;
-    vector<double> tu_tmp(12, 0);
+    std::vector<double> tu_tmp(12, 0);
     t_u2tu(t0, u0, tu_tmp);
     tu_vec.push_back(tu_tmp);
     invmap = cur_hing_res.tmalign_res.invmap;
@@ -2020,8 +2020,8 @@ static inline void update_global_res(
 inline void search_hinge_regions(
         CoordArray& xa, CoordArray& ya, CoordArray& xt, std::vector<int>& invmap, DoubleMatrix& tu_vec,
         Vec3& t0, RotMat& u0, const std::string &seqx, const std::string &seqy, const std::string &secx,
-        const std::string &secy, string &seqM, string &seqxA, string &seqyA, std::vector<double>& do_vec,
-        const int xlen, const int ylen, const int hinge_opt, const vector<string> &sequence, const double Lnorm_ass,
+        const std::string &secy, std::string &seqM, std::string &seqxA, std::string &seqyA, std::vector<double>& do_vec,
+        const int xlen, const int ylen, const int hinge_opt, const std::vector<std::string> &sequence, const double Lnorm_ass,
         const double d0_scale, const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool fast_opt,
         const int mol_type, const int ss_opt, double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
         double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out, double &rmsd0,
@@ -2034,7 +2034,7 @@ inline void search_hinge_regions(
             seqM[r2]='0';
     }
 
-    int minlen = min(xlen, ylen);
+    int minlen = std::min(xlen, ylen);
     for (int hinge=0;hinge<hinge_opt;hinge++)
     {
         if (minlen-n_ali8<5) break;
@@ -2043,8 +2043,8 @@ inline void search_hinge_regions(
         int ylen_h=ylen - n_ali8;
         CoordArray xa_h;
         CoordArray ya_h;
-        string seqx_h, seqy_h, secx_h, secy_h;
-        vector<int> r1toi, r2toj;
+        std::string seqx_h, seqy_h, secx_h, secy_h;
+        std::vector<int> r1toi, r2toj;
 
         extract_unalign_subcoords(seqxA, seqyA, seqx, seqy, secx, secy, xa, ya,
             xlen_h, ylen_h, xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, r1toi, r2toj);
@@ -2102,7 +2102,7 @@ inline void denoise_segments(
         CoordArray& xa, CoordArray& ya, CoordArray& xt, std::vector<int>& invmap,
         DoubleMatrix& tu_vec, Vec3& t0, RotMat& u0,
         const int xlen, const int ylen,
-        string& seqM, string& seqxA, string& seqyA,
+        std::string& seqM, std::string& seqxA, std::string& seqyA,
         double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
         double& rmsd0, double& Liden,
         double& d0A, double& d0B, double& d0a, double& d0u,
@@ -2110,8 +2110,8 @@ inline void denoise_segments(
         const int a_opt, const bool u_opt, const bool d_opt,
         const int n_ali8)
 {
-    vector<char> seqM_char(ylen,' ');
-    vector<double> di_vec(ylen,-1);
+    std::vector<char> seqM_char(ylen,' ');
+    std::vector<double> di_vec(ylen,-1);
     reassign_segments_by_distance(xa, ya, xt, invmap, tu_vec, t0, u0,
         xlen, ylen, seqM, seqyA, seqM_char, di_vec);
     smooth_segment_assignment(seqM, seqM_char, seqyA, tu_vec.size());
@@ -2134,7 +2134,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const ParsedInput& parsed = common_inputs.parsed_input;
     bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
 
-    vector<double> tu_tmp(12,0);
+    std::vector<double> tu_tmp(12,0);
     int round2=res.tu_vec.size();
     if (round2==0)
     {
@@ -2212,28 +2212,28 @@ struct USBCAT_AFP
 // On failure out.len == 0 and the caller should continue.
 // mirror_opt: apply to chain1 only (pass 0 for chain2).
 inline bool parse_chain(
-    const string& filename,
-    const vector<vector<string>>& PDB_lines,
-    const vector<string>& chainID_list,
-    const vector<int>& mol_vec,
+    const std::string& filename,
+    const std::vector<std::vector<std::string>>& PDB_lines,
+    const std::vector<std::string>& chainID_list,
+    const std::vector<int>& mol_vec,
     int chain_idx,
-    const string& mol_opt,
+    const std::string& mol_opt,
     int mirror_opt,
     int read_resi,
     int ter_opt,
     int infmt_opt,
-    const string& atom_opt,
+    const std::string& atom_opt,
     bool autojustify,
     int split_opt,
     int het_opt,
-    const vector<string>& chain2parse,
-    const vector<string>& model2parse,
+    const std::vector<std::string>& chain2parse,
+    const std::vector<std::string>& model2parse,
     ParsedChain& out)
 {
     out.filename = filename;
     int len = PDB_lines[chain_idx].size();
-    if (!len)     { out.chain_len = 0; cerr<<"Warning! Cannot parse file: "<<filename<<". Chain length 0."<<endl; return false; }
-    if (len < 3)  { out.chain_len = len; cerr<<"Sequence is too short <3!: "<<filename<<endl; return false; }
+    if (!len)     { out.chain_len = 0; std::cerr<<"Warning! Cannot parse file: "<<filename<<". Chain length 0."<<std::endl; return false; }
+    if (len < 3)  { out.chain_len = len; std::cerr<<"Sequence is too short <3!: "<<filename<<std::endl; return false; }
 
     out.cur_complex_mol_list = mol_vec[chain_idx];
     if (mol_opt == "RNA")     out.cur_complex_mol_list = 1;

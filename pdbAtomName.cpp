@@ -7,19 +7,17 @@
 #include <cstdlib>
 #include "pstream.h"
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "Fix atom name justification in PDB format file.\n"
 "\n"
 "Usage: pdbAtomName input.pdb output.pdb\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
-void splitlines(const string &line, vector<string> &lines,
+void splitlines(const std::string &line, std::vector<std::string> &lines,
     const char delimiter='\n')
 {
     bool within_word = false;
@@ -39,10 +37,10 @@ void splitlines(const string &line, vector<string> &lines,
     }
 }
 
-size_t pdbAtomName(const string &infile,const string &outfile)
+size_t pdbAtomName(const std::string &infile,const std::string &outfile)
 {
-    stringstream buf;
-    if (infile=="-") buf<<cin.rdbuf();
+    std::stringstream buf;
+    if (infile=="-") buf<<std::cin.rdbuf();
 #if defined(REDI_PSTREAM_H_SEEN)
     else if (infile.size()>3 && infile.substr(infile.size()-3)==".gz")
     {
@@ -54,16 +52,16 @@ size_t pdbAtomName(const string &infile,const string &outfile)
 #endif
     else
     {
-        ifstream fp;
-        fp.open(infile.c_str(),ios::in); //ifstream fp(filename,ios::in);
+        std::ifstream fp;
+        fp.open(infile.c_str(),std::ios::in); //ifstream fp(filename,ios::in);
         buf<<fp.rdbuf();
         fp.close();
     }
-    vector<string> lines;
+    std::vector<std::string> lines;
     splitlines(buf.str(),lines);
-    buf.str(string());
+    buf.str(std::string());
 
-    map<string,string> aa3to1;
+    std::map<std::string,std::string> aa3to1;
     aa3to1["  A"]=aa3to1[" DA"]='a';
     aa3to1["  C"]=aa3to1[" DC"]='c';
     aa3to1["  G"]=aa3to1[" DG"]='g';
@@ -96,13 +94,13 @@ size_t pdbAtomName(const string &infile,const string &outfile)
     aa3to1["PYL"]='O';
 
     size_t l=0;
-    string atom="    ";
-    string resn="   ";
+    std::string atom="    ";
+    std::string resn="   ";
     int idxBegin = -1;
     int idxEnd = -1;
     int i;
-    string msg;
-    map<string,int> msg_dict;
+    std::string msg;
+    std::map<std::string,int> msg_dict;
     size_t changeNum=0;
     for (l=0;l<lines.size();l++)
     {
@@ -111,7 +109,7 @@ size_t pdbAtomName(const string &infile,const string &outfile)
         {
             if (lines[l].size()<54)
             {
-                cerr<<"incomplete:"<<lines[l]<<endl;
+                std::cerr<<"incomplete:"<<lines[l]<<std::endl;
                 continue;
             }
             resn=lines[l].substr(17,3);
@@ -122,7 +120,7 @@ size_t pdbAtomName(const string &infile,const string &outfile)
                 msg=lines[l].substr(17,3)+"=>"+resn;
                 if (msg_dict.count(msg)==0)
                 {
-                    cerr<<msg<<'.'<<endl;
+                    std::cerr<<msg<<'.'<<std::endl;
                     msg_dict[msg]=0;
                 }
                 msg_dict[msg]++;
@@ -130,8 +128,8 @@ size_t pdbAtomName(const string &infile,const string &outfile)
             }
             if (lines[l].size()<78 && aa3to1.count(resn)==0)
             {
-                cerr<<"heteroatom:"<<lines[l]<<endl;
-                buf<<lines[l].substr(0,17)<<resn<<lines[l].substr(20)<<endl;
+                std::cerr<<"heteroatom:"<<lines[l]<<std::endl;
+                buf<<lines[l].substr(0,17)<<resn<<lines[l].substr(20)<<std::endl;
                 continue;
             }
 
@@ -149,7 +147,7 @@ size_t pdbAtomName(const string &infile,const string &outfile)
                 atom=atom.substr(0,atom.size()-1)+"'";
             if (atom.size()==4) 
             {
-                buf<<lines[l].substr(0,17)<<resn<<lines[l].substr(20)<<endl;
+                buf<<lines[l].substr(0,17)<<resn<<lines[l].substr(20)<<std::endl;
                 continue;
             }
             if ((lines[l].size()>=78 && lines[l][76]!=' ' && lines[l][77]!=' ')||
@@ -171,37 +169,37 @@ size_t pdbAtomName(const string &infile,const string &outfile)
                 msg=resn+":"+lines[l].substr(12,4)+"=>"+atom;
                 if (msg_dict.count(msg)==0)
                 {
-                    cerr<<msg<<'.'<<endl;
+                    std::cerr<<msg<<'.'<<std::endl;
                     msg_dict[msg]=0;
                 }
                 msg_dict[msg]++;
                 changeNum++;
             }
             buf<<lines[l].substr(0,12)<<atom<<lines[l].substr(16,1)
-               <<resn<<lines[l].substr(20)<<endl;
+               <<resn<<lines[l].substr(20)<<std::endl;
         }
         else if (lines[l].size())
         {
-            buf<<lines[l]<<endl;
+            buf<<lines[l]<<std::endl;
         }
         lines[l].clear();
     }
 
     if (outfile=="-")
-        cout<<buf.str();
+        std::cout<<buf.str();
     else
     {
-        ofstream fout;
-        fout.open(outfile.c_str(),ios::out);
+        std::ofstream fout;
+        fout.open(outfile.c_str(),std::ios::out);
         fout<<buf.str();
         fout.close();
     }
-    buf.str(string());
-    vector<string>().swap(lines);
-    map<string,int>().swap(msg_dict);
-    map<string,string>().swap(aa3to1);
+    buf.str(std::string());
+    std::vector<std::string>().swap(lines);
+    std::map<std::string,int>().swap(msg_dict);
+    std::map<std::string,std::string>().swap(aa3to1);
     if (changeNum)
-        cerr<<"Update "<<changeNum<<" atom name in "<<infile<<endl;
+        std::cerr<<"Update "<<changeNum<<" atom name in "<<infile<<std::endl;
     return changeNum;
 }
 
@@ -209,8 +207,8 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    string infile ="";
-    string outfile="";
+    std::string infile ="";
+    std::string outfile="";
 
     for (int i=1; i<argc; i++)
     {
@@ -218,7 +216,7 @@ int main(int argc, char *argv[])
         else if (outfile.size()==0) outfile=argv[i];
         else
         {
-            cerr<<"ERROR! no such option "<<argv[i]<<endl;
+            std::cerr<<"ERROR! no such option "<<argv[i]<<std::endl;
             exit(1);
         }
     }

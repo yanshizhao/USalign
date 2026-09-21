@@ -4,8 +4,6 @@
 #include "TMalign.h"
 #include "GeometryTools.h"
 
-using namespace std;
-
 const double CACB=1.53;
 
 void ca2cb(double **xa, char *seqx, char *secx, int xlen, double **ya)
@@ -66,7 +64,7 @@ int calFUscore(bool **ct,int d_start, int d_end,double &minFUscore,
     long   N1,N2,N12;
     double FUscore;
     int    r1,r2;
-    if (verbose) cout<<"#(domain1,domain2)\tN1\tN2\tN12\tFUscore"<<endl;
+    if (verbose) std::cout<<"#(domain1,domain2)\tN1\tN2\tN12\tFUscore"<<std::endl;
     l=1+d_start;
     N1=1+ct[d_start][d_start];
     N2=1;
@@ -77,9 +75,9 @@ int calFUscore(bool **ct,int d_start, int d_end,double &minFUscore,
             N2+=ct[r1][r2];
     for (r2=1+d_start;r2<d_end;r2++) N12+=ct[d_start][r2];
     FUscore=2*N12*(1./N1+1./N2);
-    if (verbose) cout<<'('<<1+d_start<<','<<1+d_start
+    if (verbose) std::cout<<'('<<1+d_start<<','<<1+d_start
         <<")("<<2+d_start<<','<<d_end<<")\t"<<N1<<'\t'<<N2<<'\t'
-        <<N12<<'\t'<<FUscore<<endl;
+        <<N12<<'\t'<<FUscore<<std::endl;
     minFUscore=(N1+N2+2*N12);
     for (l=2+d_start;l<d_end;l++)
     {
@@ -90,9 +88,9 @@ int calFUscore(bool **ct,int d_start, int d_end,double &minFUscore,
         for (r1=d_start;r1<l-1;r1++)  N12-=ct[r1][l-1];
         for (r2=l;r2<d_end;r2++) N12+=ct[l-1][r2];
         FUscore=2*N12*(1./N1+1./N2);
-        if (verbose) cout<<'('<<1+d_start<<','<<l<<")("<<l+1<<','
+        if (verbose) std::cout<<'('<<1+d_start<<','<<l<<")("<<l+1<<','
             <<d_end<<")\t"<<N1<<'\t'<<N2<<'\t'
-            <<N12<<'\t'<<FUscore<<endl;
+            <<N12<<'\t'<<FUscore<<std::endl;
         if ((d_end-l)<mdl_opt) break;
         if ((l-d_start)>=mdl_opt && FUscore<=minFUscore)
         {
@@ -105,7 +103,7 @@ int calFUscore(bool **ct,int d_start, int d_end,double &minFUscore,
 }
 
 
-void iterative_calFUscore(bool **ct, vector<int> &l_vec, const int xlen,
+void iterative_calFUscore(bool **ct, std::vector<int> &l_vec, const int xlen,
     const int hinge_opt, const int mdl_opt, const bool verbose=true)
 {
     int    d_start   =0;
@@ -113,11 +111,11 @@ void iterative_calFUscore(bool **ct, vector<int> &l_vec, const int xlen,
     double minFUscore=0;
     int minl=calFUscore(ct,d_start,d_end,minFUscore,mdl_opt);
     if (minl<=0) return;
-    if (verbose) cout<<"#partition 1: "<<'('<<1+d_start<<','
-        <<minl<<")("<<minl+1<<',' <<d_end<<") FUscore="<<minFUscore<<endl;
+    if (verbose) std::cout<<"#partition 1: "<<'('<<1+d_start<<','
+        <<minl<<")("<<minl+1<<',' <<d_end<<") FUscore="<<minFUscore<<std::endl;
     l_vec.push_back(minl);
     if (hinge_opt<=2) return;
-    vector<pair<double,int> > FU_l_vec;
+    std::vector<std::pair<double,int> > FU_l_vec;
     for (int iter=2;iter<hinge_opt;iter++)
     {
         for (int r=0;r<=l_vec.size();r++)
@@ -127,21 +125,21 @@ void iterative_calFUscore(bool **ct, vector<int> &l_vec, const int xlen,
             if (d_end-d_start<2*mdl_opt) continue;
             minl=calFUscore(ct,d_start,d_end,minFUscore,mdl_opt);
             if (minl<=0) continue;
-            FU_l_vec.push_back(make_pair(minFUscore,minl));
+            FU_l_vec.push_back(std::make_pair(minFUscore,minl));
         }
         if (FU_l_vec.size()==0) break;
 
-        sort(FU_l_vec.begin(),FU_l_vec.end());
+        std::sort(FU_l_vec.begin(),FU_l_vec.end());
         l_vec.push_back(FU_l_vec[0].second);
         sort(l_vec.begin(),l_vec.end());
-        if (verbose) cout<<"#partition "<<iter<<": ";
+        if (verbose) std::cout<<"#partition "<<iter<<": ";
         for (int r=0;r<=l_vec.size();r++)
         {
             d_start=(r==0)?0:l_vec[r-1];
             d_end  =(r==l_vec.size())?xlen:l_vec[r];
-            if (verbose) cout<<'('<<1+d_start<<','<<d_end<<')';
+            if (verbose) std::cout<<'('<<1+d_start<<','<<d_end<<')';
         }
-        if (verbose) cout<<" FUscore="<<FU_l_vec[0].first<<endl;
+        if (verbose) std::cout<<" FUscore="<<FU_l_vec[0].first<<std::endl;
         FU_l_vec.clear();
     }
     return;

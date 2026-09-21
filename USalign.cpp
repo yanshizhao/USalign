@@ -6,9 +6,6 @@
 #include "flexalign.h"
 #include "UPGMA.h"
 
-
-using namespace std;
-
 void print_version(std::ostream& os = std::cout)
 {
     os <<
@@ -21,12 +18,12 @@ void print_version(std::ostream& os = std::cout)
 " *            C Zhang, AM Pyle (2022) iScience.                     *\n"
 " * Please email comments and suggestions to zhang@zhanggroup.org    *\n"
 " ********************************************************************"
-    << endl;
+    << std::endl;
 }
 
 void print_extra_help()
 {
-    cout <<
+    std::cout <<
 "Additional options:\n"
 "      -v  Print the version of US-align\n"
 "\n"
@@ -146,13 +143,13 @@ void print_extra_help()
 "    wget https://zhanggroup.org/library/PDB.tar.bz2\n"
 "    tar -xjvf PDB.tar.bz2\n"
 "    USalign query.pdb -dir2 PDB/ PDB/list -suffix .pdb -outfmt 2 -fast\n"
-    <<endl;
+    <<std::endl;
 }
 
 void print_help(bool h_opt=false)
 {
     print_version();
-    cout <<
+    std::cout <<
 "\n"
 "Usage: USalign PDB1.pdb PDB2.pdb [Options]\n"
 "\n"
@@ -268,7 +265,7 @@ void print_help(bool h_opt=false)
 "    USalign 4v4a.cif 4v49.cif -mm 1 -ter 1   # oligomeric alignment for asymmetic units\n"
 "    USalign 3ksc.pdb1 4lej.pdb1 -mm 1 -ter 0 # oligomeric alignment for biological units\n"
 "    USalign 1ajk.pdb.gz 2ayh.pdb.gz -mm 3    # circular permutation alignment\n"
-    <<endl;
+    <<std::endl;
 
     //if (h_opt) 
         print_extra_help();
@@ -334,14 +331,14 @@ void align_chain_pair(ChainPairAlignResult& result,
 
 // TMalign, RNAalign, CPalign, TMscore
 int run_batch_parallel(
-    const vector<string>& chain1_list, const vector<string>& chain2_list,
-    const vector<string>& chain2parse1, const vector<string>& chain2parse2,
-    const vector<string>& model2parse1, const vector<string>& model2parse2,
-    const vector<string>& sequence,
-    const string& dir_opt, const string& dir1_opt,
-    const string& dir2_opt, const string& dirpair_opt,
-    const string& fname_matrix, const string& fname_super,
-    const string& atom_opt, const string& mol_opt,
+    const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
+    const std::vector<std::string>& chain2parse1, const std::vector<std::string>& chain2parse2,
+    const std::vector<std::string>& model2parse1, const std::vector<std::string>& model2parse2,
+    const std::vector<std::string>& sequence,
+    const std::string& dir_opt, const std::string& dir1_opt,
+    const std::string& dir2_opt, const std::string& dirpair_opt,
+    const std::string& fname_matrix, const std::string& fname_super,
+    const std::string& atom_opt, const std::string& mol_opt,
     double Lnorm_ass, double d0_scale, double TMcut,
     int outfmt_opt, int ter_opt, int split_opt, int o_opt,
     int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
@@ -353,20 +350,20 @@ int run_batch_parallel(
     int i, j, chain_i, chain_j;
 
 // ---- Phase 1: pre-parse all unique files, build task list ----
-    vector<ParsedChain> all_chains;
-    map<string, vector<int>> file_to_idx;
-    vector<PairTask> tasks;
+    std::vector<ParsedChain> all_chains;
+    std::map<std::string, std::vector<int>> file_to_idx;
+    std::vector<PairTask> tasks;
 
-    auto parse_file_into_cache = [&](const string& fname) {
+    auto parse_file_into_cache = [&](const std::string& fname) {
         if (file_to_idx.count(fname)) return;
-        vector<vector<string>> PDB_lines;
-        vector<int> mol_vec;
-        vector<string> chainID_list;
+        std::vector<std::vector<std::string>> PDB_lines;
+        std::vector<int> mol_vec;
+        std::vector<std::string> chainID_list;
         int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
             ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
             chain2parse1, model2parse1);
         if (nchain == 0) return;
-        vector<int> indices;
+        std::vector<int> indices;
         for (int c = 0; c < nchain; c++) {
             int len = (int)PDB_lines[c].size();
             if (len < 3) { indices.push_back(-1); continue; }
@@ -376,7 +373,7 @@ int run_batch_parallel(
             chain.filename = fname; chain.chain_len = len;
             chain.chain_id = chainID_list[c]; chain.cur_complex_mol_list = mol_vec[c];
             chain.chain_coords.reserve(len);
-            string seq;
+            std::string seq;
             chain.chain_len = read_PDB(PDB_lines[c], chain.chain_coords, seq,
                 chain.resi_vec, read_resi);
             chain.chain_seq = seq;
@@ -413,13 +410,13 @@ int run_batch_parallel(
     }
 
     // ---- Phase 2: parallel pair processing ----
-    vector<string> out_lines(tasks.size());
+    std::vector<std::string> out_lines(tasks.size());
     #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
     for (int t = 0; t < (int)tasks.size(); t++) {
         auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
         auto& c2 = all_chains[task.chain2_idx];
         CoordArray xa_c = c1.chain_coords; CoordArray ya_c = c2.chain_coords;
-        bool force_fast = (min(c1.chain_len, c2.chain_len) > 1500) ? true : fast_opt;
+        bool force_fast = (std::min(c1.chain_len, c2.chain_len) > 1500) ? true : fast_opt;
         ChainPairAlignResult result = { 0};
         result.d0_out = 5.0;
         ChainPairAlignOptions align_opts;
@@ -440,10 +437,10 @@ int run_batch_parallel(
             c1.chain_sec, c2.chain_sec, c1.chain_len, c2.chain_len,
             align_opts, sequence, outfmt_opt);
 
-        stringstream ss;
-        string xname_out = c1.filename.substr(
+        std::stringstream ss;
+        std::string xname_out = c1.filename.substr(
             dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
-        string yname_out = c2.filename.substr(
+        std::string yname_out = c2.filename.substr(
             dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
 
         if (outfmt_opt == 0) print_version(ss);
@@ -495,8 +492,8 @@ struct MMalignParsed
 {
     ComplexData complex1;             // parsed data of complex 1
     ComplexData complex2;             // parsed data of complex 2
-    map<int,int> chain_pair_map;      // chain mapping table (complex 1 chain index -> complex 2 chain index)
-    vector<string> invalid_mappings;  // invalid mapping details (chain1 -> chain2 + reason)
+    std::map<int,int> chain_pair_map;      // chain mapping table (complex 1 chain index -> complex 2 chain index)
+    std::vector<std::string> invalid_mappings;  // invalid mapping details (chain1 -> chain2 + reason)
     int protein_norm_len;             // protein normalization length (default-initialized in class)
     int na_norm_len;                  // RNA normalization length
     int chain_map_num;                // count of entries specified in the chainmap file
@@ -519,12 +516,12 @@ struct MMalignContext
     int origin_pair_num;
     ChainAssignResult assign_result_origin;
     AllChainPairsResult pair_result_origin;
-    vector<string> sequence_origin;
+    std::vector<std::string> sequence_origin;
     double iteration_score;         // iteration total score (was max_total_score)
-    string iter_seqx;               // iteration working buffer (was sx)
-    string iter_seqy;               // was sy
-    string iter_secx;               // was scx
-    string iter_secy;               // was scy
+    std::string iter_seqx;               // iteration working buffer (was sx)
+    std::string iter_seqy;               // was sy
+    std::string iter_secx;               // was scx
+    std::string iter_secy;               // was scy
 
     MMalignContext(AlignCommonInput& common_inputs_in,
         const MMalignParams& mm_params_in)
@@ -567,9 +564,9 @@ bool handle_byresi_pair(AlignCommonInput& common_inputs,
     int chain1_len,
     int chain2_len,
     int chain1_num,
-    const string& chain1_seq,
-    const string& chain2_seq,
-    vector<string>& sequence);
+    const std::string& chain1_seq,
+    const std::string& chain2_seq,
+    std::vector<std::string>& sequence);
 
 // ---- Forward declaration of save_pair_result (defined later in this file) ----
 void save_pair_result(const ChainPairAlignResult& result,
@@ -625,10 +622,10 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
     int pair_idx;
     int chain1_len;
     int chain2_len;
-    string chain1_sec;
-    string chain2_sec;
-    string chain1_seq;
-    string chain2_seq;
+    std::string chain1_sec;
+    std::string chain2_sec;
+    std::string chain1_seq;
+    std::string chain2_seq;
     CoordArray chain1_coords;
     CoordArray chain2_coords;
 
@@ -637,7 +634,7 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
     for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
             int norm_len;
-            vector<string> pair_sequence(2, "");
+            std::vector<std::string> pair_sequence(2, "");
             chain1_len=parsed.complex1.lengths[chain1_idx];
 
             // chain too short (<3 residues) to align: set the entire row to -1
@@ -784,12 +781,12 @@ inline void run_mmdock_parallel(
     const DoubleCube& xa_vec, const DoubleCube& ya_vec,
     const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
     const CharMatrix& secx_vec, const CharMatrix& secy_vec,
-    const vector<int>& xlen_vec, const vector<int>& ylen_vec,
-    const vector<int>& mol_vec1, const vector<int>& mol_vec2,
-    vector<string>& resi_vec1, vector<string>& resi_vec2,
+    const std::vector<int>& xlen_vec, const std::vector<int>& ylen_vec,
+    const std::vector<int>& mol_vec1, const std::vector<int>& mol_vec2,
+    std::vector<std::string>& resi_vec1, std::vector<std::string>& resi_vec2,
     DoubleMatrix& TMave_mat,
-    vector<vector<string>>& seqxA_mat,
-    vector<vector<string>>& seqyA_mat,
+    std::vector<std::vector<std::string>>& seqxA_mat,
+    std::vector<std::vector<std::string>>& seqyA_mat,
     int chain1_num, int chain2_num,
     int len_aa, int len_na,
     int outfmt_opt, double TMcut, double d0_scale,
@@ -808,10 +805,10 @@ inline void run_mmdock_parallel(
             continue;
         }
 
-        vector<string> pair_sequence(2, "");
+        std::vector<std::string> pair_sequence(2, "");
 
         CoordArray xa(xlen);
-        string seqx, secx;
+        std::string seqx, secx;
         secx.resize(xlen + 1);
         copy_chain_data(xa_vec[i], seqx_vec[i], secx_vec[i],
             xlen, xa, seqx, secx);
@@ -833,7 +830,7 @@ inline void run_mmdock_parallel(
             }
 
             CoordArray ya(ylen);
-            string seqy, secy;
+            std::string seqy, secy;
             secy.resize(ylen + 1);
             copy_chain_data(ya_vec[j], seqy_vec[j], secy_vec[j],
                 ylen, ya, seqy, secy);
@@ -959,25 +956,25 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     ControlOptions& ctrl_opts = common_inputs.control_options;
 
     // declare previously global variables
-    vector<vector<string> >PDB_lines1; // text of chain1
-    vector<vector<string> >PDB_lines2; // text of chain2
-    vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
-    vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
-    vector<string> chainID_list1;      // list of chainID1
-    vector<string> chainID_list2;      // list of chainID2
+    std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
+    std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
+    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    std::vector<std::string> chainID_list1;      // list of chainID1
+    std::vector<std::string> chainID_list2;      // list of chainID2
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
     int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
-    string secx;                // for the secondary structure
-    string secy;
+    std::string secx;                // for the secondary structure
+    std::string secy;
     CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
     CoordArray ya;                  // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure
                                // --> superpose xa onto ya
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
+    std::vector<std::string> resi_vec1;  // residue index for chain1
+    std::vector<std::string> resi_vec2;  // residue index for chain2
 
 #ifdef _OPENMP
     // === Parallel batch mode ===
@@ -1011,8 +1008,8 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
             user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<user_opts.xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
@@ -1022,18 +1019,18 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
             else if (user_opts.mol_opt=="protein") mol_vec1[chain_i]=-1;
             if (!xlen)
             {
-                cerr<<"Warning! Cannot parse file: "<<user_opts.xname
-                    <<". Chain length 0."<<endl;
+                std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                    <<". Chain length 0."<<std::endl;
                 continue;
             }
             else if (xlen<3)
             {
-                cerr<<"Sequence is too short <3!: "<<user_opts.xname<<endl;
+                std::cerr<<"Sequence is too short <3!: "<<user_opts.xname<<std::endl;
                 continue;
             }
             xa.clear();
             xa.reserve(xlen);
-            string seqx;
+            std::string seqx;
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, tm_params.read_resi);
@@ -1055,7 +1052,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                         user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<endl;
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
                         continue;
                     }
                 }
@@ -1066,18 +1063,18 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                     else if (user_opts.mol_opt=="protein") mol_vec2[chain_j]=-1;
                     if (!ylen)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname
-                            <<". Chain length 0."<<endl;
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname
+                            <<". Chain length 0."<<std::endl;
                         continue;
                     }
                     else if (ylen<3)
                     {
-                        cerr<<"Sequence is too short <3!: "<<user_opts.yname<<endl;
+                        std::cerr<<"Sequence is too short <3!: "<<user_opts.yname<<std::endl;
                         continue;
                     }
                     ya.clear();
                     ya.reserve(ylen);
-                    string seqy;
+                    std::string seqy;
                     secy.resize(ylen + 1);
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
                         resi_vec2, tm_params.read_resi);
@@ -1146,30 +1143,30 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 //         prot_count, na_count - protein / RNA chain counts
 //         filtered_count - number of filtered chains
 //         mol_opt - value of the -mol option (protein / RNA)
-void output_mol_filter_warning(const string& file_path,
+void output_mol_filter_warning(const std::string& file_path,
     int chain_num,
     int prot_count,
     int na_count,
     int filtered_count,
-    const string& mol_opt)
+    const std::string& mol_opt)
 {
     if (filtered_count == chain_num)
     {
         // all chains conflict with -mol: report and stop this structure
-        cerr << endl;
-        cerr << "Warning! " << get_basename(file_path) << " contains "
+        std::cerr << std::endl;
+        std::cerr << "Warning! " << get_basename(file_path) << " contains "
              << chain_num << " chain(s), all "
              << ((mol_opt == "protein") ? "RNA" : "protein")
-             << ", but -mol " << mol_opt << " is set" << endl;
+             << ", but -mol " << mol_opt << " is set" << std::endl;
     }
     else if (filtered_count > 0)
     {
         // mixed: some chains usable, some excluded
-        cerr << endl;
-        cerr << "Warning! " << get_basename(file_path) << " contains "
+        std::cerr << std::endl;
+        std::cerr << "Warning! " << get_basename(file_path) << " contains "
              << chain_num << " chain(s) (" << prot_count << " protein, " << na_count
              << " RNA); -mol " << mol_opt << " is set, " << filtered_count
-             << " chain(s) will be excluded from the alignment" << endl;
+             << " chain(s) will be excluded from the alignment" << std::endl;
     }
 }
 
@@ -1179,15 +1176,15 @@ void output_mol_filter_warning(const string& file_path,
 //         ter_opt, infmt_opt, autojustify, split_opt, het_opt - parsing parameters
 //         chain2parse, model2parse - chain / model filtering
 // Return: false means the accumulated count of chains satisfying the -mol type in the files is 0
-bool detect_filtered_chains(const vector<string>& pdb_file_list,
-    const string& mol_opt,
+bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
+    const std::string& mol_opt,
     const int ter_opt,
     const int infmt_opt,
     const bool autojustify,
     const int split_opt,
     const int het_opt,
-    const vector<string>& chain2parse,
-    const vector<string>& model2parse)
+    const std::vector<std::string>& chain2parse,
+    const std::vector<std::string>& model2parse)
 {
     if (mol_opt != "RNA" && mol_opt != "protein")
     {
@@ -1197,16 +1194,16 @@ bool detect_filtered_chains(const vector<string>& pdb_file_list,
     int total_mol_opt_chain = 0;
     for (size_t file_idx = 0; file_idx < pdb_file_list.size(); file_idx++)
     {
-        vector<vector<string> > chain_atom_lines;   // atom lines of every chain in the current PDB file
-        vector<string> chain_id_list;               // chain ID list of the current PDB file
-        vector<int> chain_mol_types;                // molecule type of each chain in the current PDB file (>0 = RNA, <=0 = protein)
+        std::vector<std::vector<std::string> > chain_atom_lines;   // atom lines of every chain in the current PDB file
+        std::vector<std::string> chain_id_list;               // chain ID list of the current PDB file
+        std::vector<int> chain_mol_types;                // molecule type of each chain in the current PDB file (>0 = RNA, <=0 = protein)
         size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types,
             ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
             chain2parse, model2parse);
         if (chain_num == 0)
         {
-            cerr << endl;
-            cerr << "Warning! " << get_basename(pdb_file_list[file_idx]) << " contains 0 chain(s)" << endl;
+            std::cerr << std::endl;
+            std::cerr << "Warning! " << get_basename(pdb_file_list[file_idx]) << " contains 0 chain(s)" << std::endl;
             continue;   // empty file: nothing usable
         }
         int prot_count = 0;   // protein chain count in the current PDB file (prescan statistics)
@@ -1297,7 +1294,7 @@ bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_p
     {
         if (mm_params.dir1_opt.size() || mm_params.dir2_opt.size())
         {
-            cerr << "Warning! Cannot align: one of the structures contains 0 chain" << endl;
+            std::cerr << "Warning! Cannot align: one of the structures contains 0 chain" << std::endl;
             return false;
         }
         PrintErrorAndQuit("ERROR! one of the structures contains 0 chain");
@@ -1314,7 +1311,7 @@ bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_p
 }
 
 // ---- Match chain names to chain indices ----
-int chain_name_to_index(const string& chain_name, const vector<string>& chain_ids)
+int chain_name_to_index(const std::string& chain_name, const std::vector<std::string>& chain_ids)
 {
     for (int i = 0; i < (int)chain_ids.size(); i++)
     {
@@ -1330,9 +1327,9 @@ int chain_name_to_index(const string& chain_name, const vector<string>& chain_id
 
 // ---- Reverse lookup: find the map key (chain1 index) for a given chain2 value ----
 // (value-duplicate detection: e.g. A->B, C->B, look up who maps to B); returns -1 if chain2 is free
-int find_chain_map_key(const map<int,int>& chain_pair_map, int complex2_chain_idx)
+int find_chain_map_key(const std::map<int,int>& chain_pair_map, int complex2_chain_idx)
 {
-    for (map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
+    for (std::map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
     {
         if (kv->second == complex2_chain_idx)
         {
@@ -1353,8 +1350,8 @@ void check_chain_map(AlignCommonInput& common_inputs,
     MMalignParsed& parsed,
     int complex1_chain_idx,
     int complex2_chain_idx,
-    const string& chain1_name,
-    const string& chain2_name)
+    const std::string& chain1_name,
+    const std::string& chain2_name)
 {
     // Duplicate-key check: chain1 has already appeared as a mapping key (e.g. A->B, A->C)
     bool chain1_already_mapped = is_chain_map_key(parsed.chain_pair_map, complex1_chain_idx);
@@ -1388,12 +1385,12 @@ void check_chain_map(AlignCommonInput& common_inputs,
 // ---- Read the chain mapping file ----
 void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
 {
-    const string& chain_map_file = common_inputs.control_options.chainmapfile;
+    const std::string& chain_map_file = common_inputs.control_options.chainmapfile;
     if (chain_map_file.size() == 0) return;
 
-    string line;
-    vector<string> line_vec;
-    ifstream fin;
+    std::string line;
+    std::vector<std::string> line_vec;
+    std::ifstream fin;
     bool fromStdin = (chain_map_file == "-");
     if (!fromStdin)
     {
@@ -1406,15 +1403,15 @@ void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
             return;
         }
     }
-    while (fromStdin ? cin.good() : fin.good())
+    while (fromStdin ? std::cin.good() : fin.good())
     {
         if (fromStdin)
         {
-            getline(cin, line);
+            std::getline(std::cin, line);
         }
         else
         {
-            getline(fin, line);
+            std::getline(fin, line);
         }
 
         if (line.size() == 0 || line[0] == '#')  continue;
@@ -1456,7 +1453,7 @@ void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
         }
         else
         {
-            cerr << "ERROR! Cannot map " << line << endl;
+            std::cerr << "ERROR! Cannot map " << line << std::endl;
         }
 
         for (int i = 0; i < (int)line_vec.size(); i++)
@@ -1476,8 +1473,8 @@ void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
 // Note: exits with an error when all mappings are invalid
 void build_valid_chain_map(AlignCommonInput& common_inputs, MMalignParsed& parsed)
 {
-    map<int,int> valid_chain_map;
-    for (map<int,int>::const_iterator kv = parsed.chain_pair_map.begin(); kv != parsed.chain_pair_map.end(); ++kv)
+    std::map<int,int> valid_chain_map;
+    for (std::map<int,int>::const_iterator kv = parsed.chain_pair_map.begin(); kv != parsed.chain_pair_map.end(); ++kv)
     {
         int key_mol_type = parsed.complex1.mol_types[kv->first];
         int value_mol_type = parsed.complex2.mol_types[kv->second];
@@ -1485,10 +1482,10 @@ void build_valid_chain_map(AlignCommonInput& common_inputs, MMalignParsed& parse
         {
             const char* key_mol_name = (key_mol_type > 0) ? "RNA" : "protein";
             const char* value_mol_name = (value_mol_type > 0) ? "RNA" : "protein";
-            const string key_chain_name = parsed.complex1.chain_ids[kv->first];
-            const string value_chain_name = parsed.complex2.chain_ids[kv->second];
-            const string struct1_name = get_basename(common_inputs.user_options.xname);
-            const string struct2_name = get_basename(common_inputs.user_options.yname);
+            const std::string key_chain_name = parsed.complex1.chain_ids[kv->first];
+            const std::string value_chain_name = parsed.complex2.chain_ids[kv->second];
+            const std::string struct1_name = get_basename(common_inputs.user_options.xname);
+            const std::string struct2_name = get_basename(common_inputs.user_options.yname);
 
             // Full-context warning
             fcout(std::cerr, "\nWarning! Mapped chain %s (%s) of %s cannot pair with chain "
@@ -1514,7 +1511,7 @@ void build_valid_chain_map(AlignCommonInput& common_inputs, MMalignParsed& parse
     if (parsed.chain_pair_map.size() > 0 && valid_chain_map.empty())
     {
         // All mappings are invalid: error out
-        cout << endl;
+        std::cout << std::endl;
         PrintErrorAndQuit("Warning! All mapped chain pairs have molecule type mismatch. Please check the chainmap file.");
     }
     parsed.chain_pair_map = valid_chain_map;
@@ -1533,7 +1530,7 @@ void align_chain_pair(ChainPairAlignResult& result,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen,
     const ChainPairAlignOptions& opts,
-    const vector<string>& sequence,
+    const std::vector<std::string>& sequence,
     int outfmt_opt)
 {
     if (opts.cp_opt) CPalign_main(
@@ -1576,8 +1573,8 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const std::string& xname, const std::string& yname,
     int xlen, int ylen,
     const ChainPairAlignResult& result,
-    const vector<string>& pdb_lines1,
-    const vector<string>& pdb_lines2,
+    const std::vector<std::string>& pdb_lines1,
+    const std::vector<std::string>& pdb_lines2,
     const std::string& chain_id1, const std::string& chain_id2,
     const std::vector<std::string>& resi_vec1,
     const std::vector<std::string>& resi_vec2,
@@ -1690,10 +1687,10 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
 {
     int chain1_len = complex1.lengths[0];
     int chain2_len = complex2.lengths[0];
-    string chain1_seq;
-    string chain2_seq;
-    string chain1_sec;
-    string chain2_sec;
+    std::string chain1_seq;
+    std::string chain2_seq;
+    std::string chain1_sec;
+    std::string chain2_sec;
     CoordArray chain1_coords;
     CoordArray chain2_coords;
     chain1_sec.resize(chain1_len + 1);
@@ -1746,10 +1743,10 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
     int i_opt,
     bool fast_opt)
 {
-    string chain1_seq;
-    string chain2_seq;
-    string chain1_sec;
-    string chain2_sec;
+    std::string chain1_seq;
+    std::string chain2_seq;
+    std::string chain1_sec;
+    std::string chain2_sec;
     CoordArray chain1_coords;
     CoordArray chain2_coords;
     int chain1_len;
@@ -1878,9 +1875,9 @@ bool handle_byresi_pair(AlignCommonInput& common_inputs,
     int chain1_len,
     int chain2_len,
     int chain1_num,
-    const string& chain1_seq,
-    const string& chain2_seq,
-    vector<string>& sequence)
+    const std::string& chain1_seq,
+    const std::string& chain2_seq,
+    std::vector<std::string>& sequence)
 {
     if (!common_inputs.user_options.byresi_opt)
     {
@@ -1918,8 +1915,8 @@ bool handle_byresi_pair(AlignCommonInput& common_inputs,
 void init_pairwise_results(AllChainPairsResult& pairwise, int chain1_num, int chain2_num)
 {
     int chain_num = std::max(chain1_num, chain2_num);
-    vector<string> tmp_str_vec(chain2_num, "");
-    pairwise.tm_matrix.assign(chain_num, vector<double>(chain_num));
+    std::vector<std::string> tmp_str_vec(chain2_num, "");
+    pairwise.tm_matrix.assign(chain_num, std::vector<double>(chain_num));
     pairwise.rotations.resize(chain1_num * chain2_num);
     pairwise.aligned_seq1.assign(chain1_num, tmp_str_vec);
     pairwise.aligned_seq2.assign(chain1_num, tmp_str_vec);
@@ -2000,7 +1997,7 @@ void optimize_dimer_assign(const ComplexData& complex1,
     const ComplexData& complex2,
     const AllChainPairsResult& pairwise,
     ChainAssignResult& assign_result,
-    const map<int,int>& chain_pair_map,
+    const std::map<int,int>& chain_pair_map,
     bool& is_oligomer)
 {
     int na_chain_num1 = 0;
@@ -2125,14 +2122,14 @@ void save_initial_assign_result(AllChainPairsResult& pair_result,
     const MMalignParsed& parsed,
     AllChainPairsResult& pair_result_origin,
     ChainAssignResult& assign_result_origin,
-    vector<string>& sequence_origin,
+    std::vector<std::string>& sequence_origin,
     int& origin_pair_num,
     int chain1_num,
     int chain2_num)
 {
     origin_pair_num = count_assign_pair(assign_result);
-    pair_result_origin.tm_matrix.assign(chain1_num, vector<double>(chain2_num));
-    vector<string> tmp_str_vec(chain2_num, "");
+    pair_result_origin.tm_matrix.assign(chain1_num, std::vector<double>(chain2_num));
+    std::vector<std::string> tmp_str_vec(chain2_num, "");
     pair_result_origin.aligned_seq1.assign(chain1_num, tmp_str_vec);
     pair_result_origin.aligned_seq2.assign(chain1_num, tmp_str_vec);
     assign_result_origin.chain2_of_chain1.assign(chain1_num, -1);
@@ -2159,14 +2156,14 @@ bool need_monomer_fallback(int byresi_opt,
 // ---- Get the pairing partner of a chain: mapped partner (hard constraint) first, else the best monomer pair, else -1 ----
 // is_struct1_chain: true = chain_idx is a structure-1 chain (returns a chain2 index);
 //                   false = chain_idx is a structure-2 chain (returns a chain1 index)
-int get_assign_partner(const map<int,int>& chain_pair_map,
+int get_assign_partner(const std::map<int,int>& chain_pair_map,
     int chain_idx,
     bool is_struct1_chain,
     const AllChainPairsResult& pair_result)
 {
     if (is_struct1_chain)
     {
-        map<int,int>::const_iterator map_iter = chain_pair_map.find(chain_idx);
+        std::map<int,int>::const_iterator map_iter = chain_pair_map.find(chain_idx);
         if (map_iter != chain_pair_map.end())
         {
             return map_iter->second;   // mapped chain: user-specified target (hard constraint)
@@ -2204,7 +2201,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.pair_result.tm_matrix);
 
         // Keep all mapped chain pairs and the best unpaired monomer pair; unmap the rest
-        const map<int,int>& chain_pair_map = ctx.parsed.chain_pair_map;
+        const std::map<int,int>& chain_pair_map = ctx.parsed.chain_pair_map;
         for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
         {
             ctx.assign_result.chain2_of_chain1[chain1_idx] =
@@ -2305,8 +2302,8 @@ bool has_no_same_type_partner(const MMalignContext& ctx,
     int chain2_num)
 {
     
-    const vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
-    const vector<int>& partner_mol_types = is_struct1_chain? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
+    const std::vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
+    const std::vector<int>& partner_mol_types = is_struct1_chain? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
     int partner_chain_num = is_struct1_chain ? chain2_num : chain1_num;
     int cur_chain_mol = cur_complex_mol_list[chain_idx];
 
@@ -2347,11 +2344,11 @@ bool has_unpaired_chain(const MMalignContext& ctx,
     int chain2_num)
 {
     // Molecule type of the complex containing the checked chain (chain_idx)
-    const vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
+    const std::vector<int>& cur_complex_mol_list = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
     // Molecule type of the partner complex
-    const vector<int>& partner_mol_types = is_struct1_chain ? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
+    const std::vector<int>& partner_mol_types = is_struct1_chain ? ctx.parsed.complex2.mol_types : ctx.parsed.complex1.mol_types;
     // Assignment table of the partner complex: whether chain partner_idx is free
-    const vector<int>& cur_partner_assign = is_struct1_chain ? ctx.assign_result.chain1_of_chain2 : ctx.assign_result.chain2_of_chain1;
+    const std::vector<int>& cur_partner_assign = is_struct1_chain ? ctx.assign_result.chain1_of_chain2 : ctx.assign_result.chain2_of_chain1;
     int partner_chain_num = is_struct1_chain ? chain2_num : chain1_num;
     int chain_mol_type = cur_complex_mol_list[chain_idx];
 
@@ -2374,15 +2371,15 @@ bool has_unpaired_chain(const MMalignContext& ctx,
 }
 
 // ---- Level 5: chain-number mismatch reason (reached when no available target remains) ----
-string get_chain_mismatch_reason(bool is_struct1_chain,
+std::string get_chain_mismatch_reason(bool is_struct1_chain,
     int chain1_num,
     int chain2_num)
 {
     
     int more_chain_num = is_struct1_chain ? chain1_num : chain2_num;
     int less_chain_num = is_struct1_chain ? chain2_num : chain1_num;
-    string more_chain_struct = is_struct1_chain ? "structure 1" : "structure 2";
-    string less_chain_struct = is_struct1_chain ? "structure 2" : "structure 1";
+    std::string more_chain_struct = is_struct1_chain ? "structure 1" : "structure 2";
+    std::string less_chain_struct = is_struct1_chain ? "structure 2" : "structure 1";
 
     // Report mismatch when the chain count is insufficient; otherwise all targets are taken or locked by chainmap
     if (more_chain_num > less_chain_num)
@@ -2394,7 +2391,7 @@ string get_chain_mismatch_reason(bool is_struct1_chain,
 }
 
 // ---- Determine the unpaired reason for a chain (5-level priority) ----
-string get_unpaired_reason(const MMalignContext& ctx,
+std::string get_unpaired_reason(const MMalignContext& ctx,
     int chain_idx,
     bool is_struct1_chain,
     int chain1_num,
@@ -2453,43 +2450,43 @@ PairingCounts calc_paired_pairs_count(const MMalignContext& ctx,
 
 // ---- ② Print summary header + Chainmap statistics + paired counts by molecule type ----
 void out_pairing_counts(const MMalignContext& ctx,
-    const string& name1,
-    const string& name2,
+    const std::string& name1,
+    const std::string& name2,
     const PairingCounts& counts)
 {
     // summary header
     if (ctx.common_inputs.user_options.outfmt_opt == 2)
     {
-        cout << endl;
+        std::cout << std::endl;
     }
-    cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
-         << name2 << " (structure 2)" << endl;
+    std::cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
+         << name2 << " (structure 2)" << std::endl;
 
     // Chainmap statistics (only when chainmap was specified)
     if (ctx.common_inputs.control_options.chainmapfile.size() > 0)
     {
-        cout << "#   Chainmap: " << ctx.parsed.chain_map_num
+        std::cout << "#   Chainmap: " << ctx.parsed.chain_map_num
              << " entries specified, " << counts.mapped_pair_num
              << " mapped, " << counts.free_pair_num
              << " free-matching; total " << (counts.mapped_pair_num + counts.free_pair_num)
-             << " pair(s) aligned" << endl;
+             << " pair(s) aligned" << std::endl;
         for (size_t k = 0; k < ctx.parsed.invalid_mappings.size(); k++)
         {
-            cout << "#   Invalid mappings: " << ctx.parsed.invalid_mappings[k] << endl;
+            std::cout << "#   Invalid mappings: " << ctx.parsed.invalid_mappings[k] << std::endl;
         }
     }
 
     // paired-pair counts by molecule type
-    cout << "#   Protein: " << counts.prot_pair_num << " pair(s) aligned" << endl;
-    cout << "#   RNA: " << counts.na_pair_num << " pair(s) aligned" << endl;
+    std::cout << "#   Protein: " << counts.prot_pair_num << " pair(s) aligned" << std::endl;
+    std::cout << "#   RNA: " << counts.na_pair_num << " pair(s) aligned" << std::endl;
 }
 
 // ---- Unpaired-chain group: chains sharing the same (file, type, reason) ----
 struct UnpairedGroup
 {
-    string file;
-    string type;
-    string reason;
+    std::string file;
+    std::string type;
+    std::string reason;
 };
 
 // Collect the unpaired chains of a complex, grouped by (file, type, reason)
@@ -2502,14 +2499,14 @@ void collect_unpaired_chains_complex(const MMalignContext& ctx,
     int chain1_num,
     int chain2_num,
     bool is_struct1_chain,
-    const string& my_name,
-    map<string, vector<string> >& unpaired_groups,
-    map<string, UnpairedGroup>& group_info)
+    const std::string& my_name,
+    std::map<std::string, std::vector<std::string> >& unpaired_groups,
+    std::map<std::string, UnpairedGroup>& group_info)
 {
   
-    const vector<int>& assign = is_struct1_chain ? ctx.assign_result.chain2_of_chain1 : ctx.assign_result.chain1_of_chain2;
-    const vector<int>& mol_types = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
-    const vector<string>& chain_ids = is_struct1_chain ? ctx.parsed.complex1.chain_ids : ctx.parsed.complex2.chain_ids;
+    const std::vector<int>& assign = is_struct1_chain ? ctx.assign_result.chain2_of_chain1 : ctx.assign_result.chain1_of_chain2;
+    const std::vector<int>& mol_types = is_struct1_chain ? ctx.parsed.complex1.mol_types : ctx.parsed.complex2.mol_types;
+    const std::vector<std::string>& chain_ids = is_struct1_chain ? ctx.parsed.complex1.chain_ids : ctx.parsed.complex2.chain_ids;
     int chain_num = is_struct1_chain ? chain1_num : chain2_num;
 
     for (int chain_idx = 0; chain_idx < chain_num; chain_idx++)
@@ -2518,9 +2515,9 @@ void collect_unpaired_chains_complex(const MMalignContext& ctx,
         {
             continue;   // already paired
         }
-        string type = (mol_types[chain_idx] > 0) ? "RNA" : "protein";
-        string reason = get_unpaired_reason(ctx, chain_idx, is_struct1_chain, chain1_num, chain2_num);
-        string group_key = my_name + "|" + type + "|" + reason;
+        std::string type = (mol_types[chain_idx] > 0) ? "RNA" : "protein";
+        std::string reason = get_unpaired_reason(ctx, chain_idx, is_struct1_chain, chain1_num, chain2_num);
+        std::string group_key = my_name + "|" + type + "|" + reason;
         unpaired_groups[group_key].push_back(chain_ids[chain_idx]);
         group_info[group_key].file = my_name;
         group_info[group_key].type = type;
@@ -2532,10 +2529,10 @@ void collect_unpaired_chains_complex(const MMalignContext& ctx,
 void collect_unpaired_chains(const MMalignContext& ctx,
     int chain1_num,
     int chain2_num,
-    const string& name1,
-    const string& name2,
-    map<string, vector<string> >& unpaired_groups,
-    map<string, UnpairedGroup>& group_info)
+    const std::string& name1,
+    const std::string& name2,
+    std::map<std::string, std::vector<std::string> >& unpaired_groups,
+    std::map<std::string, UnpairedGroup>& group_info)
 {
     collect_unpaired_chains_complex(ctx, chain1_num, chain2_num, true, name1, unpaired_groups, group_info);
 
@@ -2543,24 +2540,24 @@ void collect_unpaired_chains(const MMalignContext& ctx,
 }
 
 // ---- Print the Unpaired block grouped by (file, type, reason) ----
-void out_unpaired_chain_info(const map<string, vector<string> >& unpaired_groups, const map<string, UnpairedGroup>& group_info)
+void out_unpaired_chain_info(const std::map<std::string, std::vector<std::string> >& unpaired_groups, const std::map<std::string, UnpairedGroup>& group_info)
 {
     if (unpaired_groups.empty()) return;
 
-    cout << "# Unpaired:" << endl;
-    for (map<string, vector<string> >::const_iterator group = unpaired_groups.begin(); group != unpaired_groups.end(); ++group)
+    std::cout << "# Unpaired:" << std::endl;
+    for (std::map<std::string, std::vector<std::string> >::const_iterator group = unpaired_groups.begin(); group != unpaired_groups.end(); ++group)
     {
         const UnpairedGroup& info = group_info.find(group->first)->second;
-        cout << "#   " << info.file << ": ";
+        std::cout << "#   " << info.file << ": ";
         for (size_t k = 0; k < group->second.size(); k++)
         {
             if (k > 0)
             {
-                cout << ", ";
+                std::cout << ", ";
             }
-            cout << group->second[k];
+            std::cout << group->second[k];
         }
-        cout << " (" << info.type << ") - " << info.reason << endl;
+        std::cout << " (" << info.type << ") - " << info.reason << std::endl;
     }
 }
 
@@ -2573,15 +2570,15 @@ void output_chain_pairing_summary(const MMalignContext& ctx,
     PairingCounts counts = calc_paired_pairs_count(ctx, chain1_num);
 
     // File names
-    string name1 = get_basename(ctx.common_inputs.user_options.xname);
-    string name2 = get_basename(ctx.common_inputs.user_options.yname);
+    std::string name1 = get_basename(ctx.common_inputs.user_options.xname);
+    std::string name2 = get_basename(ctx.common_inputs.user_options.yname);
     
     // Summary header + Chainmap statistics + paired counts by molecule type
     out_pairing_counts(ctx, name1, name2, counts);
 
     // Collect unpaired-chain groups
-    map<string, vector<string> > unpaired_groups;
-    map<string, UnpairedGroup> group_info;
+    std::map<std::string, std::vector<std::string> > unpaired_groups;
+    std::map<std::string, UnpairedGroup> group_info;
     collect_unpaired_chains(ctx, chain1_num, chain2_num, name1, name2, unpaired_groups, group_info);
     
     // Print the Unpaired block
@@ -2615,8 +2612,8 @@ void output_final_results(MMalignContext& ctx,
         print_version();
     }
     
-    string xname = get_basename(ctx.common_inputs.user_options.xname);
-    string yname = get_basename(ctx.common_inputs.user_options.yname);
+    std::string xname = get_basename(ctx.common_inputs.user_options.xname);
+    std::string yname = get_basename(ctx.common_inputs.user_options.yname);
     MMalignFinalParams final_params;
     fill_mmalign_final_params(final_params, ctx.common_inputs);
     final_params.xname = xname;
@@ -2653,9 +2650,9 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
         && ctx.mm_params.dir1_opt.size() == 0
         && ctx.mm_params.dir2_opt.size() == 0)
     {
-        cout << endl;
-        cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-             << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
+        std::cout << std::endl;
+        std::cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+             << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << std::endl;
     }
 
     // ---- Monomer branch: direct monomer alignment when both structures are single-chain ----
@@ -2775,7 +2772,7 @@ int MMalign(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     const ComplexData& complex1, const ComplexData& complex2,
     DoubleMatrix& TMave_mat,
-    vector<vector<string> >& seqxA_mat, vector<vector<string> >& seqyA_mat,
+    std::vector<std::vector<std::string> >& seqxA_mat, std::vector<std::vector<std::string> >& seqyA_mat,
     int chain1_num, int chain2_num, bool fast_opt)
 {
     UserOptions& user_opts = common_inputs.user_options;
@@ -2783,11 +2780,11 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
 
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
-    string seqx, seqy;             // for the protein sequence
+    std::string seqx, seqy;             // for the protein sequence
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
-    string secx;                   // for the secondary structure
-    string secy;
+    std::string secx;                   // for the secondary structure
+    std::string secy;
 
     std::vector<int> assign1_list(chain1_num);
     std::vector<int> assign2_list(chain2_num);
@@ -2799,16 +2796,16 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     ut_mat.resize(chain1_num);
     int ui;
     int uj;
-    vector<string>xname_vec;
-    vector<string>yname_vec;
-    vector<double>TM_vec;
+    std::vector<std::string>xname_vec;
+    std::vector<std::string>yname_vec;
+    std::vector<double>TM_vec;
     for (i=0;i<chain1_num;i++)
     {
         j=assign1_list[i];
         xname_vec.push_back(user_opts.xname+complex1.chain_ids[i]);
         if (j<0)
         {
-            cerr<<"Warning! "<<complex1.chain_ids[i]<<" cannot be alighed"<<endl;
+            std::cerr<<"Warning! "<<complex1.chain_ids[i]<<" cannot be alighed"<<std::endl;
             for (ui=0;ui<3;ui++)
             {
                 for (uj=0;uj<4;uj++) ut_mat[i][ui*3+uj]=0;
@@ -2885,8 +2882,8 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         double TM=0;
         for (i=0;i<TM_vec.size();i++) TM+=TM_vec[i]*TM_vec[i];
         TM=sqrt(TM/TM_vec.size());
-        string query_name=user_opts.xname;
-        string template_name=user_opts.yname;
+        std::string query_name=user_opts.xname;
+        std::string template_name=user_opts.yname;
 
         for (i=0;i<chain1_num;i++)
         {
@@ -2919,11 +2916,11 @@ int MMdock(AlignCommonInput& common_inputs)
     ComplexData complex2;
     int    i,j;                    // chain index
     int    xlen, ylen;             // chain length
-    string seqx, seqy;             // for the protein sequence
+    std::string seqx, seqy;             // for the protein sequence
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
-    string secx;                   // for the secondary structure
-    string secy;
+    std::string secx;                   // for the secondary structure
+    std::string secy;
 
     // parse complex
     parse_chain_list(parsed_input.chain1_list, complex1,
@@ -3018,12 +3015,12 @@ int MMdock(AlignCommonInput& common_inputs)
     // declare TM-score tables
     int chain1_num=complex1.coords.size();
     int chain2_num=complex2.coords.size();
-    vector<string> tmp_str_vec(chain2_num,"");
+    std::vector<std::string> tmp_str_vec(chain2_num,"");
     DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain1_num,vector<double>(chain2_num));
-    vector<vector<string> >seqxA_mat(chain1_num,tmp_str_vec);
-    vector<vector<string> > seqM_mat(chain1_num,tmp_str_vec);
-    vector<vector<string> >seqyA_mat(chain1_num,tmp_str_vec);
+    TMave_mat.assign(chain1_num,std::vector<double>(chain2_num));
+    std::vector<std::vector<std::string> >seqxA_mat(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> > seqM_mat(chain1_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqyA_mat(chain1_num,tmp_str_vec);
 
     // trimComplex
     TrimmedComplex trimmed;
@@ -3143,17 +3140,17 @@ int MMdock(AlignCommonInput& common_inputs)
     DoubleCube().swap(trimmed.coords);
     CharMatrix().swap(trimmed.seqs);
     CharMatrix().swap(trimmed.secs);
-    vector<int> ().swap(trimmed.lengths);
+    std::vector<int> ().swap(trimmed.lengths);
 
     mmdock_assign_and_output(common_inputs, complex1, complex2, TMave_mat,
         seqxA_mat, seqyA_mat, chain1_num, chain2_num, fast_opt);
 
 
 
-    vector<vector<string> >().swap(seqxA_mat);
-    vector<vector<string> >().swap(seqM_mat);
-    vector<vector<string> >().swap(seqyA_mat);
-    vector<string>().swap(tmp_str_vec);
+    std::vector<std::vector<std::string> >().swap(seqxA_mat);
+    std::vector<std::vector<std::string> >().swap(seqM_mat);
+    std::vector<std::vector<std::string> >().swap(seqyA_mat);
+    std::vector<std::string>().swap(tmp_str_vec);
 
     DoubleCube().swap(complex1.coords); // structure of complex1
     DoubleCube().swap(complex2.coords); // structure of complex2
@@ -3163,8 +3160,8 @@ int MMdock(AlignCommonInput& common_inputs)
     CharMatrix().swap(complex2.secs); // secondary structure of complex2
     complex1.mol_types.clear();       // molecule type of complex1, RNA if >0
     complex2.mol_types.clear();       // molecule type of complex2, RNA if >0
-    vector<string>().swap(complex1.chain_ids);  // list of chainID1
-    vector<string>().swap(complex2.chain_ids);  // list of chainID2
+    std::vector<std::string>().swap(complex1.chain_ids);  // list of chainID1
+    std::vector<std::string>().swap(complex2.chain_ids);  // list of chainID2
     complex1.lengths.clear();       // length of complex1
     complex2.lengths.clear();       // length of complex2
     return 1;
@@ -3173,9 +3170,9 @@ int MMdock(AlignCommonInput& common_inputs)
 // ============ Helper functions for ccTM-score ============
 
 //Build msa_to_res mapping: msa_to_res[i][l] = original residue index at MSA column l (-1=gap)
-static void build_msa_to_res(const vector<string>& msa_seqs, int chain_num, int msa_len, IntMatrix& msa_to_res) 
+static void build_msa_to_res(const std::vector<std::string>& msa_seqs, int chain_num, int msa_len, IntMatrix& msa_to_res) 
 {
-    msa_to_res.assign(chain_num, vector<int>(msa_len, -1));
+    msa_to_res.assign(chain_num, std::vector<int>(msa_len, -1));
     for (int i = 0; i < chain_num; i++) 
     {
         int res_idx = 0;
@@ -3189,7 +3186,7 @@ static void build_msa_to_res(const vector<string>& msa_seqs, int chain_num, int 
 }
 
 //Find candidate columns: all structures have residues
-static void find_no_gap_cols(const IntMatrix& msa_to_res, int chain_num, int msa_len, vector<int>& no_gap_cols) 
+static void find_no_gap_cols(const IntMatrix& msa_to_res, int chain_num, int msa_len, std::vector<int>& no_gap_cols) 
 {
     for (int l = 0; l < msa_len; l++) {
         int count = 0;
@@ -3229,7 +3226,7 @@ static int select_ref_struct(const IntMatrix& msa_to_res, int msa_len, int chain
 }
 
 // Coordinate re-alignment: from ua_vec to eliminate chain error
-static void align_to_ref(const DoubleCube& orig_coords, const IntMatrix& msa_to_res, const vector<int>& no_gap_cols, int chain_num, int ref_idx, vector<CoordArray>& aligned_coord) 
+static void align_to_ref(const DoubleCube& orig_coords, const IntMatrix& msa_to_res, const std::vector<int>& no_gap_cols, int chain_num, int ref_idx, std::vector<CoordArray>& aligned_coord) 
 {
     aligned_coord.resize(chain_num);
 
@@ -3275,9 +3272,9 @@ static void align_to_ref(const DoubleCube& orig_coords, const IntMatrix& msa_to_
 }
 
 //Calculate pairwise CA distances at each candidate column
-static void calc_pairwise_distances(const vector<CoordArray>& aligned_coord, const IntMatrix& msa_to_res, const vector<int>& no_gap_cols, int chain_num, int tot_num_pair, DoubleMatrix& ca_dist_matrix) 
+static void calc_pairwise_distances(const std::vector<CoordArray>& aligned_coord, const IntMatrix& msa_to_res, const std::vector<int>& no_gap_cols, int chain_num, int tot_num_pair, DoubleMatrix& ca_dist_matrix) 
 {
-    ca_dist_matrix.assign(tot_num_pair, vector<double>(no_gap_cols.size(), -1));
+    ca_dist_matrix.assign(tot_num_pair, std::vector<double>(no_gap_cols.size(), -1));
     for (int p = 0, i = 0; i < chain_num; i++) 
     {
         for (int j = i + 1; j < chain_num; j++, p++) 
@@ -3298,7 +3295,7 @@ static void calc_pairwise_distances(const vector<CoordArray>& aligned_coord, con
 }
 
 //Filter Common Core columns: all pair distances <= 4.0 Å
-static void select_common_core_cols(const vector<vector<double>>& ca_dist_matrix, const vector<int>& no_gap_cols, int tot_num_pair, vector<int>& core_cols) 
+static void select_common_core_cols(const std::vector<std::vector<double>>& ca_dist_matrix, const std::vector<int>& no_gap_cols, int tot_num_pair, std::vector<int>& core_cols) 
 {
     for (int k = 0; k < (int)no_gap_cols.size(); k++) 
     {
@@ -3316,9 +3313,9 @@ static void select_common_core_cols(const vector<vector<double>>& ca_dist_matrix
 }
 
 //Extract CC residue indices: core_res_idx[i][j] = msa_to_res[i][core_cols[j]]
-static void extract_common_core_res_idx(const IntMatrix& msa_to_res, const vector<int>& core_cols, int chain_num, IntMatrix& core_res_idx) 
+static void extract_common_core_res_idx(const IntMatrix& msa_to_res, const std::vector<int>& core_cols, int chain_num, IntMatrix& core_res_idx) 
 {
-    core_res_idx.assign(chain_num, vector<int>((int)core_cols.size(), -1));
+    core_res_idx.assign(chain_num, std::vector<int>((int)core_cols.size(), -1));
     for (int i = 0; i < chain_num; i++)
     {
         for (int j = 0; j < (int)core_cols.size(); j++)
@@ -3329,7 +3326,7 @@ static void extract_common_core_res_idx(const IntMatrix& msa_to_res, const vecto
 }
 
 //Calculate pairwise TM-score using only CC residues
-static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMatrix& core_res_idx, const vector<int>& core_cols, int chain_num, const vector<int>& len_vec, int cur_complex_mol_list) 
+static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMatrix& core_res_idx, const std::vector<int>& core_cols, int chain_num, const std::vector<int>& len_vec, int cur_complex_mol_list) 
 {
     double TM_sum = 0;
     int simplify_step = 1;
@@ -3354,7 +3351,7 @@ static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMa
                 ytm[k][2] = orig_coords[j][rj][2];
             }
 
-            double pair_Lnorm = min(len_vec[i], len_vec[j]);
+            double pair_Lnorm = std::min(len_vec[i], len_vec[j]);
             double D0_MIN, Lnorm_out, d0, d0_search;
             parameter_set4final(pair_Lnorm, D0_MIN, Lnorm_out, d0, d0_search, cur_complex_mol_list);
             Vec3 t0; 
@@ -3380,13 +3377,13 @@ static double calc_common_core_TM_sum(const DoubleCube& orig_coords, const IntMa
 // @return ccTM-score (0 if no Common Core found)
 double calc_ccTM_score(
     const DoubleCube& orig_coords,
-    const vector<vector<string>>& seqxA_mat,
+    const std::vector<std::vector<std::string>>& seqxA_mat,
     int chain_num,
-    const vector<int>& len_vec,
+    const std::vector<int>& len_vec,
     int cur_complex_mol_list)
 {
     // Extract MSA sequences from seqxA_mat diagonal
-    vector<string> msa_seqs(chain_num);
+    std::vector<std::string> msa_seqs(chain_num);
     for (int i = 0; i < chain_num; i++) {
         msa_seqs[i] = seqxA_mat[i][i];
     }
@@ -3397,7 +3394,7 @@ double calc_ccTM_score(
     build_msa_to_res(msa_seqs, chain_num, msa_len, msa_to_res);
 
     // 2. Find no-gap columns: all structures have residues at these columns
-    vector<int> no_gap_cols;
+    std::vector<int> no_gap_cols;
     find_no_gap_cols(msa_to_res, chain_num, msa_len, no_gap_cols);
     if (no_gap_cols.empty())
     {
@@ -3419,7 +3416,7 @@ double calc_ccTM_score(
     // 3. Re-align all structures from original coords to reference (eliminate chain error)
     //    select_ref_struct => align_to_ref (Kabsch + do_rotation)
     int ref_idx = select_ref_struct(msa_to_res, msa_len, chain_num);
-    vector<CoordArray> aligned_coord;
+    std::vector<CoordArray> aligned_coord;
     align_to_ref(orig_coords, msa_to_res, no_gap_cols, chain_num, ref_idx, aligned_coord);
 
     // 4. Compute pairwise CA distances between every pair at no-gap columns
@@ -3429,7 +3426,7 @@ double calc_ccTM_score(
     calc_pairwise_distances(aligned_coord, msa_to_res, no_gap_cols, chain_num, tot_num_pair, ca_dist_matrix);
 
     // 5. Select Common Core columns: all pairs have CA distance <= 4A
-    vector<int> core_cols;
+    std::vector<int> core_cols;
     select_common_core_cols(ca_dist_matrix, no_gap_cols, tot_num_pair, core_cols);
     if (core_cols.empty())
     {
@@ -3453,17 +3450,17 @@ double calc_ccTM_score(
 // Parallel all-against-all pairwise alignment for MSTA (mTMalign)
 static void run_mTMalign_pairwise_parallel(
     const DoubleCube& a_vec, const CharMatrix& seq_vec, const CharMatrix& sec_vec,
-    const vector<int>& len_vec,
-    const vector<string>& chain_list, const vector<string>& chainID_list,
-    vector<vector<string>>& seqxA_mat, vector<vector<string>>& seqyA_mat,
-    DoubleMatrix& TMave_mat, const vector<string>& resi_vec,
+    const std::vector<int>& len_vec,
+    const std::vector<std::string>& chain_list, const std::vector<std::string>& chainID_list,
+    std::vector<std::vector<std::string>>& seqxA_mat, std::vector<std::vector<std::string>>& seqyA_mat,
+    DoubleMatrix& TMave_mat, const std::vector<std::string>& resi_vec,
     int chain_num, double Lnorm_ass, double d0_scale,
     bool u_opt, int cur_complex_mol_list, int outfmt_opt, bool fast_opt, double TMcut,
     bool full_opt, bool se_opt, int ter_opt, int split_opt, int o_opt, int a_opt, bool d_opt,
     int parallel_threads)
 {
 
-    vector<string> full_out(chain_num * chain_num);
+    std::vector<std::string> full_out(chain_num * chain_num);
 
     #pragma omp parallel for schedule(dynamic, 1) num_threads(parallel_threads)
     for (int chain_i = 0; chain_i < chain_num; chain_i++)
@@ -3471,7 +3468,7 @@ static void run_mTMalign_pairwise_parallel(
         int xlen = len_vec[chain_i];
         if (xlen < 3) continue;
         CoordArray xa(xlen);
-        string seqx, secx;
+        std::string seqx, secx;
         secx.resize(xlen + 1);
         copy_chain_data(a_vec[chain_i], seq_vec[chain_i], sec_vec[chain_i], xlen, xa, seqx, secx);
         seqxA_mat[chain_i][chain_i] = seqyA_mat[chain_i][chain_i] = seqx;
@@ -3480,13 +3477,13 @@ static void run_mTMalign_pairwise_parallel(
             int ylen = len_vec[chain_j];
             if (ylen < 3) continue;
             CoordArray ya(ylen);
-            string seqy, secy;
+            std::string seqy, secy;
             secy.resize(ylen + 1);
             copy_chain_data(a_vec[chain_j], seq_vec[chain_j], sec_vec[chain_j], ylen, ya, seqy, secy);
 
             ChainPairAlignResult result = { 0};
             result.d0_out = 5.0;
-            vector<string> local_seq(2);
+            std::vector<std::string> local_seq(2);
             local_seq[0] = seqxA_mat[chain_i][chain_j];
             local_seq[1] = seqyA_mat[chain_i][chain_j];
             ChainPairAlignOptions align_opts;
@@ -3557,8 +3554,8 @@ struct MstaIterBuffers
 {
     CoordArray member_coords;
     CoordArray partner_coords;
-    string member_sec;
-    string partner_sec;
+    std::string member_sec;
+    std::string partner_sec;
     int member_len=0;
     int partner_len=0;
     int member_chain_idx=0;
@@ -3575,10 +3572,10 @@ struct MstaIterContext
     const ComplexData& complex;
     DoubleCube& a_vec;
     const DoubleMatrix& TMave_mat;
-    vector<vector<string> >& seqxA_mat;
-    vector<vector<string> >& seqyA_mat;
-    const vector<string>& chainID_list;
-    const vector<string>& resi_vec;
+    std::vector<std::vector<std::string> >& seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat;
+    const std::vector<std::string>& chainID_list;
+    const std::vector<std::string>& resi_vec;
     int chain_num;
     double Lnorm_ass;
     bool u_opt;
@@ -3588,7 +3585,7 @@ struct MstaIterContext
 
     MstaIterContext(AlignCommonInput& common_inputs, ComplexData& complex_in,
         DoubleCube& a_vec_in, const DoubleMatrix& TMave_mat_in,
-        vector<vector<string> >& seqxA_mat_in, vector<vector<string> >& seqyA_mat_in,
+        std::vector<std::vector<std::string> >& seqxA_mat_in, std::vector<std::vector<std::string> >& seqyA_mat_in,
         int chain_num_in, double Lnorm_ass_in, bool u_opt_in, bool fast_opt_in,
         int cur_complex_mol_list_in)
         : user_opts(common_inputs.user_options),
@@ -3616,13 +3613,13 @@ void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext
     ControlOptions& ctrl_opts = ctx.ctrl_opts;
     const CharMatrix& seq_vec = ctx.complex.seqs;
     const CharMatrix& sec_vec = ctx.complex.secs;
-    const vector<int>& len_vec = ctx.complex.lengths;
-    const vector<string>& chainID_list = ctx.chainID_list;
-    const vector<string>& resi_vec = ctx.resi_vec;
+    const std::vector<int>& len_vec = ctx.complex.lengths;
+    const std::vector<std::string>& chainID_list = ctx.chainID_list;
+    const std::vector<std::string>& resi_vec = ctx.resi_vec;
     DoubleCube& a_vec = ctx.a_vec;
     const DoubleMatrix& TMave_mat = ctx.TMave_mat;
-    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
-    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
+    std::vector<std::vector<std::string> >& seqxA_mat = ctx.seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat = ctx.seqyA_mat;
     const int chain_num = ctx.chain_num;
     const double Lnorm_ass = ctx.Lnorm_ass;
     const bool u_opt = ctx.u_opt;
@@ -3635,8 +3632,8 @@ void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext
     int& ylen = buffers.partner_len;
     CoordArray& xa = buffers.member_coords;
     CoordArray& ya = buffers.partner_coords;
-    string& secx = buffers.member_sec;
-    string& secy = buffers.partner_sec;
+    std::string& secx = buffers.member_sec;
+    std::string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
 
         user_opts.yname=parsed_input.chain1_list[state.repr_idx].substr(user_opts.dir_opt.size())+chainID_list[state.repr_idx];
@@ -3653,18 +3650,18 @@ void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext
             state.yname_vec.push_back(user_opts.yname);
             xlen = len_vec[i];
             if (i==state.repr_idx || xlen<3) continue;
-            state.TM_pair_vec.push_back(make_pair(-TMave_mat[i][state.repr_idx],i));
+            state.TM_pair_vec.push_back(std::make_pair(-TMave_mat[i][state.repr_idx],i));
         }
         sort(state.TM_pair_vec.begin(),state.TM_pair_vec.end());
     
         int tm_idx;
-        if (user_opts.outfmt_opt<0) cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-                               <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<endl;
+        if (user_opts.outfmt_opt<0) std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+                               <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
         for (tm_idx=0; tm_idx<state.TM_pair_vec.size(); tm_idx++)
         {
             i=state.TM_pair_vec[tm_idx].second;
             xlen = len_vec[i];
-            string seqx;
+            std::string seqx;
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
@@ -3681,7 +3678,7 @@ void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext
             j=maxj;
             state.assign_list[i]=j;
             ylen = len_vec[j];
-            string seqy;
+            std::string seqy;
             secy.resize(ylen+1);
             ya.clear();
             ya.reserve(ylen);
@@ -3747,7 +3744,7 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
     ParsedInput& parsed_input = ctx.parsed_input;
     const CharMatrix& seq_vec = ctx.complex.seqs;
     const CharMatrix& sec_vec = ctx.complex.secs;
-    const vector<int>& len_vec = ctx.complex.lengths;
+    const std::vector<int>& len_vec = ctx.complex.lengths;
     DoubleCube& a_vec = ctx.a_vec;
     const double Lnorm_ass = ctx.Lnorm_ass;
     const bool u_opt = ctx.u_opt;
@@ -3760,13 +3757,13 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
     int& ylen = buffers.partner_len;
     CoordArray& xa = buffers.member_coords;
     CoordArray& ya = buffers.partner_coords;
-    string& secx = buffers.member_sec;
-    string& secy = buffers.partner_sec;
+    std::string& secx = buffers.member_sec;
+    std::string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
     int& tm_idx = buffers.tm_order_idx;
 
         ylen = len_vec[state.repr_idx];
-        string seqy;
+        std::string seqy;
         secy.resize(ylen+1);
         ya.clear();
         ya.reserve(ylen);
@@ -3779,7 +3776,7 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
         std::string secy_ext;            // for the secondary structure
         for (r=0;r<state.msa.size();r++) state.msa[r].clear(); state.msa.clear();
         state.msa.assign(ylen,""); // row is position along state.msa; column is sequence
-        vector<string> msa_ext;      // row is position along state.msa; column is sequence
+        std::vector<std::string> msa_ext;      // row is position along state.msa; column is sequence
         for (r=0;r<ylen;r++) state.msa[r]=seqy[r];
         state.assign_list[state.repr_idx]=0;
         for (tm_idx=0; tm_idx<state.TM_pair_vec.size(); tm_idx++)
@@ -3788,7 +3785,7 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
             state.assign_list[i]=tm_idx+1;
 
             xlen = len_vec[i];
-            string seqx;
+            std::string seqx;
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
@@ -3797,8 +3794,8 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
             ChainPairAlignResult result = { 0};
             result.d0_out = 5.0;
             result.invmap.assign(ylen + 1, 0);
-            string& seqxA = result.seqxA;
-            string& seqyA = result.seqyA;
+            std::string& seqxA = result.seqxA;
+            std::string& seqyA = result.seqyA;
             ChainPairAlignOptions align_opts;
             align_opts.i_opt = 0;
             align_opts.a_opt = user_opts.a_opt;
@@ -3822,7 +3819,7 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
             ya_ext.resize(ylen_ext);                    // structure of single chain
             seqy_ext.resize(ylen_ext+1);            // for the protein sequence
             secy_ext.resize(ylen_ext+1);            // for the secondary structure
-            string tmp_gap="";
+            std::string tmp_gap="";
             for (r=0;r<state.msa[0].size();r++) tmp_gap+='-';
             for (r=msa_ext.size();r<ylen_ext;r++) msa_ext.push_back("");
             for (r=0;r<ylen_ext;r++)
@@ -3878,14 +3875,14 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
             result.seqyA.clear();
             result.do_vec.clear();
         }
-        vector<string>().swap(msa_ext);
-        vector<pair<double,int> >().swap(state.TM_pair_vec);
+        std::vector<std::string>().swap(msa_ext);
+        std::vector<std::pair<double,int> >().swap(state.TM_pair_vec);
 }
 
 void msta_rebuild_pair_matrices(MstaIterationState& state, MstaIterContext& ctx)
 {
-    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
-    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
+    std::vector<std::vector<std::string> >& seqxA_mat = ctx.seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat = ctx.seqyA_mat;
     const int chain_num = ctx.chain_num;
     MstaIterBuffers& buffers = ctx.buffers;
     int& i = buffers.member_chain_idx;
@@ -3894,8 +3891,8 @@ void msta_rebuild_pair_matrices(MstaIterationState& state, MstaIterContext& ctx)
     int& ylen = buffers.partner_len;
     CoordArray& xa = buffers.member_coords;
     CoordArray& ya = buffers.partner_coords;
-    string& secx = buffers.member_sec;
-    string& secy = buffers.partner_sec;
+    std::string& secx = buffers.member_sec;
+    std::string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
     int& tm_idx = buffers.tm_order_idx;
 
@@ -3910,11 +3907,11 @@ void msta_rebuild_pair_matrices(MstaIterationState& state, MstaIterContext& ctx)
         for (i=0;i<chain_num; i++)
         {
             if (state.assign_list[i]<0) continue;
-            string seqxA=seqxA_mat[i][i];
+            std::string seqxA=seqxA_mat[i][i];
             for (j=0; j<chain_num; j++)
             {
                 if (i==j || state.assign_list[j]<0) continue;
-                string seqyA=seqyA_mat[j][j];
+                std::string seqyA=seqyA_mat[j][j];
                 seqxA_mat[i][j]=seqyA_mat[i][j]="";
                 for (r=0;r<ylen;r++)
                 {
@@ -3934,10 +3931,10 @@ bool msta_accumulate_stats(MstaIterationState& state, MstaIterContext& ctx)
     ParsedInput& parsed_input = ctx.parsed_input;
     const CharMatrix& seq_vec = ctx.complex.seqs;
     const CharMatrix& sec_vec = ctx.complex.secs;
-    const vector<int>& len_vec = ctx.complex.lengths;
+    const std::vector<int>& len_vec = ctx.complex.lengths;
     DoubleCube& a_vec = ctx.a_vec;
-    vector<vector<string> >& seqxA_mat = ctx.seqxA_mat;
-    vector<vector<string> >& seqyA_mat = ctx.seqyA_mat;
+    std::vector<std::vector<std::string> >& seqxA_mat = ctx.seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat = ctx.seqyA_mat;
     const int chain_num = ctx.chain_num;
     const double Lnorm_ass = ctx.Lnorm_ass;
     const bool u_opt = ctx.u_opt;
@@ -3950,8 +3947,8 @@ bool msta_accumulate_stats(MstaIterationState& state, MstaIterContext& ctx)
     int& ylen = buffers.partner_len;
     CoordArray& xa = buffers.member_coords;
     CoordArray& ya = buffers.partner_coords;
-    string& secx = buffers.member_sec;
-    string& secy = buffers.partner_sec;
+    std::string& secx = buffers.member_sec;
+    std::string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
     int& tm_idx = buffers.tm_order_idx;
 
@@ -3973,7 +3970,7 @@ bool msta_accumulate_stats(MstaIterationState& state, MstaIterContext& ctx)
         {
             xlen=len_vec[i];
             if (xlen<3) continue;
-            string seqx;
+            std::string seqx;
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
@@ -3983,7 +3980,7 @@ bool msta_accumulate_stats(MstaIterationState& state, MstaIterContext& ctx)
                 ylen=len_vec[j];
                 if (ylen<3) continue;
                 state.compare_num++;
-                string seqy;
+                std::string seqy;
                 secy.resize(ylen+1);
                 ya.clear();
                 ya.reserve(ylen);
@@ -4097,8 +4094,8 @@ int mTMalign(AlignCommonInput& common_inputs)
     int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
-    string secx;                   // for the secondary structure
-    string secy;
+    std::string secx;                   // for the secondary structure
+    std::string secy;
 
     // parse chain list
     ComplexData complex;
@@ -4112,10 +4109,10 @@ int mTMalign(AlignCommonInput& common_inputs)
     DoubleCube ua_vec = complex.coords;
     const CharMatrix& seq_vec = complex.seqs;
     const CharMatrix& sec_vec = complex.secs;
-    const vector<int>& mol_vec = complex.mol_types;
-    const vector<string>& chainID_list = complex.chain_ids;
-    const vector<int>& len_vec = complex.lengths;
-    const vector<string>& resi_vec = complex.resi;
+    const std::vector<int>& mol_vec = complex.mol_types;
+    const std::vector<std::string>& chainID_list = complex.chain_ids;
+    const std::vector<int>& len_vec = complex.lengths;
+    const std::vector<std::string>& resi_vec = complex.resi;
     int    len_aa = complex.total_len_aa;
     int    len_na = complex.total_len_na;
     int    cur_complex_mol_list=0;
@@ -4134,10 +4131,10 @@ int mTMalign(AlignCommonInput& common_inputs)
 
     // get all-against-all alignment
     DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain_num,vector<double>(chain_num));
-    vector<string> tmp_str_vec(chain_num,"");
-    vector<vector<string> >seqxA_mat(chain_num,tmp_str_vec);
-    vector<vector<string> >seqyA_mat(chain_num,tmp_str_vec);
+    TMave_mat.assign(chain_num,std::vector<double>(chain_num));
+    std::vector<std::string> tmp_str_vec(chain_num,"");
+    std::vector<std::vector<std::string> >seqxA_mat(chain_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqyA_mat(chain_num,tmp_str_vec);
     for (i=0;i<chain_num;i++) for (j=0;j<chain_num;j++) TMave_mat[i][j]=0;
     bool pair_parallel_done = false;
 #ifdef _OPENMP
@@ -4159,7 +4156,7 @@ int mTMalign(AlignCommonInput& common_inputs)
         {
             xlen=len_vec[i];
             if (xlen<3) continue;
-            string seqx;
+            std::string seqx;
             secx.resize(xlen+1);
             xa.clear();
             xa.reserve(xlen);
@@ -4169,7 +4166,7 @@ int mTMalign(AlignCommonInput& common_inputs)
             {
                 ylen=len_vec[j];
                 if (ylen<3) continue;
-                string seqy;
+                std::string seqy;
                 secy.resize(ylen+1);
                 ya.clear();
                 ya.reserve(ylen);
@@ -4278,25 +4275,25 @@ int mTMalign(AlignCommonInput& common_inputs)
     state.totals.n_ali8  /=state.compare_num;
     user_opts.xname="shorter";
     user_opts.yname="longer";
-    string seqM="";
-    string seqxA="";
-    string seqyA="";
+    std::string seqM="";
+    std::string seqxA="";
+    std::string seqyA="";
     Vec3 t0;
     RotMat u0;
-    stringstream buf;
+    std::stringstream buf;
     for (i=0; i<chain_num; i++)
     {
         if (state.assign_list[i]<0) continue;
         buf <<">"<<state.xname_vec[i]<<"\tL="<<len_vec[i]
-            <<"\td0="<<setiosflags(ios::fixed)<<setprecision(2)<<state.d0_vec[i]
-            <<"\tseqID="<<setiosflags(ios::fixed)<<setprecision(3)<<state.seqID_vec[i]
-            <<"\tTM-score="<<setiosflags(ios::fixed)<<setprecision(5)<<state.TM_vec[i];
+            <<"\td0="<<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<state.d0_vec[i]
+            <<"\tseqID="<<setiosflags(std::ios::fixed)<<std::setprecision(3)<<state.seqID_vec[i]
+            <<"\tTM-score="<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<state.TM_vec[i];
         if (i==state.repr_idx) buf<<"\t*";
-        buf<<'\n'<<seqxA_mat[i][i]<<endl;
+        buf<<'\n'<<seqxA_mat[i][i]<<std::endl;
     }
     seqM=buf.str();
     seqM=seqM.substr(0,seqM.size()-1);
-    buf.str(string());
+    buf.str(std::string());
     if (user_opts.outfmt_opt==0) print_version();
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
@@ -4357,39 +4354,39 @@ int mTMalign(AlignCommonInput& common_inputs)
     }
 
     // clean up
-    vector<string>().swap(state.msa);
-    vector<string>().swap(tmp_str_vec);
-    vector<vector<string> >().swap(seqxA_mat);
-    vector<vector<string> >().swap(seqyA_mat);
-    vector<string>().swap(state.xname_vec);
-    vector<string>().swap(state.yname_vec);
+    std::vector<std::string>().swap(state.msa);
+    std::vector<std::string>().swap(tmp_str_vec);
+    std::vector<std::vector<std::string> >().swap(seqxA_mat);
+    std::vector<std::vector<std::string> >().swap(seqyA_mat);
+    std::vector<std::string>().swap(state.xname_vec);
+    std::vector<std::string>().swap(state.yname_vec);
     DoubleCube().swap(a_vec); // structure of complex
-    vector<double>().swap(state.TM_vec);
-    vector<double>().swap(state.d0_vec);
-    vector<double>().swap(state.seqID_vec);
+    std::vector<double>().swap(state.TM_vec);
+    std::vector<double>().swap(state.d0_vec);
+    std::vector<double>().swap(state.seqID_vec);
     DoubleMatrix().swap(state.TM_mat);
     DoubleMatrix().swap(state.d0_mat);
     DoubleMatrix().swap(state.seqID_mat);
     return 1;
 }
 
-int parse_chain_for_soi(const vector<string>& pdb_lines, const string& chain_name,
+int parse_chain_for_soi(const std::vector<std::string>& pdb_lines, const std::string& chain_name,
     int& mol, const UserOptions& user_opts, const SoiAlignParams& soi_params,
-    const bool mirror_opt, CoordArray& a, string& seq, string& sec,
-    vector<string>& resi_vec, CoordArray& k_nearest, IntPairArray& sec_bond)
+    const bool mirror_opt, CoordArray& a, std::string& seq, std::string& sec,
+    std::vector<std::string>& resi_vec, CoordArray& k_nearest, IntPairArray& sec_bond)
 {
     int len=pdb_lines.size();
     if (user_opts.mol_opt=="RNA") mol=1;
     else if (user_opts.mol_opt=="protein") mol=-1;
     if (!len)
     {
-        cerr<<"Warning! Cannot parse file: "<<chain_name
-            <<". Chain length 0."<<endl;
+        std::cerr<<"Warning! Cannot parse file: "<<chain_name
+            <<". Chain length 0."<<std::endl;
         return len;
     }
     else if (len<3)
     {
-        cerr<<"Sequence is too short <3!: "<<chain_name<<endl;
+        std::cerr<<"Sequence is too short <3!: "<<chain_name<<std::endl;
         return len;
     }
     a.clear();
@@ -4416,27 +4413,27 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     ParsedInput& parsed_input = common_inputs.parsed_input;
 
     // declare previously global variables
-    vector<vector<string> >PDB_lines1; // text of chain1
-    vector<vector<string> >PDB_lines2; // text of chain2
-    vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
-    vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
-    vector<string> chainID_list1;      // list of chainID1
-    vector<string> chainID_list2;      // list of chainID2
+    std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
+    std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
+    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    std::vector<std::string> chainID_list1;      // list of chainID1
+    std::vector<std::string> chainID_list2;      // list of chainID2
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
     int    xlen, ylen;         // chain length
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
-    string secx;                // for the secondary structure
-    string secy;
-    string seqx, seqy;         // for the protein sequence
+    std::string secx;                // for the secondary structure
+    std::string secy;
+    std::string seqx, seqy;         // for the protein sequence
     CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
     CoordArray ya;
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure
                                // --> superpose xa onto ya
     SoiAlignContext soi;
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
+    std::vector<std::string> resi_vec1;  // residue index for chain1
+    std::vector<std::string> resi_vec2;  // residue index for chain2
 
     // loop over file names
     for (i=0;i<parsed_input.chain1_list.size();i++)
@@ -4448,8 +4445,8 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
             user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<user_opts.xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
@@ -4472,7 +4469,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<endl;
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
                         continue;
                     }
                 }
@@ -4540,11 +4537,11 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     }
     return 0;
 }
-void normalize_dir_options(const string& dir_opt,
-    const string& dir1_opt,
-    const string& dir2_opt,
-    string& out_dir1_opt,
-    string& out_dir2_opt)
+void normalize_dir_options(const std::string& dir_opt,
+    const std::string& dir1_opt,
+    const std::string& dir2_opt,
+    std::string& out_dir1_opt,
+    std::string& out_dir2_opt)
 {
     out_dir1_opt = dir_opt + dir1_opt;
     out_dir2_opt = dir_opt + dir2_opt;
@@ -4555,10 +4552,10 @@ void normalize_dir_options(const string& dir_opt,
 //         dir_opt, dir1_opt, dir2_opt, dirpair_opt - batch mode options
 // Return: true means single-pair -mm 1 alignment
 bool is_single_mm1_align(int mm_opt,
-    const string& dir_opt,
-    const string& dir1_opt,
-    const string& dir2_opt,
-    const string& dirpair_opt)
+    const std::string& dir_opt,
+    const std::string& dir1_opt,
+    const std::string& dir2_opt,
+    const std::string& dirpair_opt)
 {
     return mm_opt == 1 && dir_opt.size() == 0
         && dir1_opt.size() == 0 && dir2_opt.size() == 0
@@ -4587,12 +4584,12 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
 
-    vector<vector<string> > PDB_lines1; // text of chain1
-    vector<vector<string> > PDB_lines2; // text of chain2
-    vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
-    vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
-    vector<string> chainID_list1;      // list of chainID1
-    vector<string> chainID_list2;      // list of chainID2
+    std::vector<std::vector<std::string> > PDB_lines1; // text of chain1
+    std::vector<std::vector<std::string> > PDB_lines2; // text of chain2
+    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    std::vector<std::string> chainID_list1;      // list of chainID1
+    std::vector<std::string> chainID_list2;      // list of chainID2
     int    i,j;                // file index
     int    chain_i,chain_j;    // chain index
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
@@ -4608,8 +4605,8 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
             user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<user_opts.xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         for (chain_i=0;chain_i<xchainnum;chain_i++)
@@ -4634,7 +4631,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                         user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
-                        cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<endl;
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
                         continue;
                     }
                 }
@@ -4689,15 +4686,15 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     return 0;
 }
 
-inline string get_argv_value(int argc, char* argv[], int& i, const char* opt)
+inline std::string get_argv_value(int argc, char* argv[], int& i, const char* opt)
 {
     if (i >= argc - 1)
-        PrintErrorAndQuit(string("ERROR! Missing value for ") + opt);
+        PrintErrorAndQuit(std::string("ERROR! Missing value for ") + opt);
     return argv[++i];
 }
 
 inline void split_next(int argc, char* argv[], int& i, const char* opt,
-                       vector<string>& target)
+                       std::vector<std::string>& target)
 {
     split(get_argv_value(argc, argv, i, opt), target, ',');
 }
@@ -4710,7 +4707,7 @@ enum OutputFormat
     OUT_CHIMERAX = 3 
 };
 
-inline void set_output_format(int& o_opt, string& fname_super, const int incoming, const string& value)
+inline void set_output_format(int& o_opt, std::string& fname_super, const int incoming, const std::string& value)
 {
     static const char* format_name[] = {"", "-o", "-rasmol", "-chimerax"};
     for (int other = OUT_O; other <= OUT_CHIMERAX; other++)
@@ -4718,8 +4715,8 @@ inline void set_output_format(int& o_opt, string& fname_super, const int incomin
         if (other == incoming) continue;
         if (o_opt == other)
         {
-            cerr << "Warning! " << format_name[other] << " is already set. Ignore "
-                 << format_name[incoming] << endl;
+            std::cerr << "Warning! " << format_name[other] << " is already set. Ignore "
+                 << format_name[incoming] << std::endl;
             return;
         }
     }
@@ -4729,8 +4726,8 @@ inline void set_output_format(int& o_opt, string& fname_super, const int incomin
 
 enum AlnInputKind { ALN_NONE = 0, ALN_I = 1, ALN_BIG_I = 3 };
 
-inline void set_user_alignment(string& fname_lign, int& i_opt,
-                               const int incoming, const string& value)
+inline void set_user_alignment(std::string& fname_lign, int& i_opt,
+                               const int incoming, const std::string& value)
 {
     if (incoming == ALN_I && i_opt == ALN_BIG_I)
         PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
@@ -4745,7 +4742,7 @@ struct BoolFlag { const char* name; bool* target; };
 inline bool apply_bool_flag(const char* arg, const BoolFlag* flags, const size_t n)
 {
     for (size_t k = 0; k < n; k++)
-        if (string(arg) == flags[k].name)
+        if (std::string(arg) == flags[k].name)
         {
             *flags[k].target = true;
             return true;
@@ -4811,14 +4808,14 @@ void normalize_atom_option(UserOptions& user_opts, ParsedInput& parsed)
         user_opts.atom_opt=" C3'";
     if (user_opts.atom_opt.size()!=4)
     {
-        cerr<<"ERROR! Atom name must have 4 characters, including space.\n"
+        std::cerr<<"ERROR! Atom name must have 4 characters, including space.\n"
               "For example, C alpha, C3' and P atoms should be specified by\n"
-              "-atom \" CA \", -atom \" P  \" and -atom \" C3'\", respectively."<<endl;
+              "-atom \" CA \", -atom \" P  \" and -atom \" C3'\", respectively."<<std::endl;
         if (user_opts.atom_opt.size()>=5 || user_opts.atom_opt.size()==0) exit(1);
         else if (user_opts.atom_opt.size()==1) user_opts.atom_opt=" "+user_opts.atom_opt+"  ";
         else if (user_opts.atom_opt.size()==2) user_opts.atom_opt=" "+user_opts.atom_opt+" ";
         else if (user_opts.atom_opt.size()==3) user_opts.atom_opt=" "+user_opts.atom_opt;
-        cerr<<"Change -atom to \""<<user_opts.atom_opt<<"\""<<endl;
+        std::cerr<<"Change -atom to \""<<user_opts.atom_opt<<"\""<<std::endl;
     }
 }
 
@@ -4857,8 +4854,8 @@ void check_numeric_and_conflicts(UserOptions& user_opts, ControlOptions& control
         PrintErrorAndQuit("-mm 3 cannot be used with -i or -I");
 
     if (user_opts.mirror_opt && user_opts.het_opt!=1)
-        cerr<<"WARNING! -mirror was not used with -het 1. "
-            <<"D amino acids may not be correctly aligned."<<endl;
+        std::cerr<<"WARNING! -mirror was not used with -het 1. "
+            <<"D amino acids may not be correctly aligned."<<std::endl;
 }
 
 void parse_ter_opt(UserOptions& user_opts, ControlOptions& control)
@@ -4882,7 +4879,7 @@ void check_mm_conflicts(UserOptions& user_opts, ControlOptions& control)
         if (user_opts.byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
         if (user_opts.ter_opt>=2 && (control.mm_opt==1 || control.mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");
         if (control.mm_opt==4 && (user_opts.yname.size() || user_opts.dir2_opt.size()))
-            cerr<<"WARNING! structure_2 is ignored for -mm 4"<<endl;
+            std::cerr<<"WARNING! structure_2 is ignored for -mm 4"<<std::endl;
         if (user_opts.dirpair_opt.size() && (control.mm_opt==2 || control.mm_opt==4))
             PrintErrorAndQuit("-mm 2 or 4 cannot be used with -dirpair");
     }
@@ -4890,11 +4887,11 @@ void check_mm_conflicts(UserOptions& user_opts, ControlOptions& control)
 
     if (user_opts.o_opt && user_opts.ter_opt<=1 && user_opts.split_opt==2)
     {
-        if (control.mm_opt && user_opts.o_opt==2) cerr<<"WARNING! -mm may generate incorrect"
+        if (control.mm_opt && user_opts.o_opt==2) std::cerr<<"WARNING! -mm may generate incorrect"
             <<" RasMol output due to limitations in PDB file format. "
-            <<"When -mm is used, -o is recommended over -rasmol"<<endl;
-        else if (control.mm_opt==0) cerr<<"WARNING! Only the superposition of the"
-            <<" last aligned structure pair will be generated"<<endl;
+            <<"When -mm is used, -o is recommended over -rasmol"<<std::endl;
+        else if (control.mm_opt==0) std::cerr<<"WARNING! Only the superposition of the"
+            <<" last aligned structure pair will be generated"<<std::endl;
     }
 }
 
@@ -4966,31 +4963,31 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
 
     for(int i = 1; i < argc; i++)
     {
-        if ( string(argv[i]) == "-o" )
+        if ( std::string(argv[i]) == "-o" )
         {
-            const string val = get_argv_value(argc, argv, i, "-o");
+            const std::string val = get_argv_value(argc, argv, i, "-o");
             set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_O, val);
         }
-        else if ( string(argv[i]) == "-rasmol" )
+        else if ( std::string(argv[i]) == "-rasmol" )
         {
-            const string val = get_argv_value(argc, argv, i, "-rasmol");
+            const std::string val = get_argv_value(argc, argv, i, "-rasmol");
             set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_RASMOL, val);
         }
-        else if ( string(argv[i]) == "-chimerax" )
+        else if ( std::string(argv[i]) == "-chimerax" )
         {
-            const string val = get_argv_value(argc, argv, i, "-chimerax");
+            const std::string val = get_argv_value(argc, argv, i, "-chimerax");
             set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_CHIMERAX, val);
         }
-        else if ( string(argv[i]) == "-u" || string(argv[i]) == "-L" )
+        else if ( std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L" )
         {
-            const string val = get_argv_value(argc, argv, i, "-u or -L");
+            const std::string val = get_argv_value(argc, argv, i, "-u or -L");
             user_opts.Lnorm_ass = safe_stod(val); user_opts.u_opt = true;
             if (user_opts.Lnorm_ass<=0) PrintErrorAndQuit(
                 "ERROR! The value for -u or -L should be >0");
         }
-        else if ( string(argv[i]) == "-a" )
+        else if ( std::string(argv[i]) == "-a" )
         {
-            const string val = get_argv_value(argc, argv, i, "-a");
+            const std::string val = get_argv_value(argc, argv, i, "-a");
             if (val == "T")      user_opts.a_opt=true;
             else if (val == "F") user_opts.a_opt=false;
             else 
@@ -5000,95 +4997,95 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
         }
-        else if ( string(argv[i]) == "-full" )
+        else if ( std::string(argv[i]) == "-full" )
         {
-            const string val = get_argv_value(argc, argv, i, "-full");
+            const std::string val = get_argv_value(argc, argv, i, "-full");
             if (val == "T")      ctrl_opts.full_opt=true;
             else if (val == "F") ctrl_opts.full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
         }
-        else if ( string(argv[i]) == "-d" )
+        else if ( std::string(argv[i]) == "-d" )
         {
-            const string val = get_argv_value(argc, argv, i, "-d");
+            const std::string val = get_argv_value(argc, argv, i, "-d");
             user_opts.d0_scale = safe_stod(val); user_opts.d_opt = true;
         }
-        else if ( string(argv[i]) == "-closeK" )
+        else if ( std::string(argv[i]) == "-closeK" )
         {
-            const string val = get_argv_value(argc, argv, i, "-closeK");
+            const std::string val = get_argv_value(argc, argv, i, "-closeK");
             ctrl_opts.closeK_opt = safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-hinge" )
+        else if ( std::string(argv[i]) == "-hinge" )
         {
-            const string val = get_argv_value(argc, argv, i, "-hinge");
+            const std::string val = get_argv_value(argc, argv, i, "-hinge");
             ctrl_opts.hinge_set = true;
             ctrl_opts.hinge_opt = safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-i" )
+        else if ( std::string(argv[i]) == "-i" )
         {
-            const string val = get_argv_value(argc, argv, i, "-i");
+            const std::string val = get_argv_value(argc, argv, i, "-i");
             set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_I, val);
         }
-        else if (string(argv[i]) == "-I" )
+        else if (std::string(argv[i]) == "-I" )
         {
-            const string val = get_argv_value(argc, argv, i, "-I");
+            const std::string val = get_argv_value(argc, argv, i, "-I");
             set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_BIG_I, val);
         }
-        else if (string(argv[i]) == "-chainmap" )
+        else if (std::string(argv[i]) == "-chainmap" )
         {
-            const string val = get_argv_value(argc, argv, i, "-chainmap");
+            const std::string val = get_argv_value(argc, argv, i, "-chainmap");
             ctrl_opts.chainmapfile = val;
         }
-        else if (string(argv[i]) == "-chain1" )
+        else if (std::string(argv[i]) == "-chain1" )
             split_next(argc, argv, i, "-chain1", user_opts.chain2parse1);
-        else if (string(argv[i]) == "-chain2" )
+        else if (std::string(argv[i]) == "-chain2" )
             split_next(argc, argv, i, "-chain2", user_opts.chain2parse2);
-        else if (string(argv[i]) == "-model1" )
+        else if (std::string(argv[i]) == "-model1" )
             split_next(argc, argv, i, "-model1", user_opts.model2parse1);
-        else if (string(argv[i]) == "-model2" )
+        else if (std::string(argv[i]) == "-model2" )
             split_next(argc, argv, i, "-model2", user_opts.model2parse2);
-        else if (string(argv[i]) == "-m" )
+        else if (std::string(argv[i]) == "-m" )
         {
-            const string val = get_argv_value(argc, argv, i, "-m");
+            const std::string val = get_argv_value(argc, argv, i, "-m");
             user_opts.fname_matrix = val;    user_opts.m_opt = true;
         }// get filename for rotation matrix
-        else if ( string(argv[i]) == "-infmt1" )
+        else if ( std::string(argv[i]) == "-infmt1" )
         {
-            const string val = get_argv_value(argc, argv, i, "-infmt1");
+            const std::string val = get_argv_value(argc, argv, i, "-infmt1");
             user_opts.infmt1_opt=safe_stoi(val);
             if (user_opts.infmt1_opt<-1 || user_opts.infmt1_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt1 can only be -1, 0, 1, 2, or 3");
         }
-        else if ( string(argv[i]) == "-infmt2" )
+        else if ( std::string(argv[i]) == "-infmt2" )
         {
-            const string val = get_argv_value(argc, argv, i, "-infmt2");
+            const std::string val = get_argv_value(argc, argv, i, "-infmt2");
             user_opts.infmt2_opt=safe_stoi(val);
             if (user_opts.infmt2_opt<-1 || user_opts.infmt2_opt>3)
                 PrintErrorAndQuit("ERROR! -infmt2 can only be -1, 0, 1, 2, or 3");
         }
-        else if ( string(argv[i]) == "-ter" )
+        else if ( std::string(argv[i]) == "-ter" )
         {
-            const string val = get_argv_value(argc, argv, i, "-ter");
+            const std::string val = get_argv_value(argc, argv, i, "-ter");
             user_opts.ter_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-split" )
+        else if ( std::string(argv[i]) == "-split" )
         {
-            const string val = get_argv_value(argc, argv, i, "-split");
+            const std::string val = get_argv_value(argc, argv, i, "-split");
             user_opts.split_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-atom" )
+        else if ( std::string(argv[i]) == "-atom" )
         {
-            const string val = get_argv_value(argc, argv, i, "-atom");
+            const std::string val = get_argv_value(argc, argv, i, "-atom");
             user_opts.atom_opt=val;
         }
-        else if ( string(argv[i]) == "-threads" )
+        else if ( std::string(argv[i]) == "-threads" )
         {
-            const string val = get_argv_value(argc, argv, i, "-threads");
+            const std::string val = get_argv_value(argc, argv, i, "-threads");
             ctrl_opts.parallel_threads = atoi(val.c_str());
             if (ctrl_opts.parallel_threads <= 1) ctrl_opts.parallel_threads = 1;
         }
-        else if ( string(argv[i]) == "-mol" )
+        else if ( std::string(argv[i]) == "-mol" )
         {
-            const string val = get_argv_value(argc, argv, i, "-mol");
+            const std::string val = get_argv_value(argc, argv, i, "-mol");
             user_opts.mol_opt=val;
             if (user_opts.mol_opt=="prot") user_opts.mol_opt="protein";
             else if (user_opts.mol_opt=="DNA") user_opts.mol_opt="RNA";
@@ -5097,83 +5094,83 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
                     "following:\nauto, prot (the same as 'protein'), and "
                     "RNA (the same as 'DNA').");
         }
-        else if ( string(argv[i]) == "-dir" )
+        else if ( std::string(argv[i]) == "-dir" )
         {
-            const string val = get_argv_value(argc, argv, i, "-dir");
+            const std::string val = get_argv_value(argc, argv, i, "-dir");
             user_opts.dir_opt=val;
         }
-        else if ( string(argv[i]) == "-dirpair" )
+        else if ( std::string(argv[i]) == "-dirpair" )
         {
-            const string val = get_argv_value(argc, argv, i, "-dirpair");
+            const std::string val = get_argv_value(argc, argv, i, "-dirpair");
             user_opts.dirpair_opt=val;
         }
-        else if ( string(argv[i]) == "-dir1" )
+        else if ( std::string(argv[i]) == "-dir1" )
         {
-            const string val = get_argv_value(argc, argv, i, "-dir1");
+            const std::string val = get_argv_value(argc, argv, i, "-dir1");
             user_opts.dir1_opt=val;
         }
-        else if ( string(argv[i]) == "-dir2" )
+        else if ( std::string(argv[i]) == "-dir2" )
         {
-            const string val = get_argv_value(argc, argv, i, "-dir2");
+            const std::string val = get_argv_value(argc, argv, i, "-dir2");
             user_opts.dir2_opt=val;
         }
-        else if ( string(argv[i]) == "-suffix" )
+        else if ( std::string(argv[i]) == "-suffix" )
         {
-            const string val = get_argv_value(argc, argv, i, "-suffix");
+            const std::string val = get_argv_value(argc, argv, i, "-suffix");
             ctrl_opts.suffix_opt=val;
         }
-        else if ( string(argv[i]) == "-outfmt" )
+        else if ( std::string(argv[i]) == "-outfmt" )
         {
-            const string val = get_argv_value(argc, argv, i, "-outfmt");
+            const std::string val = get_argv_value(argc, argv, i, "-outfmt");
             user_opts.outfmt_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-TMcut" )
+        else if ( std::string(argv[i]) == "-TMcut" )
         {
-            const string val = get_argv_value(argc, argv, i, "-TMcut");
+            const std::string val = get_argv_value(argc, argv, i, "-TMcut");
             user_opts.TMcut=safe_stod(val);
         }
-        else if ( string(argv[i]) == "-byresi"  || 
-                  string(argv[i]) == "-tmscore" ||
-                  string(argv[i]) == "-TMscore")
+        else if ( std::string(argv[i]) == "-byresi"  || 
+                  std::string(argv[i]) == "-tmscore" ||
+                  std::string(argv[i]) == "-TMscore")
         {
-            const string val = get_argv_value(argc, argv, i, "-byresi");
+            const std::string val = get_argv_value(argc, argv, i, "-byresi");
             user_opts.byresi_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-seq" )
+        else if ( std::string(argv[i]) == "-seq" )
         {
             user_opts.byresi_opt=5;
         }
-        else if ( string(argv[i]) == "-cp" )
+        else if ( std::string(argv[i]) == "-cp" )
         {
             ctrl_opts.mm_opt=3;
         }
-        else if ( string(argv[i]) == "-mirror" )
+        else if ( std::string(argv[i]) == "-mirror" )
         {
-            const string val = get_argv_value(argc, argv, i, "-mirror");
+            const std::string val = get_argv_value(argc, argv, i, "-mirror");
             user_opts.mirror_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-het" )
+        else if ( std::string(argv[i]) == "-het" )
         {
-            const string val = get_argv_value(argc, argv, i, "-het");
+            const std::string val = get_argv_value(argc, argv, i, "-het");
             user_opts.het_opt=safe_stoi(val);
             if (user_opts.het_opt!=0 && user_opts.het_opt!=1 && user_opts.het_opt!=2)
                 PrintErrorAndQuit("-het must be 0, 1, or 2");
         }
-        else if ( string(argv[i]) == "-mm" )
+        else if ( std::string(argv[i]) == "-mm" )
         {
-            const string val = get_argv_value(argc, argv, i, "-mm");
+            const std::string val = get_argv_value(argc, argv, i, "-mm");
             ctrl_opts.mm_opt=safe_stoi(val);
         }
-        else if ( string(argv[i]) == "-TMpass" )
+        else if ( std::string(argv[i]) == "-TMpass" )
         {
-            const string val = get_argv_value(argc, argv, i, "-TMpass");
+            const std::string val = get_argv_value(argc, argv, i, "-TMpass");
             ctrl_opts.TMpass_opt = safe_stod(val);
         }
         else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
             continue;
         else if (user_opts.xname.size() == 0) user_opts.xname=argv[i];
         else if (user_opts.yname.size() == 0) user_opts.yname=argv[i];
-        else PrintErrorAndQuit(string("ERROR! Undefined option ")+argv[i]);
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
 }
 
@@ -5224,13 +5221,13 @@ int main(int argc, char *argv[])
     {
         if (ctrl_opts.mm_opt == 2)
         {
-            cout << "#Query\tTemplate\tTM" << endl;
+            std::cout << "#Query\tTemplate\tTM" << std::endl;
         }
         else
         {
-            if (ctrl_opts.mm_opt == 1) cout << endl;
-            cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-                << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << endl;
+            if (ctrl_opts.mm_opt == 1) std::cout << std::endl;
+            std::cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+                << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << std::endl;
         }
     }
 
@@ -5249,14 +5246,14 @@ int main(int argc, char *argv[])
             for (int chain1_idx=0; chain1_idx<(int)parsed_input.chain1_list.size(); chain1_idx++)
             {
                 user_opts.xname = parsed_input.chain1_list[chain1_idx];
-                vector<string> tmp_vec1(1, user_opts.xname);
+                std::vector<std::string> tmp_vec1(1, user_opts.xname);
                 for (int chain2_idx=0; chain2_idx<(int)parsed_input.chain2_list.size(); chain2_idx++)
                 {
                     if (user_opts.dir_opt.size()>0 && chain2_idx<=chain1_idx) continue;
                     user_opts.yname = parsed_input.chain2_list[chain2_idx];
-                    vector<string> tmp_vec2(1, user_opts.yname);
-                    string norm_dir1;
-                    string norm_dir2;
+                    std::vector<std::string> tmp_vec2(1, user_opts.yname);
+                    std::string norm_dir1;
+                    std::string norm_dir2;
                     normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
                     MMalignParams mm_params;
                     mm_params.dir1_opt = norm_dir1;
@@ -5264,9 +5261,9 @@ int main(int argc, char *argv[])
                     mm_params.chain1_list = tmp_vec1;
                     mm_params.chain2_list = tmp_vec2;
                     MMalign(common_inputs, mm_params);
-                    vector<string>().swap(tmp_vec2);
+                    std::vector<std::string>().swap(tmp_vec2);
                 }
-                vector<string>().swap(tmp_vec1);
+                std::vector<std::string>().swap(tmp_vec1);
             }
         }
         else if (user_opts.dirpair_opt.size()==0)
@@ -5280,8 +5277,8 @@ int main(int argc, char *argv[])
         }
         else
         {
-            vector<string> tmp_vec1;
-            vector<string> tmp_vec2;
+            std::vector<std::string> tmp_vec1;
+            std::vector<std::string> tmp_vec2;
             for (int i=0;i<parsed_input.chain1_list.size();i++)
             {
                 user_opts.xname=parsed_input.chain1_list[i];
@@ -5317,7 +5314,7 @@ int main(int argc, char *argv[])
         FlexAlignResult flex_result;
         Flexalign(common_inputs, flex_params, flex_result);
     }
-    else cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<endl;
+    else std::cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<std::endl;
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;

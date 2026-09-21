@@ -7,9 +7,9 @@
 #include <map>
 #include <functional>
 
-static vector<string> split_name(const string& name)
+static std::vector<std::string> split_name(const std::string& name)
 {
-    vector<string> parts;
+    std::vector<std::string> parts;
     size_t j = 0;
     for (size_t i = 0; i <= name.size(); i++) {
         if (i == name.size() || name[i] == '+') {
@@ -20,8 +20,8 @@ static vector<string> split_name(const string& name)
     return parts;
 }
 
-static pair<int,int> find_min_distance(
-    const vector<vector<double>>& mat, int len)
+static std::pair<int,int> find_min_distance(
+    const std::vector<std::vector<double>>& mat, int len)
 {
     double min_dis = 1e10;
     int col = -1, row = -1;
@@ -40,8 +40,8 @@ static pair<int,int> find_min_distance(
 // @input  new_level - merge round number to assign
 // @output updates level field of matching nodes and edges in-place
 static void change_node_level(
-    vector<UPGMA_Node>& nodes, vector<UPGMA_Edge>& edges,
-    const string& name, int new_level)
+    std::vector<UPGMA_Node>& nodes, std::vector<UPGMA_Edge>& edges,
+    const std::string& name, int new_level)
 {
     for (auto& n : nodes)
     {
@@ -68,18 +68,18 @@ static void change_node_level(
 // @input  orig_dist  - original distance matrix
 // @output average of all cross-group pair distances
 static double get_avg_distance_between(
-    const string& group_a, const string& group_b,
-    const vector<string>& orig_names,
-    const vector<vector<double>>& orig_dist)
+    const std::string& group_a, const std::string& group_b,
+    const std::vector<std::string>& orig_names,
+    const std::vector<std::vector<double>>& orig_dist)
 {
-    vector<string> members_a = split_name(group_a);
-    vector<string> members_b = split_name(group_b);
+    std::vector<std::string> members_a = split_name(group_a);
+    std::vector<std::string> members_b = split_name(group_b);
     double sum = 0;
     int cnt = 0;
     for (size_t i = 0; i < orig_names.size(); i++)
         for (size_t j = 0; j < orig_names.size(); j++) {
-            bool in_a = find(members_a.begin(), members_a.end(), orig_names[i]) != members_a.end();
-            bool in_b = find(members_b.begin(), members_b.end(), orig_names[j]) != members_b.end();
+            bool in_a = std::find(members_a.begin(), members_a.end(), orig_names[i]) != members_a.end();
+            bool in_b = std::find(members_b.begin(), members_b.end(), orig_names[j]) != members_b.end();
             if (in_a && in_b) { sum += orig_dist[i][j]; cnt++; }
         }
     return (cnt > 0) ? sum / cnt : 0;
@@ -95,43 +95,43 @@ static double get_avg_distance_between(
 // @output mat   updated to (n-1)x(n-1)
 // @output names updated to n-1 names (merged cluster added)
 static void renew_matrix(
-    vector<vector<double>>& mat, vector<string>& names,
+    std::vector<std::vector<double>>& mat, std::vector<std::string>& names,
     int merged_a, int merged_b,
-    const vector<string>& orig_names,
-    const vector<vector<double>>& orig_dist)
+    const std::vector<std::string>& orig_names,
+    const std::vector<std::vector<double>>& orig_dist)
 {
-    int max_idx = max(merged_a, merged_b);
-    int min_idx = min(merged_a, merged_b);
+    int max_idx = std::max(merged_a, merged_b);
+    int min_idx = std::min(merged_a, merged_b);
     int old_len = (int)names.size();
     int new_len = old_len - 1;
 
     // build new name list: keep unmerged clusters, merge two into "A+B" at end
-    vector<string> new_names;
+    std::vector<std::string> new_names;
     for (int i = 0; i < old_len; i++)
         if ((i != min_idx) && (i != max_idx))
             new_names.push_back(names[i]);
     new_names.push_back(names[max_idx] + "+" + names[min_idx]);
-    vector<vector<double>> new_mat(new_len, vector<double>(new_len, 0.0));
+    std::vector<std::vector<double>> new_mat(new_len, std::vector<double>(new_len, 0.0));
 
     // build old name->index map for O(1) lookup
-    map<string, int> name_to_idx;
+    std::map<std::string, int> name_to_idx;
     for (int t = 0; t < old_len; t++)
         name_to_idx[names[t]] = t;
 
     for (int i = 0; i < new_len; i++) {
         for (int k = 0; k < i; k++) {
-            map<string, int>::iterator iter_i = name_to_idx.find(new_names[i]);
-            map<string, int>::iterator iter_k = name_to_idx.find(new_names[k]);
+            std::map<std::string, int>::iterator iter_i = name_to_idx.find(new_names[i]);
+            std::map<std::string, int>::iterator iter_k = name_to_idx.find(new_names[k]);
             if (iter_i != name_to_idx.end() && iter_k != name_to_idx.end()) {
                 int idx_i = iter_i->second;
                 int idx_k = iter_k->second;
-                new_mat[i][k] = mat[max(idx_i, idx_k)][min(idx_i, idx_k)];
+                new_mat[i][k] = mat[std::max(idx_i, idx_k)][std::min(idx_i, idx_k)];
             } else {
                 new_mat[i][k] = get_avg_distance_between(new_names[i], new_names[k], orig_names, orig_dist);
             }
         }
     }
-    mat = move(new_mat);
+    mat = std::move(new_mat);
     names = move(new_names);
 }
 
@@ -145,11 +145,11 @@ static void renew_matrix(
 // 3) Update distance matrix (average linkage)
 // 4) Repeat until one cluster remains
 
-unique_ptr<UPGMA_Tree> build_upgma_tree(
-    const vector<string>& names,
-    const vector<vector<double>>& dist_mat)
+std::unique_ptr<UPGMA_Tree> build_upgma_tree(
+    const std::vector<std::string>& names,
+    const std::vector<std::vector<double>>& dist_mat)
 {
-    auto tree = unique_ptr<UPGMA_Tree>(new UPGMA_Tree);
+    auto tree = std::unique_ptr<UPGMA_Tree>(new UPGMA_Tree);
     int structure_num = (int)names.size();
     tree->cluster_names = names;
     tree->distance_matrix = dist_mat;
@@ -159,21 +159,21 @@ unique_ptr<UPGMA_Tree> build_upgma_tree(
         tree->nodes.push_back({names[i], -1});
 
     // initialize leaf heights to 0 for correct branch length calculation
-    map<string, double> node_height;
+    std::map<std::string, double> node_height;
     for (int i = 0; i < structure_num; i++)
         node_height[names[i]] = 0.0;
 
     for (int iter = 0; iter < structure_num - 1; iter++) {
 
-        pair<int,int> min_pair = find_min_distance(tree->distance_matrix, (int)tree->cluster_names.size());
+        std::pair<int,int> min_pair = find_min_distance(tree->distance_matrix, (int)tree->cluster_names.size());
         int closest_idx_a = min_pair.first;
         int closest_idx_b = min_pair.second;
 
-        string cluster_a_name = tree->cluster_names[closest_idx_a];
-        string cluster_b_name = tree->cluster_names[closest_idx_b];
+        std::string cluster_a_name = tree->cluster_names[closest_idx_a];
+        std::string cluster_b_name = tree->cluster_names[closest_idx_b];
         double merge_dist = tree->distance_matrix[closest_idx_a][closest_idx_b];
         double parent_height = merge_dist / 2.0;
-        string parent_name = cluster_a_name + "+" + cluster_b_name;
+        std::string parent_name = cluster_a_name + "+" + cluster_b_name;
 
         tree->nodes.push_back({parent_name, -1});
         for (auto& node : tree->nodes) {
@@ -197,9 +197,9 @@ unique_ptr<UPGMA_Tree> build_upgma_tree(
 
 // ============ Newick output ============
 // recursive Newick builder (helper)
-static void build_newick_node(const string& node,
-    const map<string, vector<pair<string, double>>>& children,
-    stringstream& ss)
+static void build_newick_node(const std::string& node,
+    const std::map<std::string, std::vector<std::pair<std::string, double>>>& children,
+    std::stringstream& ss)
 {
     auto it = children.find(node);
     if (it == children.end()) 
@@ -218,17 +218,17 @@ static void build_newick_node(const string& node,
 }
 
 // Serialize tree to Newick format string
-string get_tree_string(const UPGMA_Tree* tree, int precision)
+std::string get_tree_string(const UPGMA_Tree* tree, int precision)
 {
     if (tree->nodes.empty() || tree->edges.empty()) return "";
-    map<string, vector<pair<string, double>>> children;
+    std::map<std::string, std::vector<std::pair<std::string, double>>> children;
     for (auto& e : tree->edges) {
-        string child  = e.child.name;
-        string parent = e.parent.name;
+        std::string child  = e.child.name;
+        std::string parent = e.parent.name;
         children[parent].push_back({child, e.branch_length});
     }
-    stringstream ss;
-    ss << fixed << setprecision(precision);
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(precision);
     build_newick_node(tree->nodes.back().name, children, ss);
     ss << ";";
     return ss.str();
@@ -237,7 +237,7 @@ string get_tree_string(const UPGMA_Tree* tree, int precision)
 
 // build parent->children name map from edges (no branch lengths)
 static void build_child_tree_map(const UPGMA_Tree* tree,
-    map<string, vector<string>>& children)
+    std::map<std::string, std::vector<std::string>>& children)
 {
     for (auto& e : tree->edges)
         children[e.parent.name].push_back(e.child.name);
@@ -257,10 +257,10 @@ static void build_child_tree_map(const UPGMA_Tree* tree,
 //   - if leaf:   print "prefix + connector + node_name"
 //   - if branch: print "prefix + connector + *", then recurse with deeper prefix
 static void print_ascii_node(
-    const string& node,
-    const map<string, vector<string>>& children,
-    ostream& os,
-    const string& prefix)
+    const std::string& node,
+    const std::map<std::string, std::vector<std::string>>& children,
+    std::ostream& os,
+    const std::string& prefix)
 {
     auto it = children.find(node);
     bool is_leaf = (it == children.end() || it->second.empty());
@@ -272,8 +272,8 @@ static void print_ascii_node(
 
     for (size_t i = 0; i < it->second.size(); i++) {
         bool last = (i == it->second.size() - 1);
-        string conn = last ? "`-- " : "|-- ";
-        string next = prefix + (last ? "    " : "|   ");
+        std::string conn = last ? "`-- " : "|-- ";
+        std::string next = prefix + (last ? "    " : "|   ");
         auto child_it = children.find(it->second[i]);
         bool child_is_leaf = (child_it == children.end() || child_it->second.empty());
 
@@ -289,14 +289,14 @@ static void print_ascii_node(
 // Print entire tree as ASCII diagram
 // @input tree - UPGMA tree with nodes and edges
 // @input os   - output stream
-void print_tree(const UPGMA_Tree* tree, ostream& os)
+void print_tree(const UPGMA_Tree* tree, std::ostream& os)
 {
     if (tree->nodes.empty() || tree->edges.empty()) return;
 
     // Build parent-child map and find root
-    map<string, vector<string>> children;
+    std::map<std::string, std::vector<std::string>> children;
     build_child_tree_map(tree, children);
-    string root = tree->nodes.back().name;
+    std::string root = tree->nodes.back().name;
     os << "# UPGMA Tree:" << "\n";
 
     // Print root ".", then recursively print its children
@@ -305,7 +305,7 @@ void print_tree(const UPGMA_Tree* tree, ostream& os)
     if (root_it != children.end()) {
         for (size_t i = 0; i < root_it->second.size(); i++) {
             bool last = (i == root_it->second.size() - 1);
-            string conn = last ? "`-- " : "|-- ";
+            std::string conn = last ? "`-- " : "|-- ";
             bool child_is_leaf = (children.find(root_it->second[i]) == children.end() ||
                                   children.at(root_it->second[i]).empty());
             if (child_is_leaf) {
@@ -327,12 +327,12 @@ void print_tree(const UPGMA_Tree* tree, ostream& os)
 
 // calculate SVG layout: depth and Y coordinates
 static void calc_svg_layout(
-    const map<string, vector<string>>& children, const string& root,
-    map<string, int>& depth, map<string, double>& ypos,
+    const std::map<std::string, std::vector<std::string>>& children, const std::string& root,
+    std::map<std::string, int>& depth, std::map<std::string, double>& ypos,
     int& leaf_count, int& svg_height)
 {
     // calculate node depths
-    function<void(const string&, int)> set_depth = [&](const string& node, int d) {
+    std::function<void(const std::string&, int)> set_depth = [&](const std::string& node, int d) {
         depth[node] = d;
         auto it = children.find(node);
         if (it != children.end())
@@ -345,7 +345,7 @@ static void calc_svg_layout(
     const double top_margin = 30;
     const double leaf_margin = 24;
 
-    function<void(const string&)> assign_y = [&](const string& node) {
+    std::function<void(const std::string&)> assign_y = [&](const std::string& node) {
         auto it = children.find(node);
         if (it == children.end() || it->second.empty()) {
             ypos[node] = top_margin + leaf_idx * leaf_margin;
@@ -359,16 +359,16 @@ static void calc_svg_layout(
     };
     assign_y(root);
     leaf_count = leaf_idx;
-    svg_height = max(200, (int)(top_margin * 2 + leaf_count * leaf_margin));
+    svg_height = std::max(200, (int)(top_margin * 2 + leaf_count * leaf_margin));
 }
 
 // recursive SVG tree drawer
 static void draw_svg_tree(
-    ofstream& ofs,
-    const map<string, vector<string>>& children,
-    const map<string, int>& depth,
-    const map<string, double>& ypos,
-    const string& node)
+    std::ofstream& ofs,
+    const std::map<std::string, std::vector<std::string>>& children,
+    const std::map<std::string, int>& depth,
+    const std::map<std::string, double>& ypos,
+    const std::string& node)
 {
     const double left_margin = 50;
     const double x_step = 80;
@@ -402,17 +402,17 @@ static void draw_svg_tree(
             << "\">" << node << "</text>\n";
 }
 
-bool save_svg(const UPGMA_Tree* tree, const string& filename)
+bool save_svg(const UPGMA_Tree* tree, const std::string& filename)
 {
     if (tree->nodes.empty() || tree->edges.empty()) return false;
 
-    map<string, vector<string>> children;
+    std::map<std::string, std::vector<std::string>> children;
     // build parent-child map
     build_child_tree_map(tree, children);
-    string root_name = tree->nodes.back().name;
+    std::string root_name = tree->nodes.back().name;
 
-    map<string, int> depth;
-    map<string, double> ypos;
+    std::map<std::string, int> depth;
+    std::map<std::string, double> ypos;
     int leaf_count = 0, svg_height = 200;
     // calculate depth and Y positions
     calc_svg_layout(children, root_name, depth, ypos, leaf_count, svg_height);
@@ -420,7 +420,7 @@ bool save_svg(const UPGMA_Tree* tree, const string& filename)
     if (leaf_count == 0) return false;
     int svg_width = 600;
 
-    ofstream ofs(filename);
+    std::ofstream ofs(filename);
     if (!ofs) return false;
 
     ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
@@ -440,11 +440,11 @@ bool save_svg(const UPGMA_Tree* tree, const string& filename)
 // @output dist_mat  - distance matrix, formula: dist = 1 / (1 + TM)
 //         0 < dist <= 1, smaller = more similar
 
-vector<vector<double>> build_distance_matrix(
-    const vector<vector<double>>& tm_mat,
+std::vector<std::vector<double>> build_distance_matrix(
+    const std::vector<std::vector<double>>& tm_mat,
     int chain_num)
 {
-    vector<vector<double>> dist_mat(chain_num, vector<double>(chain_num, 0.0));
+    std::vector<std::vector<double>> dist_mat(chain_num, std::vector<double>(chain_num, 0.0));
     for (int i = 0; i < chain_num; i++)
         for (int j = i + 1; j < chain_num; j++) {
             double d = 1.0 / (1.0 + tm_mat[i][j]);
@@ -458,12 +458,12 @@ vector<vector<double>> build_distance_matrix(
 // ============ Clean chain names ============
 // @input  names - chain names with "filename:chainID" format (e.g. "1d2na.atm:D")
 // @output vector<string> - cleaned filenames only (e.g. "1d2na.atm")
-vector<string> clean_chain_names(const vector<string>& names)
+std::vector<std::string> clean_chain_names(const std::vector<std::string>& names)
 {
-    vector<string> result = names;
+    std::vector<std::string> result = names;
     for (size_t i = 0; i < result.size(); i++) {
         size_t pos = result[i].rfind(':');
-        if (pos != string::npos)
+        if (pos != std::string::npos)
             result[i] = result[i].substr(0, pos);
         // remove leading path separator left by dir_opt="." (e.g. "/1d2na.atm")
         if (!result[i].empty() && (result[i][0] == '/' || result[i][0] == '\\'))
@@ -475,18 +475,18 @@ vector<string> clean_chain_names(const vector<string>& names)
 
 // ============ Distance matrix output ============
 // Save distance matrix in PHYLIP format
-void save_distance_matrix(const vector<string>& names,
-    const vector<vector<double>>& dist_mat, int chain_num)
+void save_distance_matrix(const std::vector<std::string>& names,
+    const std::vector<std::vector<double>>& dist_mat, int chain_num)
 {
-    ofstream dmf("upgma_tree.dist");
+    std::ofstream dmf("upgma_tree.dist");
     dmf << chain_num << "\n";
     for (int i = 0; i < chain_num; i++) {
-        string name = names[i].substr(0, 10);
+        std::string name = names[i].substr(0, 10);
         if (name.size() < 10) name.append(10 - name.size(), ' ');
         dmf << name;
         for (int j = 0; j < chain_num; j++) {
             double d = (i == j) ? 0.0 : dist_mat[i][j];
-            dmf << "  " << fixed << setprecision(5) << d;
+            dmf << "  " << std::fixed << std::setprecision(5) << d;
         }
         dmf << "\n";
     }
@@ -499,20 +499,20 @@ void save_distance_matrix(const vector<string>& names,
 // Output: upgma_tree.txt, upgma_tree.dist,
 //         upgma_tree.svg, ASCII tree
 void output_upgma_tree(
-    const vector<string>& names,
-    const vector<vector<double>>& tm_mat,
+    const std::vector<std::string>& names,
+    const std::vector<std::vector<double>>& tm_mat,
     int chain_num)
 {
     if (chain_num < 3) return;
 
     // 1. Build UPGMA tree
-    vector<string> clean_names = clean_chain_names(names);
-    vector<vector<double>> dist_mat = build_distance_matrix(tm_mat, chain_num);
+    std::vector<std::string> clean_names = clean_chain_names(names);
+    std::vector<std::vector<double>> dist_mat = build_distance_matrix(tm_mat, chain_num);
     auto tree = build_upgma_tree(clean_names, dist_mat);
 
     // 2. Save Newick format tree
-    string newick = get_tree_string(tree.get(), 5);
-    ofstream nf("upgma_tree.txt");
+    std::string newick = get_tree_string(tree.get(), 5);
+    std::ofstream nf("upgma_tree.txt");
     nf << newick << "\n";
     nf.close();
 
@@ -521,9 +521,9 @@ void output_upgma_tree(
     save_distance_matrix(clean_names, dist_mat, chain_num);
 
     // 4. Print tree to terminal
-    cout << "\n# UPGMA Phylogenetic Tree:\n";
-    cout << "# Newick: " << newick << "\n";
-    print_tree(tree.get(), cout);
-    cout << "\n";
+    std::cout << "\n# UPGMA Phylogenetic Tree:\n";
+    std::cout << "# Newick: " << newick << "\n";
+    print_tree(tree.get(), std::cout);
+    std::cout << "\n";
 }
 

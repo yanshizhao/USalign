@@ -13,8 +13,6 @@
 #include <omp.h>
 #endif
 
-using namespace std;
-
 //     1, collect those residues with dis<d;
 //     2, calculate TMscore
 int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, std::vector<int>& i_ali,
@@ -533,8 +531,8 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         tmscore += 1/(1+di/d02);
     }
     double d002t=d002;
-    vector<double> dis_vec(dis.begin(), dis.begin()+n_ali);
-    sort(dis_vec.begin(), dis_vec.end());
+    std::vector<double> dis_vec(dis.begin(), dis.begin()+n_ali);
+    std::sort(dis_vec.begin(), dis_vec.end());
     if (d002t<dis_vec[2]) d002t=dis_vec[2];
     dis_vec.clear();
     while(1) {
@@ -559,8 +557,8 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             tmscore1 += 1/(1+di/d02);
         }
         d002t=d002+1;
-        vector<double> dis_vec2(dis.begin(), dis.begin()+n_ali);
-        sort(dis_vec2.begin(), dis_vec2.end());
+        std::vector<double> dis_vec2(dis.begin(), dis.begin()+n_ali);
+        std::sort(dis_vec2.begin(), dis_vec2.end());
         if (d002t<dis_vec2[2]) d002t=dis_vec2[2];
         dis_vec2.clear();
         while(1) {
@@ -741,7 +739,7 @@ bool overlap(const int a1,const int b1,const int c1,const int d1,
 }
 
 // find base pairing stacks in RNA
-void sec_str(int len,const std::string& seq, const vector<vector<bool> >&bp,
+void sec_str(int len,const std::string& seq, const std::vector<std::vector<bool> >&bp,
     int a, int b,int &c, int &d)
 {
     int i;
@@ -771,7 +769,7 @@ inline void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
     NWDP_TM(path, val, secx, secy, xlen, ylen, gap_open, y2x);
 }
 
-void make_sec(const std::string& seq, const CoordArray& x, int len, std::string& sec, const string atom_opt)
+void make_sec(const std::string& seq, const CoordArray& x, int len, std::string& sec, const std::string atom_opt)
 {
     int ii;
     int jj;
@@ -787,8 +785,8 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
     else if(atom_opt==" P  ") {lb=16.5;ub=21.0;}
 
     float dis;
-    vector<bool> bp_tmp(len,false);
-    vector<vector<bool> > bp(len,bp_tmp);
+    std::vector<bool> bp_tmp(len,false);
+    std::vector<std::vector<bool> > bp(len,bp_tmp);
     bp_tmp.clear();
     sec.assign(len, '.');
     for (i=0; i<len; i++)
@@ -806,7 +804,7 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
         }
     }
 
-    vector<int> A0_var,B0_var,C0_var,D0_var;
+    std::vector<int> A0_var,B0_var,C0_var,D0_var;
     for (i=0; i<len-2; i++)
     {
         for (j=i+3; j<len; j++)
@@ -1357,17 +1355,17 @@ inline double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArra
 
 
 // script format: 0 - no script; 1 - pymol; 3 - chimerax
-void output_pymol(const string xname, const string yname,
-    const string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
+void output_pymol(const std::string xname, const std::string yname,
+    const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
-    const string chainID1, const string chainID2, const int o_opt=1)
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2, const int o_opt=1)
 {
     int compress_type=0; // uncompressed file
-    ifstream fin;
+    std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
-    ifstream fin_gz;
+    std::ifstream fin_gz;
 #else
     redi::ipstream fin_gz; // if file is compressed
     if (xname.size()>=3 && 
@@ -1386,22 +1384,22 @@ void output_pymol(const string xname, const string yname,
 #endif
         fin.open(xname.c_str());
 
-    stringstream buf;
-    stringstream buf_pymol;
-    string line;
+    std::stringstream buf;
+    std::stringstream buf_pymol;
+    std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
 
     // for PDBx/mmCIF only
-    map<string,int> _atom_site;
+    std::map<std::string,int> _atom_site;
     size_t atom_site_pos;
-    vector<string> line_vec;
+    std::vector<std::string> line_vec;
     int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
 
     while (compress_type?fin_gz.good():fin.good())
     {
-        if (compress_type) getline(fin_gz, line);
-        else               getline(fin, line);
+        if (compress_type) std::getline(fin_gz, line);
+        else               std::getline(fin, line);
         if (line.compare(0, 6, "ATOM  ")==0 || 
             line.compare(0, 6, "HETATM")==0) // PDB format
         {
@@ -1411,9 +1409,9 @@ void output_pymol(const string xname, const string yname,
             x[2]=safe_stod(line.substr(46,8).c_str());
             if (mirror_opt) x[2]=-x[2];
             transform(t, u, x, x1);
-            buf<<line.substr(0,30)<<setiosflags(ios::fixed)
-                <<setprecision(3)
-                <<setw(8)<<x1[0] <<setw(8)<<x1[1] <<setw(8)<<x1[2]
+            buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+                <<std::setprecision(3)
+                <<std::setw(8)<<x1[0] <<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]
                 <<line.substr(54)<<'\n';
         }
         else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
@@ -1424,12 +1422,12 @@ void output_pymol(const string xname, const string yname,
             {
                 if (compress_type) 
                 {
-                    if (fin_gz.good()) getline(fin_gz, line);
+                    if (fin_gz.good()) std::getline(fin_gz, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                 }
                 else
                 {
-                    if (fin.good()) getline(fin, line);
+                    if (fin.good()) std::getline(fin, line);
                     else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                 }
                 if (line.size()) break;
@@ -1445,12 +1443,12 @@ void output_pymol(const string xname, const string yname,
                 {
                     if (compress_type) 
                     {
-                        if (fin_gz.good()) getline(fin_gz, line);
+                        if (fin_gz.good()) std::getline(fin_gz, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                     }
                     else
                     {
-                        if (fin.good()) getline(fin, line);
+                        if (fin.good()) std::getline(fin, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                     }
                     if (line.size()) break;
@@ -1466,7 +1464,7 @@ void output_pymol(const string xname, const string yname,
                 _atom_site.count("Cartn_z")==0)
             {
                 buf<<line<<'\n';
-                cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                 continue;
             }
 
@@ -1486,20 +1484,20 @@ void output_pymol(const string xname, const string yname,
                 for (atom_site_pos=0; atom_site_pos<_atom_site.size(); atom_site_pos++)
                 {
                     if (atom_site_pos==_atom_site["Cartn_x"])
-                        buf<<setiosflags(ios::fixed)<<setprecision(3)
-                           <<setw(8)<<x1[0]<<' ';
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[0]<<' ';
                     else if (atom_site_pos==_atom_site["Cartn_y"])
-                        buf<<setiosflags(ios::fixed)<<setprecision(3)
-                           <<setw(8)<<x1[1]<<' ';
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[1]<<' ';
                     else if (atom_site_pos==_atom_site["Cartn_z"])
-                        buf<<setiosflags(ios::fixed)<<setprecision(3)
-                           <<setw(8)<<x1[2]<<' ';
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[2]<<' ';
                     else buf<<line_vec[atom_site_pos]<<' ';
                 }
                 buf<<'\n';
 
-                if (compress_type && fin_gz.good()) getline(fin_gz, line);
-                else if (!compress_type && fin.good()) getline(fin, line);
+                if (compress_type && fin_gz.good()) std::getline(fin_gz, line);
+                else if (!compress_type && fin.good()) std::getline(fin, line);
                 else break;
             }
             if (compress_type?fin_gz.good():fin.good()) buf<<line<<'\n';
@@ -1513,17 +1511,17 @@ void output_pymol(const string xname, const string yname,
     if (compress_type) fin_gz.close();
     else               fin.close();
 
-    string fname_super_full=fname_super;
+    std::string fname_super_full=fname_super;
     if (infmt==0)      fname_super_full+=".pdb";
     else if (infmt==3) fname_super_full+=".cif";
-    ofstream fp;
+    std::ofstream fp;
     fp.open(fname_super_full.c_str());
     fp<<buf.str();
     fp.close();
-    buf.str(string()); // clear stream
+    buf.str(std::string()); // clear stream
 
-    string chain1_sele;
-    string chain2_sele;
+    std::string chain1_sele;
+    std::string chain2_sele;
     int i;
     if (!mm_opt)
     {
@@ -1554,14 +1552,14 @@ void output_pymol(const string xname, const string yname,
     // extract aligned region
     int i1=-1;
     int i2=-1;
-    string resi1_sele;
-    string resi2_sele;
-    string resi1_bond;
-    string resi2_bond;
-    string prev_resi1;
-    string prev_resi2;
-    string curr_resi1;
-    string curr_resi2;
+    std::string resi1_sele;
+    std::string resi2_sele;
+    std::string resi1_bond;
+    std::string resi2_bond;
+    std::string prev_resi1;
+    std::string prev_resi2;
+    std::string curr_resi1;
+    std::string curr_resi2;
     if (mm_opt)
     {
         ;
@@ -1618,7 +1616,7 @@ void output_pymol(const string xname, const string yname,
     }
 
     // write pymol script
-    vector<string> pml_list;
+    std::vector<std::string> pml_list;
     pml_list.push_back(fname_super+"");
     pml_list.push_back(fname_super+"_atm");
     pml_list.push_back(fname_super+"_all");
@@ -1729,12 +1727,12 @@ void output_pymol(const string xname, const string yname,
             <<"set transparency=0.2\n"
             <<"zoom polymer and ((structure1"<<chain1_sele
             <<") or (structure2"<<chain2_sele<<"))\n"
-            <<endl;
+            <<std::endl;
         else if (o_opt==3) buf_pymol
             <<"color #1 blue\n"
             <<"color #2 red\n"
             <<"set bgColor white\n"
-            <<endl;
+            <<std::endl;
 
         if (o_opt==1) // pymol
             fp.open((pml_list[p]+".pml").c_str());
@@ -1742,7 +1740,7 @@ void output_pymol(const string xname, const string yname,
             fp.open((pml_list[p]+".cxc").c_str());
         fp<<buf_pymol.str();
         fp.close();
-        buf_pymol.str(string());
+        buf_pymol.str(std::string());
     }
 
     // clean up
@@ -1764,19 +1762,19 @@ void output_pymol(const string xname, const string yname,
     chain2_sele.clear();
 }
 
-void output_mTMalign_pymol(const vector<string>&chain_list,
-    const int infmt_opt, const RotArray& ut_mat, const string &fname_super,
+void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
+    const int infmt_opt, const RotArray& ut_mat, const std::string &fname_super,
     const int o_opt=1)
 {
     int compress_type=0; // uncompressed file
     size_t m;
-    string name;
+    std::string name;
     Vec3 t;
     RotMat u;
     int ui;
     int uj;
-    string filename;
-    vector<string> color_list;
+    std::string filename;
+    std::vector<std::string> color_list;
     color_list.push_back("red");
     color_list.push_back("green");
     color_list.push_back("blue");
@@ -1800,7 +1798,7 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
     color_list.push_back("white");
     color_list.push_back("grey");
 
-    stringstream buf_pymol;
+    std::stringstream buf_pymol;
     if (o_opt==1)
         buf_pymol<<"#!/usr/bin/env pymol\n";
     else if (o_opt==3)
@@ -1809,9 +1807,9 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
     {
         name=chain_list[m];
 
-        ifstream fin;
+        std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
-        ifstream fin_gz;
+        std::ifstream fin_gz;
 #else
         redi::ipstream fin_gz; // if file is compressed
         if (name.size()>=3 &&
@@ -1830,28 +1828,28 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
 #endif
         fin.open(name.c_str());
 
-        stringstream buf;
+        std::stringstream buf;
         buf<<fname_super<<'.'<<m<<".pdb";
         filename=buf.str();
-        buf.str(string());
+        buf.str(std::string());
         for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
         for (uj=0;uj<3;uj++) t[uj]=ut_mat[m][9+uj];
 
 
-        string line;
+        std::string line;
         Vec3 x;  // before transform
         Vec3 x1; // after transform
 
         // for PDBx/mmCIF only
-        map<string,int> _atom_site;
+        std::map<std::string,int> _atom_site;
         size_t atom_site_pos;
-        vector<string> line_vec;
+        std::vector<std::string> line_vec;
         int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
 
         while (compress_type?fin_gz.good():fin.good())
         {
-            if (compress_type) getline(fin_gz, line);
-            else               getline(fin, line);
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
             if (line.compare(0, 6, "ATOM  ")==0 ||
                 line.compare(0, 6, "HETATM")==0) // PDB format
             {
@@ -1860,9 +1858,9 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
                 x[1]=safe_stod(line.substr(38,8).c_str());
                 x[2]=safe_stod(line.substr(46,8).c_str());
                 transform(t, u, x, x1);
-                buf<<line.substr(0,30)<<setiosflags(ios::fixed)
-                    <<setprecision(3)
-                    <<setw(8)<<x1[0] <<setw(8)<<x1[1] <<setw(8)<<x1[2]
+                buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+                    <<std::setprecision(3)
+                    <<std::setw(8)<<x1[0] <<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]
                     <<line.substr(54)<<'\n';
             }
             else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
@@ -1873,12 +1871,12 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
                 {
                     if (compress_type)
                     {
-                        if (fin_gz.good()) getline(fin_gz, line);
+                        if (fin_gz.good()) std::getline(fin_gz, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+name);
                     }
                     else
                     {
-                        if (fin.good()) getline(fin, line);
+                        if (fin.good()) std::getline(fin, line);
                         else PrintErrorAndQuit("ERROR! Unexpected end of "+name);
                     }
                     if (line.size()) break;
@@ -1894,12 +1892,12 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
                     {
                         if (compress_type)
                         {
-                            if (fin_gz.good()) getline(fin_gz, line);
+                            if (fin_gz.good()) std::getline(fin_gz, line);
                             else PrintErrorAndQuit("ERROR! Unexpected end of "+name);
                         }
                         else
                         {
-                            if (fin.good()) getline(fin, line);
+                            if (fin.good()) std::getline(fin, line);
                             else PrintErrorAndQuit("ERROR! Unexpected end of "+name);
                         }
                         if (line.size()) break;
@@ -1915,7 +1913,7 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
                     _atom_site.count("Cartn_z")==0)
                 {
                     buf<<line<<'\n';
-                    cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<endl;
+                    std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                     continue;
                 }
 
@@ -1935,20 +1933,20 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
                          atom_site_pos++)
                     {
                         if (atom_site_pos==_atom_site["Cartn_x"])
-                            buf<<setiosflags(ios::fixed)<<setprecision(3)
-                                <<setw(8)<<x1[0]<<' ';
+                            buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<x1[0]<<' ';
                         else if (atom_site_pos==_atom_site["Cartn_y"])
-                            buf<<setiosflags(ios::fixed)<<setprecision(3)
-                                <<setw(8)<<x1[1]<<' ';
+                            buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<x1[1]<<' ';
                         else if (atom_site_pos==_atom_site["Cartn_z"])
-                            buf<<setiosflags(ios::fixed)<<setprecision(3)
-                                <<setw(8)<<x1[2]<<' ';
+                            buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<x1[2]<<' ';
                         else buf<<line_vec[atom_site_pos]<<' ';
                     }
                     buf<<'\n';
 
-                    if (compress_type && fin_gz.good()) getline(fin_gz, line);
-                    else if (!compress_type && fin.good()) getline(fin, line);
+                    if (compress_type && fin_gz.good()) std::getline(fin_gz, line);
+                    else if (!compress_type && fin.good()) std::getline(fin, line);
                     else break;
                 }
                 if (compress_type?fin_gz.good():fin.good()) buf<<line<<'\n';
@@ -1958,11 +1956,11 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
         if (compress_type) fin_gz.close();
         else               fin.close();
 
-        ofstream fp;
+        std::ofstream fp;
         fp.open(filename.c_str());
         fp<<buf.str();
         fp.close();
-        buf.str(string()); // clear stream
+        buf.str(std::string()); // clear stream
 
         if (o_opt==1) buf_pymol
             <<"cmd.load(\""<<filename<<"\",\"structure"<<m<<"\")\n"
@@ -1981,11 +1979,11 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
         <<"set ray_shadow, 0\n"
         <<"bg_color white\n"
         <<"set transparency=0.2\n"
-        <<endl;
+        <<std::endl;
     else if (o_opt==3) buf_pymol
-        <<"set bgColor white\n"<<endl;
+        <<"set bgColor white\n"<<std::endl;
 
-    ofstream fp;
+    std::ofstream fp;
     if (o_opt==1)
     {
         fp.open((fname_super+"_all_atm.pml").c_str());
@@ -1995,7 +1993,7 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
         fp<<buf_pymol.str()
             <<"show stick, not polymer\n"
             <<"show sphere, not polymer\n"
-            <<endl;
+            <<std::endl;
     }
     else if (o_opt==3)
     {
@@ -2007,50 +2005,50 @@ void output_mTMalign_pymol(const vector<string>&chain_list,
             <<"hide solvent atoms\n"
             <<"hide ions bonds\n"
             <<"hide ions atoms\n"
-            <<endl;
+            <<std::endl;
         fp.close();
         fp.open((fname_super+"_all_atm_lig.cxc").c_str());
-        fp<<buf_pymol.str()<<endl;
+        fp<<buf_pymol.str()<<std::endl;
     }
 
     fp.close();
-    buf_pymol.str(string());
-    vector<string> ().swap(color_list);
+    buf_pymol.str(std::string());
+    std::vector<std::string> ().swap(color_list);
 }
 
-void output_rasmol(const string xname, const string yname,
-    const string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
+void output_rasmol(const std::string xname, const std::string yname,
+    const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
-    const string chainID1, const string chainID2,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const double d0A, const int n_ali8,
     const double rmsd, const double TM1, const double Liden)
 {
-    stringstream buf;
-    stringstream buf_all;
-    stringstream buf_atm;
-    stringstream buf_all_atm;
-    stringstream buf_all_atm_lig;
-    stringstream buf_tm;
-    string line;
+    std::stringstream buf;
+    std::stringstream buf_all;
+    std::stringstream buf_atm;
+    std::stringstream buf_all_atm;
+    std::stringstream buf_all_atm_lig;
+    std::stringstream buf_tm;
+    std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
     bool after_ter; // true if passed the "TER" line in PDB
-    string asym_id; // chain ID
+    std::string asym_id; // chain ID
 
     buf_tm<<"REMARK US-align"
-        <<"\nREMARK Structure 1:"<<setw(11)<<left<<xname+chainID1<<" Size= "<<xlen
-        <<"\nREMARK Structure 2:"<<setw(11)<<yname+chainID2<<right<<" Size= "<<ylen
-        <<" (TM-score is normalized by "<<setw(4)<<ylen<<", d0="
-        <<setiosflags(ios::fixed)<<setprecision(2)<<setw(6)<<d0A<<")"
-        <<"\nREMARK Aligned length="<<setw(4)<<n_ali8<<", RMSD="
-        <<setw(6)<<setiosflags(ios::fixed)<<setprecision(2)<<rmsd
-        <<", TM-score="<<setw(7)<<setiosflags(ios::fixed)<<setprecision(5)<<TM1
-        <<", ID="<<setw(5)<<setiosflags(ios::fixed)<<setprecision(3)
-        <<((n_ali8>0)?Liden/n_ali8:0)<<endl;
-    string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
-    string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+buf_tm.str();
+        <<"\nREMARK Structure 1:"<<std::setw(11)<<std::left<<xname+chainID1<<" Size= "<<xlen
+        <<"\nREMARK Structure 2:"<<std::setw(11)<<yname+chainID2<<std::right<<" Size= "<<ylen
+        <<" (TM-score is normalized by "<<std::setw(4)<<ylen<<", d0="
+        <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<std::setw(6)<<d0A<<")"
+        <<"\nREMARK Aligned length="<<std::setw(4)<<n_ali8<<", RMSD="
+        <<std::setw(6)<<setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
+        <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
+        <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
+    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
+    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+buf_tm.str();
     if (!mm_opt) buf<<rasmol_CA_header;
     buf_all<<rasmol_CA_header;
     if (!mm_opt) buf_atm<<rasmol_cartoon_header;
@@ -2058,8 +2056,8 @@ void output_rasmol(const string xname, const string yname,
     buf_all_atm_lig<<rasmol_cartoon_header;
 
     // selecting chains for -mol
-    string chain1_sele;
-    string chain2_sele;
+    std::string chain1_sele;
+    std::string chain2_sele;
     int i;
     if (!mm_opt)
     {
@@ -2079,28 +2077,28 @@ void output_rasmol(const string xname, const string yname,
 
 
     // for PDBx/mmCIF only
-    map<string,int> _atom_site;
+    std::map<std::string,int> _atom_site;
     int atom_site_pos;
-    vector<string> line_vec;
-    string atom; // 4-character atom name
-    string AA;   // 3-character residue name
-    string resi; // 4-character residue sequence number
-    string inscode; // 1-character insertion code
-    string model_index; // model index
+    std::vector<std::string> line_vec;
+    std::string atom; // 4-character atom name
+    std::string AA;   // 3-character residue name
+    std::string resi; // 4-character residue sequence number
+    std::string inscode; // 1-character insertion code
+    std::string model_index; // model index
     bool is_mmcif=false;
 
     // used for CONECT record of chain1
     int ca_idx1=0; // all CA atoms
     int lig_idx1=0; // all atoms
-    vector <int> idx_vec;
+    std::vector <int> idx_vec;
 
     // used for CONECT record of chain2
     int ca_idx2=0; // all CA atoms
     int lig_idx2=0; // all atoms
 
     // extract aligned region
-    vector<string> resi_aln1;
-    vector<string> resi_aln2;
+    std::vector<std::string> resi_aln1;
+    std::vector<std::string> resi_aln2;
     int i1=-1;
     int i2=-1;
     if (!mm_opt)
@@ -2122,14 +2120,14 @@ void output_rasmol(const string xname, const string yname,
     }
     buf_all<<"select all\nexit\n"<<buf_tm.str();
 
-    ifstream fin;
+    std::ifstream fin;
     // read first file
     after_ter=false;
     asym_id="";
     fin.open(xname.c_str());
     while (fin.good())
     {
-        getline(fin, line);
+        std::getline(fin, line);
         if (ter_opt>=3 && line.compare(0,3,"TER")==0) after_ter=true;
         if (is_mmcif==false && line.size()>=54 &&
            (line.compare(0, 6, "ATOM  ")==0 ||
@@ -2147,10 +2145,10 @@ void output_rasmol(const string xname, const string yname,
 
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
             lig_idx1++;
-            buf_all_atm_lig<<line.substr(0,6)<<setw(5)<<lig_idx1
+            buf_all_atm_lig<<line.substr(0,6)<<std::setw(5)<<lig_idx1
                 <<line.substr(11,9)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1] <<setw(8)<<x1[2]<<'\n';
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]<<'\n';
             if (chain1_sele.size() && line[21]!=chain1_sele[0]) continue;
             if (after_ter || line.compare(0,6,"ATOM  ")) continue;
             if (ter_opt>=2)
@@ -2162,30 +2160,30 @@ void output_rasmol(const string xname, const string yname,
                 }
                 asym_id=line[21];
             }
-            buf_all_atm<<"ATOM  "<<setw(5)<<lig_idx1
+            buf_all_atm<<"ATOM  "<<std::setw(5)<<lig_idx1
                 <<line.substr(11,9)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1] <<setw(8)<<x1[2]<<'\n';
-            if (!mm_opt && find(resi_aln1.begin(),resi_aln1.end(),
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]<<'\n';
+            if (!mm_opt && std::find(resi_aln1.begin(),resi_aln1.end(),
                 line.substr(22,4))!=resi_aln1.end())
             {
-                buf_atm<<"ATOM  "<<setw(5)<<lig_idx1
+                buf_atm<<"ATOM  "<<std::setw(5)<<lig_idx1
                     <<line.substr(11,9)<<" A"<<line.substr(22,8)
-                    <<setiosflags(ios::fixed)<<setprecision(3)
-                    <<setw(8)<<x1[0]<<setw(8)<<x1[1] <<setw(8)<<x1[2]<<'\n';
+                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]<<'\n';
             }
             if (line.substr(12,4)!=" CA " && line.substr(12,4)!=" C3'") continue;
             ca_idx1++;
-            buf_all<<"ATOM  "<<setw(5)<<ca_idx1<<' '
+            buf_all<<"ATOM  "<<std::setw(5)<<ca_idx1<<' '
                 <<line.substr(12,4)<<' '<<line.substr(17,3)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1]<<setw(8)<<x1[2]<<'\n';
-            if (find(resi_aln1.begin(),resi_aln1.end(),
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1]<<std::setw(8)<<x1[2]<<'\n';
+            if (std::find(resi_aln1.begin(),resi_aln1.end(),
                 line.substr(22,4))==resi_aln1.end()) continue;
-            if (!mm_opt) buf<<"ATOM  "<<setw(5)<<ca_idx1<<' '
+            if (!mm_opt) buf<<"ATOM  "<<std::setw(5)<<ca_idx1<<' '
                 <<line.substr(12,4)<<' '<<line.substr(17,3)<<" A"<<line.substr(22,8)
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<setw(8)<<x1[0]<<setw(8)<<x1[1]<<setw(8)<<x1[2]<<'\n';
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1]<<std::setw(8)<<x1[2]<<'\n';
             idx_vec.push_back(ca_idx1);
         }
         else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
@@ -2293,56 +2291,56 @@ void output_rasmol(const string xname, const string yname,
                         line_vec[_atom_site["group_pdb"]]=="HETATM")
                     {
                         lig_idx1++;
-                        buf_all_atm_lig<<left<<setw(6)
-                            <<line_vec[_atom_site["group_PDB"]]<<right
-                            <<setw(5)<<lig_idx1%100000<<' '<<atom<<' '
+                        buf_all_atm_lig<<std::left<<std::setw(6)
+                            <<line_vec[_atom_site["group_PDB"]]<<std::right
+                            <<std::setw(5)<<lig_idx1%100000<<' '<<atom<<' '
                             <<AA<<" A"<<resi<<inscode<<"   "
-                            <<setiosflags(ios::fixed)<<setprecision(3)
-                            <<setw(8)<<x1[0]
-                            <<setw(8)<<x1[1]
-                            <<setw(8)<<x1[2]<<'\n';
+                            <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                            <<std::setw(8)<<x1[0]
+                            <<std::setw(8)<<x1[1]
+                            <<std::setw(8)<<x1[2]<<'\n';
                         if (after_ter==false &&
                             line_vec[_atom_site["group_PDB"]]=="ATOM")
                         {
-                            buf_all_atm<<"ATOM  "<<setw(6)
-                                <<setw(5)<<lig_idx1%100000<<' '<<atom<<' '
+                            buf_all_atm<<"ATOM  "<<std::setw(6)
+                                <<std::setw(5)<<lig_idx1%100000<<' '<<atom<<' '
                                 <<AA<<" A"<<resi<<inscode<<"   "
-                                <<setiosflags(ios::fixed)<<setprecision(3)
-                                <<setw(8)<<x1[0]
-                                <<setw(8)<<x1[1]
-                                <<setw(8)<<x1[2]<<'\n';
-                            if (!mm_opt && find(resi_aln1.begin(),
+                                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<x1[0]
+                                <<std::setw(8)<<x1[1]
+                                <<std::setw(8)<<x1[2]<<'\n';
+                            if (!mm_opt && std::find(resi_aln1.begin(),
                                 resi_aln1.end(),resi)!=resi_aln1.end())
                             {
-                                buf_atm<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<lig_idx1%100000<<' '
+                                buf_atm<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<lig_idx1%100000<<' '
                                     <<atom<<' '<<AA<<" A"<<resi<<inscode<<"   "
-                                    <<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<setw(8)<<x1[0]
-                                    <<setw(8)<<x1[1]
-                                    <<setw(8)<<x1[2]<<'\n';
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<x1[0]
+                                    <<std::setw(8)<<x1[1]
+                                    <<std::setw(8)<<x1[2]<<'\n';
                             }
                             if (atom==" CA " || atom==" C3'")
                             {
                                 ca_idx1++;
             //mm_opt, split_opt, mirror_opt, chainID1,chainID2);
-                                buf_all<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<ca_idx1%100000<<' '<<atom<<' '
+                                buf_all<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<ca_idx1%100000<<' '<<atom<<' '
                                     <<AA<<" A"<<resi<<inscode<<"   "
-                                    <<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<setw(8)<<x1[0]
-                                    <<setw(8)<<x1[1]
-                                    <<setw(8)<<x1[2]<<'\n';
-                                if (!mm_opt && find(resi_aln1.begin(),
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<x1[0]
+                                    <<std::setw(8)<<x1[1]
+                                    <<std::setw(8)<<x1[2]<<'\n';
+                                if (!mm_opt && std::find(resi_aln1.begin(),
                                     resi_aln1.end(),resi)!=resi_aln1.end())
                                 {
-                                    buf<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<ca_idx1%100000<<' '<<atom<<' '
+                                    buf<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<ca_idx1%100000<<' '<<atom<<' '
                                     <<AA<<" A"<<resi<<inscode<<"   "
-                                    <<setiosflags(ios::fixed)<<setprecision(3)
-                                    <<setw(8)<<x1[0]
-                                    <<setw(8)<<x1[1]
-                                    <<setw(8)<<x1[2]<<'\n';
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<x1[0]
+                                    <<std::setw(8)<<x1[1]
+                                    <<std::setw(8)<<x1[2]<<'\n';
                                     idx_vec.push_back(ca_idx1);
                                 }
                             }
@@ -2371,9 +2369,9 @@ void output_rasmol(const string xname, const string yname,
     buf_all_atm<<"TER\n";
     buf_all_atm_lig<<"TER\n";
     for (i=1;i<ca_idx1;i++) buf_all<<"CONECT"
-        <<setw(5)<<i%100000<<setw(5)<<(i+1)%100000<<'\n';
+        <<std::setw(5)<<i%100000<<std::setw(5)<<(i+1)%100000<<'\n';
     if (!mm_opt) for (i=1;i<idx_vec.size();i++) buf<<"CONECT"
-        <<setw(5)<<idx_vec[i-1]%100000<<setw(5)<<idx_vec[i]%100000<<'\n';
+        <<std::setw(5)<<idx_vec[i-1]%100000<<std::setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
     // read second file
@@ -2382,7 +2380,7 @@ void output_rasmol(const string xname, const string yname,
     fin.open(yname.c_str());
     while (fin.good())
     {
-        getline(fin, line);
+        std::getline(fin, line);
         if (ter_opt>=3 && line.compare(0,3,"TER")==0) after_ter=true;
         if (line.size()>=54 && (line.compare(0, 6, "ATOM  ")==0 ||
             line.compare(0, 6, "HETATM")==0)) // PDB format
@@ -2390,7 +2388,7 @@ void output_rasmol(const string xname, const string yname,
             if (line[16]!='A' && line[16]!=' ') continue;
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
             lig_idx2++;
-            buf_all_atm_lig<<line.substr(0,6)<<setw(5)<<lig_idx1+lig_idx2
+            buf_all_atm_lig<<line.substr(0,6)<<std::setw(5)<<lig_idx1+lig_idx2
                 <<line.substr(11,9)<<" B"<<line.substr(22,32)<<'\n';
             if (chain2_sele.size() && line[21]!=chain2_sele[0]) continue;
             if (after_ter || line.compare(0,6,"ATOM  ")) continue;
@@ -2403,21 +2401,21 @@ void output_rasmol(const string xname, const string yname,
                 }
                 asym_id=line[21];
             }
-            buf_all_atm<<"ATOM  "<<setw(5)<<lig_idx1+lig_idx2
+            buf_all_atm<<"ATOM  "<<std::setw(5)<<lig_idx1+lig_idx2
                 <<line.substr(11,9)<<" B"<<line.substr(22,32)<<'\n';
-            if (!mm_opt && find(resi_aln2.begin(),resi_aln2.end(),
+            if (!mm_opt && std::find(resi_aln2.begin(),resi_aln2.end(),
                 line.substr(22,4))!=resi_aln2.end())
             {
-                buf_atm<<"ATOM  "<<setw(5)<<lig_idx1+lig_idx2
+                buf_atm<<"ATOM  "<<std::setw(5)<<lig_idx1+lig_idx2
                     <<line.substr(11,9)<<" B"<<line.substr(22,32)<<'\n';
             }
             if (line.substr(12,4)!=" CA " && line.substr(12,4)!=" C3'") continue;
             ca_idx2++;
-            buf_all<<"ATOM  "<<setw(5)<<ca_idx1+ca_idx2<<' '<<line.substr(12,4)
+            buf_all<<"ATOM  "<<std::setw(5)<<ca_idx1+ca_idx2<<' '<<line.substr(12,4)
                 <<' '<<line.substr(17,3)<<" B"<<line.substr(22,32)<<'\n';
-            if (find(resi_aln2.begin(),resi_aln2.end(),line.substr(22,4)
+            if (std::find(resi_aln2.begin(),resi_aln2.end(),line.substr(22,4)
                 )==resi_aln2.end()) continue;
-            if (!mm_opt) buf<<"ATOM  "<<setw(5)<<ca_idx1+ca_idx2<<' '
+            if (!mm_opt) buf<<"ATOM  "<<std::setw(5)<<ca_idx1+ca_idx2<<' '
                 <<line.substr(12,4)<<' '<<line.substr(17,3)<<" B"
                 <<line.substr(22,32)<<'\n';
             idx_vec.push_back(ca_idx1+ca_idx2);
@@ -2509,54 +2507,54 @@ void output_rasmol(const string xname, const string yname,
                         line_vec[_atom_site["group_PDB"]]=="HETATM")
                     {
                         lig_idx2++;
-                        buf_all_atm_lig<<left<<setw(6)
-                            <<line_vec[_atom_site["group_PDB"]]<<right
-                            <<setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
+                        buf_all_atm_lig<<std::left<<std::setw(6)
+                            <<line_vec[_atom_site["group_PDB"]]<<std::right
+                            <<std::setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
                             <<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                            <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                            <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                            <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                            <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                            <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                            <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                             <<'\n';
                         if (after_ter==false &&
                             line_vec[_atom_site["group_PDB"]]=="ATOM")
                         {
-                            buf_all_atm<<"ATOM  "<<setw(6)
-                                <<setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
+                            buf_all_atm<<"ATOM  "<<std::setw(6)
+                                <<std::setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
                                 <<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                 <<'\n';
-                            if (!mm_opt && find(resi_aln2.begin(),
+                            if (!mm_opt && std::find(resi_aln2.begin(),
                                 resi_aln2.end(),resi)!=resi_aln2.end())
                             {
-                                buf_atm<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
+                                buf_atm<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(lig_idx1+lig_idx2)%100000<<' '
                                     <<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                     <<'\n';
                             }
                             if (atom==" CA " || atom==" C3'")
                             {
                                 ca_idx2++;
-                                buf_all<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<(ca_idx1+ca_idx2)%100000
+                                buf_all<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(ca_idx1+ca_idx2)%100000
                                     <<' '<<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                     <<'\n';
-                                if (!mm_opt && find(resi_aln2.begin(),
+                                if (!mm_opt && std::find(resi_aln2.begin(),
                                     resi_aln2.end(),resi)!=resi_aln2.end())
                                 {
-                                    buf<<"ATOM  "<<setw(6)
-                                    <<setw(5)<<(ca_idx1+ca_idx2)%100000
+                                    buf<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(ca_idx1+ca_idx2)%100000
                                     <<' '<<atom<<' '<<AA<<" B"<<resi<<inscode<<"   "
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_x"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_y"]]
-                                    <<setw(8)<<line_vec[_atom_site["Cartn_z"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]]
                                     <<'\n';
                                     idx_vec.push_back(ca_idx1+ca_idx2);
                                 }
@@ -2581,13 +2579,13 @@ void output_rasmol(const string xname, const string yname,
     buf_all_atm<<"TER\n";
     buf_all_atm_lig<<"TER\n";
     for (i=ca_idx1+1;i<ca_idx1+ca_idx2;i++) buf_all<<"CONECT"
-        <<setw(5)<<i%100000<<setw(5)<<(i+1)%100000<<'\n';
+        <<std::setw(5)<<i%100000<<std::setw(5)<<(i+1)%100000<<'\n';
     for (i=1;i<idx_vec.size();i++) buf<<"CONECT"
-        <<setw(5)<<idx_vec[i-1]%100000<<setw(5)<<idx_vec[i]%100000<<'\n';
+        <<std::setw(5)<<idx_vec[i-1]%100000<<std::setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
     // write pymol script
-    ofstream fp;
+    std::ofstream fp;
     /*
     stringstream buf_pymol;
     vector<string> pml_list;
@@ -2649,13 +2647,13 @@ void output_rasmol(const string xname, const string yname,
     //fp.close();
 
     // clear stream
-    buf.str(string());
-    buf_all.str(string());
-    buf_atm.str(string());
-    buf_all_atm.str(string());
-    buf_all_atm_lig.str(string());
+    buf.str(std::string());
+    buf_all.str(std::string());
+    buf_atm.str(std::string());
+    buf_all_atm.str(std::string());
+    buf_all_atm_lig.str(std::string());
     //buf_pdb.str(string());
-    buf_tm.str(string());
+    buf_tm.str(std::string());
     resi_aln1.clear();
     resi_aln2.clear();
     asym_id.clear();
@@ -2672,7 +2670,7 @@ void output_rotation_matrix(const std::string& fname_matrix,
     const Vec3& t, const RotMat& u,
     std::ostream& os = std::cout)
 {
-    stringstream ss;
+    std::stringstream ss;
     ss << "------ The rotation matrix to rotate Structure_1 to Structure_2 ------\n";
     ss << strfmt("m %18s %14s %14s %14s\n", "t[m]", "u[m][0]", "u[m][1]", "u[m][2]");
     // suppress -0.0000000000: values rounding to zero at 10 decimal places normalize to +0.0
@@ -2690,8 +2688,8 @@ void output_rotation_matrix(const std::string& fname_matrix,
        os<<ss.str();
     else
     {
-        fstream fout;
-        fout.open(fname_matrix, ios::out | ios::trunc);
+        std::fstream fout;
+        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
         if (fout)
         {
             fout<<ss.str();
@@ -2699,12 +2697,12 @@ void output_rotation_matrix(const std::string& fname_matrix,
         }
         else os << "Open file to output rotation matrix fail.\n";
     }
-    ss.str(string());
+    ss.str(std::string());
 }
 
 //output the final results
-void output_results(const string xname, const string yname,
-    const string chainID1, const string chainID2,
+void output_results(const std::string xname, const std::string yname,
+    const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
@@ -2716,9 +2714,9 @@ void output_results(const string xname, const string yname,
     const double d0_scale, const double d0a, const double d0u,
     const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
-    const string fname_super, const int i_opt, const int a_opt,
+    const std::string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     std::ostream& os = std::cout)
 {
     if (outfmt_opt<=0)
@@ -2784,7 +2782,7 @@ void output_results(const string xname, const string yname,
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
             xlen, ylen, n_ali8);
     }
-    if (outfmt_opt<5) os << endl;
+    if (outfmt_opt<5) os << std::endl;
 
     if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u, os);
 
@@ -2799,15 +2797,15 @@ void output_results(const string xname, const string yname,
             xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
 }
 
-void output_results(const string xname, const string yname,
-    const string chainID1, const string chainID2,
+void output_results(const std::string xname, const std::string yname,
+    const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const ChainPairAlignResult& res,
     const double Lnorm_ass, const double d0_scale,
     const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
-    const string fname_super, const int i_opt, const int a_opt,
+    const std::string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     std::ostream& os = std::cout)
 {
     output_results(xname, yname, chainID1, chainID2, xlen, ylen,
@@ -2820,8 +2818,8 @@ void output_results(const string xname, const string yname,
         resi_vec1, resi_vec2, os);
 }
 
-void output_mTMalign_results(const string xname, const string yname,
-    const string chainID1, const string chainID2,
+void output_mTMalign_results(const std::string xname, const std::string yname,
+    const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
@@ -2833,9 +2831,9 @@ void output_mTMalign_results(const string xname, const string yname,
     const double d0_scale, const double d0a, const double d0u,
     const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
-    const string fname_super, const int i_opt, const int a_opt,
+    const std::string fname_super, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const int mirror_opt,
-    const vector<string>&resi_vec1, const vector<string>&resi_vec2,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     const double ccTM_score,
     std::ostream& os = std::cout)
 {
@@ -2888,7 +2886,7 @@ void output_mTMalign_results(const string xname, const string yname,
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
             xlen, ylen, n_ali8);
     }
-    os << endl;
+    os << std::endl;
 
     if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u, os);
 
@@ -2994,8 +2992,8 @@ inline double approx_TM(const int xlen, const int ylen, const int a_opt,
 #endif
 
 
-bool output_cp(const string&xname, const string&yname,
-    const string &seqxA, const string &seqyA, const int outfmt_opt,
+bool output_cp(const std::string&xname, const std::string&yname,
+    const std::string &seqxA, const std::string &seqyA, const int outfmt_opt,
     int &left_num, int &right_num, int &left_aln_num, int &right_aln_num,
     std::ostream& os = std::cout)
 {
@@ -3020,19 +3018,19 @@ bool output_cp(const string&xname, const string&yname,
     }
     if (after_cp==false)
     {
-        if (outfmt_opt<=0) os<<"No CP"<<endl;
-        else if (outfmt_opt==1) os<<"#No CP"<<endl;
-        else if (outfmt_opt==2) os<<"@"<<xname<<'\t'<<yname<<'\t'<<"No CP"<<endl;
+        if (outfmt_opt<=0) os<<"No CP"<<std::endl;
+        else if (outfmt_opt==1) os<<"#No CP"<<std::endl;
+        else if (outfmt_opt==2) os<<"@"<<xname<<'\t'<<yname<<'\t'<<"No CP"<<std::endl;
     }
     else
     {
         if (outfmt_opt<=0) os<<"CP point in structure_1 alignment: "<<left_aln_num<<'/'<<right_aln_num<<'\n'
-            <<"CP point in structure_1: "<<left_num<<'/'<<right_num<<endl;
+            <<"CP point in structure_1: "<<left_num<<'/'<<right_num<<std::endl;
         else if (outfmt_opt==1) 
             os<<"#CP_in_aln="<<left_aln_num<<'/'<<right_aln_num
-               <<"\tCP_in_seq="<<left_num<<'/'<<right_num<<endl;
+               <<"\tCP_in_seq="<<left_num<<'/'<<right_num<<std::endl;
         else if (outfmt_opt==2) os<<"@"<<xname<<'\t'<<yname<<'\t'<<left_aln_num
-            <<'/'<<right_aln_num<<'\t'<<left_num<<'/'<<right_num<<endl;
+            <<'/'<<right_aln_num<<'\t'<<left_num<<'/'<<right_num<<std::endl;
     }
     return after_cp;
 }
@@ -3145,7 +3143,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
                 }
             }
         }
-        else cerr << "\n\nWarning: initial5 fail\n\n";
+        else std::cerr << "\n\nWarning: initial5 fail\n\n";
     }
     if (TMcut > 0) {
         double TMtmp = approx_TM(xlen, ylen, a_opt,
@@ -3286,7 +3284,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     RotMat best_u = u;
     int minlen2 = minlen;
 
-    #pragma omp parallel for num_threads(min(parallel_threads, 2)) schedule(static,1)
+    #pragma omp parallel for num_threads(std::min(parallel_threads, 2)) schedule(static,1)
     for (int sid = 1; sid < 3; sid++) {
         std::vector<int> inv_l(ylen + 1, -1);
         Vec3 t_l = {0, 0, 0};
@@ -3340,7 +3338,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     // Phase 2b: Strategies 4-5 (parallel, 2 threads)
     //   Strategy 4 reads best_inv (best from Phase 1 + Phase 2a)
     // ================================================================
-    #pragma omp parallel for num_threads(min(parallel_threads, 2)) schedule(static,1)
+    #pragma omp parallel for num_threads(std::min(parallel_threads, 2)) schedule(static,1)
     for (int sid = 3; sid < 5; sid++) {
         std::vector<int> inv_l(ylen + 1, -1);
         Vec3 t_l = {0, 0, 0};
@@ -3511,7 +3509,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         int i2 = -1;
         int L1 = sequence[0].size();
         int L2 = sequence[1].size();
-        int L = min(L1, L2);// Get positions for aligned residues
+        int L = std::min(L1, L2);// Get positions for aligned residues
         for (int kk1 = 0; kk1 < L; kk1++)
         {
             if (sequence[0][kk1] != '-') i1++;
@@ -3586,7 +3584,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         int i2 = -1;
         int L1 = sequence[0].size();
         int L2 = sequence[1].size();
-        int L = min(L1, L2);// Get positions for aligned residues
+        int L = std::min(L1, L2);// Get positions for aligned residues
         for (int kk1 = 0; kk1 < L; kk1++)
         {
             if (sequence[0][kk1] != '-')
@@ -3914,7 +3912,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &secx, const std::string &secy,
     ChainPairAlignResult& res,
     const int xlen, const int ylen,
-    const vector<string> sequence,
+    const std::vector<std::string> sequence,
     const ChainPairAlignOptions& opt)
 {
     Vec3& t0 = res.t0;
@@ -3929,7 +3927,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     /***********************/
     // allocate memory
     /***********************/
-    int minlen = min(xlen, ylen);
+    int minlen = std::min(xlen, ylen);
     st.score.assign(xlen+1, std::vector<double>(ylen+1));
     st.path.assign( xlen+1, std::vector<char>(ylen+1));
     st.val.assign(  xlen+1, std::vector<double>(ylen+1));
@@ -3974,8 +3972,8 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     if(!flag)
     {
-        cout << "There is no alignment between the two structures! "
-             << "Program stop with no result!" << endl;
+        std::cout << "There is no alignment between the two structures! "
+             << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
         t0 = {0, 0, 0};                            // zero translation
         u0 = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};  // identity rotation
@@ -4010,11 +4008,11 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double>&do_vec,
+    std::string &seqM, std::string &seqxA, std::string &seqyA, std::vector<double>&do_vec,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
+    const std::vector<std::string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut=-1, int parallel_threads = 1, const int ss_opt = 0)
@@ -4058,11 +4056,11 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
     double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    string &seqM, string &seqxA, string &seqyA, vector<double> &do_vec,
+    std::string &seqM, std::string &seqxA, std::string &seqyA, std::vector<double> &do_vec,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
     const int xlen, const int ylen,
-    const vector<string> sequence, const double Lnorm_ass,
+    const std::vector<std::string> sequence, const double Lnorm_ass,
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const double TMcut)
@@ -4070,7 +4068,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     std::string seqx_cp;
     std::string secx_cp;
     CoordArray xa_cp;
-    string seqxA_cp,seqyA_cp;
+    std::string seqxA_cp,seqyA_cp;
     int i;
     int r;
     int    cp_point=0;

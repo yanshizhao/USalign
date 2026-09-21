@@ -1,10 +1,8 @@
 #include "basic_fun.h"
 
-using namespace std;
-
 void print_help()
 {
-    cout <<
+    std::cout <<
 "check if the input PDB format multmodel structure is a biounit\n"
 "(i.e., biological assembly) or asymmetric unit\n"
 "\n"
@@ -34,7 +32,7 @@ void print_help()
 "            -1: (default) automatically detect PDB or PDBx/mmCIF format\n"
 "             0: PDB format\n"
 "             3: PDBx/mmCIF format\n"
-    <<endl;
+    <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
@@ -46,45 +44,45 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    string xname     = "";
+    std::string xname     = "";
     int    ter_opt   =0;     // all models
     int    infmt_opt =-1;    // PDB or PDBx/mmCIF format
     int    split_opt =1;     // do not split chain
     int    het_opt=0;        // do not read HETATM residues
-    string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    string suffix_opt="";    // set -suffix to empty
-    string dir_opt   ="";    // set -dir to empty
-    vector<string> chain_list; // only when -dir1 is set
-    vector<string> chain2parse;
-    vector<string> model2parse;
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir_opt   ="";    // set -dir to empty
+    std::vector<std::string> chain_list; // only when -dir1 is set
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
 
     int nameIdx = 0;
     for(int i = 1; i < argc; i++)
     {
-        if ( string(argv[i]) == "-atom" && i < (argc-1) )
+        if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
             atom_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-mol" )
+        else if ( std::string(argv[i]) == "-mol" )
         {
             if (i>=(argc-1)) 
                 PrintErrorAndQuit("ERROR! Missing value for -mol");
             mol_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-dir" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
             dir_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-suffix" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
             suffix_opt=argv[i + 1]; i++;
         }
-        else if ( string(argv[i]) == "-infmt" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
             infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else if ( string(argv[i]) == "-het" && i < (argc-1) )
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
             het_opt=safe_stoi(argv[i + 1]); i++;
         }
@@ -115,16 +113,16 @@ int main(int argc, char *argv[])
         chain_list.push_back(xname);
     else
     {
-        ifstream fp(xname.c_str());
+        std::ifstream fp(xname.c_str());
         if (! fp.is_open())
         {
             std::string message = "Can not open file: " + xname + "\n";
             PrintErrorAndQuit(message.c_str());
         }
-        string line;
+        std::string line;
         while (fp.good())
         {
-            getline(fp, line);
+            std::getline(fp, line);
             if (! line.size()) continue;
             chain_list.push_back(dir_opt+Trim(line)+suffix_opt);
         }
@@ -133,9 +131,9 @@ int main(int argc, char *argv[])
     }
 
     // declare previously global variables
-    vector<vector<string> >PDB_lines; // text of chain
-    vector<int> mol_vec;              // molecule type of chain
-    vector<string> chainID_list;      // list of chainID1
+    std::vector<std::vector<std::string> >PDB_lines; // text of chain
+    std::vector<int> mol_vec;              // molecule type of chain
+    std::vector<std::string> chainID_list;      // list of chainID1
     int    i;                         // file index
     int    l;                         // residue index
     int    chain_i,chain_j;           // chain index
@@ -146,9 +144,9 @@ int main(int argc, char *argv[])
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
-    vector<string> resi_vec1;  // residue index for chain1
-    vector<string> resi_vec2;  // residue index for chain2
-    vector<double> clashratio_vec;
+    std::vector<std::string> resi_vec1;  // residue index for chain1
+    std::vector<std::string> resi_vec2;  // residue index for chain2
+    std::vector<double> clashratio_vec;
     double clashcount=0;
     int r1;
     int r2;
@@ -163,13 +161,13 @@ int main(int argc, char *argv[])
             chain2parse, model2parse);
         if (!chainnum)
         {
-            cerr<<"Warning! Cannot parse file: "<<xname
-                <<". Chain number 0."<<endl;
+            std::cerr<<"Warning! Cannot parse file: "<<xname
+                <<". Chain number 0."<<std::endl;
             continue;
         }
         if (chainnum<=1)
         {
-            cout<<xname<<"\tsingle model file, use -ter 1 for oligomer alignment"<<endl;
+            std::cout<<xname<<"\tsingle model file, use -ter 1 for oligomer alignment"<<std::endl;
             xname.clear();
             PDB_lines.clear();
             mol_vec.clear();
@@ -181,26 +179,26 @@ int main(int argc, char *argv[])
             xlen=PDB_lines[chain_i].size();
             if (!xlen)
             {
-                cerr<<"Warning! Cannot parse file: "<<xname
-                    <<". Chain length 0."<<endl;
+                std::cerr<<"Warning! Cannot parse file: "<<xname
+                    <<". Chain length 0."<<std::endl;
                 continue;
             }
             xa.clear();
             xa.reserve(xlen);
-            string seqx;
+            std::string seqx;
             xlen = read_PDB(PDB_lines[chain_i], xa, seqx, resi_vec1, 0);
             for (chain_j=chain_i+1;chain_j<chainnum;chain_j++)
             {
                 ylen=PDB_lines[chain_j].size();
                 if (!ylen)
                 {
-                    cerr<<"Warning! Cannot parse file: "<<xname
-                        <<". Chain length 0."<<endl;
+                    std::cerr<<"Warning! Cannot parse file: "<<xname
+                        <<". Chain length 0."<<std::endl;
                     continue;
                 }
                 ya.clear();
                 ya.reserve(ylen);
-                string seqy;
+                std::string seqy;
                 ylen = read_PDB(PDB_lines[chain_j], ya, seqy, resi_vec2, 0);
                 clashcount=0;
                 for (r1=0;r1<xlen;r1++)
@@ -214,24 +212,24 @@ int main(int argc, char *argv[])
                 if (xlen<=ylen) clashratio_vec.push_back(clashcount/xlen);
                 else            clashratio_vec.push_back(clashcount/ylen);
             
-                vector<string>().swap(resi_vec2);
+                std::vector<std::string>().swap(resi_vec2);
             }
-            vector<string>().swap(resi_vec1);
+            std::vector<std::string>().swap(resi_vec1);
         } // chain_i
         clashcount=0;
         for (chain_i=0;chain_i<clashratio_vec.size();chain_i++)
             clashcount+=clashratio_vec[chain_i];
         if (clashratio_vec.size()) clashcount/=clashratio_vec.size();
         if (clashcount>=0.1)
-            cout<<xname<<"\tmultimodel asymmetric unit, use -ter 1 for oligomer alignment\t"
+            std::cout<<xname<<"\tmultimodel asymmetric unit, use -ter 1 for oligomer alignment\t"
                 <<"portion of residues with inter-model clash="
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<clashcount<<endl;
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<clashcount<<std::endl;
         else
-            cout<<xname<<"\tbiounit split over multiple model, use -ter 0 for oligomer alignment\t"
+            std::cout<<xname<<"\tbiounit split over multiple model, use -ter 0 for oligomer alignment\t"
                 <<"portion of residues with inter-model clash="
-                <<setiosflags(ios::fixed)<<setprecision(3)
-                <<clashcount<<endl;
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<clashcount<<std::endl;
         
         xname.clear();
         PDB_lines.clear();
