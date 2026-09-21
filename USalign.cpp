@@ -5369,34 +5369,44 @@ int main(int argc, char *argv[])
 
     /* real alignment. entry functions are MMalign_main and 
      * TMalign_main */
-    if (ctrl_opts.mm_opt==0)
+    switch (ctrl_opts.mm_opt)
+    {
+    case 0:
     {
         TMalignParams tm_params;
         fill_tmalign_params(tm_params, common_inputs);
         TMalign(common_inputs, tm_params);
+        break;
     }
-    else if (ctrl_opts.mm_opt==1)
-    {
+    case 1:
         MMalign(common_inputs);
-    }
-    else if (ctrl_opts.mm_opt==2)
+        break;
+    case 2:
         MMdock(common_inputs);
-    else if (ctrl_opts.mm_opt==4)
+        break;
+    case 4:
         mTMalign(common_inputs);
-    else if (ctrl_opts.mm_opt==5 || ctrl_opts.mm_opt==6)
+        break;
+    case 5:
+    case 6:
     {
         SoiAlignParams soi_params;
         fill_soi_params(soi_params, common_inputs);
         SOIalign(common_inputs, soi_params);
+        break;
     }
-    else if (ctrl_opts.mm_opt==7)
+    case 7:
     {
         FlexalignParams flex_params;
         fill_flexalign_params(flex_params, ctrl_opts);
         FlexAlignResult flex_result;
         Flexalign(common_inputs, flex_params, flex_result);
+        break;
     }
-    else std::cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<std::endl;
+    default:
+        std::cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<std::endl;
+        break;
+    }
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
