@@ -164,7 +164,7 @@ void print_help(bool h_opt=false)
 "          1: alignment of two multi-chain oligomeric structures\n"
 "          2: alignment of individual chains to an oligomeric structure\n"
 "             $ USalign -dir1 monomers/ list oligomer.pdb -ter 0 -mm 2\n"
-"          3: alignment of circularly permuted structure\n"
+"          3: circular permutation detection (equivalent to '-cp')\n"
 "          4: MSTA, i.e., alignment of multiple monomeric chains into a\n"
 "             consensus alignment\n"
 "             $ USalign -dir chains/ list -suffix .pdb -mm 4\n"
@@ -174,7 +174,10 @@ void print_help(bool h_opt=false)
 "               upgma_tree.dist    Pairwise distance matrix.\n"
 "          5: fully non-sequential (fNS) alignment\n"
 "          6: semi-non-sequential (sNS) alignment\n"
+"          7: flexible (hinge) alignment\n"
 "          To use -mm 1 or -mm 2, '-ter' option must be 0 or 1.\n"
+"\n"
+"    -cp  Detect circular permutation. Equivalent to '-mm 3'.\n"
 "\n"
 "  -hinge  Maximum number of hinge allowed in flexible alignment.\n"
 "          Only functional with '-mm 7'. default: 9\n"
@@ -5371,41 +5374,41 @@ int main(int argc, char *argv[])
      * TMalign_main */
     switch (ctrl_opts.mm_opt)
     {
-    case 0:
-    {
-        TMalignParams tm_params;
-        fill_tmalign_params(tm_params, common_inputs);
-        TMalign(common_inputs, tm_params);
-        break;
-    }
-    case 1:
-        MMalign(common_inputs);
-        break;
-    case 2:
-        MMdock(common_inputs);
-        break;
-    case 4:
-        mTMalign(common_inputs);
-        break;
-    case 5:
-    case 6:
-    {
-        SoiAlignParams soi_params;
-        fill_soi_params(soi_params, common_inputs);
-        SOIalign(common_inputs, soi_params);
-        break;
-    }
-    case 7:
-    {
-        FlexalignParams flex_params;
-        fill_flexalign_params(flex_params, ctrl_opts);
-        FlexAlignResult flex_result;
-        Flexalign(common_inputs, flex_params, flex_result);
-        break;
-    }
-    default:
-        std::cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<std::endl;
-        break;
+        case 0:
+        {
+            TMalignParams tm_params;
+            fill_tmalign_params(tm_params, common_inputs);
+            TMalign(common_inputs, tm_params);
+            break;
+        }
+        case 1:
+            MMalign(common_inputs);
+            break;
+        case 2:
+            MMdock(common_inputs);
+            break;
+        case 4:
+            mTMalign(common_inputs);
+            break;
+        case 5:
+        case 6:
+        {
+            SoiAlignParams soi_params;
+            fill_soi_params(soi_params, common_inputs);
+            SOIalign(common_inputs, soi_params);
+            break;
+        }
+        case 7:
+        {
+            FlexalignParams flex_params;
+            fill_flexalign_params(flex_params, ctrl_opts);
+            FlexAlignResult flex_result;
+            Flexalign(common_inputs, flex_params, flex_result);
+            break;
+        }
+        default:
+            std::cerr<<"WARNING! -mm "<<ctrl_opts.mm_opt<<" not implemented"<<std::endl;
+            break;
     }
 
     t2 = std::clock();
