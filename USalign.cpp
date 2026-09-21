@@ -2876,9 +2876,7 @@ int MMalign(AlignCommonInput& common_inputs)
                 MMalignParams mm_params;
                 fill_mmalign_params(mm_params, norm_dir1, norm_dir2, tmp_vec1, tmp_vec2);
                 MMalign_main(common_inputs, mm_params);
-                std::vector<std::string>().swap(tmp_vec2);
             }
-            std::vector<std::string>().swap(tmp_vec1);
         }
     }
     else if (user_opts.dirpair_opt.size()==0)
