@@ -281,6 +281,21 @@ struct PairTask {
     int order;
 };
 
+struct ChainParseOptions {
+    int infmt_opt;
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
+    bool mirror_opt;
+    std::string mol_opt;
+    int ter_opt;
+    std::string atom_opt;
+    bool autojustify;
+    int split_opt;
+    int het_opt;
+    int read_resi;
+    bool keep_pdb_lines;
+};
+
 // ---------------------------------------------------------------------------
 // output_do_block — print aligned residue-pair distances (-do mode)
 // Extracted from the inner loop so it can be reused in both serial and
@@ -329,6 +344,69 @@ void align_chain_pair(ChainPairAlignResult& result,
     const std::vector<std::string>& sequence,
     int outfmt_opt);
 
+void parse_file_into_cache(const std::string& fname,
+    const ChainParseOptions& parse_opts,
+    std::vector<ParsedChain>& all_chains,
+    std::map<std::string, std::vector<int>>& cache,
+    const std::string& key)
+{
+    if (cache.count(key)) return;
+    std::vector<std::vector<std::string>> PDB_lines;
+    std::vector<int> mol_vec;
+    std::vector<std::string> chainID_list;
+    int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
+        parse_opts.ter_opt, parse_opts.infmt_opt, parse_opts.atom_opt,
+        parse_opts.autojustify, parse_opts.split_opt, parse_opts.het_opt,
+        parse_opts.chain2parse, parse_opts.model2parse);
+    if (nchain == 0)
+    {
+        std::cerr << "Warning! Cannot parse file: " << fname
+            << ". Chain number 0." << std::endl;
+        return;
+    }
+    std::vector<int> indices;
+    for (int c = 0; c < nchain; c++) {
+        int len = (int)PDB_lines[c].size();
+        if (parse_opts.mol_opt == "RNA") mol_vec[c] = 1;
+        else if (parse_opts.mol_opt == "protein") mol_vec[c] = -1;
+        if (!len)
+        {
+            std::cerr << "Warning! Cannot parse file: " << fname
+                << ". Chain length 0." << std::endl;
+            indices.push_back(-1);
+            continue;
+        }
+        else if (len < 3)
+        {
+            std::cerr << "Sequence is too short <3!: " << fname << std::endl;
+            indices.push_back(-1);
+            continue;
+        }
+        int idx = (int)all_chains.size();
+        all_chains.emplace_back();
+        auto& chain = all_chains.back();
+        chain.filename = fname; chain.chain_len = len;
+        chain.chain_id = chainID_list[c]; chain.cur_complex_mol_list = mol_vec[c];
+        chain.chain_coords.reserve(len);
+        std::string seq;
+        chain.chain_len = read_PDB(PDB_lines[c], chain.chain_coords, seq,
+            chain.resi_vec, parse_opts.read_resi);
+        if (parse_opts.mirror_opt)
+            for (int r = 0; r < chain.chain_len; r++)
+                chain.chain_coords[r][2] = -chain.chain_coords[r][2];
+        chain.chain_seq = seq;
+        if (mol_vec[c] > 0)
+            make_sec(seq, chain.chain_coords, chain.chain_len, chain.chain_sec, parse_opts.atom_opt);
+        else
+            make_sec(chain.chain_coords, chain.chain_len, chain.chain_sec);
+        if (parse_opts.keep_pdb_lines) chain.pdb_lines = std::move(PDB_lines[c]);
+        else PDB_lines[c].clear();
+        indices.push_back(idx);
+    }
+    PDB_lines.clear();
+    cache[key] = indices;
+}
+
 // TMalign, RNAalign, CPalign, TMscore
 int run_batch_parallel(
     const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
@@ -354,52 +432,43 @@ int run_batch_parallel(
     std::map<std::string, std::vector<int>> file_to_idx;
     std::vector<PairTask> tasks;
 
-    auto parse_file_into_cache = [&](const std::string& fname) {
-        if (file_to_idx.count(fname)) return;
-        std::vector<std::vector<std::string>> PDB_lines;
-        std::vector<int> mol_vec;
-        std::vector<std::string> chainID_list;
-        int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
-            ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
-            chain2parse1, model2parse1);
-        if (nchain == 0) return;
-        std::vector<int> indices;
-        for (int c = 0; c < nchain; c++) {
-            int len = (int)PDB_lines[c].size();
-            if (len < 3) { indices.push_back(-1); continue; }
-            int idx = (int)all_chains.size();
-            all_chains.emplace_back();
-            auto& chain = all_chains.back();
-            chain.filename = fname; chain.chain_len = len;
-            chain.chain_id = chainID_list[c]; chain.cur_complex_mol_list = mol_vec[c];
-            chain.chain_coords.reserve(len);
-            std::string seq;
-            chain.chain_len = read_PDB(PDB_lines[c], chain.chain_coords, seq,
-                chain.resi_vec, read_resi);
-            chain.chain_seq = seq;
-            if (mol_vec[c] > 0)
-                make_sec(seq, chain.chain_coords, chain.chain_len, chain.chain_sec, atom_opt);
-            else
-                make_sec(chain.chain_coords, chain.chain_len, chain.chain_sec);
-            if (do_opt || cp_opt) chain.pdb_lines = std::move(PDB_lines[c]);
-            else PDB_lines[c].clear();
-            indices.push_back(idx);
-        }
-        PDB_lines.clear();
-        file_to_idx[fname] = indices;
+    ChainParseOptions parse_opts1;
+    parse_opts1.infmt_opt = infmt1_opt;
+    parse_opts1.chain2parse = chain2parse1;
+    parse_opts1.model2parse = model2parse1;
+    parse_opts1.mirror_opt = (mirror_opt != 0);
+    parse_opts1.mol_opt = mol_opt;
+    parse_opts1.ter_opt = ter_opt;
+    parse_opts1.atom_opt = atom_opt;
+    parse_opts1.autojustify = autojustify;
+    parse_opts1.split_opt = split_opt;
+    parse_opts1.het_opt = het_opt;
+    parse_opts1.read_resi = read_resi;
+    parse_opts1.keep_pdb_lines = (do_opt || cp_opt);
+
+    ChainParseOptions parse_opts2 = parse_opts1;
+    parse_opts2.infmt_opt = infmt2_opt;
+    parse_opts2.chain2parse = chain2parse2;
+    parse_opts2.model2parse = model2parse2;
+    parse_opts2.mirror_opt = false;
+
+    auto cache_key = [](const std::string& fname, bool struct1) {
+        return (struct1 ? std::string("1:") : std::string("2:")) + fname;
     };
 
     for (i = 0; i < (int)chain1_list.size(); i++) {
-        parse_file_into_cache(chain1_list[i]);
-        auto& c1_indices = file_to_idx[chain1_list[i]];
+        const std::string key1 = cache_key(chain1_list[i], true);
+        parse_file_into_cache(chain1_list[i], parse_opts1, all_chains, file_to_idx, key1);
+        auto& c1_indices = file_to_idx[key1];
         for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
             int c1_idx = c1_indices[chain_i];
             if (c1_idx < 0) continue;
             int j_start = (dir_opt.size() > 0) * (i + 1);
             for (j = j_start; j < (int)chain2_list.size(); j++) {
                 if (dirpair_opt.size() && j != i) continue;
-                parse_file_into_cache(chain2_list[j]);
-                auto& c2_indices = file_to_idx[chain2_list[j]];
+                const std::string key2 = cache_key(chain2_list[j], false);
+                parse_file_into_cache(chain2_list[j], parse_opts2, all_chains, file_to_idx, key2);
+                auto& c2_indices = file_to_idx[key2];
                 for (int c2_i = 0; c2_i < (int)c2_indices.size(); c2_i++) {
                     int c2_idx = c2_indices[c2_i];
                     if (c2_idx < 0) continue;
