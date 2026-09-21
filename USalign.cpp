@@ -165,6 +165,7 @@ void print_help(bool h_opt=false)
 "          2: alignment of individual chains to an oligomeric structure\n"
 "             $ USalign -dir1 monomers/ list oligomer.pdb -ter 0 -mm 2\n"
 "          3: circular permutation detection (equivalent to '-cp')\n"
+"             Cannot be used with -i or -I.\n"
 "          4: MSTA, i.e., alignment of multiple monomeric chains into a\n"
 "             consensus alignment\n"
 "             $ USalign -dir chains/ list -suffix .pdb -mm 4\n"
@@ -178,6 +179,7 @@ void print_help(bool h_opt=false)
 "          To use -mm 1 or -mm 2, '-ter' option must be 0 or 1.\n"
 "\n"
 "    -cp  Detect circular permutation. Equivalent to '-mm 3'.\n"
+"         Cannot be used with -i or -I.\n"
 "\n"
 "  -hinge  Maximum number of hinge allowed in flexible alignment.\n"
 "          Only functional with '-mm 7'. default: 9\n"
@@ -4990,7 +4992,7 @@ void check_numeric_and_conflicts(UserOptions& user_opts, ControlOptions& control
         control.mm_opt=0;
     }
     if (control.cp_opt && user_opts.i_opt)
-        PrintErrorAndQuit("-mm 3 cannot be used with -i or -I");
+        PrintErrorAndQuit("-mm 3 / -cp cannot be used with -i or -I");
 
     if (user_opts.mirror_opt && user_opts.het_opt!=1)
         std::cerr<<"WARNING! -mirror was not used with -het 1. "
