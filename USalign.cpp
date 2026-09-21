@@ -2890,19 +2890,15 @@ int MMalign(AlignCommonInput& common_inputs)
     }
     else
     {
-        std::vector<std::string> tmp_vec1;
-        std::vector<std::string> tmp_vec2;
         for (int i=0;i<parsed_input.chain1_list.size();i++)
         {
             user_opts.xname=parsed_input.chain1_list[i];
             user_opts.yname=parsed_input.chain2_list[i];
-            tmp_vec1.push_back(user_opts.xname);
-            tmp_vec2.push_back(user_opts.yname);
+            std::vector<std::string> tmp_vec1(1, user_opts.xname);
+            std::vector<std::string> tmp_vec2(1, user_opts.yname);
             MMalignParams mm_params;
             fill_mmalign_params(mm_params, user_opts.dirpair_opt, user_opts.dirpair_opt, tmp_vec1, tmp_vec2);
             MMalign_main(common_inputs, mm_params);
-            tmp_vec1[0].clear(); tmp_vec1.clear();
-            tmp_vec2[0].clear(); tmp_vec2.clear();
         }
     }
     ctrl_opts.chainmapfile.clear();
