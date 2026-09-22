@@ -308,7 +308,6 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
 
             if (rasmol_state.is_mmcif==false)
             {
-                //buf_pdb.str(string());
                 rasmol_state.is_mmcif=true;
             }
 
@@ -752,12 +751,9 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     }
 
 
-    // for PDBx/mmCIF only
     rasmol_state.is_mmcif=false;
 
-    // used for CONECT record of chain1
 
-    // used for CONECT record of chain2
 
     // extract aligned region
     extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
@@ -824,9 +820,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     fp.open((fname_super+"_all_atm_lig").c_str());
     fp<<rasmol_state.buf_all_atm_lig.str();
     fp.close();
-    //fp.open((fname_super+".pdb").c_str());
-    //fp<<buf_pdb.str();
-    //fp.close();
 
     // clear stream
     rasmol_state.buf.str(std::string());
@@ -834,7 +827,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     rasmol_state.buf_atm.str(std::string());
     rasmol_state.buf_all_atm.str(std::string());
     rasmol_state.buf_all_atm_lig.str(std::string());
-    //buf_pdb.str(string());
     rasmol_state.buf_tm.str(std::string());
     rasmol_state.resi_aln1.clear();
     rasmol_state.resi_aln2.clear();
