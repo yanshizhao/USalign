@@ -5131,6 +5131,43 @@ void build_file_lists(UserOptions& user_opts, ParsedInput& parsed, ControlOption
     }
 }
 
+bool parse_file_option(int argc, char* argv[], int& i, AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    if ( std::string(argv[i]) == "-o" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-o");
+        set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_O, val);
+    }
+    else if ( std::string(argv[i]) == "-rasmol" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-rasmol");
+        set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_RASMOL, val);
+    }
+    else if ( std::string(argv[i]) == "-chimerax" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-chimerax");
+        set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_CHIMERAX, val);
+    }
+    else if ( std::string(argv[i]) == "-i" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-i");
+        set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_I, val);
+    }
+    else if (std::string(argv[i]) == "-I" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-I");
+        set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_BIG_I, val);
+    }
+    else if ( std::string(argv[i]) == "-m" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-m");
+        user_opts.fname_matrix = val;    user_opts.m_opt = true;
+    }// get filename for rotation matrix
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
 {
     UserOptions&    user_opts = common_inputs.user_options;
@@ -5148,21 +5185,8 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
 
     for(int i = 1; i < argc; i++)
     {
-        if ( std::string(argv[i]) == "-o" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-o");
-            set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_O, val);
-        }
-        else if ( std::string(argv[i]) == "-rasmol" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-rasmol");
-            set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_RASMOL, val);
-        }
-        else if ( std::string(argv[i]) == "-chimerax" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-chimerax");
-            set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_CHIMERAX, val);
-        }
+        if (parse_file_option(argc, argv, i, common_inputs))
+            continue;
         else if ( std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L" )
         {
             const std::string val = get_argv_value(argc, argv, i, "-u or -L");
@@ -5205,17 +5229,7 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
             ctrl_opts.hinge_set = true;
             ctrl_opts.hinge_opt = safe_stoi(val);
         }
-        else if ( std::string(argv[i]) == "-i" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-i");
-            set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_I, val);
-        }
-        else if (std::string(argv[i]) == "-I" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-I");
-            set_user_alignment(user_opts.fname_lign, user_opts.i_opt, ALN_BIG_I, val);
-        }
-        else if (std::string(argv[i]) == "-chainmap" )
+        else if ( std::string(argv[i]) == "-chainmap" )
         {
             const std::string val = get_argv_value(argc, argv, i, "-chainmap");
             ctrl_opts.chainmapfile = val;
@@ -5228,11 +5242,6 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
             split_next(argc, argv, i, "-model1", user_opts.model2parse1);
         else if (std::string(argv[i]) == "-model2" )
             split_next(argc, argv, i, "-model2", user_opts.model2parse2);
-        else if (std::string(argv[i]) == "-m" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-m");
-            user_opts.fname_matrix = val;    user_opts.m_opt = true;
-        }// get filename for rotation matrix
         else if ( std::string(argv[i]) == "-infmt1" )
         {
             const std::string val = get_argv_value(argc, argv, i, "-infmt1");
