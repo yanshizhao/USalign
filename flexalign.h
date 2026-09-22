@@ -762,41 +762,7 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
 
     read_rasmol_structure2(rasmol_state, yname, mm_opt, ter_opt);
-    // write pymol script
     std::ofstream fp;
-    /*
-    stringstream buf_pymol;
-    vector<string> pml_list;
-    pml_list.push_back(fname_super+"");
-    pml_list.push_back(fname_super+"_atm");
-    pml_list.push_back(fname_super+"_all");
-    pml_list.push_back(fname_super+"_all_atm");
-    pml_list.push_back(fname_super+"_all_atm_lig");
-    for (i=0;i<pml_list.size();i++)
-    {
-        buf_pymol<<"#!/usr/bin/env pymol\n"
-            <<"load "<<pml_list[i]<<"\n"
-            <<"hide all\n"
-            <<((i==0 || i==2)?("show stick\n"):("show cartoon\n"))
-            <<"color blue, chain A\n"
-            <<"color red, chain B\n"
-            <<"set ray_shadow, 0\n"
-            <<"set stick_radius, 0.3\n"
-            <<"set sphere_scale, 0.25\n"
-            <<"show stick, not polymer\n"
-            <<"show sphere, not polymer\n"
-            <<"bg_color white\n"
-            <<"set transparency=0.2\n"
-            <<"zoom polymer\n"
-            <<endl;
-        fp.open((pml_list[i]+".pml").c_str());
-        fp<<buf_pymol.str();
-        fp.close();
-        buf_pymol.str(std::string());
-        pml_list[i].clear();
-    }
-    pml_list.clear();
-    */
     
     // write rasmol script
     if (!mm_opt)
