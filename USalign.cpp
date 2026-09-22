@@ -4225,62 +4225,28 @@ void msta_iterate(MstaIterationState& state, MstaIterContext& ctx)
     }
 }
 
-int mTMalign(AlignCommonInput& common_inputs)
+void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexData& complex,
+    const DoubleCube& a_vec, const int chain_num, const double Lnorm_ass, const bool u_opt,
+    const bool fast_opt, const int cur_complex_mol_list, DoubleMatrix& TMave_mat,
+    std::vector<std::vector<std::string> >& seqxA_mat,
+    std::vector<std::vector<std::string> >& seqyA_mat)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
-    double Lnorm_ass = user_opts.Lnorm_ass;
-    bool u_opt = user_opts.u_opt;
-    bool fast_opt = user_opts.fast_opt;
-
-    // declare previously global variables
-    int    i,j;                    // chain index
-    int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
-    CoordArray xa;                     // structure of single chain
-    CoordArray ya;
-    std::string secx;                   // for the secondary structure
-    std::string secy;
-
-    // parse chain list
-    ComplexData complex;
-    parse_chain_list(parsed_input.chain1_list, complex,
-        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, user_opts.o_opt,
-        user_opts.chain2parse1, user_opts.model2parse1);
-    int chain_num=complex.coords.size();
-    if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
-    DoubleCube a_vec = complex.coords;
-    DoubleCube ua_vec = complex.coords;
     const CharMatrix& seq_vec = complex.seqs;
     const CharMatrix& sec_vec = complex.secs;
-    const std::vector<int>& mol_vec = complex.mol_types;
-    const std::vector<std::string>& chainID_list = complex.chain_ids;
     const std::vector<int>& len_vec = complex.lengths;
+    const std::vector<std::string>& chainID_list = complex.chain_ids;
     const std::vector<std::string>& resi_vec = complex.resi;
-    int    len_aa = complex.total_len_aa;
-    int    len_na = complex.total_len_na;
-    int    cur_complex_mol_list=0;
-    int    total_len=0;
-    xlen=0;
-    for (i=0; i<chain_num; i++)
-    {
-        if (len_vec[i]>xlen) xlen=len_vec[i];
-        total_len+=len_vec[i];
-        cur_complex_mol_list+=mol_vec[i];
-    }
-    if (!u_opt) Lnorm_ass=total_len/chain_num;
-    u_opt=true;
-    total_len-=xlen;
-    if (total_len>750) fast_opt=true;
-
-    // get all-against-all alignment
-    DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain_num,std::vector<double>(chain_num));
-    std::vector<std::string> tmp_str_vec(chain_num,"");
-    std::vector<std::vector<std::string> >seqxA_mat(chain_num,tmp_str_vec);
-    std::vector<std::vector<std::string> >seqyA_mat(chain_num,tmp_str_vec);
-    for (i=0;i<chain_num;i++) for (j=0;j<chain_num;j++) TMave_mat[i][j]=0;
+    int i;
+    int j;
+    int xlen;
+    int ylen;
+    CoordArray xa;
+    CoordArray ya;
+    std::string secx;
+    std::string secy;
     bool pair_parallel_done = false;
 #ifdef _OPENMP
     if (ctrl_opts.parallel_threads > 1) {
@@ -4294,7 +4260,7 @@ int mTMalign(AlignCommonInput& common_inputs)
         pair_parallel_done = true;
     }
 #endif
-    if (!pair_parallel_done) 
+    if (!pair_parallel_done)
     {
         // serial fallback
         for (i=0;i<chain_num;i++)
@@ -4357,8 +4323,63 @@ int mTMalign(AlignCommonInput& common_inputs)
                 result.do_vec.clear();
             }
         }
-
     }
+}
+
+int mTMalign(AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    double Lnorm_ass = user_opts.Lnorm_ass;
+    bool u_opt = user_opts.u_opt;
+    bool fast_opt = user_opts.fast_opt;
+
+    // declare previously global variables
+    int    i,j;                    // chain index
+    int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
+    std::string secx;                   // for the secondary structure
+    std::string secy;
+
+    // parse chain list
+    ComplexData complex;
+    parse_chain_list(parsed_input.chain1_list, complex,
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
+        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, user_opts.o_opt,
+        user_opts.chain2parse1, user_opts.model2parse1);
+    int chain_num=complex.coords.size();
+    if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
+    DoubleCube a_vec = complex.coords;
+    DoubleCube ua_vec = complex.coords;
+    const std::vector<int>& mol_vec = complex.mol_types;
+    const std::vector<std::string>& chainID_list = complex.chain_ids;
+    const std::vector<int>& len_vec = complex.lengths;
+    const std::vector<std::string>& resi_vec = complex.resi;
+    int    cur_complex_mol_list=0;
+    int    total_len=0;
+    xlen=0;
+    for (i=0; i<chain_num; i++)
+    {
+        if (len_vec[i]>xlen) xlen=len_vec[i];
+        total_len+=len_vec[i];
+        cur_complex_mol_list+=mol_vec[i];
+    }
+    if (!u_opt) Lnorm_ass=total_len/chain_num;
+    u_opt=true;
+    total_len-=xlen;
+    if (total_len>750) fast_opt=true;
+
+    // get all-against-all alignment
+    DoubleMatrix TMave_mat;
+    TMave_mat.assign(chain_num,std::vector<double>(chain_num));
+    std::vector<std::string> tmp_str_vec(chain_num,"");
+    std::vector<std::vector<std::string> >seqxA_mat(chain_num,tmp_str_vec);
+    std::vector<std::vector<std::string> >seqyA_mat(chain_num,tmp_str_vec);
+    for (i=0;i<chain_num;i++) for (j=0;j<chain_num;j++) TMave_mat[i][j]=0;
+    mTMalign_pairwise_alignment(common_inputs, complex, a_vec, chain_num,
+        Lnorm_ass, u_opt, fast_opt, cur_complex_mol_list,
+        TMave_mat, seqxA_mat, seqyA_mat);
     // representative related variables
     int r;
     MstaIterationState state;
