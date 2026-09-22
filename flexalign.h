@@ -1684,14 +1684,14 @@ inline void score_alignedA_unalignB(
         const bool u_opt, const bool d_opt,
         const bool fast_opt, const int mol_type, const int ss_opt,
         Vec3& t0, RotMat& u0,
-        SubstructAlignRes& res)
+        SubstructAlignRes& sub_align_res)
 {
-    ChainPairAlignResult r = { 0};
-    r.d0_out = 5.0;
-    r.t0 = t0;
-    r.u0 = u0;
-    r.invmap.assign(ylen + 1, -1);
-    r.do_vec = do_vec;
+    ChainPairAlignResult chain_align_res = { 0};
+    chain_align_res.d0_out = 5.0;
+    chain_align_res.t0 = t0;
+    chain_align_res.u0 = u0;
+    chain_align_res.invmap.assign(ylen + 1, -1);
+    chain_align_res.do_vec = do_vec;
     ChainPairAlignOptions align_opts;
     align_opts.i_opt = i_opt;
     align_opts.a_opt = a_opt;
@@ -1707,47 +1707,47 @@ inline void score_alignedA_unalignB(
     align_opts.ss_opt = ss_opt;
     align_opts.mol_type = mol_type;
     TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
-        r, sub.xlen_h, sub.ylen_h, sequence, align_opts);
-    t0 = r.t0;
-    u0 = r.u0;
-    do_vec = r.do_vec;
-    res.t_u_result = r.t0;
-    res.u_u_result = r.u0;
-    r.TM1 = r.TM2 = r.TM3 = r.TM4 = r.TM5 = r.rmsd0 = 0;
-    r.seqM = "";
-    r.seqxA = "";
-    r.seqyA = "";
-    r.n_ali = r.n_ali8 = 0;
+        chain_align_res, sub.xlen_h, sub.ylen_h, sequence, align_opts);
+    t0 = chain_align_res.t0;
+    u0 = chain_align_res.u0;
+    do_vec = chain_align_res.do_vec;
+    sub_align_res.t_u_result = chain_align_res.t0;
+    sub_align_res.u_u_result = chain_align_res.u0;
+    chain_align_res.TM1 = chain_align_res.TM2 = chain_align_res.TM3 = chain_align_res.TM4 = chain_align_res.TM5 = chain_align_res.rmsd0 = 0;
+    chain_align_res.seqM = "";
+    chain_align_res.seqxA = "";
+    chain_align_res.seqyA = "";
+    chain_align_res.n_ali = chain_align_res.n_ali8 = 0;
     CoordArray xt;
     xt.resize(xlen);
     score_with_cur_transform(
         xa, ya, xt, seqx, seqy, xlen, ylen,
         sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
-        mol_type, 1, r);
-    do_vec = r.do_vec;
-    res.TM1 = r.TM1;
-    res.TM2 = r.TM2;
-    res.TM3 = r.TM3;
-    res.TM4 = r.TM4;
-    res.TM5 = r.TM5;
-    res.seqM = r.seqM;
-    res.seqxA = r.seqxA;
-    res.seqyA = r.seqyA;
-    res.n_ali = r.n_ali;
-    res.n_ali8 = r.n_ali8;
-    res.rmsd0 = r.rmsd0;
-    res.d0_0 = r.d0_0;
-    res.TM_0 = r.TM_0;
-    res.d0A = r.d0A;
-    res.d0B = r.d0B;
-    res.d0u = r.d0u;
-    res.d0a = r.d0a;
-    res.d0_out = r.d0_out;
-    res.L_ali = r.L_ali;
-    res.Liden = r.Liden;
-    res.TM_ali = r.TM_ali;
-    res.rmsd_ali = r.rmsd_ali;
-    res.invmap = r.invmap;
+        mol_type, 1, chain_align_res);
+    do_vec = chain_align_res.do_vec;
+    sub_align_res.TM1 = chain_align_res.TM1;
+    sub_align_res.TM2 = chain_align_res.TM2;
+    sub_align_res.TM3 = chain_align_res.TM3;
+    sub_align_res.TM4 = chain_align_res.TM4;
+    sub_align_res.TM5 = chain_align_res.TM5;
+    sub_align_res.seqM = chain_align_res.seqM;
+    sub_align_res.seqxA = chain_align_res.seqxA;
+    sub_align_res.seqyA = chain_align_res.seqyA;
+    sub_align_res.n_ali = chain_align_res.n_ali;
+    sub_align_res.n_ali8 = chain_align_res.n_ali8;
+    sub_align_res.rmsd0 = chain_align_res.rmsd0;
+    sub_align_res.d0_0 = chain_align_res.d0_0;
+    sub_align_res.TM_0 = chain_align_res.TM_0;
+    sub_align_res.d0A = chain_align_res.d0A;
+    sub_align_res.d0B = chain_align_res.d0B;
+    sub_align_res.d0u = chain_align_res.d0u;
+    sub_align_res.d0a = chain_align_res.d0a;
+    sub_align_res.d0_out = chain_align_res.d0_out;
+    sub_align_res.L_ali = chain_align_res.L_ali;
+    sub_align_res.Liden = chain_align_res.Liden;
+    sub_align_res.TM_ali = chain_align_res.TM_ali;
+    sub_align_res.rmsd_ali = chain_align_res.rmsd_ali;
+    sub_align_res.invmap = chain_align_res.invmap;
 }
 
 inline void score_unalignA_alignedB(
@@ -1758,14 +1758,14 @@ inline void score_unalignA_alignedB(
     const double d0_scale, const int i_opt, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, const int ss_opt, Vec3& t0, RotMat& u0,
-    SubstructAlignRes& res)
+    SubstructAlignRes& sub_align_res)
 {
-    ChainPairAlignResult r = { 0};
-    r.d0_out = 5.0;
-    r.t0 = t0;
-    r.u0 = u0;
-    r.invmap.assign(ylen + 1, -1);
-    r.do_vec = do_vec;
+    ChainPairAlignResult chain_align_res = { 0};
+    chain_align_res.d0_out = 5.0;
+    chain_align_res.t0 = t0;
+    chain_align_res.u0 = u0;
+    chain_align_res.invmap.assign(ylen + 1, -1);
+    chain_align_res.do_vec = do_vec;
     ChainPairAlignOptions align_opts;
     align_opts.i_opt = i_opt;
     align_opts.a_opt = a_opt;
@@ -1781,47 +1781,47 @@ inline void score_unalignA_alignedB(
     align_opts.ss_opt = ss_opt;
     align_opts.mol_type = mol_type;
     TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
-        r, sub.xlen_h, sub.ylen_h, sequence, align_opts);
-    t0 = r.t0;
-    u0 = r.u0;
-    do_vec = r.do_vec;
-    res.t_u_result = r.t0;
-    res.u_u_result = r.u0;
-    r.TM1 = r.TM2 = r.TM3 = r.TM4 = r.TM5 = r.rmsd0 = 0;
-    r.seqM = "";
-    r.seqxA = "";
-    r.seqyA = "";
-    r.n_ali = r.n_ali8 = 0;
+        chain_align_res, sub.xlen_h, sub.ylen_h, sequence, align_opts);
+    t0 = chain_align_res.t0;
+    u0 = chain_align_res.u0;
+    do_vec = chain_align_res.do_vec;
+    sub_align_res.t_u_result = chain_align_res.t0;
+    sub_align_res.u_u_result = chain_align_res.u0;
+    chain_align_res.TM1 = chain_align_res.TM2 = chain_align_res.TM3 = chain_align_res.TM4 = chain_align_res.TM5 = chain_align_res.rmsd0 = 0;
+    chain_align_res.seqM = "";
+    chain_align_res.seqxA = "";
+    chain_align_res.seqyA = "";
+    chain_align_res.n_ali = chain_align_res.n_ali8 = 0;
     CoordArray xt;
     xt.resize(xlen);
     score_with_cur_transform(
         xa, ya, xt, seqx, seqy, xlen, ylen,
         sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
-        mol_type, 1, r);
-    do_vec = r.do_vec;
-    res.TM1 = r.TM1;
-    res.TM2 = r.TM2;
-    res.TM3 = r.TM3;
-    res.TM4 = r.TM4;
-    res.TM5 = r.TM5;
-    res.seqM = r.seqM;
-    res.seqxA = r.seqxA;
-    res.seqyA = r.seqyA;
-    res.n_ali = r.n_ali;
-    res.n_ali8 = r.n_ali8;
-    res.rmsd0 = r.rmsd0;
-    res.d0_0 = r.d0_0;
-    res.TM_0 = r.TM_0;
-    res.d0A = r.d0A;
-    res.d0B = r.d0B;
-    res.d0u = r.d0u;
-    res.d0a = r.d0a;
-    res.d0_out = r.d0_out;
-    res.L_ali = r.L_ali;
-    res.Liden = r.Liden;
-    res.TM_ali = r.TM_ali;
-    res.rmsd_ali = r.rmsd_ali;
-    res.invmap = r.invmap;
+        mol_type, 1, chain_align_res);
+    do_vec = chain_align_res.do_vec;
+    sub_align_res.TM1 = chain_align_res.TM1;
+    sub_align_res.TM2 = chain_align_res.TM2;
+    sub_align_res.TM3 = chain_align_res.TM3;
+    sub_align_res.TM4 = chain_align_res.TM4;
+    sub_align_res.TM5 = chain_align_res.TM5;
+    sub_align_res.seqM = chain_align_res.seqM;
+    sub_align_res.seqxA = chain_align_res.seqxA;
+    sub_align_res.seqyA = chain_align_res.seqyA;
+    sub_align_res.n_ali = chain_align_res.n_ali;
+    sub_align_res.n_ali8 = chain_align_res.n_ali8;
+    sub_align_res.rmsd0 = chain_align_res.rmsd0;
+    sub_align_res.d0_0 = chain_align_res.d0_0;
+    sub_align_res.TM_0 = chain_align_res.TM_0;
+    sub_align_res.d0A = chain_align_res.d0A;
+    sub_align_res.d0B = chain_align_res.d0B;
+    sub_align_res.d0u = chain_align_res.d0u;
+    sub_align_res.d0a = chain_align_res.d0a;
+    sub_align_res.d0_out = chain_align_res.d0_out;
+    sub_align_res.L_ali = chain_align_res.L_ali;
+    sub_align_res.Liden = chain_align_res.Liden;
+    sub_align_res.TM_ali = chain_align_res.TM_ali;
+    sub_align_res.rmsd_ali = chain_align_res.rmsd_ali;
+    sub_align_res.invmap = chain_align_res.invmap;
 }
 
 inline void fill_sub_struct_align_result(
