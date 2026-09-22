@@ -2138,12 +2138,22 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     int round2=res.tu_vec.size();
     if (round2==0)
     {
-        TMalign_main(xa, ya, seqx, seqy, secx, secy, res.t0, res.u0,
-            res.TM1, res.TM2, res.TM3, res.TM4, res.TM5, res.d0_0, res.TM_0,
-            res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out, res.seqM, res.seqxA, res.seqyA, res.do_vec,
-            res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
-            xlen, ylen, parsed.sequence, opts.Lnorm_ass,
-            opts.d0_scale, opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, fast_opt, mol_type, -1, 1, ss_opt);
+        ChainPairAlignOptions align_opts;
+        align_opts.i_opt = opts.i_opt;
+        align_opts.a_opt = opts.a_opt;
+        align_opts.u_opt = opts.u_opt;
+        align_opts.d_opt = opts.d_opt;
+        align_opts.fast_opt = fast_opt;
+        align_opts.se_opt = false;
+        align_opts.cp_opt = false;
+        align_opts.Lnorm = opts.Lnorm_ass;
+        align_opts.d0_scale = opts.d0_scale;
+        align_opts.TMcut = -1;
+        align_opts.parallel_threads = 1;
+        align_opts.ss_opt = ss_opt;
+        align_opts.mol_type = mol_type;
+        TMalign_main(xa, ya, seqx, seqy, secx, secy, res,
+            xlen, ylen, parsed.sequence, align_opts);
 
         t_u2tu(res.t0,res.u0,tu_tmp);
         res.tu_vec.push_back(tu_tmp);
