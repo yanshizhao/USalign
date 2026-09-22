@@ -491,7 +491,8 @@ int run_batch_parallel(
         auto& c2 = all_chains[task.chain2_idx];
         CoordArray xa_c = c1.chain_coords; CoordArray ya_c = c2.chain_coords;
         bool force_fast = (std::min(c1.chain_len, c2.chain_len) > 1500) ? true : fast_opt;
-        ChainPairAlignResult result = make_default_result();
+        ChainPairAlignResult result = { 0};
+        result.d0_out = 5.0;
         ChainPairAlignOptions align_opts;
         align_opts.i_opt = i_opt;
         align_opts.a_opt = a_opt;
@@ -774,7 +775,8 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                 }
 
                 // entry function for structure alignment (reuses the common template align_chain_pair)
-                ChainPairAlignResult align_result = make_default_result();
+                ChainPairAlignResult align_result = { 0};
+                align_result.d0_out = 5.0;
                 int mol_types = parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx];
                 align_chain_pair(align_result,
                     chain1_coords, chain2_coords, chain1_seq,
@@ -914,7 +916,8 @@ inline void run_mmdock_parallel(
             int Lnorm_tmp = len_aa;
             if (mol_vec1[i] + mol_vec2[j] > 0) Lnorm_tmp = len_na;
 
-            ChainPairAlignResult result = make_default_result();
+            ChainPairAlignResult result = { 0};
+            result.d0_out = 5.0;
 
             // entry function for structure alignment
             if (trimmed.chain_count && trimmed.lengths[j] < ylen)
@@ -1161,7 +1164,8 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                         seqx, seqy, resi_vec1, resi_vec2, user_opts.byresi_opt);
 
                     // entry function for structure alignment
-                    ChainPairAlignResult result = make_default_result();
+                    ChainPairAlignResult result = { 0};
+                    result.d0_out = 5.0;
                     ChainPairAlignOptions align_opts = tm_params.align;
                     align_opts.fast_opt = (getmin(xlen, ylen) > 1500) ? true : user_opts.fast_opt;
                     align_opts.mol_type = mol_vec1[chain_i] + mol_vec2[chain_j];
@@ -1784,7 +1788,8 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
 
     int i_opt = (common_inputs.user_options.byresi_opt ? 3 : 0);
     int cur_complex_mol_list = complex1.mol_types[0] + complex2.mol_types[0];
-    ChainPairAlignResult align_result = make_default_result();
+    ChainPairAlignResult align_result = { 0};
+    align_result.d0_out = 5.0;
     align_chain_pair(align_result,
         chain1_coords, chain2_coords, chain1_seq, chain2_seq,
         chain1_sec, chain2_sec, chain1_len, chain2_len,
@@ -1884,7 +1889,8 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
 
             // entry function for structure alignment
             int i_opt = (common_inputs.user_options.byresi_opt ? 3 : 0);
-            ChainPairAlignResult align_result = make_default_result();
+            ChainPairAlignResult align_result = { 0};
+            align_result.d0_out = 5.0;   // TMalign_main overrides d0_out only with -d
             int mol_types = parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx];
             align_chain_pair(align_result,
                 chain1_coords, chain2_coords, chain1_seq, chain2_seq,
@@ -2967,7 +2973,8 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         ya.reserve(ylen);
         copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j], ylen,ya,seqy,secy);
 
-        ChainPairAlignResult result = make_default_result();
+        ChainPairAlignResult result = { 0};
+        result.d0_out = 5.0;
         ChainPairAlignOptions align_opts;
         align_opts.i_opt = 3;
         align_opts.a_opt = user_opts.a_opt;
@@ -3113,7 +3120,8 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                 copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
                     ylen,ya,seqy,secy);
 
-                ChainPairAlignResult result = make_default_result();
+                ChainPairAlignResult result = { 0};
+                result.d0_out = 5.0;
                 int Lnorm_tmp=len_aa;
                 if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_tmp=len_na;
 
@@ -3211,7 +3219,8 @@ int MMdock(AlignCommonInput& common_inputs)
         copy_chain_data(complex1.coords[0],complex1.seqs[0],complex1.secs[0], xlen,xa,seqx,secx);
         copy_chain_data(complex2.coords[0],complex2.seqs[0],complex2.secs[0], ylen,ya,seqy,secy);
 
-        ChainPairAlignResult result = make_default_result();
+        ChainPairAlignResult result = { 0};
+        result.d0_out = 5.0;
         ChainPairAlignOptions align_opts;
         align_opts.i_opt = 0;
         align_opts.a_opt = user_opts.a_opt;
@@ -3639,7 +3648,8 @@ static void run_mTMalign_pairwise_parallel(
             secy.resize(ylen + 1);
             copy_chain_data(a_vec[chain_j], seq_vec[chain_j], sec_vec[chain_j], ylen, ya, seqy, secy);
 
-            ChainPairAlignResult result = make_default_result();
+            ChainPairAlignResult result = { 0};
+            result.d0_out = 5.0;
             std::vector<std::string> local_seq(2);
             local_seq[0] = seqxA_mat[chain_i][chain_j];
             local_seq[1] = seqyA_mat[chain_i][chain_j];
@@ -3844,7 +3854,8 @@ void msta_superpose_to_representative(MstaIterationState& state, MstaIterContext
             parsed_input.sequence[0]=seqxA_mat[i][j];
             parsed_input.sequence[1]=seqyA_mat[i][j];
 
-            ChainPairAlignResult result = make_default_result();
+            ChainPairAlignResult result = { 0};
+            result.d0_out = 5.0;
             ChainPairAlignOptions align_opts;
             align_opts.i_opt = 2;
             align_opts.a_opt = user_opts.a_opt;
@@ -3947,7 +3958,8 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
             xa.reserve(xlen);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i], xlen,xa,seqx,secx);
         
-            ChainPairAlignResult result = make_default_result();
+            ChainPairAlignResult result = { 0};
+            result.d0_out = 5.0;
             result.invmap.assign(ylen + 1, 0);
             std::string& seqxA = result.seqxA;
             std::string& seqyA = result.seqyA;
@@ -4143,7 +4155,8 @@ bool msta_accumulate_stats(MstaIterationState& state, MstaIterContext& ctx)
                 parsed_input.sequence[0]=seqxA_mat[i][j];
                 parsed_input.sequence[1]=seqyA_mat[i][j];
             
-                ChainPairAlignResult result = make_default_result();
+                ChainPairAlignResult result = { 0};
+                result.d0_out = 5.0;
                 result.invmap.assign(ylen + 1, 0);
                 ChainPairAlignOptions align_opts;
                 align_opts.i_opt = 1;
@@ -4292,7 +4305,8 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 ya.reserve(ylen);
                 copy_chain_data(a_vec[j],seq_vec[j],sec_vec[j],ylen,ya,seqy,secy);
 
-                ChainPairAlignResult result = make_default_result();
+                ChainPairAlignResult result = { 0};
+                result.d0_out = 5.0;
                 ChainPairAlignOptions align_opts;
                 align_opts.i_opt = 0;
                 align_opts.a_opt = 0;
@@ -4651,7 +4665,8 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         ya, seqy, secy, resi_vec2, soi.k_nearest2, soi.chain2_bonds);
                     if (ylen<3) continue;
 
-                    ChainPairAlignResult result = make_default_result();
+                    ChainPairAlignResult result = { 0};
+                    result.d0_out = 5.0;
                     ChainPairAlignOptions soi_align_opts = soi_params.align;
                     soi_align_opts.fast_opt = (getmin(xlen,ylen)>1500)?true:user_opts.fast_opt;
                     soi_align_opts.mol_type = mol_vec1[chain_i]+mol_vec2[chain_j];

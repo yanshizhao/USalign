@@ -90,13 +90,6 @@ struct ChainPairAlignResult
     std::vector<int> invmap;
 };
 
-inline ChainPairAlignResult make_default_result()
-{
-    ChainPairAlignResult result = { 0};
-    result.d0_out = 5.0;
-    return result;
-}
-
 struct MstaIterationState
 {
     std::vector<std::string> msa;
