@@ -2902,6 +2902,29 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
 }
 
 
+void output_mTMalign_results(const std::string xname, const std::string yname,
+    const std::string chainID1, const std::string chainID2,
+    const int xlen, const int ylen, const ChainPairAlignResult& res,
+    const double Lnorm_ass, const double d0_scale,
+    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
+    const int mm_opt, const int split_opt, const int o_opt,
+    const std::string fname_super, const int i_opt, const int a_opt,
+    const bool u_opt, const bool d_opt, const int mirror_opt,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const double ccTM_score,
+    std::ostream& os = std::cout)
+{
+    output_mTMalign_results(xname, yname, chainID1, chainID2, xlen, ylen,
+        res.t0, res.u0, res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.rmsd0, res.d0_out, res.seqM, res.seqxA, res.seqyA, res.Liden,
+        res.n_ali8, res.L_ali, res.TM_ali, res.rmsd_ali, res.TM_0, res.d0_0,
+        res.d0A, res.d0B, Lnorm_ass, d0_scale, res.d0a, res.d0u,
+        fname_matrix, outfmt_opt, ter_opt, mm_opt, split_opt, o_opt,
+        fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+        resi_vec1, resi_vec2, ccTM_score, os);
+}
+
+
 inline double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,

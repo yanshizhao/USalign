@@ -4423,8 +4423,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     std::string seqM="";
     std::string seqxA="";
     std::string seqyA="";
-    Vec3 t0;
-    RotMat u0;
     std::stringstream buf;
     for (i=0; i<chain_num; i++)
     {
@@ -4442,13 +4440,12 @@ int mTMalign(AlignCommonInput& common_inputs)
     if (user_opts.outfmt_opt==0) print_version();
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
+    state.totals.seqM=seqM;
+    state.totals.seqxA=seqxA;
+    state.totals.seqyA=seqyA;
     output_mTMalign_results( user_opts.xname,user_opts.yname, "","",
-        state.xlen_total, state.ylen_total, t0, u0, state.totals.TM1, state.totals.TM2,
-        state.totals.TM3, state.totals.TM4, state.totals.TM5, state.totals.rmsd0, state.totals.d0_out,
-        seqM, seqxA, seqyA, state.totals.Liden,
-        state.totals.n_ali8, state.totals.L_ali, state.totals.TM_ali, state.totals.rmsd_ali,
-        state.totals.TM_0, state.totals.d0_0, state.totals.d0A, state.totals.d0B,
-        Lnorm_ass, user_opts.d0_scale, state.totals.d0a, state.totals.d0u,
+        state.xlen_total, state.ylen_total, state.totals,
+        Lnorm_ass, user_opts.d0_scale,
         "", user_opts.outfmt_opt, user_opts.ter_opt, 0, user_opts.split_opt, false,
         "", false, user_opts.a_opt, u_opt, user_opts.d_opt, false,
         resi_vec, resi_vec, ccTM_score );
