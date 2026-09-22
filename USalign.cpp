@@ -3049,17 +3049,135 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         user_opts.atom_opt, user_opts.mirror_opt, ut_mat, user_opts.fname_super);
 }
 
-int MMdock(AlignCommonInput& common_inputs)
+void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& complex1, ComplexData& complex2,
+    const TrimmedComplex& trimmed, DoubleMatrix& TMave_mat,
+    std::vector<std::vector<std::string> >& seqxA_mat, std::vector<std::vector<std::string> >& seqyA_mat,
+    const int chain1_num, const int chain2_num, const int len_aa, const int len_na, const bool fast_opt)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
+    int i;
+    int j;
+    int xlen;
+    int ylen;
+    CoordArray xa;
+    CoordArray ya;
+    std::string seqx;
+    std::string seqy;
+    std::string secx;
+    std::string secy;
+
+    bool mmdock_parallel_done = false;
+#ifdef _OPENMP
+    if (ctrl_opts.parallel_threads > 1 && chain1_num > 1) {
+        run_mmdock_parallel(
+            complex1.coords, complex2.coords, complex1.seqs, complex2.seqs,
+            complex1.secs, complex2.secs, complex1.lengths, complex2.lengths,
+            complex1.mol_types, complex2.mol_types,
+            complex1.resi, complex2.resi, TMave_mat,
+            seqxA_mat, seqyA_mat,
+            chain1_num, chain2_num, len_aa, len_na,
+            user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
+            trimmed,
+            ctrl_opts.parallel_threads);
+        mmdock_parallel_done = true;
+    }
+#endif
+    if (!mmdock_parallel_done)
+    {
+        for (i=0;i<chain1_num;i++)
+        {
+            xlen=complex1.lengths[i];
+            if (xlen<3)
+            {
+                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
+                continue;
+            }
+            secx.resize(xlen+1);
+            xa.clear();
+            xa.reserve(xlen);
+            copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i],
+                xlen,xa,seqx,secx);
+
+            for (j=0;j<chain2_num;j++)
+            {
+                if (complex1.mol_types[i]*complex2.mol_types[j]<0) //no protein-RNA alignment
+                {
+                    TMave_mat[i][j]=-1;
+                    continue;
+                }
+
+                ylen=complex2.lengths[j];
+                if (ylen<3)
+                {
+                    TMave_mat[i][j]=-1;
+                    continue;
+                }
+                secy.resize(ylen+1);
+                ya.clear();
+                ya.reserve(ylen);
+                copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
+                    ylen,ya,seqy,secy);
+
+                ChainPairAlignResult result = { 0};
+                result.d0_out = 5.0;
+                int Lnorm_tmp=len_aa;
+                if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_tmp=len_na;
+
+                // entry function for structure alignment
+                if (trimmed.chain_count && trimmed.lengths[j]<ylen)
+                {
+                    mmdock_align_trimmed(result, xa, ya, seqx, seqy, secx, secy,
+                        xlen, ylen, trimmed, j,
+                        complex1.mol_types[i]+complex2.mol_types[j], Lnorm_tmp, user_opts.d0_scale, user_opts.TMcut,
+                        fast_opt, ctrl_opts.parallel_threads, parsed_input.sequence);
+                }
+                else
+                {
+                    ChainPairAlignOptions align_opts;
+                    align_opts.i_opt = 0;
+                    align_opts.a_opt = 0;
+                    align_opts.u_opt = 1;
+                    align_opts.d_opt = false;
+                    align_opts.fast_opt = fast_opt;
+                    align_opts.se_opt = false;
+                    align_opts.cp_opt = false;
+                    align_opts.Lnorm = Lnorm_tmp;
+                    align_opts.d0_scale = user_opts.d0_scale;
+                    align_opts.TMcut = user_opts.TMcut;
+                    align_opts.parallel_threads = 1;
+                    align_opts.ss_opt = 0;
+                    align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
+                    align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
+                        xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
+                }
+
+                // store result
+                seqxA_mat[i][j]=result.seqxA;
+                seqyA_mat[i][j]=result.seqyA;
+                TMave_mat[i][j]=result.TM4*Lnorm_tmp;
+
+                // clean up
+                result.seqM.clear();
+                result.seqxA.clear();
+                result.seqyA.clear();
+                result.do_vec.clear();
+            }
+        }
+    }
+}
+
+int MMdock(AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
     bool fast_opt = user_opts.fast_opt;
 
     // declare previously global variables
     ComplexData complex1;
     ComplexData complex2;
-    int    i,j;                    // chain index
+    int    i;                    // chain index
     int    xlen, ylen;             // chain length
     std::string seqx, seqy;             // for the protein sequence
     CoordArray xa;                     // structure of single chain
@@ -3184,104 +3302,8 @@ int MMdock(AlignCommonInput& common_inputs)
     // Auto-enable fast mode BEFORE parallel entry to keep both paths consistent
     if (len_aa + len_na > 500) fast_opt = true;
 
-    bool mmdock_parallel_done = false;
-#ifdef _OPENMP
-    if (ctrl_opts.parallel_threads > 1 && chain1_num > 1) {
-        run_mmdock_parallel(
-            complex1.coords, complex2.coords, complex1.seqs, complex2.seqs,
-            complex1.secs, complex2.secs, complex1.lengths, complex2.lengths,
-            complex1.mol_types, complex2.mol_types,
-            complex1.resi, complex2.resi, TMave_mat,
-            seqxA_mat, seqyA_mat,
-            chain1_num, chain2_num, len_aa, len_na,
-            user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
-            trimmed,
-            ctrl_opts.parallel_threads);
-        mmdock_parallel_done = true;
-    }
-#endif
-    if (!mmdock_parallel_done)
-    {
-        for (i=0;i<chain1_num;i++)
-        {
-            xlen=complex1.lengths[i];
-            if (xlen<3)
-            {
-                for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
-                continue;
-            }
-            secx.resize(xlen+1);
-            xa.clear();
-            xa.reserve(xlen);
-            copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i],
-                xlen,xa,seqx,secx);
-
-            for (j=0;j<chain2_num;j++)
-            {
-                if (complex1.mol_types[i]*complex2.mol_types[j]<0) //no protein-RNA alignment
-                {
-                    TMave_mat[i][j]=-1;
-                    continue;
-                }
-
-                ylen=complex2.lengths[j];
-                if (ylen<3)
-                {
-                    TMave_mat[i][j]=-1;
-                    continue;
-                }
-                secy.resize(ylen+1);
-                ya.clear();
-                ya.reserve(ylen);
-                copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
-                    ylen,ya,seqy,secy);
-
-                ChainPairAlignResult result = { 0};
-                result.d0_out = 5.0;
-                int Lnorm_tmp=len_aa;
-                if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_tmp=len_na;
-
-                // entry function for structure alignment
-                if (trimmed.chain_count && trimmed.lengths[j]<ylen)
-                {
-                    mmdock_align_trimmed(result, xa, ya, seqx, seqy, secx, secy,
-                        xlen, ylen, trimmed, j,
-                        complex1.mol_types[i]+complex2.mol_types[j], Lnorm_tmp, user_opts.d0_scale, user_opts.TMcut,
-                        fast_opt, ctrl_opts.parallel_threads, parsed_input.sequence);
-                }
-                else
-                {
-                    ChainPairAlignOptions align_opts;
-                    align_opts.i_opt = 0;
-                    align_opts.a_opt = 0;
-                    align_opts.u_opt = 1;
-                    align_opts.d_opt = false;
-                    align_opts.fast_opt = fast_opt;
-                    align_opts.se_opt = false;
-                    align_opts.cp_opt = false;
-                    align_opts.Lnorm = Lnorm_tmp;
-                    align_opts.d0_scale = user_opts.d0_scale;
-                    align_opts.TMcut = user_opts.TMcut;
-                    align_opts.parallel_threads = 1;
-                    align_opts.ss_opt = 0;
-                    align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
-                    align_chain_pair(result, xa, ya, seqx, seqy, secx, secy,
-                        xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
-                }
-
-                // store result
-                seqxA_mat[i][j]=result.seqxA;
-                seqyA_mat[i][j]=result.seqyA;
-                TMave_mat[i][j]=result.TM4*Lnorm_tmp;
-
-                // clean up
-                result.seqM.clear();
-                result.seqxA.clear();
-                result.seqyA.clear();
-                result.do_vec.clear();
-            }
-        }
-    }
+    mmdock_pairwise_alignment(common_inputs, complex1, complex2, trimmed, TMave_mat,
+        seqxA_mat, seqyA_mat, chain1_num, chain2_num, len_aa, len_na, fast_opt);
     DoubleCube().swap(trimmed.coords);
     CharMatrix().swap(trimmed.seqs);
     CharMatrix().swap(trimmed.secs);
