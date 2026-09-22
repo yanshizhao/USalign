@@ -208,61 +208,13 @@ inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
     rasmol_state.buf_all<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
 }
 
-inline void output_flexalign_rasmol(const std::string xname, const std::string yname,
-    const std::string fname_super,const DoubleMatrix&tu_vec,
-    const int ter_opt,
-    const int mm_opt, const int split_opt, const int mirror_opt,
-    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
-    const std::string chainID1, const std::string chainID2,
-    const int xlen, const int ylen, const double d0A, const int n_ali8,
-    const double rmsd, const double TM1, const double Liden)
+inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
+    const std::string& xname, const DoubleMatrix& tu_vec,
+    const int mm_opt, const int ter_opt, const int mirror_opt)
 {
-    FlexalignRasmolState rasmol_state;
-    rasmol_state.ca_idx1=0;
-    rasmol_state.lig_idx1=0;
-    rasmol_state.ca_idx2=0;
-    rasmol_state.lig_idx2=0;
-    Vec3 t; RotMat u;
-
-    int i;
-    build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, xlen);
-    rasmol_state.resi=resi_vec1[0];
-    rasmol_state.read_resi=rasmol_state.resi.size()-4;
-
-    build_rasmol_headers(rasmol_state, xname, yname, chainID1, chainID2,
-        xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden, mm_opt);
-
-    // selecting chains for -mol
-    if (!mm_opt)
-    {
-        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
-        {
-            rasmol_state.chain1_sele=chainID1.substr(1);
-            rasmol_state.chain2_sele=chainID2.substr(1);
-        }
-        else if (split_opt==2 && ter_opt==0) // align one chain from each model
-        {
-            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
-            rasmol_state.chain1_sele=chainID1.substr(i+1);
-            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
-            rasmol_state.chain2_sele=chainID2.substr(i+1);
-        }
-    }
-
-
-    // for PDBx/mmCIF only
-    rasmol_state.is_mmcif=false;
-
-    // used for CONECT record of chain1
-
-    // used for CONECT record of chain2
-
-    // extract aligned region
-    extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
-
     std::ifstream fin;
-    // read first file
+    int i;
+    Vec3 t; RotMat u;
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
     fin.open(xname.c_str());
@@ -540,8 +492,13 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     if (!mm_opt) for (i=1;i<rasmol_state.idx_vec.size();i++) rasmol_state.buf<<"CONECT"
         <<std::setw(5)<<rasmol_state.idx_vec[i-1]%100000<<std::setw(5)<<rasmol_state.idx_vec[i]%100000<<'\n';
     rasmol_state.idx_vec.clear();
+}
 
-    // read second file
+inline void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
+    const std::string& yname, const int mm_opt, const int ter_opt)
+{
+    std::ifstream fin;
+    int i;
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
     fin.open(yname.c_str());
@@ -751,6 +708,64 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
         <<std::setw(5)<<rasmol_state.idx_vec[i-1]%100000<<std::setw(5)<<rasmol_state.idx_vec[i]%100000<<'\n';
     rasmol_state.idx_vec.clear();
 
+}
+
+inline void output_flexalign_rasmol(const std::string xname, const std::string yname,
+    const std::string fname_super,const DoubleMatrix&tu_vec,
+    const int ter_opt,
+    const int mm_opt, const int split_opt, const int mirror_opt,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2,
+    const int xlen, const int ylen, const double d0A, const int n_ali8,
+    const double rmsd, const double TM1, const double Liden)
+{
+    FlexalignRasmolState rasmol_state;
+    rasmol_state.ca_idx1=0;
+    rasmol_state.lig_idx1=0;
+    rasmol_state.ca_idx2=0;
+    rasmol_state.lig_idx2=0;
+
+    int i;
+    build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, xlen);
+    rasmol_state.resi=resi_vec1[0];
+    rasmol_state.read_resi=rasmol_state.resi.size()-4;
+
+    build_rasmol_headers(rasmol_state, xname, yname, chainID1, chainID2,
+        xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden, mm_opt);
+
+    // selecting chains for -mol
+    if (!mm_opt)
+    {
+        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
+        {
+            rasmol_state.chain1_sele=chainID1.substr(1);
+            rasmol_state.chain2_sele=chainID2.substr(1);
+        }
+        else if (split_opt==2 && ter_opt==0) // align one chain from each model
+        {
+            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
+            rasmol_state.chain1_sele=chainID1.substr(i+1);
+            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
+            rasmol_state.chain2_sele=chainID2.substr(i+1);
+        }
+    }
+
+
+    // for PDBx/mmCIF only
+    rasmol_state.is_mmcif=false;
+
+    // used for CONECT record of chain1
+
+    // used for CONECT record of chain2
+
+    // extract aligned region
+    extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
+
+    std::ifstream fin;
+    read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
+
+    read_rasmol_structure2(rasmol_state, yname, mm_opt, ter_opt);
     // write pymol script
     std::ofstream fp;
     /*
