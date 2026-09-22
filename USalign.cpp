@@ -5168,6 +5168,106 @@ bool parse_file_option(int argc, char* argv[], int& i, AlignCommonInput& common_
     return true;
 }
 
+bool parse_numeric_option(int argc, char* argv[], int& i, AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+    if ( std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-u or -L");
+        user_opts.Lnorm_ass = safe_stod(val); user_opts.u_opt = true;
+        if (user_opts.Lnorm_ass<=0) PrintErrorAndQuit(
+            "ERROR! The value for -u or -L should be >0");
+    }
+    else if ( std::string(argv[i]) == "-d" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-d");
+        user_opts.d0_scale = safe_stod(val); user_opts.d_opt = true;
+    }
+    else if ( std::string(argv[i]) == "-closeK" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-closeK");
+        ctrl_opts.closeK_opt = safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-hinge" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-hinge");
+        ctrl_opts.hinge_set = true;
+        ctrl_opts.hinge_opt = safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-infmt1" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-infmt1");
+        user_opts.infmt1_opt=safe_stoi(val);
+        if (user_opts.infmt1_opt<-1 || user_opts.infmt1_opt>3)
+            PrintErrorAndQuit("ERROR! -infmt1 can only be -1, 0, 1, 2, or 3");
+    }
+    else if ( std::string(argv[i]) == "-infmt2" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-infmt2");
+        user_opts.infmt2_opt=safe_stoi(val);
+        if (user_opts.infmt2_opt<-1 || user_opts.infmt2_opt>3)
+            PrintErrorAndQuit("ERROR! -infmt2 can only be -1, 0, 1, 2, or 3");
+    }
+    else if ( std::string(argv[i]) == "-ter" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-ter");
+        user_opts.ter_opt=safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-split" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-split");
+        user_opts.split_opt=safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-threads" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-threads");
+        ctrl_opts.parallel_threads = atoi(val.c_str());
+        if (ctrl_opts.parallel_threads <= 1) ctrl_opts.parallel_threads = 1;
+    }
+    else if ( std::string(argv[i]) == "-outfmt" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-outfmt");
+        user_opts.outfmt_opt=safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-TMcut" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-TMcut");
+        user_opts.TMcut=safe_stod(val);
+    }
+    else if ( std::string(argv[i]) == "-byresi"  ||
+              std::string(argv[i]) == "-tmscore" ||
+              std::string(argv[i]) == "-TMscore")
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-byresi");
+        user_opts.byresi_opt=safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-mirror" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-mirror");
+        user_opts.mirror_opt=safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-het" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-het");
+        user_opts.het_opt=safe_stoi(val);
+        if (user_opts.het_opt!=0 && user_opts.het_opt!=1 && user_opts.het_opt!=2)
+            PrintErrorAndQuit("-het must be 0, 1, or 2");
+    }
+    else if ( std::string(argv[i]) == "-mm" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-mm");
+        ctrl_opts.mm_opt=safe_stoi(val);
+    }
+    else if ( std::string(argv[i]) == "-TMpass" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-TMpass");
+        ctrl_opts.TMpass_opt = safe_stod(val);
+    }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
 {
     UserOptions&    user_opts = common_inputs.user_options;
@@ -5187,13 +5287,8 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
     {
         if (parse_file_option(argc, argv, i, common_inputs))
             continue;
-        else if ( std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-u or -L");
-            user_opts.Lnorm_ass = safe_stod(val); user_opts.u_opt = true;
-            if (user_opts.Lnorm_ass<=0) PrintErrorAndQuit(
-                "ERROR! The value for -u or -L should be >0");
-        }
+        else if (parse_numeric_option(argc, argv, i, common_inputs))
+            continue;
         else if ( std::string(argv[i]) == "-a" )
         {
             const std::string val = get_argv_value(argc, argv, i, "-a");
@@ -5213,22 +5308,6 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
             else if (val == "F") ctrl_opts.full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
         }
-        else if ( std::string(argv[i]) == "-d" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-d");
-            user_opts.d0_scale = safe_stod(val); user_opts.d_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-closeK" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-closeK");
-            ctrl_opts.closeK_opt = safe_stoi(val);
-        }
-        else if ( std::string(argv[i]) == "-hinge" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-hinge");
-            ctrl_opts.hinge_set = true;
-            ctrl_opts.hinge_opt = safe_stoi(val);
-        }
         else if ( std::string(argv[i]) == "-chainmap" )
         {
             const std::string val = get_argv_value(argc, argv, i, "-chainmap");
@@ -5242,40 +5321,10 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
             split_next(argc, argv, i, "-model1", user_opts.model2parse1);
         else if (std::string(argv[i]) == "-model2" )
             split_next(argc, argv, i, "-model2", user_opts.model2parse2);
-        else if ( std::string(argv[i]) == "-infmt1" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-infmt1");
-            user_opts.infmt1_opt=safe_stoi(val);
-            if (user_opts.infmt1_opt<-1 || user_opts.infmt1_opt>3)
-                PrintErrorAndQuit("ERROR! -infmt1 can only be -1, 0, 1, 2, or 3");
-        }
-        else if ( std::string(argv[i]) == "-infmt2" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-infmt2");
-            user_opts.infmt2_opt=safe_stoi(val);
-            if (user_opts.infmt2_opt<-1 || user_opts.infmt2_opt>3)
-                PrintErrorAndQuit("ERROR! -infmt2 can only be -1, 0, 1, 2, or 3");
-        }
-        else if ( std::string(argv[i]) == "-ter" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-ter");
-            user_opts.ter_opt=safe_stoi(val);
-        }
-        else if ( std::string(argv[i]) == "-split" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-split");
-            user_opts.split_opt=safe_stoi(val);
-        }
         else if ( std::string(argv[i]) == "-atom" )
         {
             const std::string val = get_argv_value(argc, argv, i, "-atom");
             user_opts.atom_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-threads" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-threads");
-            ctrl_opts.parallel_threads = atoi(val.c_str());
-            if (ctrl_opts.parallel_threads <= 1) ctrl_opts.parallel_threads = 1;
         }
         else if ( std::string(argv[i]) == "-mol" )
         {
@@ -5313,23 +5362,6 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
             const std::string val = get_argv_value(argc, argv, i, "-suffix");
             ctrl_opts.suffix_opt=val;
         }
-        else if ( std::string(argv[i]) == "-outfmt" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-outfmt");
-            user_opts.outfmt_opt=safe_stoi(val);
-        }
-        else if ( std::string(argv[i]) == "-TMcut" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-TMcut");
-            user_opts.TMcut=safe_stod(val);
-        }
-        else if ( std::string(argv[i]) == "-byresi"  || 
-                  std::string(argv[i]) == "-tmscore" ||
-                  std::string(argv[i]) == "-TMscore")
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-byresi");
-            user_opts.byresi_opt=safe_stoi(val);
-        }
         else if ( std::string(argv[i]) == "-seq" )
         {
             user_opts.byresi_opt=5;
@@ -5337,28 +5369,6 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
         else if ( std::string(argv[i]) == "-cp" )
         {
             ctrl_opts.mm_opt=3;
-        }
-        else if ( std::string(argv[i]) == "-mirror" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-mirror");
-            user_opts.mirror_opt=safe_stoi(val);
-        }
-        else if ( std::string(argv[i]) == "-het" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-het");
-            user_opts.het_opt=safe_stoi(val);
-            if (user_opts.het_opt!=0 && user_opts.het_opt!=1 && user_opts.het_opt!=2)
-                PrintErrorAndQuit("-het must be 0, 1, or 2");
-        }
-        else if ( std::string(argv[i]) == "-mm" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-mm");
-            ctrl_opts.mm_opt=safe_stoi(val);
-        }
-        else if ( std::string(argv[i]) == "-TMpass" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-TMpass");
-            ctrl_opts.TMpass_opt = safe_stod(val);
         }
         else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
             continue;
