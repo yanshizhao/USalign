@@ -126,27 +126,13 @@ struct FlexalignRasmolState
     std::string chain2_sele;
 };
 
-inline void output_flexalign_rasmol(const std::string xname, const std::string yname,
-    const std::string fname_super,const DoubleMatrix&tu_vec,
-    const int ter_opt,
-    const int mm_opt, const int split_opt, const int mirror_opt,
-    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
-    const std::string chainID1, const std::string chainID2,
-    const int xlen, const int ylen, const double d0A, const int n_ali8,
-    const double rmsd, const double TM1, const double Liden)
+inline void build_resi_hinge_map(FlexalignRasmolState& rasmol_state,
+    const std::string& seqM, const std::string& seqxA,
+    const std::vector<std::string>& resi_vec1, const int xlen)
 {
-    FlexalignRasmolState rasmol_state;
-    rasmol_state.ca_idx1=0;
-    rasmol_state.lig_idx1=0;
-    rasmol_state.ca_idx2=0;
-    rasmol_state.lig_idx2=0;
-    Vec3 t; RotMat u;
-    
     int r;
     int i;
-    int j;
-    j=-1;
+    int j=-1;
     char hinge_char=0;
     int ali_len=seqM.size();
     for (r=0;r<seqxA.size();r++)
@@ -167,9 +153,14 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
         }
         rasmol_state.resi2hinge_dict[resi_vec1[j]]=hinge_char-'0';
     }
-    rasmol_state.resi=resi_vec1[0];
-    rasmol_state.read_resi=rasmol_state.resi.size()-4;
+}
 
+inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
+    const std::string& xname, const std::string& yname,
+    const std::string& chainID1, const std::string& chainID2,
+    const int xlen, const int ylen, const double d0A, const int n_ali8,
+    const double rmsd, const double TM1, const double Liden, const int mm_opt)
+{
     rasmol_state.buf_tm<<"REMARK US-align"
         <<"\nREMARK Structure 1:"<<std::setw(11)<<std::left<<xname+chainID1<<" Size= "<<xlen
         <<"\nREMARK Structure 2:"<<std::setw(11)<<yname+chainID2<<std::right<<" Size= "<<ylen
@@ -187,6 +178,60 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     if (!mm_opt) rasmol_state.buf_atm<<rasmol_cartoon_header;
     rasmol_state.buf_all_atm<<rasmol_cartoon_header;
     rasmol_state.buf_all_atm_lig<<rasmol_cartoon_header;
+}
+
+inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
+    const int mm_opt)
+{
+    int i;
+    rasmol_state.i1=-1;
+    rasmol_state.i2=-1;
+    if (!mm_opt)
+    {
+        for (i=0;i<seqM.size();i++)
+        {
+            rasmol_state.i1+=(seqxA[i]!='-');
+            rasmol_state.i2+=(seqyA[i]!='-');
+            if (seqM[i]==' ') continue;
+            rasmol_state.resi_aln1.push_back(resi_vec1[rasmol_state.i1].substr(0,4));
+            rasmol_state.resi_aln2.push_back(resi_vec2[rasmol_state.i2].substr(0,4));
+            if (seqM[i]!=':') continue;
+            rasmol_state.buf    <<"select "<<rasmol_state.resi_aln1.back()<<":A,"
+                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
+            rasmol_state.buf_all<<"select "<<rasmol_state.resi_aln1.back()<<":A,"
+                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
+        }
+        rasmol_state.buf<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+    }
+    rasmol_state.buf_all<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+}
+
+inline void output_flexalign_rasmol(const std::string xname, const std::string yname,
+    const std::string fname_super,const DoubleMatrix&tu_vec,
+    const int ter_opt,
+    const int mm_opt, const int split_opt, const int mirror_opt,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2,
+    const int xlen, const int ylen, const double d0A, const int n_ali8,
+    const double rmsd, const double TM1, const double Liden)
+{
+    FlexalignRasmolState rasmol_state;
+    rasmol_state.ca_idx1=0;
+    rasmol_state.lig_idx1=0;
+    rasmol_state.ca_idx2=0;
+    rasmol_state.lig_idx2=0;
+    Vec3 t; RotMat u;
+
+    int i;
+    build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, xlen);
+    rasmol_state.resi=resi_vec1[0];
+    rasmol_state.read_resi=rasmol_state.resi.size()-4;
+
+    build_rasmol_headers(rasmol_state, xname, yname, chainID1, chainID2,
+        xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden, mm_opt);
 
     // selecting chains for -mol
     if (!mm_opt)
@@ -214,26 +259,7 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     // used for CONECT record of chain2
 
     // extract aligned region
-    rasmol_state.i1=-1;
-    rasmol_state.i2=-1;
-    if (!mm_opt)
-    {
-        for (i=0;i<seqM.size();i++)
-        {
-            rasmol_state.i1+=(seqxA[i]!='-');
-            rasmol_state.i2+=(seqyA[i]!='-');
-            if (seqM[i]==' ') continue;
-            rasmol_state.resi_aln1.push_back(resi_vec1[rasmol_state.i1].substr(0,4));
-            rasmol_state.resi_aln2.push_back(resi_vec2[rasmol_state.i2].substr(0,4));
-            if (seqM[i]!=':') continue;
-            rasmol_state.buf    <<"select "<<rasmol_state.resi_aln1.back()<<":A,"
-                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
-            rasmol_state.buf_all<<"select "<<rasmol_state.resi_aln1.back()<<":A,"
-                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
-        }
-        rasmol_state.buf<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
-    }
-    rasmol_state.buf_all<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+    extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
 
     std::ifstream fin;
     // read first file
