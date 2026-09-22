@@ -5268,6 +5268,95 @@ bool parse_numeric_option(int argc, char* argv[], int& i, AlignCommonInput& comm
     return true;
 }
 
+bool parse_string_option(int argc, char* argv[], int& i, AlignCommonInput& common_inputs)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+    if ( std::string(argv[i]) == "-a" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-a");
+        if (val == "T")      user_opts.a_opt=true;
+        else if (val == "F") user_opts.a_opt=false;
+        else
+        {
+            user_opts.a_opt=safe_stoi(val);
+            if (user_opts.a_opt!=-2 && user_opts.a_opt!=-1 && user_opts.a_opt!=1)
+                PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
+        }
+    }
+    else if ( std::string(argv[i]) == "-full" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-full");
+        if (val == "T")      ctrl_opts.full_opt=true;
+        else if (val == "F") ctrl_opts.full_opt=false;
+        else PrintErrorAndQuit("-full must be T or F");
+    }
+    else if ( std::string(argv[i]) == "-chainmap" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-chainmap");
+        ctrl_opts.chainmapfile = val;
+    }
+    else if (std::string(argv[i]) == "-chain1" )
+        split_next(argc, argv, i, "-chain1", user_opts.chain2parse1);
+    else if (std::string(argv[i]) == "-chain2" )
+        split_next(argc, argv, i, "-chain2", user_opts.chain2parse2);
+    else if (std::string(argv[i]) == "-model1" )
+        split_next(argc, argv, i, "-model1", user_opts.model2parse1);
+    else if (std::string(argv[i]) == "-model2" )
+        split_next(argc, argv, i, "-model2", user_opts.model2parse2);
+    else if ( std::string(argv[i]) == "-atom" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-atom");
+        user_opts.atom_opt=val;
+    }
+    else if ( std::string(argv[i]) == "-mol" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-mol");
+        user_opts.mol_opt=val;
+        if (user_opts.mol_opt=="prot") user_opts.mol_opt="protein";
+        else if (user_opts.mol_opt=="DNA") user_opts.mol_opt="RNA";
+        if (user_opts.mol_opt!="auto" && user_opts.mol_opt!="protein" && user_opts.mol_opt!="RNA")
+            PrintErrorAndQuit("ERROR! Molecule type must be one of the "
+                "following:\nauto, prot (the same as 'protein'), and "
+                "RNA (the same as 'DNA').");
+    }
+    else if ( std::string(argv[i]) == "-dir" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-dir");
+        user_opts.dir_opt=val;
+    }
+    else if ( std::string(argv[i]) == "-dirpair" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-dirpair");
+        user_opts.dirpair_opt=val;
+    }
+    else if ( std::string(argv[i]) == "-dir1" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-dir1");
+        user_opts.dir1_opt=val;
+    }
+    else if ( std::string(argv[i]) == "-dir2" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-dir2");
+        user_opts.dir2_opt=val;
+    }
+    else if ( std::string(argv[i]) == "-suffix" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-suffix");
+        ctrl_opts.suffix_opt=val;
+    }
+    else if ( std::string(argv[i]) == "-seq" )
+    {
+        user_opts.byresi_opt=5;
+    }
+    else if ( std::string(argv[i]) == "-cp" )
+    {
+        ctrl_opts.mm_opt=3;
+    }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
 {
     UserOptions&    user_opts = common_inputs.user_options;
@@ -5289,87 +5378,8 @@ void parse_arguments(int argc, char* argv[], AlignCommonInput& common_inputs)
             continue;
         else if (parse_numeric_option(argc, argv, i, common_inputs))
             continue;
-        else if ( std::string(argv[i]) == "-a" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-a");
-            if (val == "T")      user_opts.a_opt=true;
-            else if (val == "F") user_opts.a_opt=false;
-            else 
-            {
-                user_opts.a_opt=safe_stoi(val);
-                if (user_opts.a_opt!=-2 && user_opts.a_opt!=-1 && user_opts.a_opt!=1)
-                    PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
-            }
-        }
-        else if ( std::string(argv[i]) == "-full" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-full");
-            if (val == "T")      ctrl_opts.full_opt=true;
-            else if (val == "F") ctrl_opts.full_opt=false;
-            else PrintErrorAndQuit("-full must be T or F");
-        }
-        else if ( std::string(argv[i]) == "-chainmap" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-chainmap");
-            ctrl_opts.chainmapfile = val;
-        }
-        else if (std::string(argv[i]) == "-chain1" )
-            split_next(argc, argv, i, "-chain1", user_opts.chain2parse1);
-        else if (std::string(argv[i]) == "-chain2" )
-            split_next(argc, argv, i, "-chain2", user_opts.chain2parse2);
-        else if (std::string(argv[i]) == "-model1" )
-            split_next(argc, argv, i, "-model1", user_opts.model2parse1);
-        else if (std::string(argv[i]) == "-model2" )
-            split_next(argc, argv, i, "-model2", user_opts.model2parse2);
-        else if ( std::string(argv[i]) == "-atom" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-atom");
-            user_opts.atom_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-mol" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-mol");
-            user_opts.mol_opt=val;
-            if (user_opts.mol_opt=="prot") user_opts.mol_opt="protein";
-            else if (user_opts.mol_opt=="DNA") user_opts.mol_opt="RNA";
-            if (user_opts.mol_opt!="auto" && user_opts.mol_opt!="protein" && user_opts.mol_opt!="RNA")
-                PrintErrorAndQuit("ERROR! Molecule type must be one of the "
-                    "following:\nauto, prot (the same as 'protein'), and "
-                    "RNA (the same as 'DNA').");
-        }
-        else if ( std::string(argv[i]) == "-dir" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-dir");
-            user_opts.dir_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-dirpair" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-dirpair");
-            user_opts.dirpair_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-dir1" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-dir1");
-            user_opts.dir1_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-dir2" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-dir2");
-            user_opts.dir2_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-suffix" )
-        {
-            const std::string val = get_argv_value(argc, argv, i, "-suffix");
-            ctrl_opts.suffix_opt=val;
-        }
-        else if ( std::string(argv[i]) == "-seq" )
-        {
-            user_opts.byresi_opt=5;
-        }
-        else if ( std::string(argv[i]) == "-cp" )
-        {
-            ctrl_opts.mm_opt=3;
-        }
+        else if (parse_string_option(argc, argv, i, common_inputs))
+            continue;
         else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
             continue;
         else if (user_opts.xname.size() == 0) user_opts.xname=argv[i];
