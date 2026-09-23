@@ -805,6 +805,51 @@ struct FlexalignPymolState
     std::string resi2_bond;
 };
 
+struct FlexalignPymolReadState
+{
+    std::stringstream& buf;
+    std::map<std::string, int>& resi2hinge_dict;
+    std::ifstream fin;
+    CompressedStream fin_gz;
+    int compress_type;
+    std::string line;
+    int infmt;
+    std::string resi;
+    int read_resi;
+    std::string asym_id = "."; // this is similar to chainID, except that
+                          // chainID is char while asym_id is a string
+                          // with possibly multiple char
+    Vec3 t;
+    RotMat u;
+
+    FlexalignPymolReadState(FlexalignPymolState& pymol_state)
+        : buf(pymol_state.buf), resi2hinge_dict(pymol_state.resi2hinge_dict) {}
+};
+
+inline bool read_pymol_line(FlexalignPymolReadState& read_state)
+{
+    if (read_state.compress_type)
+    {
+        if (!read_state.fin_gz.good())
+            return false;
+        getline(read_state.fin_gz, read_state.line);
+    }
+    else
+    {
+        if (!read_state.fin.good())
+            return false;
+        getline(read_state.fin, read_state.line);
+    }
+    return true;
+}
+
+inline void read_pymol_line_or_quit(FlexalignPymolReadState& read_state,
+    const std::string& xname)
+{
+    if (!read_pymol_line(read_state))
+        PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
+}
+
 inline int hinge_char_to_index(char hinge_char)
 {
     if (hinge_char >= '0' && hinge_char <= '9')
@@ -848,193 +893,160 @@ inline void build_pymol_hinge_map(FlexalignPymolState& pymol_state,
     }
 }
 
+inline void read_pymol_pdb_atom_line(FlexalignPymolReadState& read_state,
+    const std::vector<std::string>& resi_vec1,
+    const DoubleMatrix& tu_vec, const int mirror_opt)
+{
+    std::stringstream& buf = read_state.buf;
+    read_state.infmt = 0;
+    Vec3 x;  // before transform
+    x[0] = atof(read_state.line.substr(30, 8).c_str());
+    x[1] = atof(read_state.line.substr(38, 8).c_str());
+    x[2] = atof(read_state.line.substr(46, 8).c_str());
+    if (mirror_opt)
+        x[2] = -x[2];
+    if (read_state.read_resi == 1)
+        read_state.resi = read_state.line.substr(22, 5);
+    else
+        read_state.resi = read_state.line.substr(22, 5) + read_state.line[21];
+    int hinge = 0;
+    if (read_state.resi2hinge_dict.count(read_state.resi))
+        hinge = read_state.resi2hinge_dict[read_state.resi];
+    tu2t_u(tu_vec[hinge], read_state.t, read_state.u);
+    Vec3 x1; // after transform
+    transform(read_state.t, read_state.u, x, x1);
+    buf << read_state.line.substr(0, 30) << std::setiosflags(std::ios::fixed)
+        << std::setprecision(3)
+        << std::setw(8) << x1[0] << std::setw(8) << x1[1] << std::setw(8) << x1[2]
+        << read_state.line.substr(54) << '\n';
+}
+
+inline void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
+    const std::string& xname, const std::vector<std::string>& resi_vec1,
+    const DoubleMatrix& tu_vec, const int mirror_opt)
+{
+    std::stringstream& buf = read_state.buf;
+    read_state.infmt = 3;
+    buf << read_state.line << '\n';
+    read_pymol_line_or_quit(read_state, xname);
+    while (!read_state.line.size())
+        read_pymol_line_or_quit(read_state, xname);
+    buf << read_state.line << '\n';
+    if (read_state.line.compare(0, 11, "_atom_site."))
+        return;
+    /* for PDBx/mmCIF only */
+    std::map<std::string, int> atom_site;
+    size_t atom_site_pos = 0;
+    atom_site[Trim(read_state.line.substr(11))] = atom_site_pos;
+    while (1)
+    {
+        read_pymol_line_or_quit(read_state, xname);
+        while (!read_state.line.size())
+            read_pymol_line_or_quit(read_state, xname);
+        if (read_state.line.compare(0, 11, "_atom_site."))
+            break;
+        atom_site[Trim(read_state.line.substr(11))] = ++atom_site_pos;
+        buf << read_state.line << '\n';
+    }
+
+    if (atom_site.count("group_PDB") *
+            atom_site.count("Cartn_x") *
+            atom_site.count("Cartn_y") *
+            atom_site.count("Cartn_z") ==
+        0)
+    {
+        buf << read_state.line << '\n';
+        std::cerr << "Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z" << std::endl;
+        return;
+    }
+
+    std::vector<std::string> line_vec;
+    while (1)
+    {
+        line_vec.clear();
+        split(read_state.line, line_vec);
+        if (line_vec[atom_site["group_PDB"]] != "ATOM" &&
+            line_vec[atom_site["group_PDB"]] != "HETATM")
+            break;
+
+        Vec3 x;
+        x[0] = atof(line_vec[atom_site["Cartn_x"]].c_str());
+        x[1] = atof(line_vec[atom_site["Cartn_y"]].c_str());
+        x[2] = atof(line_vec[atom_site["Cartn_z"]].c_str());
+        if (mirror_opt)
+            x[2] = -x[2];
+
+        if (atom_site.count("auth_seq_id"))
+            read_state.resi = line_vec[atom_site["auth_seq_id"]];
+        else
+            read_state.resi = line_vec[atom_site["label_seq_id"]];
+        if (atom_site.count("pdbx_PDB_ins_code") &&
+            line_vec[atom_site["pdbx_PDB_ins_code"]] != "?")
+            read_state.resi += line_vec[atom_site["pdbx_PDB_ins_code"]][0];
+        else
+            read_state.resi += " ";
+        if (read_state.read_resi >= 2)
+        {
+            if (atom_site.count("auth_asym_id"))
+                read_state.asym_id = line_vec[atom_site["auth_asym_id"]];
+            else
+                read_state.asym_id = line_vec[atom_site["label_asym_id"]];
+            if (read_state.asym_id == ".")
+                read_state.asym_id = " ";
+            read_state.resi += read_state.asym_id[0];
+        }
+        int hinge = 0;
+        if (read_state.resi2hinge_dict.count(read_state.resi))
+            hinge = read_state.resi2hinge_dict[read_state.resi];
+        tu2t_u(tu_vec[hinge], read_state.t, read_state.u);
+        Vec3 x1;
+        transform(read_state.t, read_state.u, x, x1);
+
+        for (atom_site_pos = 0; atom_site_pos < atom_site.size(); atom_site_pos++)
+        {
+            if (atom_site_pos == atom_site["Cartn_x"])
+                buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                    << std::setw(8) << x1[0] << ' ';
+            else if (atom_site_pos == atom_site["Cartn_y"])
+                buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                    << std::setw(8) << x1[1] << ' ';
+            else if (atom_site_pos == atom_site["Cartn_z"])
+                buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                    << std::setw(8) << x1[2] << ' ';
+            else
+                buf << line_vec[atom_site_pos] << ' ';
+        }
+        buf << '\n';
+
+        if (!read_pymol_line(read_state))
+            break;
+    }
+    if (read_state.compress_type ? read_state.fin_gz.good() : read_state.fin.good())
+        buf << read_state.line << '\n';
+}
+
 inline void read_pymol_structure(FlexalignPymolState& pymol_state,
     const std::string& xname, const std::vector<std::string>& resi_vec1,
     const DoubleMatrix& tu_vec, const int mirror_opt, const int ter_opt)
 {
     std::stringstream& buf = pymol_state.buf;
-    int& infmt = pymol_state.infmt;
-    std::map<std::string, int>& resi2hinge_dict = pymol_state.resi2hinge_dict;
-    std::string resi = resi_vec1[0];
-    int read_resi = resi.size() - 4;
-    Vec3 t; RotMat u;
-    int compress_type = COMPRESS_FILE;
-    std::ifstream fin;
-    CompressedStream fin_gz;
-    open_file_for_read(xname, fin, fin_gz, compress_type);
-    std::string line;
-    Vec3 x;  // before transform
-    Vec3 x1; // after transform
-
-    /* for PDBx/mmCIF only */
-    std::map<std::string, int> atom_site;
-    size_t atom_site_pos;
-    std::vector<std::string> line_vec;
-    infmt = -1; // 0 - PDB, 3 - PDBx/mmCIF
-    int hinge = 0;
-    std::string asym_id = "."; // this is similar to chainID, except that
-                          // chainID is char while asym_id is a string
-                          // with possibly multiple char
-    while (compress_type ? fin_gz.good() : fin.good())
+    FlexalignPymolReadState read_state(pymol_state);
+    read_state.compress_type = COMPRESS_FILE;
+    open_file_for_read(xname, read_state.fin, read_state.fin_gz, read_state.compress_type);
+    read_state.resi = resi_vec1[0];
+    read_state.read_resi = read_state.resi.size() - 4;
+    read_state.infmt = -1; // 0 - PDB, 3 - PDBx/mmCIF
+    while (read_pymol_line(read_state))
     {
-        if (compress_type)
-            getline(fin_gz, line);
-        else
-            getline(fin, line);
+        const std::string& line = read_state.line;
         if (line.compare(0, 6, "ATOM  ") == 0 ||
             line.compare(0, 6, "HETATM") == 0) // PDB format
         {
-            infmt = 0;
-            x[0] = atof(line.substr(30, 8).c_str());
-            x[1] = atof(line.substr(38, 8).c_str());
-            x[2] = atof(line.substr(46, 8).c_str());
-            if (mirror_opt)
-                x[2] = -x[2];
-            if (read_resi == 1)
-                resi = line.substr(22, 5);
-            else
-                resi = line.substr(22, 5) + line[21];
-            hinge = 0;
-            if (resi2hinge_dict.count(resi))
-                hinge = resi2hinge_dict[resi];
-            tu2t_u(tu_vec[hinge], t, u);
-            transform(t, u, x, x1);
-            buf << line.substr(0, 30) << std::setiosflags(std::ios::fixed)
-                << std::setprecision(3)
-                << std::setw(8) << x1[0] << std::setw(8) << x1[1] << std::setw(8) << x1[2]
-                << line.substr(54) << '\n';
+            read_pymol_pdb_atom_line(read_state, resi_vec1, tu_vec, mirror_opt);
         }
         else if (line.compare(0, 5, "loop_") == 0) // PDBx/mmCIF
         {
-            infmt = 3;
-            buf << line << '\n';
-            while (1)
-            {
-                if (compress_type)
-                {
-                    if (fin_gz.good())
-                        getline(fin_gz, line);
-                    else
-                        PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                }
-                else
-                {
-                    if (fin.good())
-                        getline(fin, line);
-                    else
-                        PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                }
-                if (line.size())
-                    break;
-            }
-            buf << line << '\n';
-            if (line.compare(0, 11, "_atom_site."))
-                continue;
-            atom_site.clear();
-            atom_site_pos = 0;
-            atom_site[Trim(line.substr(11))] = atom_site_pos;
-            while (1)
-            {
-                while (1)
-                {
-                    if (compress_type)
-                    {
-                        if (fin_gz.good())
-                            getline(fin_gz, line);
-                        else
-                            PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                    }
-                    else
-                    {
-                        if (fin.good())
-                            getline(fin, line);
-                        else
-                            PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                    }
-                    if (line.size())
-                        break;
-                }
-                if (line.compare(0, 11, "_atom_site."))
-                    break;
-                atom_site[Trim(line.substr(11))] = ++atom_site_pos;
-                buf << line << '\n';
-            }
-
-            if (atom_site.count("group_PDB") *
-                    atom_site.count("Cartn_x") *
-                    atom_site.count("Cartn_y") *
-                    atom_site.count("Cartn_z") ==
-                0)
-            {
-                buf << line << '\n';
-                std::cerr << "Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z" << std::endl;
-                continue;
-            }
-
-            while (1)
-            {
-                line_vec.clear();
-                split(line, line_vec);
-                if (line_vec[atom_site["group_PDB"]] != "ATOM" &&
-                    line_vec[atom_site["group_PDB"]] != "HETATM")
-                    break;
-
-                x[0] = atof(line_vec[atom_site["Cartn_x"]].c_str());
-                x[1] = atof(line_vec[atom_site["Cartn_y"]].c_str());
-                x[2] = atof(line_vec[atom_site["Cartn_z"]].c_str());
-                if (mirror_opt)
-                    x[2] = -x[2];
-
-                if (atom_site.count("auth_seq_id"))
-                    resi = line_vec[atom_site["auth_seq_id"]];
-                else
-                    resi = line_vec[atom_site["label_seq_id"]];
-                if (atom_site.count("pdbx_PDB_ins_code") &&
-                    line_vec[atom_site["pdbx_PDB_ins_code"]] != "?")
-                    resi += line_vec[atom_site["pdbx_PDB_ins_code"]][0];
-                else
-                    resi += " ";
-                if (read_resi >= 2)
-                {
-                    if (atom_site.count("auth_asym_id"))
-                        asym_id = line_vec[atom_site["auth_asym_id"]];
-                    else
-                        asym_id = line_vec[atom_site["label_asym_id"]];
-                    if (asym_id == ".")
-                        asym_id = " ";
-                    resi += asym_id[0];
-                }
-                hinge = 0;
-                if (resi2hinge_dict.count(resi))
-                    hinge = resi2hinge_dict[resi];
-                tu2t_u(tu_vec[hinge], t, u);
-                transform(t, u, x, x1);
-
-                for (atom_site_pos = 0; atom_site_pos < atom_site.size(); atom_site_pos++)
-                {
-                    if (atom_site_pos == atom_site["Cartn_x"])
-                        buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                            << std::setw(8) << x1[0] << ' ';
-                    else if (atom_site_pos == atom_site["Cartn_y"])
-                        buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                            << std::setw(8) << x1[1] << ' ';
-                    else if (atom_site_pos == atom_site["Cartn_z"])
-                        buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                            << std::setw(8) << x1[2] << ' ';
-                    else
-                        buf << line_vec[atom_site_pos] << ' ';
-                }
-                buf << '\n';
-
-                if (compress_type && fin_gz.good())
-                    getline(fin_gz, line);
-                else if (!compress_type && fin.good())
-                    getline(fin, line);
-                else
-                    break;
-            }
-            if (compress_type ? fin_gz.good() : fin.good())
-                buf << line << '\n';
+            read_pymol_mmcif_loop(read_state, xname, resi_vec1, tu_vec, mirror_opt);
         }
         else if (line.size())
         {
@@ -1043,10 +1055,11 @@ inline void read_pymol_structure(FlexalignPymolState& pymol_state,
                 break;
         }
     }
-    if (compress_type)
-        fin_gz.close();
+    if (read_state.compress_type)
+        read_state.fin_gz.close();
     else
-        fin.close();
+        read_state.fin.close();
+    pymol_state.infmt = read_state.infmt;
 }
 
 inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
