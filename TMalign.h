@@ -1708,51 +1708,13 @@ void output_pymol(const std::string xname, const std::string yname,
     chain2_sele.clear();
 }
 
-void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
-    const int infmt_opt, const RotArray& ut_mat, const std::string &fname_super,
-    const int o_opt=1)
+inline void read_mTMalign_chain_pdb(const std::string& name, const std::string& fname_super,
+    const int chain_idx, const RotArray& ut_mat, int& compress_type, std::string& filename)
 {
-    int compress_type=0; // uncompressed file
-    size_t m;
-    std::string name;
-    Vec3 t;
-    RotMat u;
     int ui;
     int uj;
-    std::string filename;
-    std::vector<std::string> color_list;
-    color_list.push_back("red");
-    color_list.push_back("green");
-    color_list.push_back("blue");
-    color_list.push_back("yellow");
-    color_list.push_back("violet");
-    color_list.push_back("cyan");
-    color_list.push_back("salmon");
-    color_list.push_back("lime");
-    color_list.push_back("pink");
-    color_list.push_back("slate");
-    color_list.push_back("magenta");
-    color_list.push_back("orange");
-    color_list.push_back("marine");
-    color_list.push_back("olive");
-    color_list.push_back("purple");
-    color_list.push_back("teal");
-    color_list.push_back("forest");
-    color_list.push_back("firebrick");
-    color_list.push_back("chocolate");
-    color_list.push_back("wheat");
-    color_list.push_back("white");
-    color_list.push_back("grey");
-
-    std::stringstream buf_pymol;
-    if (o_opt==1)
-        buf_pymol<<"#!/usr/bin/env pymol\n";
-    else if (o_opt==3)
-        buf_pymol<<"#!/usr/bin/env chimerax --script\n";
-    for (m=0;m<chain_list.size();m++)
-    {
-        name=chain_list[m];
-
+    Vec3 t;
+    RotMat u;
         std::ifstream fin;
 #ifndef REDI_PSTREAM_H_SEEN
         std::ifstream fin_gz;
@@ -1775,11 +1737,11 @@ void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
         fin.open(name.c_str());
 
         std::stringstream buf;
-        buf<<fname_super<<'.'<<m<<".pdb";
+        buf<<fname_super<<'.'<<chain_idx<<".pdb";
         filename=buf.str();
         buf.str(std::string());
-        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
-        for (uj=0;uj<3;uj++) t[uj]=ut_mat[m][9+uj];
+        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[chain_idx][ui*3+uj];
+        for (uj=0;uj<3;uj++) t[uj]=ut_mat[chain_idx][9+uj];
 
 
         std::string line;
@@ -1907,6 +1869,54 @@ void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
         fp<<buf.str();
         fp.close();
         buf.str(std::string()); // clear stream
+}
+
+void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
+    const int infmt_opt, const RotArray& ut_mat, const std::string &fname_super,
+    const int o_opt=1)
+{
+    int compress_type=0; // uncompressed file
+    size_t m;
+    std::string name;
+    Vec3 t;
+    RotMat u;
+    int ui;
+    int uj;
+    std::string filename;
+    std::vector<std::string> color_list;
+    color_list.push_back("red");
+    color_list.push_back("green");
+    color_list.push_back("blue");
+    color_list.push_back("yellow");
+    color_list.push_back("violet");
+    color_list.push_back("cyan");
+    color_list.push_back("salmon");
+    color_list.push_back("lime");
+    color_list.push_back("pink");
+    color_list.push_back("slate");
+    color_list.push_back("magenta");
+    color_list.push_back("orange");
+    color_list.push_back("marine");
+    color_list.push_back("olive");
+    color_list.push_back("purple");
+    color_list.push_back("teal");
+    color_list.push_back("forest");
+    color_list.push_back("firebrick");
+    color_list.push_back("chocolate");
+    color_list.push_back("wheat");
+    color_list.push_back("white");
+    color_list.push_back("grey");
+
+    std::stringstream buf_pymol;
+    if (o_opt==1)
+        buf_pymol<<"#!/usr/bin/env pymol\n";
+    else if (o_opt==3)
+        buf_pymol<<"#!/usr/bin/env chimerax --script\n";
+    for (m=0;m<chain_list.size();m++)
+    {
+        name=chain_list[m];
+
+        read_mTMalign_chain_pdb(name, fname_super, m, ut_mat, compress_type, filename);
 
         if (o_opt==1) buf_pymol
             <<"cmd.load(\""<<filename<<"\",\"structure"<<m<<"\")\n"
