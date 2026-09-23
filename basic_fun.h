@@ -279,6 +279,17 @@ inline bool is_mmcif_atom_record(const std::vector<std::string>& line_vec,
     return false;
 }
 
+struct PdbParseOptions
+{
+    int ter_opt;
+    std::string atom_opt;
+    bool autojustify;
+    int split_opt;
+    int het_opt;
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
+};
+
 // ============================================================
 // parse_pdb_format — PDB format parser
 // ============================================================
@@ -286,11 +297,15 @@ size_t parse_pdb_format(std::istream& in,
     std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list,
     std::vector<int>& mol_vec,
-    const int ter_opt, const std::string atom_opt,
-    const bool autojustify, const int split_opt, const int het_opt,
-    const std::vector<std::string>& chain2parse,
-    const std::vector<std::string>& model2parse)
+    const PdbParseOptions& parse_opts)
 {
+    const int ter_opt = parse_opts.ter_opt;
+    const std::string& atom_opt = parse_opts.atom_opt;
+    const bool autojustify = parse_opts.autojustify;
+    const int split_opt = parse_opts.split_opt;
+    const int het_opt = parse_opts.het_opt;
+    const std::vector<std::string>& chain2parse = parse_opts.chain2parse;
+    const std::vector<std::string>& model2parse = parse_opts.model2parse;
     if (!in.good()) return 0;
     size_t i = 0;
     std::string line, atom, resn, resi = "", model_index = "1";
@@ -547,11 +562,14 @@ size_t parse_mmcif_format(std::istream& in,
     std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list,
     std::vector<int>& mol_vec,
-    const int ter_opt, const std::string atom_opt,
-    const int split_opt, const int het_opt,
-    const std::vector<std::string>& chain2parse,
-    const std::vector<std::string>& model2parse)
+    const PdbParseOptions& parse_opts)
 {
+    const int ter_opt = parse_opts.ter_opt;
+    const std::string& atom_opt = parse_opts.atom_opt;
+    const int split_opt = parse_opts.split_opt;
+    const int het_opt = parse_opts.het_opt;
+    const std::vector<std::string>& chain2parse = parse_opts.chain2parse;
+    const std::vector<std::string>& model2parse = parse_opts.model2parse;
     if (!in.good()) return 0;
     bool loop_ = false;
     std::map<std::string, int> _atom_site;
@@ -901,19 +919,24 @@ size_t get_PDB_lines(const std::string filename,
 
     int fmt = detect_format(buf, infmt_opt);
 
+    PdbParseOptions parse_opts;
+    parse_opts.ter_opt = ter_opt;
+    parse_opts.atom_opt = atom_opt;
+    parse_opts.autojustify = autojustify;
+    parse_opts.split_opt = split_opt;
+    parse_opts.het_opt = het_opt;
+    parse_opts.chain2parse = chain2parse;
+    parse_opts.model2parse = model2parse;
+
     size_t result = 0;
          if (fmt == FORMAT_PDB)
-        result = parse_pdb_format(buf, PDB_lines, chainID_list, mol_vec,
-            ter_opt, atom_opt, autojustify, split_opt, het_opt,
-            chain2parse, model2parse);
+        result = parse_pdb_format(buf, PDB_lines, chainID_list, mol_vec, parse_opts);
     else if (fmt == FORMAT_SPICKER)
         result = parse_spicker_format(buf, PDB_lines, chainID_list, mol_vec);
     else if (fmt == FORMAT_XYZ)
         result = parse_xyz_format(buf, PDB_lines, chainID_list, mol_vec);
     else if (fmt == FORMAT_MMCIF)
-        result = parse_mmcif_format(buf, PDB_lines, chainID_list, mol_vec,
-            ter_opt, atom_opt, split_opt, het_opt,
-            chain2parse, model2parse);
+        result = parse_mmcif_format(buf, PDB_lines, chainID_list, mol_vec, parse_opts);
     else
         std::cerr << "Warning! Unknown file format (" << fmt << ")" << std::endl;
 
