@@ -765,6 +765,40 @@ constexpr int FORMAT_MMCIF  = 3;   // PDBx/mmCIF format
 constexpr int FORMAT_AUTO    = -1;  // auto-detect
 constexpr int FORMAT_UNKNOWN = -2;  // unknown / error
 
+#ifdef REDI_PSTREAM_H_SEEN
+using CompressedStream = redi::ipstream;
+#else
+using CompressedStream = std::ifstream;
+#endif
+
+inline void open_file_for_read(const std::string& filename,
+    std::ifstream& fin, CompressedStream& fin_gz, int& compress_type)
+{
+    compress_type = COMPRESS_FILE;
+#ifdef REDI_PSTREAM_H_SEEN
+    if (filename.size() >= 3 &&
+        filename.substr(filename.size() - 3, 3) == ".gz")
+    {
+        fin_gz.open("gunzip -c '" + filename + "'");
+        compress_type = COMPRESS_GZ;
+        return;
+    }
+    if (filename.size() >= 4 &&
+        filename.substr(filename.size() - 4, 4) == ".bz2")
+    {
+        fin_gz.open("bzcat '" + filename + "'");
+        compress_type = COMPRESS_BZ2;
+        return;
+    }
+#endif
+    if (filename == "-")
+    {
+        compress_type = COMPRESS_STDIN;
+        return;
+    }
+    fin.open(filename.c_str());
+}
+
 // ============================================================
 // read_file_to_memory — open file (any compression or stdin),
 // read all data into a stringstream, close file, return stream.
@@ -777,35 +811,13 @@ inline std::stringstream read_file_to_memory(const std::string& filename)
     bool specific_warning = false;
     int compress_type = COMPRESS_FILE;
     std::ifstream fin;
+    CompressedStream fin_gz;
 
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz;
-    if (filename.size()>=3 &&
-        filename.substr(filename.size()-3,3)==".gz")
+    open_file_for_read(filename, fin, fin_gz, compress_type);
+    if (compress_type == COMPRESS_FILE && !fin.is_open())
     {
-        fin_gz.open("gunzip -c '"+filename+"'");
-        compress_type = COMPRESS_GZ;
-    }
-    else if (filename.size()>=4 &&
-        filename.substr(filename.size()-4,4)==".bz2")
-    {
-        fin_gz.open("bzcat '"+filename+"'");
-        compress_type = COMPRESS_BZ2;
-    }
-    else
-#endif
-    {
-        if (filename=="-") {
-            compress_type = COMPRESS_STDIN;
-        } else {
-            fin.open(filename.c_str());
-            if (!fin.is_open()) {
-                std::cerr << "Warning! Cannot open file: " << filename << std::endl;
-                return buf;
-            }
-        }
+        std::cerr << "Warning! Cannot open file: " << filename << std::endl;
+        return buf;
     }
 
     if      (compress_type == COMPRESS_STDIN) buf << std::cin.rdbuf();

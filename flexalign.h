@@ -858,27 +858,10 @@ inline void read_pymol_structure(FlexalignPymolState& pymol_state,
     std::string resi = resi_vec1[0];
     int read_resi = resi.size() - 4;
     Vec3 t; RotMat u;
-    int compress_type = 0; // uncompressed file
+    int compress_type = COMPRESS_FILE;
     std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz; // if file is compressed
-    if (xname.size() >= 3 &&
-        xname.substr(xname.size() - 3, 3) == ".gz")
-    {
-        fin_gz.open("gunzip -c " + xname);
-        compress_type = 1;
-    }
-    else if (xname.size() >= 4 &&
-             xname.substr(xname.size() - 4, 4) == ".bz2")
-    {
-        fin_gz.open("bzcat " + xname);
-        compress_type = 2;
-    }
-    else
-#endif
-    fin.open(xname.c_str());
+    CompressedStream fin_gz;
+    open_file_for_read(xname, fin, fin_gz, compress_type);
     std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
