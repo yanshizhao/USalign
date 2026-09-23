@@ -2029,6 +2029,16 @@ inline void normalize_mmcif_atom_fields(
         inscode=line_vec[atom_site["pdbx_PDB_ins_code"]][0];
 }
 
+inline void write_rasmol_mmcif_atom_line_chain_a(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
+{
+    os<<"ATOM  "<<std::setw(6)<<std::setw(5)<<serial%100000<<' '<<rasmol_state.atom<<' '
+        <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+        <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<std::setw(8)<<rasmol_state.x1[0]
+        <<std::setw(8)<<rasmol_state.x1[1]
+        <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+}
+
 inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
     const std::string& xname, const Vec3& t, const RotMat& u,
     const int ter_opt, const int mm_opt, const int mirror_opt)
@@ -2184,44 +2194,20 @@ inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
                         if (rasmol_state.after_ter==false &&
                             rasmol_state.line_vec[rasmol_state._atom_site["group_PDB"]]=="ATOM")
                         {
-                            rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(6)
-                                <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '<<rasmol_state.atom<<' '
-                                <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
-                                <<std::setw(8)<<rasmol_state.x1[0]
-                                <<std::setw(8)<<rasmol_state.x1[1]
-                                <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                            write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1);
                             if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),
                                 rasmol_state.resi_aln1.end(),rasmol_state.resi)!=rasmol_state.resi_aln1.end())
                             {
-                                rasmol_state.buf_atm<<"ATOM  "<<std::setw(6)
-                                    <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '
-                                    <<rasmol_state.atom<<' '<<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
-                                    <<std::setw(8)<<rasmol_state.x1[0]
-                                    <<std::setw(8)<<rasmol_state.x1[1]
-                                    <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                                write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1);
                             }
                             if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
                             {
                                 rasmol_state.ca_idx1++;
-                                rasmol_state.buf_all<<"ATOM  "<<std::setw(6)
-                                    <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
-                                    <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
-                                    <<std::setw(8)<<rasmol_state.x1[0]
-                                    <<std::setw(8)<<rasmol_state.x1[1]
-                                    <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                                write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1);
                                 if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),
                                     rasmol_state.resi_aln1.end(),rasmol_state.resi)!=rasmol_state.resi_aln1.end())
                                 {
-                                    rasmol_state.buf<<"ATOM  "<<std::setw(6)
-                                    <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
-                                    <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
-                                    <<std::setw(8)<<rasmol_state.x1[0]
-                                    <<std::setw(8)<<rasmol_state.x1[1]
-                                    <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                                    write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1);
                                     rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1);
                                 }
                             }
@@ -2255,7 +2241,7 @@ inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
     rasmol_state.idx_vec.clear();
 }
 
-inline void write_rasmol_mmcif_atom_line(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
+inline void write_rasmol_mmcif_atom_line_chain_b(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
 {
     os<<"ATOM  "<<std::setw(6)<<std::setw(5)<<serial%100000<<' '
         <<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
@@ -2391,20 +2377,20 @@ inline void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
                         if (rasmol_state.after_ter==false &&
                             rasmol_state.line_vec[rasmol_state._atom_site["group_PDB"]]=="ATOM")
                         {
-                            write_rasmol_mmcif_atom_line(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
+                            write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
                             if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),
                                 rasmol_state.resi_aln2.end(),rasmol_state.resi)!=rasmol_state.resi_aln2.end())
                             {
-                                write_rasmol_mmcif_atom_line(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
+                                write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
                             }
                             if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
                             {
                                 rasmol_state.ca_idx2++;
-                                write_rasmol_mmcif_atom_line(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
+                                write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
                                 if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),
                                     rasmol_state.resi_aln2.end(),rasmol_state.resi)!=rasmol_state.resi_aln2.end())
                                 {
-                                    write_rasmol_mmcif_atom_line(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
+                                    write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
                                     rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1+rasmol_state.ca_idx2);
                                 }
                             }
