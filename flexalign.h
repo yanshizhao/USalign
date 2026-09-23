@@ -709,6 +709,33 @@ inline void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
 
 }
 
+inline void write_rasmol_products(const FlexalignRasmolState& rasmol_state,
+    const std::string& fname_super, const int mm_opt)
+{
+    std::ofstream fp;
+    if (!mm_opt)
+    {
+        fp.open(fname_super);
+        fp << rasmol_state.buf.str();
+        fp.close();
+    }
+    fp.open(fname_super + "_all");
+    fp << rasmol_state.buf_all.str();
+    fp.close();
+    if (!mm_opt)
+    {
+        fp.open(fname_super + "_atm");
+        fp << rasmol_state.buf_atm.str();
+        fp.close();
+    }
+    fp.open(fname_super + "_all_atm");
+    fp << rasmol_state.buf_all_atm.str();
+    fp.close();
+    fp.open(fname_super + "_all_atm_lig");
+    fp << rasmol_state.buf_all_atm_lig.str();
+    fp.close();
+}
+
 inline void output_flexalign_rasmol(const std::string xname, const std::string yname,
     const std::string fname_super,const DoubleMatrix&tu_vec,
     const int ter_opt,
@@ -725,7 +752,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     rasmol_state.ca_idx2=0;
     rasmol_state.lig_idx2=0;
 
-    int i;
     build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, xlen);
     rasmol_state.resi=resi_vec1[0];
     rasmol_state.read_resi=rasmol_state.resi.size()-4;
@@ -743,6 +769,7 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
         }
         else if (split_opt==2 && ter_opt==0) // align one chain from each model
         {
+            int i;
             for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
             rasmol_state.chain1_sele=chainID1.substr(i+1);
             for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
@@ -762,47 +789,8 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
 
     read_rasmol_structure2(rasmol_state, yname, mm_opt, ter_opt);
-    std::ofstream fp;
-    
-    // write rasmol script
-    if (!mm_opt)
-    {
-        fp.open((fname_super).c_str());
-        fp<<rasmol_state.buf.str();
-        fp.close();
-    }
-    fp.open((fname_super+"_all").c_str());
-    fp<<rasmol_state.buf_all.str();
-    fp.close();
-    if (!mm_opt)
-    {
-        fp.open((fname_super+"_atm").c_str());
-        fp<<rasmol_state.buf_atm.str();
-        fp.close();
-    }
-    fp.open((fname_super+"_all_atm").c_str());
-    fp<<rasmol_state.buf_all_atm.str();
-    fp.close();
-    fp.open((fname_super+"_all_atm_lig").c_str());
-    fp<<rasmol_state.buf_all_atm_lig.str();
-    fp.close();
 
-    // clear stream
-    rasmol_state.buf.str(std::string());
-    rasmol_state.buf_all.str(std::string());
-    rasmol_state.buf_atm.str(std::string());
-    rasmol_state.buf_all_atm.str(std::string());
-    rasmol_state.buf_all_atm_lig.str(std::string());
-    rasmol_state.buf_tm.str(std::string());
-    rasmol_state.resi_aln1.clear();
-    rasmol_state.resi_aln2.clear();
-    rasmol_state.asym_id.clear();
-    rasmol_state.line_vec.clear();
-    rasmol_state.atom.clear();
-    rasmol_state.AA.clear();
-    rasmol_state.resi.clear();
-    rasmol_state.inscode.clear();
-    rasmol_state.model_index.clear();
+    write_rasmol_products(rasmol_state, fname_super, mm_opt);
 }
 
 void output_flexalign_pymol(const std::string xname, const std::string yname,
