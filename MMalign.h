@@ -39,12 +39,12 @@ inline bool is_chain_pair_allowed(const std::map<int,int>& chain_pair_map,
     int chain1_idx,
     int chain2_idx)
 {
-    //是否是映射键
+    // whether it is a chain-map key
     bool chain1_is_key = is_chain_map_key(chain_pair_map, chain1_idx);
-    //是否是映射值
+    // whether it is a chain-map value
     bool chain2_is_value = is_chain_map_value(chain_pair_map, chain2_idx);
 
-    //是否是映射对
+    // whether it is a mapped pair
     if (chain1_is_key && chain2_is_value)
     {
         return chain_pair_map.find(chain1_idx)->second == chain2_idx;
@@ -1356,7 +1356,7 @@ inline double MMalign_search(
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            // chainmap 局部约束：不允许配对的链对跳过
+            // chainmap local constraint: skip chain pairs not allowed to pair
             if (!is_chain_pair_allowed(chain_pair_map, i, j))
             {
                 TMave_mat[i][j]=-1;
@@ -1849,7 +1849,7 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
             assign2_tmp, chain1_num, chain2_num);
         if (chain_pair_map.size())
         {
-            // 映射链强制保持配对（用户指定强制约束，即使重打分分数<=0 也保留）
+            // mapped chain forced to stay paired (user-enforced constraint, kept even if rescored score <= 0)
             for (std::map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
             {
                 assign1_tmp[kv->first]=kv->second;
@@ -2858,8 +2858,8 @@ inline void MMalign_dimer(double & total_score,
                 TMave_mat[i][j]=-1;
                 continue;
             }
-            // chainmap 局部约束：锁死对保持 -1（与全对全 / MMalign_search 一致），
-            // 不重打分、不覆写矩阵与对齐序列（映射链×非目标、自由链×映射目标）
+            // chainmap local constraint: locked pairs stay -1 (consistent with all-vs-all / MMalign_search),
+            // no rescoring, no overwrite of matrix/alignment (mapped chain x non-target, free chain x mapped target)
             if (!is_chain_pair_allowed(chain_pair_map, i, j))
             {
                 TMave_mat[i][j]=-1;
@@ -2905,12 +2905,12 @@ inline void MMalign_dimer(double & total_score,
             {
                 if ((TM4 <= 0) && (!is_chain_map_key(chain_pair_map, i)))
                 {
-                    // 未映射链 TM4≤0：质量保护剔除（映射链豁免，用户硬约束得分≤0 也保留配对）
+                    // unmapped chain TM4<=0: quality-guard removal (mapped chain exempt; user hard constraint keeps pair even if score<=0)
                     assign1_list[i]=assign2_list[j]=-1;
                 }
                 else
                 {
-                    // 保留链对：映射链或未映射链（TM4>0），计入总得分一次
+                    // keep chain pair: mapped chain or unmapped chain (TM4>0), counted once in total score
                     total_score+=TMave_mat[i][j];
                 }
             }
