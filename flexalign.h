@@ -3505,7 +3505,7 @@ inline void run_region_align(
 }
 
 // Temporal concatenation: reassemble per-block results into a global alignment in spatial order
-inline void build_gloabal_align_result(
+inline void build_global_align_result(
     std::vector<RegionAlignResult>& region_align_res,
     const std::vector<int>& chain1_bounds,
     const std::vector<int>& chain2_bounds,
@@ -3781,7 +3781,7 @@ inline void update_global_best_align(
         GlobalAlignResult global_align_res;
         global_align_res.res_tu.assign(xlen, -1);
         
-        build_gloabal_align_result(region_align_res, chain1_bounds, chain2_bounds, region_num, seqx, seqy, global_align_res);
+        build_global_align_result(region_align_res, chain1_bounds, chain2_bounds, region_num, seqx, seqy, global_align_res);
         
         FlexAlignResult cur_res;
         recompute_global_metrics( global_align_res, xa, ya, seqx, seqy, xlen, ylen, common_inputs, mol_type, d0_out, cur_res);
