@@ -4531,8 +4531,8 @@ int mTMalign(AlignCommonInput& common_inputs)
                 state.xname_vec,state.yname_vec, ut_mat, state.assign_list);
         }
 
-        //if (o_opt) output_dock(chain_list, ter_opt, split_opt,
-        //infmt_opt, atom_opt, false, ut_mat, fname_super);
+        
+        
         if (user_opts.o_opt) output_mTMalign_pymol(parsed_input.chain1_list,
             user_opts.infmt1_opt, ut_mat, user_opts.fname_super, user_opts.o_opt);
 
