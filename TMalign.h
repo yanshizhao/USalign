@@ -2085,9 +2085,6 @@ void output_rasmol(const std::string xname, const std::string yname,
             x[2]=safe_stod(line.substr(46,8).c_str());
             if (mirror_opt) x[2]=-x[2];
             transform(t, u, x, x1);
-            //buf_pdb<<line.substr(0,30)<<setiosflags(ios::fixed)
-                //<<setprecision(3)
-                //<<line.substr(54)<<'\n';
 
             if (after_ter && line.compare(0,6,"ATOM  ")==0) continue;
             lig_idx1++;
@@ -2155,7 +2152,6 @@ void output_rasmol(const std::string xname, const std::string yname,
 
             if (is_mmcif==false)
             {
-                //buf_pdb.str(string());
                 is_mmcif=true;
             }
 
@@ -2227,11 +2223,6 @@ void output_rasmol(const std::string xname, const std::string yname,
                             after_ter=true;
                         asym_id=line_vec[_atom_site["label_asym_id"]];
                     }
-                    //buf_pdb<<left<<setw(6)
-                        //<<line_vec[_atom_site["group_PDB"]]<<right
-                        //<<AA<<" "<<asym_id[asym_id.size()-1]
-                        //<<resi<<inscode<<"   "
-                        //<<setiosflags(ios::fixed)<<setprecision(3)
 
                     if (after_ter==false ||
                         line_vec[_atom_site["group_pdb"]]=="HETATM")
@@ -2269,7 +2260,6 @@ void output_rasmol(const std::string xname, const std::string yname,
                             if (atom==" CA " || atom==" C3'")
                             {
                                 ca_idx1++;
-            //mm_opt, split_opt, mirror_opt, chainID1,chainID2);
                                 buf_all<<"ATOM  "<<std::setw(6)
                                     <<std::setw(5)<<ca_idx1%100000<<' '<<atom<<' '
                                     <<AA<<" A"<<resi<<inscode<<"   "
@@ -2304,7 +2294,6 @@ void output_rasmol(const std::string xname, const std::string yname,
         }
         else if (line.size() && is_mmcif==false)
         {
-            //buf_pdb<<line<<'\n';
             if (ter_opt>=1 && line.compare(0,3,"END")==0) break;
         }
     }
@@ -2530,43 +2519,8 @@ void output_rasmol(const std::string xname, const std::string yname,
         <<std::setw(5)<<idx_vec[i-1]%100000<<std::setw(5)<<idx_vec[i]%100000<<'\n';
     idx_vec.clear();
 
-    // write pymol script
-    std::ofstream fp;
-    /*
-    stringstream buf_pymol;
-    vector<string> pml_list;
-    pml_list.push_back(fname_super+"");
-    pml_list.push_back(fname_super+"_atm");
-    pml_list.push_back(fname_super+"_all");
-    pml_list.push_back(fname_super+"_all_atm");
-    pml_list.push_back(fname_super+"_all_atm_lig");
-    for (i=0;i<pml_list.size();i++)
-    {
-        buf_pymol<<"#!/usr/bin/env pymol\n"
-            <<"load "<<pml_list[i]<<"\n"
-            <<"hide all\n"
-            <<((i==0 || i==2)?("show stick\n"):("show cartoon\n"))
-            <<"color blue, chain A\n"
-            <<"color red, chain B\n"
-            <<"set ray_shadow, 0\n"
-            <<"set stick_radius, 0.3\n"
-            <<"set sphere_scale, 0.25\n"
-            <<"show stick, not polymer\n"
-            <<"show sphere, not polymer\n"
-            <<"bg_color white\n"
-            <<"set transparency=0.2\n"
-            <<"zoom polymer\n"
-            <<endl;
-        fp.open((pml_list[i]+".pml").c_str());
-        fp<<buf_pymol.str();
-        fp.close();
-        buf_pymol.str(string());
-        pml_list[i].clear();
-    }
-    pml_list.clear();
-    */
-    
     // write rasmol script
+    std::ofstream fp;
     if (!mm_opt)
     {
         fp.open((fname_super).c_str());
@@ -2588,27 +2542,6 @@ void output_rasmol(const std::string xname, const std::string yname,
     fp.open((fname_super+"_all_atm_lig").c_str());
     fp<<buf_all_atm_lig.str();
     fp.close();
-    //fp.open((fname_super+".pdb").c_str());
-    //fp<<buf_pdb.str();
-    //fp.close();
-
-    // clear stream
-    buf.str(std::string());
-    buf_all.str(std::string());
-    buf_atm.str(std::string());
-    buf_all_atm.str(std::string());
-    buf_all_atm_lig.str(std::string());
-    //buf_pdb.str(string());
-    buf_tm.str(std::string());
-    resi_aln1.clear();
-    resi_aln2.clear();
-    asym_id.clear();
-    line_vec.clear();
-    atom.clear();
-    AA.clear();
-    resi.clear();
-    inscode.clear();
-    model_index.clear();
 }
 
 // extract rotation matrix based on TMscore8
