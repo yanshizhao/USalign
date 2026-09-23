@@ -795,7 +795,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
 struct FlexalignPymolState
 {
     std::stringstream buf;
-    int infmt;
     std::map<std::string, int> resi2hinge_dict;
     std::string chain1_sele;
     std::string chain2_sele;
@@ -803,6 +802,7 @@ struct FlexalignPymolState
     std::string resi2_sele;
     std::string resi1_bond;
     std::string resi2_bond;
+    int infmt;
 };
 
 struct FlexalignPymolReadState
@@ -811,16 +811,16 @@ struct FlexalignPymolReadState
     std::map<std::string, int>& resi2hinge_dict;
     std::ifstream fin;
     CompressedStream fin_gz;
-    int compress_type;
     std::string line;
-    int infmt;
     std::string resi;
-    int read_resi;
     std::string asym_id = "."; // this is similar to chainID, except that
                           // chainID is char while asym_id is a string
                           // with possibly multiple char
     Vec3 t;
     RotMat u;
+    int compress_type;
+    int infmt;
+    int read_resi;
 
     FlexalignPymolReadState(FlexalignPymolState& pymol_state)
         : buf(pymol_state.buf), resi2hinge_dict(pymol_state.resi2hinge_dict) {}
