@@ -19,6 +19,7 @@
 #include <string>
 #include <iomanip>
 #include <map>
+#include <set>
 #include <climits>
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
@@ -290,13 +291,45 @@ struct PdbParseOptions
     std::vector<std::string> model2parse;
 };
 
+// residue names (3-letter, padded) recognized as amino acid / nucleotide
+const std::set<std::string> aa_resn_set = {
+    "  A", " DA", "  C", " DC", "  G", " DG", "  U", "PSU", "  I", " DI", "  T",
+    "ALA", "CYS", "ASP", "GLU", "PHE", "GLY", "HIS", "ILE", "LYS", "LEU",
+    "MET", "MSE", "ASN", "PRO", "GLN", "ARG", "SER", "THR", "VAL", "TRP",
+    "TYR", "ASX", "GLX", "SEC", "PYL",
+};
+
+inline std::string build_split_chain_label(const char chainID, const size_t model_idx, const int ter_opt)
+{
+    std::ostringstream i8_stream;
+    if (chainID==' ')
+    {
+        if (ter_opt>=1) i8_stream << ":_";
+        else i8_stream<<':'<<model_idx<<",_";
+    }
+    else
+    {
+        if (ter_opt>=1) i8_stream << ':' << chainID;
+        else i8_stream<<':'<<model_idx<<','<<chainID;
+    }
+    return i8_stream.str();
+}
+
+inline std::string build_mmcif_chain_label(const std::string& asym_id, const std::string& model_index,
+    const int split_opt, const int ter_opt)
+{
+    if (split_opt == 1 && ter_opt == 0)
+        return ":" + model_index;
+    if (split_opt == 2 && ter_opt == 0)
+        return ":" + model_index + "," + asym_id;
+    return ":" + asym_id;
+}
+
 // ============================================================
 // parse_pdb_format — PDB format parser
 // ============================================================
-size_t parse_pdb_format(std::istream& in,
-    std::vector<std::vector<std::string>>& PDB_lines,
-    std::vector<std::string>& chainID_list,
-    std::vector<int>& mol_vec,
+size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>& PDB_lines,
+    std::vector<std::string>& chainID_list, std::vector<int>& mol_vec,
     const PdbParseOptions& parse_opts)
 {
     const int ter_opt = parse_opts.ter_opt;
@@ -312,40 +345,7 @@ size_t parse_pdb_format(std::istream& in,
     char chainID = 0;
     size_t model_idx = 0;
     std::vector<std::string> tmp_str_vec;
-    std::map<std::string, char> aa3to1;
     std::map<std::string, char> alt_id_dict;
-
-
-    aa3to1["  A"]=aa3to1[" DA"]='a';
-    aa3to1["  C"]=aa3to1[" DC"]='c';
-    aa3to1["  G"]=aa3to1[" DG"]='g';
-    aa3to1["  U"]=aa3to1["PSU"]='u';
-    aa3to1["  I"]=aa3to1[" DI"]='i';
-    aa3to1["  T"]='t';
-    aa3to1["ALA"]='A';
-    aa3to1["CYS"]='C';
-    aa3to1["ASP"]='D';
-    aa3to1["GLU"]='E';
-    aa3to1["PHE"]='F';
-    aa3to1["GLY"]='G';
-    aa3to1["HIS"]='H';
-    aa3to1["ILE"]='I';
-    aa3to1["LYS"]='K';
-    aa3to1["LEU"]='L';
-    aa3to1["MET"]=aa3to1["MSE"]='M';
-    aa3to1["ASN"]='N';
-    aa3to1["PRO"]='P';
-    aa3to1["GLN"]='Q';
-    aa3to1["ARG"]='R';
-    aa3to1["SER"]='S';
-    aa3to1["THR"]='T';
-    aa3to1["VAL"]='V';
-    aa3to1["TRP"]='W';
-    aa3to1["TYR"]='Y';
-    aa3to1["ASX"]='B';
-    aa3to1["GLX"]='Z';
-    aa3to1["SEC"]='U';
-    aa3to1["PYL"]='O';
 
     while (std::getline(in, line))
     {
@@ -374,7 +374,7 @@ size_t parse_pdb_format(std::istream& in,
         if (autojustify)
         {
             resn = line.substr(17,3);
-            if (aa3to1.count(resn))
+            if (aa_resn_set.count(resn))
             {
                 atom=Trim(atom);
                 if (atom.size())
@@ -410,30 +410,12 @@ size_t parse_pdb_format(std::istream& in,
             chainID = line[21];
             model_idx++;
             i = 0;
-            {
-                std::ostringstream i8_stream;
-                if (split_opt==2)
-                {
-                    if (chainID==' ')
-                    {
-                        if (ter_opt>=1) i8_stream << ":_";
-                        else i8_stream<<':'<<model_idx<<",_";
-                    }
-                    else
-                    {
-                        if (ter_opt>=1) i8_stream << ':' << chainID;
-                        else i8_stream<<':'<<model_idx<<','<<chainID;
-                    }
-                    chainID_list.push_back(i8_stream.str());
-                }
-                else if (split_opt==1)
-                {
-                    i8_stream << ':' << model_idx;
-                    chainID_list.push_back(i8_stream.str());
-                }
-                PDB_lines.push_back(tmp_str_vec);
-                mol_vec.push_back(0);
-            }
+            if (split_opt==2)
+                chainID_list.push_back(build_split_chain_label(chainID, model_idx, ter_opt));
+            else if (split_opt==1)
+                chainID_list.push_back(":" + std::to_string(model_idx));
+            PDB_lines.push_back(tmp_str_vec);
+            mol_vec.push_back(0);
         }
         else if (ter_opt>=2 && chainID!=line[21]) break;
 
@@ -441,18 +423,7 @@ size_t parse_pdb_format(std::istream& in,
         {
             chainID=line[21];
             i = 0;
-            std::ostringstream i8_stream;
-            if (chainID==' ')
-            {
-                if (ter_opt>=1) i8_stream << ":_";
-                else i8_stream<<':'<<model_idx<<",_";
-            }
-            else
-            {
-                if (ter_opt>=1) i8_stream << ':' << chainID;
-                else i8_stream<<':'<<model_idx<<','<<chainID;
-            }
-            chainID_list.push_back(i8_stream.str());
+            chainID_list.push_back(build_split_chain_label(chainID, model_idx, ter_opt));
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
         }
@@ -558,10 +529,8 @@ size_t parse_xyz_format(std::istream& in,
 // ============================================================
 // parse_mmcif_format — PDBx/mmCIF format parser
 // ============================================================
-size_t parse_mmcif_format(std::istream& in,
-    std::vector<std::vector<std::string>>& PDB_lines,
-    std::vector<std::string>& chainID_list,
-    std::vector<int>& mol_vec,
+size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>>& PDB_lines,
+    std::vector<std::string>& chainID_list, std::vector<int>& mol_vec,
     const PdbParseOptions& parse_opts)
 {
     const int ter_opt = parse_opts.ter_opt;
@@ -698,12 +667,7 @@ size_t parse_mmcif_format(std::istream& in,
                 mol_vec.push_back(0);
                 prev_asym_id = asym_id;
 
-                if (split_opt == 1 && ter_opt == 0)
-                    chainID_list.push_back(":" + model_index);
-                else if (split_opt == 2 && ter_opt == 0)
-                    chainID_list.push_back(":" + model_index + "," + asym_id);
-                else
-                    chainID_list.push_back(":" + asym_id);
+                chainID_list.push_back(build_mmcif_chain_label(asym_id, model_index, split_opt, ter_opt));
             }
             alt_id_dict.clear();
         }
@@ -734,12 +698,7 @@ size_t parse_mmcif_format(std::istream& in,
                 PDB_lines.push_back(tmp_str_vec);
                 mol_vec.push_back(0);
 
-                if (split_opt == 1 && ter_opt == 0)
-                    chainID_list.push_back(":" + model_index);
-                else if (split_opt == 2 && ter_opt == 0)
-                    chainID_list.push_back(":" + model_index + "," + asym_id);
-                else
-                    chainID_list.push_back(":" + asym_id);
+                chainID_list.push_back(build_mmcif_chain_label(asym_id, model_index, split_opt, ter_opt));
             }
             prev_asym_id = asym_id;
         }
