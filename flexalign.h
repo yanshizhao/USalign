@@ -1068,7 +1068,7 @@ inline void read_pymol_structure(FlexalignPymolState& pymol_state,
         fin.close();
 }
 
-inline void build_pymol_chain_sele(FlexalignPymolState& pymol_state,
+inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
     const std::string& chainID1, const std::string& chainID2,
     const int mm_opt, const int split_opt, const int ter_opt)
 {
@@ -1094,7 +1094,7 @@ inline void build_pymol_chain_sele(FlexalignPymolState& pymol_state,
     }
 }
 
-inline void build_pymol_resi_sele(FlexalignPymolState& pymol_state,
+inline void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
     const int mm_opt)
@@ -1140,10 +1140,20 @@ inline void build_pymol_resi_sele(FlexalignPymolState& pymol_state,
     }
 }
 
-inline void write_pymol_scripts(const FlexalignPymolState& pymol_state,
-    const std::string& fname_super, const std::string& fname_super_full,
+inline void write_pymol_to_file(const FlexalignPymolState& pymol_state,
+    const std::string& fname_super,
     const std::string& yname, const int mm_opt, const int ter_opt)
 {
+    std::string fname_super_full = fname_super;
+    if (pymol_state.infmt == 0)
+        fname_super_full += ".pdb";
+    else if (pymol_state.infmt == 3)
+        fname_super_full += ".cif";
+    std::ofstream fp;
+    fp.open(fname_super_full.c_str());
+    fp << pymol_state.buf.str();
+    fp.close();
+
     const std::string& chain1_sele = pymol_state.chain1_sele;
     const std::string& chain2_sele = pymol_state.chain2_sele;
     const std::string& resi1_sele = pymol_state.resi1_sele;
@@ -1151,7 +1161,6 @@ inline void write_pymol_scripts(const FlexalignPymolState& pymol_state,
     const std::string& resi1_bond = pymol_state.resi1_bond;
     const std::string& resi2_bond = pymol_state.resi2_bond;
     std::stringstream buf_pymol;
-    std::ofstream fp;
     std::vector<std::string> pml_list;
     pml_list.push_back(fname_super);
     pml_list.push_back(fname_super + "_atm");
@@ -1241,20 +1250,9 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
     FlexalignPymolState pymol_state;
     build_pymol_hinge_map(pymol_state.resi2hinge_dict, seqM, seqxA, resi_vec1);
     read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
-
-    std::string fname_super_full = fname_super;
-    if (pymol_state.infmt == 0)
-        fname_super_full += ".pdb";
-    else if (pymol_state.infmt == 3)
-        fname_super_full += ".cif";
-    std::ofstream fp;
-    fp.open(fname_super_full.c_str());
-    fp << pymol_state.buf.str();
-    fp.close();
-
-    build_pymol_chain_sele(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt);
-    build_pymol_resi_sele(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
-    write_pymol_scripts(pymol_state, fname_super, fname_super_full, yname, mm_opt, ter_opt);
+    build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt);
+    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
+    write_pymol_to_file(pymol_state, fname_super, yname, mm_opt, ter_opt);
 }
 
 //output the final results
