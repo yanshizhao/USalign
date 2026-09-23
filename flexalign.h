@@ -805,48 +805,46 @@ struct FlexalignPymolState
     std::string resi2_bond;
 };
 
-inline void build_pymol_hinge_map(std::map<std::string, int>& resi2hinge_dict,
+inline int hinge_char_to_index(char hinge_char)
+{
+    if (hinge_char >= '0' && hinge_char <= '9')
+        return hinge_char - '0';
+    if (hinge_char >= 'a' && hinge_char <= 'z')
+        return hinge_char - 'a' + 10;
+    if (hinge_char >= 'A' && hinge_char <= 'Z')
+        return hinge_char - 'A' + 36;
+    return 0;
+}
+
+inline char find_nearest_hinge_char(const std::string& seqM,
+    const int aln_pos, const int xlen)
+{
+    int ali_len = seqM.size();
+    for (int i = 1; i < ali_len; i++)
+    {
+        if (aln_pos - i >= 0 && seqM[aln_pos - i] != ' ')
+            return seqM[aln_pos - i];
+        if (aln_pos + i < xlen && seqM[aln_pos + i] != ' ')
+            return seqM[aln_pos + i];
+    }
+    return ' ';
+}
+
+inline void build_pymol_hinge_map(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA,
     const std::vector<std::string>& resi_vec1)
 {
-    int r;
-    int i;
-    int j = -1;
-    char hinge_char = 0;
-    int xlen = resi_vec1.size();
-    int ali_len = seqM.size();
-    for (r = 0; r < seqxA.size(); r++)
+    int resi_idx = -1;
+    const int xlen = resi_vec1.size();
+    for (int aln_pos = 0; aln_pos < seqxA.size(); aln_pos++)
     {
-        if (seqxA[r] == '-')
+        if (seqxA[aln_pos] == '-')
             continue;
-        j++;
-        hinge_char = seqM[r];
+        resi_idx++;
+        char hinge_char = seqM[aln_pos];
         if (hinge_char == ' ')
-        {
-            for (i = 1; i < ali_len; i++)
-            {
-                if (r - i >= 0 && seqM[r - i] != ' ')
-                    hinge_char = seqM[r - i];
-                else if (r + i < xlen && seqM[r + i] != ' ')
-                    hinge_char = seqM[r + i];
-                if (hinge_char != ' ')
-                    break;
-            }
-        }
-        int hinge_idx = 0;
-        if (hinge_char >= '0' && hinge_char <= '9')
-        {
-            hinge_idx = hinge_char - '0';
-        }
-        else if (hinge_char >= 'a' && hinge_char <= 'z')
-        {
-            hinge_idx = hinge_char - 'a' + 10;
-        }
-        else if (hinge_char >= 'A' && hinge_char <= 'Z')
-        {
-            hinge_idx = hinge_char - 'A' + 36;
-        }
-        resi2hinge_dict[resi_vec1[j]] = hinge_idx;
+            hinge_char = find_nearest_hinge_char(seqM, aln_pos, xlen);
+        pymol_state.resi2hinge_dict[resi_vec1[resi_idx]] = hinge_char_to_index(hinge_char);
     }
 }
 
@@ -1248,7 +1246,7 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const std::string chainID1, const std::string chainID2)
 {
     FlexalignPymolState pymol_state;
-    build_pymol_hinge_map(pymol_state.resi2hinge_dict, seqM, seqxA, resi_vec1);
+    build_pymol_hinge_map(pymol_state, seqM, seqxA, resi_vec1);
     read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
     build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt);
     build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
