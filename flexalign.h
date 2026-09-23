@@ -709,7 +709,7 @@ inline void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
 
 }
 
-inline void write_rasmol_products(const FlexalignRasmolState& rasmol_state,
+inline void write_rasmol_to_file(const FlexalignRasmolState& rasmol_state,
     const std::string& fname_super, const int mm_opt)
 {
     std::ofstream fp;
@@ -789,7 +789,7 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
 
     read_rasmol_structure2(rasmol_state, yname, mm_opt, ter_opt);
 
-    write_rasmol_products(rasmol_state, fname_super, mm_opt);
+    write_rasmol_to_file(rasmol_state, fname_super, mm_opt);
 }
 
 void output_flexalign_pymol(const std::string xname, const std::string yname,
