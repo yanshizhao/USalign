@@ -1770,7 +1770,7 @@ inline void extract_split_substruct(
     }
 }
 
-inline void score_alignedA_unalignB(
+inline void score_split_substruct(
         AlignSubstruct& sub,
         CoordArray& xa, CoordArray& ya,
         const std::string &seqx, const std::string &seqy,
@@ -1783,80 +1783,6 @@ inline void score_alignedA_unalignB(
         const bool fast_opt, const int mol_type, const int ss_opt,
         Vec3& t0, RotMat& u0,
         SubstructAlignRes& sub_align_res)
-{
-    ChainPairAlignResult chain_align_res = { 0};
-    chain_align_res.d0_out = 5.0;
-    chain_align_res.t0 = t0;
-    chain_align_res.u0 = u0;
-    chain_align_res.invmap.assign(ylen + 1, -1);
-    chain_align_res.do_vec = do_vec;
-    ChainPairAlignOptions align_opts;
-    align_opts.i_opt = i_opt;
-    align_opts.a_opt = a_opt;
-    align_opts.u_opt = u_opt;
-    align_opts.d_opt = d_opt;
-    align_opts.fast_opt = fast_opt;
-    align_opts.se_opt = false;
-    align_opts.cp_opt = false;
-    align_opts.Lnorm = Lnorm_ass;
-    align_opts.d0_scale = d0_scale;
-    align_opts.TMcut = -1;
-    align_opts.parallel_threads = 1;
-    align_opts.ss_opt = ss_opt;
-    align_opts.mol_type = mol_type;
-    TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
-        chain_align_res, sub.xlen_h, sub.ylen_h, sequence, align_opts);
-    t0 = chain_align_res.t0;
-    u0 = chain_align_res.u0;
-    do_vec = chain_align_res.do_vec;
-    sub_align_res.t_u_result = chain_align_res.t0;
-    sub_align_res.u_u_result = chain_align_res.u0;
-    chain_align_res.TM1 = chain_align_res.TM2 = chain_align_res.TM3 = chain_align_res.TM4 = chain_align_res.TM5 = chain_align_res.rmsd0 = 0;
-    chain_align_res.seqM = "";
-    chain_align_res.seqxA = "";
-    chain_align_res.seqyA = "";
-    chain_align_res.n_ali = chain_align_res.n_ali8 = 0;
-    CoordArray xt;
-    xt.resize(xlen);
-    score_with_cur_transform(
-        xa, ya, xt, seqx, seqy, xlen, ylen,
-        sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
-        mol_type, 1, chain_align_res);
-    do_vec = chain_align_res.do_vec;
-    sub_align_res.TM1 = chain_align_res.TM1;
-    sub_align_res.TM2 = chain_align_res.TM2;
-    sub_align_res.TM3 = chain_align_res.TM3;
-    sub_align_res.TM4 = chain_align_res.TM4;
-    sub_align_res.TM5 = chain_align_res.TM5;
-    sub_align_res.seqM = chain_align_res.seqM;
-    sub_align_res.seqxA = chain_align_res.seqxA;
-    sub_align_res.seqyA = chain_align_res.seqyA;
-    sub_align_res.n_ali = chain_align_res.n_ali;
-    sub_align_res.n_ali8 = chain_align_res.n_ali8;
-    sub_align_res.rmsd0 = chain_align_res.rmsd0;
-    sub_align_res.d0_0 = chain_align_res.d0_0;
-    sub_align_res.TM_0 = chain_align_res.TM_0;
-    sub_align_res.d0A = chain_align_res.d0A;
-    sub_align_res.d0B = chain_align_res.d0B;
-    sub_align_res.d0u = chain_align_res.d0u;
-    sub_align_res.d0a = chain_align_res.d0a;
-    sub_align_res.d0_out = chain_align_res.d0_out;
-    sub_align_res.L_ali = chain_align_res.L_ali;
-    sub_align_res.Liden = chain_align_res.Liden;
-    sub_align_res.TM_ali = chain_align_res.TM_ali;
-    sub_align_res.rmsd_ali = chain_align_res.rmsd_ali;
-    sub_align_res.invmap = chain_align_res.invmap;
-}
-
-inline void score_unalignA_alignedB(
-    AlignSubstruct& sub, CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    std::vector<double>& do_vec, const int xlen, const int ylen,
-    const std::vector<std::string> &sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const int ss_opt, Vec3& t0, RotMat& u0,
-    SubstructAlignRes& sub_align_res)
 {
     ChainPairAlignResult chain_align_res = { 0};
     chain_align_res.d0_out = 5.0;
@@ -1991,11 +1917,11 @@ inline void refine_via_split_alignment(
     extract_split_substruct(xa, ya, seqx, seqy, secx, secy,
         chain_align_res.seqxA, chain_align_res.seqyA, xlen, ylen, chain_align_res.n_ali8, sub_struct);
     SubstructAlignRes sub_align_res[NUM_SPLIT_VARIANTS];
-    score_alignedA_unalignB(sub_struct[0], xa, ya, seqx, seqy, chain_align_res.do_vec,
+    score_split_substruct(sub_struct[0], xa, ya, seqx, seqy, chain_align_res.do_vec,
         xlen, ylen, sequence, Lnorm_ass, d0_scale,
         i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
         chain_align_res.t0, chain_align_res.u0, sub_align_res[0]);
-    score_unalignA_alignedB(sub_struct[1], xa, ya, seqx, seqy, chain_align_res.do_vec,
+    score_split_substruct(sub_struct[1], xa, ya, seqx, seqy, chain_align_res.do_vec,
         xlen, ylen, sequence, Lnorm_ass, d0_scale,
         i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
         chain_align_res.t0, chain_align_res.u0, sub_align_res[1]);
