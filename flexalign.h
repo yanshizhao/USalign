@@ -238,9 +238,6 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
             if (rasmol_state.resi2hinge_dict.count(rasmol_state.resi)) hinge=rasmol_state.resi2hinge_dict[rasmol_state.resi];
             tu2t_u(tu_vec[hinge],t,u);
             transform(t, u, rasmol_state.x, rasmol_state.x1);
-            //buf_pdb<<rasmol_state.line.substr(0,30)<<setiosflags(ios::fixed)
-                //<<setprecision(3)
-                //<<rasmol_state.line.substr(54)<<'\n';
 
             if (rasmol_state.after_ter && rasmol_state.line.compare(0,6,"ATOM  ")==0) continue;
             rasmol_state.lig_idx1++;
@@ -399,11 +396,6 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                             rasmol_state.after_ter=true;
                         rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]];
                     }
-                    //buf_pdb<<left<<setw(6)
-                        //<<rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]<<right
-                        //<<rasmol_state.AA<<" "<<rasmol_state.asym_id[rasmol_state.asym_id.size()-1]
-                        //<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                        //<<setiosflags(ios::fixed)<<setprecision(3)
 
                     if (rasmol_state.after_ter==false ||
                         rasmol_state.line_vec[rasmol_state.atom_site["group_pdb"]]=="HETATM")
@@ -476,7 +468,6 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
         }
         else if (rasmol_state.line.size() && rasmol_state.is_mmcif==false)
         {
-            //buf_pdb<<rasmol_state.line<<'\n';
             if (ter_opt>=1 && rasmol_state.line.compare(0,3,"END")==0) break;
         }
     }
