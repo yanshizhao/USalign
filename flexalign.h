@@ -785,7 +785,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     // extract aligned region
     extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
 
-    std::ifstream fin;
     read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
 
     read_rasmol_structure2(rasmol_state, yname, mm_opt, ter_opt);
