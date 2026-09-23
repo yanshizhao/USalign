@@ -1871,41 +1871,20 @@ inline void read_mTMalign_chain_pdb(const std::string& name, const std::string& 
         buf.str(std::string()); // clear stream
 }
 
-void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
-    const int infmt_opt, const RotArray& ut_mat, const std::string &fname_super,
-    const int o_opt=1)
+// pymol/chimerax color cycle for multi-chain (mTMalign) output
+const std::vector<std::string> mTMalign_color_list = {
+    "red", "green", "blue", "yellow", "violet", "cyan", "salmon", "lime",
+    "pink", "slate", "magenta", "orange", "marine", "olive", "purple",
+    "teal", "forest", "firebrick", "chocolate", "wheat", "white", "grey",
+};
+
+void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
+    const int infmt_opt, const RotArray& ut_mat, const std::string& fname_super, const int o_opt=1)
 {
     int compress_type=0; // uncompressed file
     size_t m;
     std::string name;
-    Vec3 t;
-    RotMat u;
-    int ui;
-    int uj;
     std::string filename;
-    std::vector<std::string> color_list;
-    color_list.push_back("red");
-    color_list.push_back("green");
-    color_list.push_back("blue");
-    color_list.push_back("yellow");
-    color_list.push_back("violet");
-    color_list.push_back("cyan");
-    color_list.push_back("salmon");
-    color_list.push_back("lime");
-    color_list.push_back("pink");
-    color_list.push_back("slate");
-    color_list.push_back("magenta");
-    color_list.push_back("orange");
-    color_list.push_back("marine");
-    color_list.push_back("olive");
-    color_list.push_back("purple");
-    color_list.push_back("teal");
-    color_list.push_back("forest");
-    color_list.push_back("firebrick");
-    color_list.push_back("chocolate");
-    color_list.push_back("wheat");
-    color_list.push_back("white");
-    color_list.push_back("grey");
 
     std::stringstream buf_pymol;
     if (o_opt==1)
@@ -1920,10 +1899,10 @@ void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
 
         if (o_opt==1) buf_pymol
             <<"cmd.load(\""<<filename<<"\",\"structure"<<m<<"\")\n"
-            <<"color "<<color_list[m%color_list.size()]<<", structure"<<m<<"\n";
+            <<"color "<<mTMalign_color_list[m%mTMalign_color_list.size()]<<", structure"<<m<<"\n";
         else if (o_opt==3) buf_pymol
             <<"open \""<<filename<<"\" name structure"<<m<<"\n"
-            <<"color #"<<m+1<<" "<<color_list[m%color_list.size()]<<"\n";
+            <<"color #"<<m+1<<" "<<mTMalign_color_list[m%mTMalign_color_list.size()]<<"\n";
 
     }
     if (o_opt==1) buf_pymol
@@ -1969,7 +1948,6 @@ void output_mTMalign_pymol(const std::vector<std::string>&chain_list,
 
     fp.close();
     buf_pymol.str(std::string());
-    std::vector<std::string> ().swap(color_list);
 }
 
 struct TMalignRasmolState
