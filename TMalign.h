@@ -475,7 +475,7 @@ inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
     int simplify_step, int score_sum_method, double local_d0_search,
-    const bool& bNormalize, double Lnorm, double score_d8, double d0, int parallel_threads = 1)
+    const bool& bNormalize, double Lnorm, double score_d8, double d0)
 {
     int i,j,k;
     double tmscore, rmsd;
@@ -3212,7 +3212,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0, int parallel_threads = 1, const int ss_opt = 0)
+    Vec3& t0, RotMat& u0, int parallel_threads = 1)
 {
     double TM;
 
@@ -3524,7 +3524,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
 	            invmap0, invmap, t, u, TMmax,
 	            score, path, val, xtm, ytm, xt, r1, r2,
 	            TM1, TM2, TM3, TM4, TM5, t0, u0,
-	            parallel_threads, ss_opt);
+	            parallel_threads);
 	        if (ret) { return ret; }
 	    } else
 #endif
