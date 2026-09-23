@@ -1633,27 +1633,14 @@ inline void score_with_cur_transform(
     const std::string &seqx, const std::string &seqy,
     const int xlen, const int ylen,
     const std::vector<std::string> &sequence,
-    const double Lnorm_ass, const double d0_scale,
-    const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt,
-    const int mol_type, const int hinge,
+    const ChainPairAlignOptions& align_opts,
+    const int hinge,
     ChainPairAlignResult& res)
 {
     do_rotation(xa, xt, xlen, res.t0, res.u0);
-    ChainPairAlignOptions opt;
-    opt.i_opt = i_opt;
-    opt.a_opt = a_opt;
-    opt.u_opt = u_opt;
-    opt.d_opt = d_opt;
+    ChainPairAlignOptions opt = align_opts;
     opt.fast_opt = false;
-    opt.se_opt = false;
-    opt.cp_opt = false;
-    opt.Lnorm = Lnorm_ass;
-    opt.d0_scale = d0_scale;
-    opt.TMcut = -1;
-    opt.parallel_threads = 1;
     opt.ss_opt = 0;
-    opt.mol_type = mol_type;
     se_main(xt, ya, seqx, seqy, res, xlen, ylen, sequence, opt, 0, hinge);
 }
 
@@ -1777,10 +1764,7 @@ inline void score_split_substruct(
         std::vector<double>& do_vec,
         const int xlen, const int ylen,
         const std::vector<std::string> &sequence,
-        const double Lnorm_ass, const double d0_scale,
-        const int i_opt, const int a_opt,
-        const bool u_opt, const bool d_opt,
-        const bool fast_opt, const int mol_type, const int ss_opt,
+        const ChainPairAlignOptions& align_opts,
         Vec3& t0, RotMat& u0,
         SubstructAlignRes& sub_align_res)
 {
@@ -1790,20 +1774,6 @@ inline void score_split_substruct(
     chain_align_res.u0 = u0;
     chain_align_res.invmap.assign(ylen + 1, -1);
     chain_align_res.do_vec = do_vec;
-    ChainPairAlignOptions align_opts;
-    align_opts.i_opt = i_opt;
-    align_opts.a_opt = a_opt;
-    align_opts.u_opt = u_opt;
-    align_opts.d_opt = d_opt;
-    align_opts.fast_opt = fast_opt;
-    align_opts.se_opt = false;
-    align_opts.cp_opt = false;
-    align_opts.Lnorm = Lnorm_ass;
-    align_opts.d0_scale = d0_scale;
-    align_opts.TMcut = -1;
-    align_opts.parallel_threads = 1;
-    align_opts.ss_opt = ss_opt;
-    align_opts.mol_type = mol_type;
     TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
         chain_align_res, sub.xlen_h, sub.ylen_h, sequence, align_opts);
     t0 = chain_align_res.t0;
@@ -1820,8 +1790,7 @@ inline void score_split_substruct(
     xt.resize(xlen);
     score_with_cur_transform(
         xa, ya, xt, seqx, seqy, xlen, ylen,
-        sequence, Lnorm_ass, d0_scale, i_opt, a_opt, u_opt, d_opt,
-        mol_type, 1, chain_align_res);
+        sequence, align_opts, 1, chain_align_res);
     do_vec = chain_align_res.do_vec;
     sub_align_res.TM1 = chain_align_res.TM1;
     sub_align_res.TM2 = chain_align_res.TM2;
@@ -1902,15 +1871,7 @@ inline void refine_via_split_alignment(
         const int ylen,
         const int hinge_opt,
         const std::vector<std::string> &sequence,
-        const double Lnorm_ass,
-        const double d0_scale,
-        const int i_opt,
-        const int a_opt,
-        const bool u_opt,
-        const bool d_opt,
-        const bool fast_opt,
-        const int mol_type,
-        const int ss_opt,
+        const ChainPairAlignOptions& align_opts,
         ChainPairAlignResult& chain_align_res)
 {
     AlignSubstruct sub_struct[NUM_SPLIT_VARIANTS];
@@ -1918,12 +1879,10 @@ inline void refine_via_split_alignment(
         chain_align_res.seqxA, chain_align_res.seqyA, xlen, ylen, chain_align_res.n_ali8, sub_struct);
     SubstructAlignRes sub_align_res[NUM_SPLIT_VARIANTS];
     score_split_substruct(sub_struct[0], xa, ya, seqx, seqy, chain_align_res.do_vec,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
+        xlen, ylen, sequence, align_opts,
         chain_align_res.t0, chain_align_res.u0, sub_align_res[0]);
     score_split_substruct(sub_struct[1], xa, ya, seqx, seqy, chain_align_res.do_vec,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, ss_opt,
+        xlen, ylen, sequence, align_opts,
         chain_align_res.t0, chain_align_res.u0, sub_align_res[1]);
     fill_sub_struct_align_result(sub_align_res, ylen, tu_vec, chain_align_res);
 }
@@ -2029,9 +1988,8 @@ inline void search_hinge_regions(
         CoordArray& xa, CoordArray& ya, CoordArray& xt, DoubleMatrix& tu_vec,
         const std::string &seqx, const std::string &seqy, const std::string &secx,
         const std::string &secy,
-        const int xlen, const int ylen, const int hinge_opt, const std::vector<std::string> &sequence, const double Lnorm_ass,
-        const double d0_scale, const int i_opt, const int a_opt, const bool u_opt, const bool d_opt, const bool fast_opt,
-        const int mol_type, const int ss_opt,
+        const int xlen, const int ylen, const int hinge_opt, const std::vector<std::string> &sequence,
+        const ChainPairAlignOptions& align_opts,
         ChainPairAlignResult& chain_align_res)
 {
     int r;
@@ -2065,8 +2023,9 @@ inline void search_hinge_regions(
             chain_align_res.do_vec, cur_hing_res.tmalign_res.rmsd0, cur_hing_res.tmalign_res.L_ali, cur_hing_res.tmalign_res.Liden,
             cur_hing_res.tmalign_res.TM_ali, cur_hing_res.tmalign_res.rmsd_ali,
             cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
-            xlen_h, ylen_h, sequence, Lnorm_ass,
-            d0_scale, i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, -1, 1, ss_opt);
+            xlen_h, ylen_h, sequence, align_opts.Lnorm,
+            align_opts.d0_scale, align_opts.i_opt, align_opts.a_opt, align_opts.u_opt, align_opts.d_opt,
+            align_opts.fast_opt, align_opts.mol_type, -1, 1, align_opts.ss_opt);
 
         do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
         fill_hing_res(cur_hing_res, chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5, chain_align_res.rmsd0,
@@ -2079,8 +2038,8 @@ inline void search_hinge_regions(
             cur_hing_res.tmalign_res.seqM, cur_hing_res.tmalign_res.seqxA, cur_hing_res.tmalign_res.seqyA,
             chain_align_res.do_vec, cur_hing_res.tmalign_res.rmsd0, chain_align_res.L_ali, chain_align_res.Liden, chain_align_res.TM_ali, chain_align_res.rmsd_ali,
             cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, d0_scale, i_opt,
-            a_opt, u_opt, d_opt, mol_type, 0, cur_hing_res.tmalign_res.invmap, hinge+1);
+            xlen, ylen, sequence, align_opts.Lnorm, align_opts.d0_scale, align_opts.i_opt,
+            align_opts.a_opt, align_opts.u_opt, align_opts.d_opt, align_opts.mol_type, 0, cur_hing_res.tmalign_res.invmap, hinge+1);
 
         int new_ali=0;
         for (r=0;r<cur_hing_res.tmalign_res.seqM.size();r++)
@@ -2141,24 +2100,25 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     const ParsedInput& parsed = common_inputs.parsed_input;
     bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
 
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = opts.i_opt;
+    align_opts.a_opt = opts.a_opt;
+    align_opts.u_opt = opts.u_opt;
+    align_opts.d_opt = opts.d_opt;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = opts.Lnorm_ass;
+    align_opts.d0_scale = opts.d0_scale;
+    align_opts.TMcut = -1;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = ss_opt;
+    align_opts.mol_type = mol_type;
+
     std::vector<double> tu_tmp(12,0);
     int round2=res.tu_vec.size();
     if (round2==0)
     {
-        ChainPairAlignOptions align_opts;
-        align_opts.i_opt = opts.i_opt;
-        align_opts.a_opt = opts.a_opt;
-        align_opts.u_opt = opts.u_opt;
-        align_opts.d_opt = opts.d_opt;
-        align_opts.fast_opt = fast_opt;
-        align_opts.se_opt = false;
-        align_opts.cp_opt = false;
-        align_opts.Lnorm = opts.Lnorm_ass;
-        align_opts.d0_scale = opts.d0_scale;
-        align_opts.TMcut = -1;
-        align_opts.parallel_threads = 1;
-        align_opts.ss_opt = ss_opt;
-        align_opts.mol_type = mol_type;
         TMalign_main(xa, ya, seqx, seqy, secx, secy, res,
             xlen, ylen, parsed.sequence, align_opts);
 
@@ -2179,17 +2139,14 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
 
     score_with_cur_transform(
         xa, ya, xt, seqx, seqy,
-        xlen, ylen, parsed.sequence, opts.Lnorm_ass, opts.d0_scale, opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt,
-        mol_type, 1, res);
+        xlen, ylen, parsed.sequence, align_opts, 1, res);
     if (round2) refine_via_split_alignment(
         xa, ya, xt, res.tu_vec, seqx, seqy, secx, secy,
-        xlen, ylen, hinge_opt, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, fast_opt, mol_type, ss_opt,
+        xlen, ylen, hinge_opt, parsed.sequence, align_opts,
         res);
     search_hinge_regions(
         xa, ya, xt, res.tu_vec, seqx, seqy, secx, secy,
-        xlen, ylen, hinge_opt, parsed.sequence, opts.Lnorm_ass, opts.d0_scale,
-        opts.i_opt, opts.a_opt, opts.u_opt, opts.d_opt, fast_opt, mol_type, ss_opt,
+        xlen, ylen, hinge_opt, parsed.sequence, align_opts,
         res);
 
     if (res.tu_vec.size()<=1)
