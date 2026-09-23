@@ -2085,74 +2085,74 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
     int mol_type, int hinge_opt, int ss_opt,
-    FlexAlignResult& res)
+    FlexAlignResult& flexalign_res)
 {
-    const UserOptions& opts = common_inputs.user_options;
-    const ParsedInput& parsed = common_inputs.parsed_input;
-    bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : opts.fast_opt;
+    const UserOptions& user_opts = common_inputs.user_options;
+    const ParsedInput& parsed_input = common_inputs.parsed_input;
+    bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : user_opts.fast_opt;
 
     ChainPairAlignOptions align_opts;
-    align_opts.i_opt = opts.i_opt;
-    align_opts.a_opt = opts.a_opt;
-    align_opts.u_opt = opts.u_opt;
-    align_opts.d_opt = opts.d_opt;
+    align_opts.i_opt = user_opts.i_opt;
+    align_opts.a_opt = user_opts.a_opt;
+    align_opts.u_opt = user_opts.u_opt;
+    align_opts.d_opt = user_opts.d_opt;
     align_opts.fast_opt = fast_opt;
     align_opts.se_opt = false;
     align_opts.cp_opt = false;
-    align_opts.Lnorm = opts.Lnorm_ass;
-    align_opts.d0_scale = opts.d0_scale;
+    align_opts.Lnorm = user_opts.Lnorm_ass;
+    align_opts.d0_scale = user_opts.d0_scale;
     align_opts.TMcut = -1;
     align_opts.parallel_threads = 1;
     align_opts.ss_opt = ss_opt;
     align_opts.mol_type = mol_type;
 
     std::vector<double> tu_tmp(12,0);
-    int round2=res.tu_vec.size();
+    int round2=flexalign_res.tu_vec.size();
     if (round2==0)
     {
-        TMalign_main(xa, ya, seqx, seqy, secx, secy, res,
-            xlen, ylen, parsed.sequence, align_opts);
+        TMalign_main(xa, ya, seqx, seqy, secx, secy, flexalign_res,
+            xlen, ylen, parsed_input.sequence, align_opts);
 
-        t_u2tu(res.t0,res.u0,tu_tmp);
-        res.tu_vec.push_back(tu_tmp);
+        t_u2tu(flexalign_res.t0,flexalign_res.u0,tu_tmp);
+        flexalign_res.tu_vec.push_back(tu_tmp);
     }
 
-    res.invmap.assign(ylen+1, -1);
+    flexalign_res.invmap.assign(ylen+1, -1);
 
     CoordArray xt;
     xt.resize(xlen);
 
-    res.TM1 = res.TM2 = res.TM3 = res.TM4 = res.TM5 = res.rmsd0 = 0;
-    res.seqM = "";
-    res.seqxA = "";
-    res.seqyA = "";
-    res.n_ali = res.n_ali8 = 0;
+    flexalign_res.TM1 = flexalign_res.TM2 = flexalign_res.TM3 = flexalign_res.TM4 = flexalign_res.TM5 = flexalign_res.rmsd0 = 0;
+    flexalign_res.seqM = "";
+    flexalign_res.seqxA = "";
+    flexalign_res.seqyA = "";
+    flexalign_res.n_ali = flexalign_res.n_ali8 = 0;
 
     score_with_cur_transform(
         xa, ya, xt, seqx, seqy,
-        xlen, ylen, parsed.sequence, align_opts, 1, res);
+        xlen, ylen, parsed_input.sequence, align_opts, 1, flexalign_res);
     if (round2) refine_via_split_alignment(
-        xa, ya, xt, res.tu_vec, seqx, seqy, secx, secy,
-        xlen, ylen, hinge_opt, parsed.sequence, align_opts,
-        res);
+        xa, ya, xt, flexalign_res.tu_vec, seqx, seqy, secx, secy,
+        xlen, ylen, hinge_opt, parsed_input.sequence, align_opts,
+        flexalign_res);
     search_hinge_regions(
-        xa, ya, xt, res.tu_vec, seqx, seqy, secx, secy,
-        xlen, ylen, hinge_opt, parsed.sequence, align_opts,
-        res);
+        xa, ya, xt, flexalign_res.tu_vec, seqx, seqy, secx, secy,
+        xlen, ylen, hinge_opt, parsed_input.sequence, align_opts,
+        flexalign_res);
 
-    if (res.tu_vec.size()<=1)
+    if (flexalign_res.tu_vec.size()<=1)
     {
-        return res.tu_vec.size();
+        return flexalign_res.tu_vec.size();
     }
     // re-derive alignment based on tu_vec
     denoise_segments(
-        xa, ya, xt, res.invmap, res.tu_vec, res.t0, res.u0,
-        xlen, ylen, res.seqM, res.seqxA, res.seqyA,
-        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5, res.rmsd0, res.Liden,
-        res.d0A, res.d0B, res.d0a, res.d0u, opts.d0_scale, opts.Lnorm_ass,
-        opts.a_opt, opts.u_opt, opts.d_opt, res.n_ali8);
+        xa, ya, xt, flexalign_res.invmap, flexalign_res.tu_vec, flexalign_res.t0, flexalign_res.u0,
+        xlen, ylen, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
+        flexalign_res.TM1, flexalign_res.TM2, flexalign_res.TM3, flexalign_res.TM4, flexalign_res.TM5, flexalign_res.rmsd0, flexalign_res.Liden,
+        flexalign_res.d0A, flexalign_res.d0B, flexalign_res.d0a, flexalign_res.d0u, user_opts.d0_scale, user_opts.Lnorm_ass,
+        user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, flexalign_res.n_ali8);
 
-    return res.tu_vec.size();
+    return flexalign_res.tu_vec.size();
 }
 #endif
 
@@ -2225,26 +2225,26 @@ void run_flexalign_main(
     const std::string &secx, const std::string &secy,
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
-    const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &res)
+    const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &flexalign_res)
 {
-    res.hingeNum = flexalign_main(
-        xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, res);
+    flexalign_res.hingeNum = flexalign_main(
+        xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, flexalign_res);
 
-    bool refine_fallback = (hinge_opt) && (res.hingeNum <= 1) && (res.n_ali8 < 0.6 * getmin(xlen, ylen));
+    bool refine_fallback = (hinge_opt) && (flexalign_res.hingeNum <= 1) && (flexalign_res.n_ali8 < 0.6 * getmin(xlen, ylen));
     if (refine_fallback)
     {
-        FlexAlignResult res_h;
-        res_h.tu_vec.push_back(res.tu_vec[0]);
-        tu2t_u(res.tu_vec[0], res_h.t0, res_h.u0);
+        FlexAlignResult refine_res;
+        refine_res.tu_vec.push_back(flexalign_res.tu_vec[0]);
+        tu2t_u(flexalign_res.tu_vec[0], refine_res.t0, refine_res.u0);
 
-        res_h.hingeNum = flexalign_main(
-            xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, res_h);
+        refine_res.hingeNum = flexalign_main(
+            xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, refine_res);
 
-        double TM = (res.TM1 > res.TM2) ? res.TM1 : res.TM2;
-        double TM_h = (res_h.TM1 > res_h.TM2) ? res_h.TM1 : res_h.TM2;
+        double TM = (flexalign_res.TM1 > flexalign_res.TM2) ? flexalign_res.TM1 : flexalign_res.TM2;
+        double TM_h = (refine_res.TM1 > refine_res.TM2) ? refine_res.TM1 : refine_res.TM2;
         if (TM_h > TM)
         {
-            res = res_h; 
+            flexalign_res = refine_res; 
         }
     }
 }
@@ -2257,19 +2257,19 @@ inline void align_with_flexalign_main(
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
     int mol_type, int hinge_opt,
-    FlexAlignResult& align_result)
+    FlexAlignResult& flexalign_res)
 {
     double TM_best_max = -1.0;
     for (int cur_ss_opt = 0; cur_ss_opt <= MAX_SEC_STRUCT_OPT; cur_ss_opt++)
     {
-        FlexAlignResult cur_res;
+        FlexAlignResult cur_flexalign_res;
         run_flexalign_main(xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, common_inputs, mol_type, hinge_opt, cur_ss_opt, cur_res);
-        double cur_max_TM = (cur_res.TM1 > cur_res.TM2) ? cur_res.TM1 : cur_res.TM2;
+            xlen, ylen, common_inputs, mol_type, hinge_opt, cur_ss_opt, cur_flexalign_res);
+        double cur_max_TM = (cur_flexalign_res.TM1 > cur_flexalign_res.TM2) ? cur_flexalign_res.TM1 : cur_flexalign_res.TM2;
         if (cur_max_TM > TM_best_max)
         {
             TM_best_max = cur_max_TM;
-            align_result = cur_res;
+            flexalign_res = cur_flexalign_res;
         }
     }
 }
