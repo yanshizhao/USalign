@@ -1647,14 +1647,14 @@ inline void score_with_cur_transform(
 #define NUM_SPLIT_VARIANTS 2
 
 struct AlignSubstruct {
-    std::string seqx_h;
-    std::string seqy_h;
-    std::string secx_h;
-    std::string secy_h;
-    CoordArray xa_h;
-    CoordArray ya_h;
-    int xlen_h;
-    int ylen_h;
+    std::string seqx_hinge_trimmed;
+    std::string seqy_hinge_trimmed;
+    std::string secx_hinge_trimmed;
+    std::string secy_hinge_trimmed;
+    CoordArray xa_hinge_trimmed;
+    CoordArray ya_hinge_trimmed;
+    int xlen_hinge_trimmed;
+    int ylen_hinge_trimmed;
 };
 
 struct SubstructAlignRes {
@@ -1695,22 +1695,22 @@ inline void extract_split_substruct(
 {
     AlignSubstruct &sub0 = sub[0];
     AlignSubstruct &sub1 = sub[1];
-    sub0.seqx_h.clear();
-    sub0.seqy_h.clear();
-    sub0.secx_h.resize(xlen + 1);
-    sub0.secy_h.resize(ylen + 1);
-    sub0.xa_h.resize(xlen);
-    sub0.ya_h.resize(ylen);
-    sub0.xlen_h = n_ali8;
-    sub0.ylen_h = ylen - n_ali8;
-    sub1.seqx_h.clear();
-    sub1.seqy_h.clear();
-    sub1.secx_h.resize(xlen + 1);
-    sub1.secy_h.resize(ylen + 1);
-    sub1.xa_h.resize(xlen);
-    sub1.ya_h.resize(ylen);
-    sub1.xlen_h = xlen - n_ali8;
-    sub1.ylen_h = n_ali8;
+    sub0.seqx_hinge_trimmed.clear();
+    sub0.seqy_hinge_trimmed.clear();
+    sub0.secx_hinge_trimmed.resize(xlen + 1);
+    sub0.secy_hinge_trimmed.resize(ylen + 1);
+    sub0.xa_hinge_trimmed.resize(xlen);
+    sub0.ya_hinge_trimmed.resize(ylen);
+    sub0.xlen_hinge_trimmed = n_ali8;
+    sub0.ylen_hinge_trimmed = ylen - n_ali8;
+    sub1.seqx_hinge_trimmed.clear();
+    sub1.seqy_hinge_trimmed.clear();
+    sub1.secx_hinge_trimmed.resize(xlen + 1);
+    sub1.secy_hinge_trimmed.resize(ylen + 1);
+    sub1.xa_hinge_trimmed.resize(xlen);
+    sub1.ya_hinge_trimmed.resize(ylen);
+    sub1.xlen_hinge_trimmed = xlen - n_ali8;
+    sub1.ylen_hinge_trimmed = n_ali8;
     int i = -1;
     int j = -1;
     int a0 = 0;
@@ -1723,35 +1723,35 @@ inline void extract_split_substruct(
         j += (seqyA[r] != '-');
         if (seqxA[r] != '-' && seqyA[r] != '-')
         {
-            sub0.seqx_h += seqx[i];
-            sub0.secx_h[a0] = secx[i];
-            sub0.xa_h[a0][0] = xa[i][0];
-            sub0.xa_h[a0][1] = xa[i][1];
-            sub0.xa_h[a0][2] = xa[i][2];
+            sub0.seqx_hinge_trimmed += seqx[i];
+            sub0.secx_hinge_trimmed[a0] = secx[i];
+            sub0.xa_hinge_trimmed[a0][0] = xa[i][0];
+            sub0.xa_hinge_trimmed[a0][1] = xa[i][1];
+            sub0.xa_hinge_trimmed[a0][2] = xa[i][2];
             a0++;
-            sub1.seqy_h += seqy[j];
-            sub1.secy_h[b1] = secy[j];
-            sub1.ya_h[b1][0] = ya[j][0];
-            sub1.ya_h[b1][1] = ya[j][1];
-            sub1.ya_h[b1][2] = ya[j][2];
+            sub1.seqy_hinge_trimmed += seqy[j];
+            sub1.secy_hinge_trimmed[b1] = secy[j];
+            sub1.ya_hinge_trimmed[b1][0] = ya[j][0];
+            sub1.ya_hinge_trimmed[b1][1] = ya[j][1];
+            sub1.ya_hinge_trimmed[b1][2] = ya[j][2];
             b1++;
         }
         else if (seqxA[r] != '-')
         {
-            sub1.seqx_h += seqx[i];
-            sub1.secx_h[a1] = secx[i];
-            sub1.xa_h[a1][0] = xa[i][0];
-            sub1.xa_h[a1][1] = xa[i][1];
-            sub1.xa_h[a1][2] = xa[i][2];
+            sub1.seqx_hinge_trimmed += seqx[i];
+            sub1.secx_hinge_trimmed[a1] = secx[i];
+            sub1.xa_hinge_trimmed[a1][0] = xa[i][0];
+            sub1.xa_hinge_trimmed[a1][1] = xa[i][1];
+            sub1.xa_hinge_trimmed[a1][2] = xa[i][2];
             a1++;
         }
         else if (seqyA[r] != '-')
         {
-            sub0.seqy_h += seqy[j];
-            sub0.secy_h[b0] = secy[j];
-            sub0.ya_h[b0][0] = ya[j][0];
-            sub0.ya_h[b0][1] = ya[j][1];
-            sub0.ya_h[b0][2] = ya[j][2];
+            sub0.seqy_hinge_trimmed += seqy[j];
+            sub0.secy_hinge_trimmed[b0] = secy[j];
+            sub0.ya_hinge_trimmed[b0][0] = ya[j][0];
+            sub0.ya_hinge_trimmed[b0][1] = ya[j][1];
+            sub0.ya_hinge_trimmed[b0][2] = ya[j][2];
             b0++;
         }
     }
@@ -1774,8 +1774,8 @@ inline void score_split_substruct(
     chain_align_res.u0 = u0;
     chain_align_res.invmap.assign(ylen + 1, -1);
     chain_align_res.do_vec = do_vec;
-    TMalign_main(sub.xa_h, sub.ya_h, sub.seqx_h, sub.seqy_h, sub.secx_h, sub.secy_h,
-        chain_align_res, sub.xlen_h, sub.ylen_h, sequence, align_opts);
+    TMalign_main(sub.xa_hinge_trimmed, sub.ya_hinge_trimmed, sub.seqx_hinge_trimmed, sub.seqy_hinge_trimmed, sub.secx_hinge_trimmed, sub.secy_hinge_trimmed,
+        chain_align_res, sub.xlen_hinge_trimmed, sub.ylen_hinge_trimmed, sequence, align_opts);
     t0 = chain_align_res.t0;
     u0 = chain_align_res.u0;
     do_vec = chain_align_res.do_vec;
@@ -1892,18 +1892,18 @@ static inline void extract_unalign_subcoords(
         const std::string& seqx, const std::string& seqy,
         const std::string& secx, const std::string& secy,
         const CoordArray& xa, const CoordArray& ya,
-        const int xlen_h, const int ylen_h,
-        CoordArray& xa_h, CoordArray& ya_h,
-        std::string& seqx_h, std::string& seqy_h,
-        std::string& secx_h, std::string& secy_h,
+        const int xlen_hinge_trimmed, const int ylen_hinge_trimmed,
+        CoordArray& xa_hinge_trimmed, CoordArray& ya_hinge_trimmed,
+        std::string& seqx_hinge_trimmed, std::string& seqy_hinge_trimmed,
+        std::string& secx_hinge_trimmed, std::string& secy_hinge_trimmed,
         std::vector<int>& r1toi, std::vector<int>& r2toj)
 {
-    xa_h.resize(xlen_h);
-    ya_h.resize(ylen_h);
-    secx_h.resize(xlen_h + 1);
-    secy_h.resize(ylen_h + 1);
-    r1toi.assign(xlen_h, 0);
-    r2toj.assign(ylen_h, 0);
+    xa_hinge_trimmed.resize(xlen_hinge_trimmed);
+    ya_hinge_trimmed.resize(ylen_hinge_trimmed);
+    secx_hinge_trimmed.resize(xlen_hinge_trimmed + 1);
+    secy_hinge_trimmed.resize(ylen_hinge_trimmed + 1);
+    r1toi.assign(xlen_hinge_trimmed, 0);
+    r2toj.assign(ylen_hinge_trimmed, 0);
     int i = -1, j = -1, r1 = 0, r2 = 0;
     for (size_t r = 0; r < seqxA.size(); r++)
     {
@@ -1911,21 +1911,21 @@ static inline void extract_unalign_subcoords(
         j += (seqyA[r] != '-');
         if (seqyA[r] == '-')
         {
-            seqx_h.push_back(seqx[i]);
-            secx_h[r1] = secx[i];
-            xa_h[r1][0] = xa[i][0];
-            xa_h[r1][1] = xa[i][1];
-            xa_h[r1][2] = xa[i][2];
+            seqx_hinge_trimmed.push_back(seqx[i]);
+            secx_hinge_trimmed[r1] = secx[i];
+            xa_hinge_trimmed[r1][0] = xa[i][0];
+            xa_hinge_trimmed[r1][1] = xa[i][1];
+            xa_hinge_trimmed[r1][2] = xa[i][2];
             r1toi[r1] = i;
             r1++;
         }
         if (seqxA[r] == '-')
         {
-            seqy_h.push_back(seqy[j]);
-            secy_h[r2] = secy[j];
-            ya_h[r2][0] = ya[j][0];
-            ya_h[r2][1] = ya[j][1];
-            ya_h[r2][2] = ya[j][2];
+            seqy_hinge_trimmed.push_back(seqy[j]);
+            secy_hinge_trimmed[r2] = secy[j];
+            ya_hinge_trimmed[r2][0] = ya[j][0];
+            ya_hinge_trimmed[r2][1] = ya[j][1];
+            ya_hinge_trimmed[r2][2] = ya[j][2];
             r2toj[r2] = j;
             r2++;
         }
@@ -2004,18 +2004,18 @@ inline void search_hinge_regions(
     {
         if (minlen-chain_align_res.n_ali8<5) break;
 
-        int xlen_h=xlen - chain_align_res.n_ali8;
-        int ylen_h=ylen - chain_align_res.n_ali8;
-        CoordArray xa_h;
-        CoordArray ya_h;
-        std::string seqx_h, seqy_h, secx_h, secy_h;
+        int xlen_hinge_trimmed=xlen - chain_align_res.n_ali8;
+        int ylen_hinge_trimmed=ylen - chain_align_res.n_ali8;
+        CoordArray xa_hinge_trimmed;
+        CoordArray ya_hinge_trimmed;
+        std::string seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed;
         std::vector<int> r1toi, r2toj;
 
         extract_unalign_subcoords(chain_align_res.seqxA, chain_align_res.seqyA, seqx, seqy, secx, secy, xa, ya,
-            xlen_h, ylen_h, xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, r1toi, r2toj);
+            xlen_hinge_trimmed, ylen_hinge_trimmed, xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed, r1toi, r2toj);
 
         CurHingeResult cur_hing_res;
-        TMalign_main(xa_h, ya_h, seqx_h, seqy_h, secx_h, secy_h, chain_align_res.t0, chain_align_res.u0,
+        TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed, chain_align_res.t0, chain_align_res.u0,
             cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3, cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5,
             cur_hing_res.tmalign_res.d0_0, cur_hing_res.tmalign_res.TM_0,
             cur_hing_res.tmalign_res.d0A, cur_hing_res.tmalign_res.d0B, cur_hing_res.tmalign_res.d0u, cur_hing_res.tmalign_res.d0a,
@@ -2023,7 +2023,7 @@ inline void search_hinge_regions(
             chain_align_res.do_vec, cur_hing_res.tmalign_res.rmsd0, cur_hing_res.tmalign_res.L_ali, cur_hing_res.tmalign_res.Liden,
             cur_hing_res.tmalign_res.TM_ali, cur_hing_res.tmalign_res.rmsd_ali,
             cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
-            xlen_h, ylen_h, sequence, align_opts.Lnorm,
+            xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts.Lnorm,
             align_opts.d0_scale, align_opts.i_opt, align_opts.a_opt, align_opts.u_opt, align_opts.d_opt,
             align_opts.fast_opt, align_opts.mol_type, -1, 1, align_opts.ss_opt);
 
