@@ -792,40 +792,20 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     write_rasmol_to_file(rasmol_state, fname_super, mm_opt);
 }
 
-void output_flexalign_pymol(const std::string xname, const std::string yname,
-                            const std::string fname_super, const std::vector<std::vector<double> > &tu_vec,
-                            const int ter_opt,
-                            const int mm_opt, const int split_opt, const int mirror_opt,
-                            const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-                            const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
-                            const std::string chainID1, const std::string chainID2)
+struct FlexalignPymolState
 {
-    Vec3 t; RotMat u;
-    int compress_type = 0; // uncompressed file
-    std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz; // if file is compressed
-    if (xname.size() >= 3 &&
-        xname.substr(xname.size() - 3, 3) == ".gz")
-    {
-        fin_gz.open("gunzip -c " + xname);
-        compress_type = 1;
-    }
-    else if (xname.size() >= 4 &&
-             xname.substr(xname.size() - 4, 4) == ".bz2")
-    {
-        fin_gz.open("bzcat " + xname);
-        compress_type = 2;
-    }
-    else
-#endif
-    fin.open(xname.c_str());
-
+    std::stringstream buf;
+    int infmt;
     std::map<std::string, int> resi2hinge_dict;
-    int r, i, j;
-    j = -1;
+};
+
+inline void build_pymol_hinge_map(std::map<std::string, int>& resi2hinge_dict,
+    const std::string& seqM, const std::string& seqxA,
+    const std::vector<std::string>& resi_vec1)
+{
+    int r;
+    int i;
+    int j = -1;
     char hinge_char = 0;
     int xlen = resi_vec1.size();
     int ali_len = seqM.size();
@@ -862,20 +842,48 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
         }
         resi2hinge_dict[resi_vec1[j]] = hinge_idx;
     }
+}
+
+inline void read_pymol_structure(FlexalignPymolState& pymol_state,
+    const std::string& xname, const std::vector<std::string>& resi_vec1,
+    const DoubleMatrix& tu_vec, const int mirror_opt, const int ter_opt)
+{
+    std::stringstream& buf = pymol_state.buf;
+    int& infmt = pymol_state.infmt;
+    std::map<std::string, int>& resi2hinge_dict = pymol_state.resi2hinge_dict;
     std::string resi = resi_vec1[0];
     int read_resi = resi.size() - 4;
-
-    std::stringstream buf;
-    std::stringstream buf_pymol;
+    Vec3 t; RotMat u;
+    int compress_type = 0; // uncompressed file
+    std::ifstream fin;
+#ifndef REDI_PSTREAM_H_SEEN
+    std::ifstream fin_gz;
+#else
+    redi::ipstream fin_gz; // if file is compressed
+    if (xname.size() >= 3 &&
+        xname.substr(xname.size() - 3, 3) == ".gz")
+    {
+        fin_gz.open("gunzip -c " + xname);
+        compress_type = 1;
+    }
+    else if (xname.size() >= 4 &&
+             xname.substr(xname.size() - 4, 4) == ".bz2")
+    {
+        fin_gz.open("bzcat " + xname);
+        compress_type = 2;
+    }
+    else
+#endif
+    fin.open(xname.c_str());
     std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
 
     /* for PDBx/mmCIF only */
-    std::map<std::string, int> _atom_site;
+    std::map<std::string, int> atom_site;
     size_t atom_site_pos;
     std::vector<std::string> line_vec;
-    int infmt = -1; // 0 - PDB, 3 - PDBx/mmCIF
+    infmt = -1; // 0 - PDB, 3 - PDBx/mmCIF
     int hinge = 0;
     std::string asym_id = "."; // this is similar to chainID, except that
                           // chainID is char while asym_id is a string
@@ -935,9 +943,9 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
             buf << line << '\n';
             if (line.compare(0, 11, "_atom_site."))
                 continue;
-            _atom_site.clear();
+            atom_site.clear();
             atom_site_pos = 0;
-            _atom_site[Trim(line.substr(11))] = atom_site_pos;
+            atom_site[Trim(line.substr(11))] = atom_site_pos;
             while (1)
             {
                 while (1)
@@ -961,14 +969,14 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                 }
                 if (line.compare(0, 11, "_atom_site."))
                     break;
-                _atom_site[Trim(line.substr(11))] = ++atom_site_pos;
+                atom_site[Trim(line.substr(11))] = ++atom_site_pos;
                 buf << line << '\n';
             }
 
-            if (_atom_site.count("group_PDB") *
-                    _atom_site.count("Cartn_x") *
-                    _atom_site.count("Cartn_y") *
-                    _atom_site.count("Cartn_z") ==
+            if (atom_site.count("group_PDB") *
+                    atom_site.count("Cartn_x") *
+                    atom_site.count("Cartn_y") *
+                    atom_site.count("Cartn_z") ==
                 0)
             {
                 buf << line << '\n';
@@ -980,31 +988,31 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
             {
                 line_vec.clear();
                 split(line, line_vec);
-                if (line_vec[_atom_site["group_PDB"]] != "ATOM" &&
-                    line_vec[_atom_site["group_PDB"]] != "HETATM")
+                if (line_vec[atom_site["group_PDB"]] != "ATOM" &&
+                    line_vec[atom_site["group_PDB"]] != "HETATM")
                     break;
 
-                x[0] = atof(line_vec[_atom_site["Cartn_x"]].c_str());
-                x[1] = atof(line_vec[_atom_site["Cartn_y"]].c_str());
-                x[2] = atof(line_vec[_atom_site["Cartn_z"]].c_str());
+                x[0] = atof(line_vec[atom_site["Cartn_x"]].c_str());
+                x[1] = atof(line_vec[atom_site["Cartn_y"]].c_str());
+                x[2] = atof(line_vec[atom_site["Cartn_z"]].c_str());
                 if (mirror_opt)
                     x[2] = -x[2];
 
-                if (_atom_site.count("auth_seq_id"))
-                    resi = line_vec[_atom_site["auth_seq_id"]];
+                if (atom_site.count("auth_seq_id"))
+                    resi = line_vec[atom_site["auth_seq_id"]];
                 else
-                    resi = line_vec[_atom_site["label_seq_id"]];
-                if (_atom_site.count("pdbx_PDB_ins_code") &&
-                    line_vec[_atom_site["pdbx_PDB_ins_code"]] != "?")
-                    resi += line_vec[_atom_site["pdbx_PDB_ins_code"]][0];
+                    resi = line_vec[atom_site["label_seq_id"]];
+                if (atom_site.count("pdbx_PDB_ins_code") &&
+                    line_vec[atom_site["pdbx_PDB_ins_code"]] != "?")
+                    resi += line_vec[atom_site["pdbx_PDB_ins_code"]][0];
                 else
                     resi += " ";
                 if (read_resi >= 2)
                 {
-                    if (_atom_site.count("auth_asym_id"))
-                        asym_id = line_vec[_atom_site["auth_asym_id"]];
+                    if (atom_site.count("auth_asym_id"))
+                        asym_id = line_vec[atom_site["auth_asym_id"]];
                     else
-                        asym_id = line_vec[_atom_site["label_asym_id"]];
+                        asym_id = line_vec[atom_site["label_asym_id"]];
                     if (asym_id == ".")
                         asym_id = " ";
                     resi += asym_id[0];
@@ -1015,15 +1023,15 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                 tu2t_u(tu_vec[hinge], t, u);
                 transform(t, u, x, x1);
 
-                for (atom_site_pos = 0; atom_site_pos < _atom_site.size(); atom_site_pos++)
+                for (atom_site_pos = 0; atom_site_pos < atom_site.size(); atom_site_pos++)
                 {
-                    if (atom_site_pos == _atom_site["Cartn_x"])
+                    if (atom_site_pos == atom_site["Cartn_x"])
                         buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                             << std::setw(8) << x1[0] << ' ';
-                    else if (atom_site_pos == _atom_site["Cartn_y"])
+                    else if (atom_site_pos == atom_site["Cartn_y"])
                         buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                             << std::setw(8) << x1[1] << ' ';
-                    else if (atom_site_pos == _atom_site["Cartn_z"])
+                    else if (atom_site_pos == atom_site["Cartn_z"])
                         buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                             << std::setw(8) << x1[2] << ' ';
                     else
@@ -1052,18 +1060,32 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
         fin_gz.close();
     else
         fin.close();
+}
+
+void output_flexalign_pymol(const std::string xname, const std::string yname,
+                            const std::string fname_super, const std::vector<std::vector<double> > &tu_vec,
+                            const int ter_opt,
+                            const int mm_opt, const int split_opt, const int mirror_opt,
+                            const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+                            const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
+                            const std::string chainID1, const std::string chainID2)
+{
+    FlexalignPymolState pymol_state;
+    build_pymol_hinge_map(pymol_state.resi2hinge_dict, seqM, seqxA, resi_vec1);
+    read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
 
     std::string fname_super_full = fname_super;
-    if (infmt == 0)
+    if (pymol_state.infmt == 0)
         fname_super_full += ".pdb";
-    else if (infmt == 3)
+    else if (pymol_state.infmt == 3)
         fname_super_full += ".cif";
     std::ofstream fp;
     fp.open(fname_super_full.c_str());
-    fp << buf.str();
+    fp << pymol_state.buf.str();
     fp.close();
-    buf.str(std::string()); // clear stream
 
+    std::stringstream buf_pymol;
+    int i;
     std::string chain1_sele;
     std::string chain2_sele;
     if (!mm_opt)
@@ -1214,25 +1236,6 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
         fp.close();
         buf_pymol.str(std::string());
     }
-
-    /* clean up */
-    pml_list.clear();
-
-    resi1_sele.clear();
-    resi2_sele.clear();
-
-    resi1_bond.clear();
-    resi2_bond.clear();
-
-    prev_resi1.clear();
-    prev_resi2.clear();
-
-    curr_resi1.clear();
-    curr_resi2.clear();
-
-    chain1_sele.clear();
-    chain2_sele.clear();
-    resi2hinge_dict.clear();
 }
 
 //output the final results
