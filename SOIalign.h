@@ -4,18 +4,6 @@
 
 #include "TMalign.h"
 
-void print_invmap(const std::vector<int>& invmap, const int ylen)
-{
-    int i;
-    int j;
-    for (j=0;j<ylen;j++)
-    {
-        i=invmap[j];
-        if (i>=0) std::cout<<" ("<<i<<","<<j<<")";
-    }
-    std::cout<<std::endl;
-}
-
 inline void assign_sec_bond(IntPairArray& secx_bond, const std::string& secx, const int xlen)
 {
     int i,j,starti=-1,endi=-1;
@@ -126,7 +114,6 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
     double delta_score;
     for (iter=0; iter<getmin(xlen,ylen)*5; iter++)
     {
-        //print_invmap(invmap,ylen);
         delta_score=-1;
         for (i=0;i<xlen;i++)
         {

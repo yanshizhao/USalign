@@ -618,51 +618,6 @@ inline double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coord
     return tmscore_max;
 }
 
-void smooth(std::vector<int>& sec, int len)
-{
-    int i;
-    int j;
-    //smooth single  --x-- => -----
-    for (i=2; i<len-2; i++)
-    {
-        if(sec[i]==2 || sec[i]==4)
-        {
-            j=sec[i];
-            if (sec[i-2]!=j && sec[i-1]!=j && sec[i+1]!=j && sec[i+2]!=j)
-                sec[i]=1;
-        }
-    }
-
-    //   smooth double 
-    //   --xx-- => ------
-    for (i=0; i<len-5; i++)
-    {
-        //helix
-        if (sec[i]!=2   && sec[i+1]!=2 && sec[i+2]==2 && sec[i+3]==2 &&
-            sec[i+4]!=2 && sec[i+5]!= 2)
-        {
-            sec[i+2]=1;
-            sec[i+3]=1;
-        }
-
-        //beta
-        if (sec[i]!=4   && sec[i+1]!=4 && sec[i+2]==4 && sec[i+3]==4 &&
-            sec[i+4]!=4 && sec[i+5]!= 4)
-        {
-            sec[i+2]=1;
-            sec[i+3]=1;
-        }
-    }
-
-    //smooth connect
-    for (i=0; i<len-2; i++)
-    {        
-        if (sec[i]==2 && sec[i+1]!=2 && sec[i+2]==2) sec[i+1]=2;
-        else if(sec[i]==4 && sec[i+1]!=4 && sec[i+2]==4) sec[i+1]=4;
-    }
-
-}
-
 char sec_str(double dis13, double dis14, double dis15,
             double dis24, double dis25, double dis35)
 {
@@ -729,15 +684,6 @@ void make_sec(const CoordArray& x, int len, std::string& sec)
 }
 
 // a c d b: a paired to b, c paired to d
-bool overlap(const int a1,const int b1,const int c1,const int d1,
-             const int a2,const int b2,const int c2,const int d2)
-{
-    return (a2>=a1&&a2<=c1)||(c2>=a1&&c2<=c1)||
-           (d2>=a1&&d2<=c1)||(b2>=a1&&b2<=c1)||
-           (a2>=d1&&a2<=b1)||(c2>=d1&&c2<=b1)||
-           (d2>=d1&&d2<=b1)||(b2>=d1&&b2<=b1);
-}
-
 // find base pairing stacks in RNA
 void sec_str(int len,const std::string& seq, const std::vector<std::vector<bool> >&bp,
     int a, int b,int &c, int &d)
