@@ -2435,12 +2435,10 @@ inline void write_rasmol_to_file(const TMalignRasmolState& rasmol_state,
     fp.close();
 }
 
-void output_rasmol(const std::string xname, const std::string yname,
-    const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
-    const int mm_opt, const int split_opt, const int mirror_opt,
-    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
-    const std::string chainID1, const std::string chainID2,
+void output_rasmol(const std::string xname, const std::string yname, const std::string fname_super, const Vec3& t,
+    const RotMat& u, const int ter_opt, const int mm_opt, const int split_opt,
+    const int mirror_opt, const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2, const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const double d0A, const int n_ali8,
     const double rmsd, const double TM1, const double Liden)
 {
@@ -2651,10 +2649,12 @@ void output_results(const std::string xname, const std::string yname,
             mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2, o_opt);
     else if (o_opt==2)
-        output_rasmol(xname, yname, fname_super, t, u, ter_opt,
-            mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+        output_rasmol(xname, yname, fname_super, t,
+            u, ter_opt, mm_opt, split_opt,
+            mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2,
-            xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
+            xlen, ylen, d0A, n_ali8,
+            rmsd, TM1, Liden);
 }
 
 void output_results(const std::string xname, const std::string yname,
@@ -2755,10 +2755,12 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
             mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2, o_opt);
     else if (o_opt==2)
-        output_rasmol(xname, yname, fname_super, t, u, ter_opt,
-            mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+        output_rasmol(xname, yname, fname_super, t,
+            u, ter_opt, mm_opt, split_opt,
+            mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2,
-            xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
+            xlen, ylen, d0A, n_ali8,
+            rmsd, TM1, Liden);
 }
 
 
