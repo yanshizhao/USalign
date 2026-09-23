@@ -12,11 +12,36 @@ const int gapext_blosum62=-1;
 const int gapopen_blastn=-15; //-5;
 const int gapext_blastn =-4;  //-2;
 
+struct GotohMatrix
+{
+    IntMatrix S;
+    IntMatrix JumpH;
+    IntMatrix JumpV;
+    IntMatrix P;
+    IntMatrix H;
+    IntMatrix V;
+
+    void init(const int xlen, const int ylen)
+    {
+        S.assign(xlen+1, std::vector<int>(ylen+1));
+        JumpH.assign(xlen+1, std::vector<int>(ylen+1));
+        JumpV.assign(xlen+1, std::vector<int>(ylen+1));
+        P.assign(xlen+1, std::vector<int>(ylen+1));
+        H.assign(xlen+1, std::vector<int>(ylen+1));
+        V.assign(xlen+1, std::vector<int>(ylen+1));
+    }
+};
+
 // initialize matrix in gotoh algorithm
-void init_gotoh_mat(IntMatrix& S, IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P,
-    IntMatrix& H, IntMatrix& V, const int xlen, const int ylen, const int gapopen,
+void init_gotoh_mat(GotohMatrix& m, const int xlen, const int ylen, const int gapopen,
     const int gapext, const int glocal=0, const int alt_init=1)
 {
+    IntMatrix& S = m.S;
+    IntMatrix& JumpH = m.JumpH;
+    IntMatrix& JumpV = m.JumpV;
+    IntMatrix& P = m.P;
+    IntMatrix& H = m.H;
+    IntMatrix& V = m.V;
     // fill first row/colum of JumpH,jumpV and path matrix P
     int i;
     int j;
@@ -51,9 +76,11 @@ void init_gotoh_mat(IntMatrix& S, IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix&
 
 /* locate the cell with highest alignment score. reset path after
  * the cell to zero */
-void find_highest_align_score( IntMatrix& S, IntMatrix& P,
+void find_highest_align_score( GotohMatrix& m,
     int &aln_score, const int xlen,const int ylen)
 {
+    const IntMatrix& S = m.S;
+    IntMatrix& P = m.P;
     // locate the cell with highest alignment score
     int max_aln_i=xlen;
     int max_aln_j=ylen;
@@ -99,17 +126,20 @@ void find_highest_align_score( IntMatrix& S, IntMatrix& P,
  *         0 : use yang zhang's matrix initialization, does NOT work
  *             for glocal alignment
  */
-int calculate_score_gotoh(const int xlen,const int ylen, IntMatrix& S,
-    IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, const int gapopen,const int gapext,
+int calculate_score_gotoh(const int xlen,const int ylen, GotohMatrix& m, const int gapopen,const int gapext,
     const int glocal=0, const int alt_init=1)
 {
-    IntMatrix H; H.assign(xlen+1, std::vector<int>(ylen+1));
-    IntMatrix V; V.assign(xlen+1, std::vector<int>(ylen+1));
-    
+    IntMatrix& S = m.S;
+    IntMatrix& JumpH = m.JumpH;
+    IntMatrix& JumpV = m.JumpV;
+    IntMatrix& P = m.P;
+    IntMatrix& H = m.H;
+    IntMatrix& V = m.V;
+
     // fill first row/colum of JumpH,jumpV and path matrix P
     int i;
     int j;
-    init_gotoh_mat(S, JumpH, JumpV, P, H, V, xlen, ylen,
+    init_gotoh_mat(m, xlen, ylen,
         gapopen, gapext, glocal, alt_init);
 
     // fill S and P
@@ -181,16 +211,19 @@ int calculate_score_gotoh(const int xlen,const int ylen, IntMatrix& S,
 
     // calculate alignment score and alignment path for swalign
     if (glocal>=3)
-        find_highest_align_score(S,P,aln_score,xlen,ylen);
+        find_highest_align_score(m,aln_score,xlen,ylen);
 
     // release memory
     return aln_score; // final alignment score
 }
 
 inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
-    IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
+    const GotohMatrix& m, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
 {
+    const IntMatrix& JumpH = m.JumpH;
+    const IntMatrix& JumpV = m.JumpV;
+    const IntMatrix& P = m.P;
     int i;
     int j;
     int gaplen;
@@ -258,9 +291,12 @@ inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
 
 
 inline void trace_back_sw(const std::string& seqx, const std::string& seqy,
-    IntMatrix& JumpH, IntMatrix& JumpV, IntMatrix& P, std::string& seqxA, std::string& seqyA,
+    const GotohMatrix& m, std::string& seqxA, std::string& seqyA,
     const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
 {
+    const IntMatrix& JumpH = m.JumpH;
+    const IntMatrix& JumpV = m.JumpV;
+    const IntMatrix& P = m.P;
     int i;
     int j;
     int gaplen;
@@ -362,15 +398,10 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
     std::vector<int>& invmap, const int invmap_only=0, const int glocal=0)
 {
-    IntMatrix JumpH;
-    IntMatrix JumpV;
-    IntMatrix P;
-    IntMatrix S;
-    JumpH.assign(xlen+1, std::vector<int>(ylen+1));
-    JumpV.assign(xlen+1, std::vector<int>(ylen+1));
-    P.assign(xlen+1, std::vector<int>(ylen+1));
-    S.assign(xlen+1, std::vector<int>(ylen+1));
-    
+    GotohMatrix m;
+    m.init(xlen, ylen);
+    IntMatrix& S = m.S;
+
     int aln_score;
     int gapopen=gapopen_blosum62;
     int gapext =gapext_blosum62;
@@ -396,15 +427,15 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
         }
     }
 
-    aln_score=calculate_score_gotoh(xlen, ylen, S, JumpH, JumpV, P,
+    aln_score=calculate_score_gotoh(xlen, ylen, m,
         gapopen, gapext, glocal);
 
     seqxA.clear();
     seqyA.clear();
 
-    if (glocal<3) trace_back_gotoh(seqx, seqy, JumpH, JumpV, P,
+    if (glocal<3) trace_back_gotoh(seqx, seqy, m,
             seqxA, seqyA, xlen, ylen, invmap, invmap_only);
-    else trace_back_sw(seqx, seqy, JumpH, JumpV, P, seqxA, seqyA,
+    else trace_back_sw(seqx, seqy, m, seqxA, seqyA,
             xlen, ylen, invmap, invmap_only);
 
     return aln_score; // aligment score
