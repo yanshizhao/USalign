@@ -2462,6 +2462,33 @@ inline void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
     rasmol_state.idx_vec.clear();
 }
 
+inline void write_rasmol_to_file(const TMalignRasmolState& rasmol_state,
+    const std::string& fname_super, const int mm_opt)
+{
+    std::ofstream fp;
+    if (!mm_opt)
+    {
+        fp.open((fname_super).c_str());
+        fp<<rasmol_state.buf.str();
+        fp.close();
+    }
+    fp.open((fname_super+"_all").c_str());
+    fp<<rasmol_state.buf_all.str();
+    fp.close();
+    if (!mm_opt)
+    {
+        fp.open((fname_super+"_atm").c_str());
+        fp<<rasmol_state.buf_atm.str();
+        fp.close();
+    }
+    fp.open((fname_super+"_all_atm").c_str());
+    fp<<rasmol_state.buf_all_atm.str();
+    fp.close();
+    fp.open((fname_super+"_all_atm_lig").c_str());
+    fp<<rasmol_state.buf_all_atm_lig.str();
+    fp.close();
+}
+
 void output_rasmol(const std::string xname, const std::string yname,
     const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
@@ -2549,29 +2576,7 @@ void output_rasmol(const std::string xname, const std::string yname,
     read_rasmol_structure2(rasmol_state, yname, ter_opt, mm_opt);
 
 
-    // write rasmol script
-    std::ofstream fp;
-    if (!mm_opt)
-    {
-        fp.open((fname_super).c_str());
-        fp<<rasmol_state.buf.str();
-        fp.close();
-    }
-    fp.open((fname_super+"_all").c_str());
-    fp<<rasmol_state.buf_all.str();
-    fp.close();
-    if (!mm_opt)
-    {
-        fp.open((fname_super+"_atm").c_str());
-        fp<<rasmol_state.buf_atm.str();
-        fp.close();
-    }
-    fp.open((fname_super+"_all_atm").c_str());
-    fp<<rasmol_state.buf_all_atm.str();
-    fp.close();
-    fp.open((fname_super+"_all_atm_lig").c_str());
-    fp<<rasmol_state.buf_all_atm_lig.str();
-    fp.close();
+    write_rasmol_to_file(rasmol_state, fname_super, mm_opt);
 }
 
 // extract rotation matrix based on TMscore8
