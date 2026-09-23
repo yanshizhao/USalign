@@ -2121,21 +2121,17 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
 
 
 
-inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c,
-    const std::string& seqx, const std::string& seqy, const std::string& secx, const std::string& secy,
-    Vec3& t0, RotMat& u0,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    std::string &seqM, std::string &seqxA, std::string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
-    CharMatrix& mask,
-    const std::vector<std::string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut=-1)
+inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy, Vec3& t0, RotMat& u0,
+    double &TM1, double &TM2, double &TM3, double &TM4,
+    double &TM5, double &d0_0, double &TM_0, double &d0A,
+    double &d0B, double &d0u, double &d0a, double &d0_out,
+    std::string &seqM, std::string &seqxA, std::string &seqyA, double &rmsd0,
+    int &L_ali, double &Liden, double &TM_ali, double &rmsd_ali,
+    int &n_ali, int &n_ali8, const int xlen, const int ylen,
+    CharMatrix& mask, const std::vector<std::string> sequence, const double Lnorm_ass, const double d0_scale,
+    const int i_opt, const int a_opt, const bool u_opt, const bool d_opt,
+    const bool fast_opt, const int mol_type, const double TMcut=-1)
 {
 
 
@@ -2820,12 +2816,12 @@ inline void MMalign_dimer(double & total_score,
 
     double Lnorm_ass=len_aa+len_na;
 
-    if (TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, mask, sequence, Lnorm_ass, d0_scale,
-        1, false, true, false, fast_opt, mol_type, -1) != 0)
+    if (TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
+        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0, d0A,
+        d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, rmsd0,
+        L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8, xlen, ylen,
+        mask, sequence, Lnorm_ass, d0_scale, 1, false, true, false,
+        fast_opt, mol_type, -1) != 0)
     {
         return;   // no alignment: skip re-scoring, keep total_score unchanged
     }
