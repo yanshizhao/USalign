@@ -797,6 +797,12 @@ struct FlexalignPymolState
     std::stringstream buf;
     int infmt;
     std::map<std::string, int> resi2hinge_dict;
+    std::string chain1_sele;
+    std::string chain2_sele;
+    std::string resi1_sele;
+    std::string resi2_sele;
+    std::string resi1_bond;
+    std::string resi2_bond;
 };
 
 inline void build_pymol_hinge_map(std::map<std::string, int>& resi2hinge_dict,
@@ -1062,68 +1068,43 @@ inline void read_pymol_structure(FlexalignPymolState& pymol_state,
         fin.close();
 }
 
-void output_flexalign_pymol(const std::string xname, const std::string yname,
-                            const std::string fname_super, const std::vector<std::vector<double> > &tu_vec,
-                            const int ter_opt,
-                            const int mm_opt, const int split_opt, const int mirror_opt,
-                            const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-                            const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
-                            const std::string chainID1, const std::string chainID2)
+inline void build_pymol_chain_sele(FlexalignPymolState& pymol_state,
+    const std::string& chainID1, const std::string& chainID2,
+    const int mm_opt, const int split_opt, const int ter_opt)
 {
-    FlexalignPymolState pymol_state;
-    build_pymol_hinge_map(pymol_state.resi2hinge_dict, seqM, seqxA, resi_vec1);
-    read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
-
-    std::string fname_super_full = fname_super;
-    if (pymol_state.infmt == 0)
-        fname_super_full += ".pdb";
-    else if (pymol_state.infmt == 3)
-        fname_super_full += ".cif";
-    std::ofstream fp;
-    fp.open(fname_super_full.c_str());
-    fp << pymol_state.buf.str();
-    fp.close();
-
-    std::stringstream buf_pymol;
     int i;
-    std::string chain1_sele;
-    std::string chain2_sele;
     if (!mm_opt)
     {
         if (split_opt == 2 && ter_opt >= 1) // align one chain from model 1
         {
-            chain1_sele = " and c. " + chainID1.substr(1);
-            chain2_sele = " and c. " + chainID2.substr(1);
+            pymol_state.chain1_sele = " and c. " + chainID1.substr(1);
+            pymol_state.chain2_sele = " and c. " + chainID2.substr(1);
         }
         else if (split_opt == 2 && ter_opt == 0) // align one chain from each model
         {
             for (i = 1; i < chainID1.size(); i++)
                 if (chainID1[i] == ',')
                     break;
-            chain1_sele = " and c. " + chainID1.substr(i + 1);
+            pymol_state.chain1_sele = " and c. " + chainID1.substr(i + 1);
             for (i = 1; i < chainID2.size(); i++)
                 if (chainID2[i] == ',')
                     break;
-            chain2_sele = " and c. " + chainID2.substr(i + 1);
+            pymol_state.chain2_sele = " and c. " + chainID2.substr(i + 1);
         }
     }
+}
 
-    /* extract aligned region */
+inline void build_pymol_resi_sele(FlexalignPymolState& pymol_state,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
+    const int mm_opt)
+{
+    int i;
     int i1 = -1;
     int i2 = -1;
-    std::string resi1_sele;
-    std::string resi2_sele;
-    std::string resi1_bond;
-    std::string resi2_bond;
     std::string prev_resi1;
     std::string prev_resi2;
-    std::string curr_resi1;
-    std::string curr_resi2;
-    if (mm_opt)
-    {
-        ;
-    }
-    else
+    if (!mm_opt)
     {
         for (i = 0; i < seqM.size(); i++)
         {
@@ -1131,37 +1112,48 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
             i2 += (seqyA[i] != '-');
             if (seqM[i] == ' ' || seqxA[i] == '*')
                 continue;
-            curr_resi1 = resi_vec1[i1].substr(0, 4);
-            curr_resi2 = resi_vec2[i2].substr(0, 4);
-            if (resi1_sele.size() == 0)
-                resi1_sele = "i. " + curr_resi1;
+            std::string curr_resi1 = resi_vec1[i1].substr(0, 4);
+            std::string curr_resi2 = resi_vec2[i2].substr(0, 4);
+            if (pymol_state.resi1_sele.size() == 0)
+                pymol_state.resi1_sele = "i. " + curr_resi1;
             else
             {
-                resi1_sele += " or i. " + curr_resi1;
-                resi1_bond += "bond structure1 and i. " + prev_resi1 +
+                pymol_state.resi1_sele += " or i. " + curr_resi1;
+                pymol_state.resi1_bond += "bond structure1 and i. " + prev_resi1 +
                               ", i. " + curr_resi1 + "\n";
             }
-            if (resi2_sele.size() == 0)
-                resi2_sele = "i. " + curr_resi2;
+            if (pymol_state.resi2_sele.size() == 0)
+                pymol_state.resi2_sele = "i. " + curr_resi2;
             else
             {
-                resi2_sele += " or i. " + curr_resi2;
-                resi2_bond += "bond structure2 and i. " + prev_resi2 +
+                pymol_state.resi2_sele += " or i. " + curr_resi2;
+                pymol_state.resi2_bond += "bond structure2 and i. " + prev_resi2 +
                               ", i. " + curr_resi2 + "\n";
             }
             prev_resi1 = curr_resi1;
             prev_resi2 = curr_resi2;
-            // if (seqM[i]!=':') continue;
         }
-        if (resi1_sele.size())
-            resi1_sele = " and ( " + resi1_sele + ")";
-        if (resi2_sele.size())
-            resi2_sele = " and ( " + resi2_sele + ")";
+        if (pymol_state.resi1_sele.size())
+            pymol_state.resi1_sele = " and ( " + pymol_state.resi1_sele + ")";
+        if (pymol_state.resi2_sele.size())
+            pymol_state.resi2_sele = " and ( " + pymol_state.resi2_sele + ")";
     }
+}
 
-    /* write pymol script */
+inline void write_pymol_scripts(const FlexalignPymolState& pymol_state,
+    const std::string& fname_super, const std::string& fname_super_full,
+    const std::string& yname, const int mm_opt, const int ter_opt)
+{
+    const std::string& chain1_sele = pymol_state.chain1_sele;
+    const std::string& chain2_sele = pymol_state.chain2_sele;
+    const std::string& resi1_sele = pymol_state.resi1_sele;
+    const std::string& resi2_sele = pymol_state.resi2_sele;
+    const std::string& resi1_bond = pymol_state.resi1_bond;
+    const std::string& resi2_bond = pymol_state.resi2_bond;
+    std::stringstream buf_pymol;
+    std::ofstream fp;
     std::vector<std::string> pml_list;
-    pml_list.push_back(fname_super + "");
+    pml_list.push_back(fname_super);
     pml_list.push_back(fname_super + "_atm");
     pml_list.push_back(fname_super + "_all");
     pml_list.push_back(fname_super + "_all_atm");
@@ -1236,6 +1228,33 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
         fp.close();
         buf_pymol.str(std::string());
     }
+}
+
+void output_flexalign_pymol(const std::string xname, const std::string yname,
+                            const std::string fname_super, const std::vector<std::vector<double> > &tu_vec,
+                            const int ter_opt,
+                            const int mm_opt, const int split_opt, const int mirror_opt,
+                            const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+                            const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
+                            const std::string chainID1, const std::string chainID2)
+{
+    FlexalignPymolState pymol_state;
+    build_pymol_hinge_map(pymol_state.resi2hinge_dict, seqM, seqxA, resi_vec1);
+    read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
+
+    std::string fname_super_full = fname_super;
+    if (pymol_state.infmt == 0)
+        fname_super_full += ".pdb";
+    else if (pymol_state.infmt == 3)
+        fname_super_full += ".cif";
+    std::ofstream fp;
+    fp.open(fname_super_full.c_str());
+    fp << pymol_state.buf.str();
+    fp.close();
+
+    build_pymol_chain_sele(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt);
+    build_pymol_resi_sele(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
+    write_pymol_scripts(pymol_state, fname_super, fname_super_full, yname, mm_opt, ter_opt);
 }
 
 //output the final results
