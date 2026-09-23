@@ -293,7 +293,7 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                 else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                 if (rasmol_state.line.size()) break;
             }
-            if (rasmol_state.line.compare(0,11,"rasmol_state.atom_site.")) continue;
+            if (rasmol_state.line.compare(0,11,"_atom_site.")) continue;
             rasmol_state.atom_site.clear();
             rasmol_state.atom_site_pos=0;
             rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=rasmol_state.atom_site_pos;
@@ -302,7 +302,7 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                 if (fin.good()) getline(fin, rasmol_state.line);
                 else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
                 if (rasmol_state.line.size()==0) continue;
-                if (rasmol_state.line.compare(0,11,"rasmol_state.atom_site.")) break;
+                if (rasmol_state.line.compare(0,11,"_atom_site.")) break;
                 rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=++rasmol_state.atom_site_pos;
             }
 
@@ -551,7 +551,7 @@ inline void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
                 else PrintErrorAndQuit("ERROR! Unexpected end of "+yname);
                 if (rasmol_state.line.size()) break;
             }
-            if (rasmol_state.line.compare(0,11,"rasmol_state.atom_site.")) continue;
+            if (rasmol_state.line.compare(0,11,"_atom_site.")) continue;
             rasmol_state.atom_site.clear();
             rasmol_state.atom_site_pos=0;
             rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=rasmol_state.atom_site_pos;
@@ -560,7 +560,7 @@ inline void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
                 if (fin.good()) getline(fin, rasmol_state.line);
                 else PrintErrorAndQuit("ERROR! Unexpected end of "+yname);
                 if (rasmol_state.line.size()==0) continue;
-                if (rasmol_state.line.compare(0,11,"rasmol_state.atom_site.")) break;
+                if (rasmol_state.line.compare(0,11,"_atom_site.")) break;
                 rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=++rasmol_state.atom_site_pos;
             }
 
