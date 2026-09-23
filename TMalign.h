@@ -1997,6 +1997,38 @@ struct TMalignRasmolState
     std::string chain2_sele;
 };
 
+inline void normalize_mmcif_atom_fields(
+    std::map<std::string,int>& atom_site,
+    const std::vector<std::string>& line_vec,
+    std::string& atom, std::string& AA, std::string& resi, std::string& inscode)
+{
+    atom=line_vec[atom_site["label_atom_id"]];
+    if (atom[0]=='"') atom=atom.substr(1);
+    if (atom.size() && atom[atom.size()-1]=='"')
+        atom=atom.substr(0,atom.size()-1);
+    if      (atom.size()==0) atom="    ";
+    else if (atom.size()==1) atom=" "+atom+"  ";
+    else if (atom.size()==2) atom=" "+atom+" ";
+    else if (atom.size()==3) atom=" "+atom;
+    else if (atom.size()>=5) atom=atom.substr(0,4);
+
+    AA=line_vec[atom_site["label_comp_id"]];
+    if      (AA.size()==1) AA="  "+AA;
+    else if (AA.size()==2) AA=" " +AA;
+    else if (AA.size()>=4) AA=AA.substr(0,3);
+
+    if (atom_site.count("auth_seq_id"))
+        resi=line_vec[atom_site["auth_seq_id"]];
+    else resi=line_vec[atom_site["label_seq_id"]];
+    while (resi.size()<4) resi=' '+resi;
+    if (resi.size()>4) resi=resi.substr(0,4);
+
+    inscode=' ';
+    if (atom_site.count("pdbx_PDB_ins_code") &&
+        line_vec[atom_site["pdbx_PDB_ins_code"]]!="?")
+        inscode=line_vec[atom_site["pdbx_PDB_ins_code"]][0];
+}
+
 inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
     const std::string& xname, const Vec3& t, const RotMat& u,
     const int ter_opt, const int mm_opt, const int mirror_opt)
@@ -2115,31 +2147,8 @@ inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
                     rasmol_state.line_vec[rasmol_state._atom_site["label_alt_id"]]=="." ||
                     rasmol_state.line_vec[rasmol_state._atom_site["label_alt_id"]]=="A")
                 {
-                    rasmol_state.atom=rasmol_state.line_vec[rasmol_state._atom_site["label_atom_id"]];
-                    if (rasmol_state.atom[0]=='"') rasmol_state.atom=rasmol_state.atom.substr(1);
-                    if (rasmol_state.atom.size() && rasmol_state.atom[rasmol_state.atom.size()-1]=='"')
-                        rasmol_state.atom=rasmol_state.atom.substr(0,rasmol_state.atom.size()-1);
-                    if      (rasmol_state.atom.size()==0) rasmol_state.atom="    ";
-                    else if (rasmol_state.atom.size()==1) rasmol_state.atom=" "+rasmol_state.atom+"  ";
-                    else if (rasmol_state.atom.size()==2) rasmol_state.atom=" "+rasmol_state.atom+" ";
-                    else if (rasmol_state.atom.size()==3) rasmol_state.atom=" "+rasmol_state.atom;
-                    else if (rasmol_state.atom.size()>=5) rasmol_state.atom=rasmol_state.atom.substr(0,4);
-            
-                    rasmol_state.AA=rasmol_state.line_vec[rasmol_state._atom_site["label_comp_id"]]; // residue name
-                    if      (rasmol_state.AA.size()==1) rasmol_state.AA="  "+rasmol_state.AA;
-                    else if (rasmol_state.AA.size()==2) rasmol_state.AA=" " +rasmol_state.AA;
-                    else if (rasmol_state.AA.size()>=4) rasmol_state.AA=rasmol_state.AA.substr(0,3);
-                
-                    if (rasmol_state._atom_site.count("auth_seq_id"))
-                        rasmol_state.resi=rasmol_state.line_vec[rasmol_state._atom_site["auth_seq_id"]];
-                    else rasmol_state.resi=rasmol_state.line_vec[rasmol_state._atom_site["label_seq_id"]];
-                    while (rasmol_state.resi.size()<4) rasmol_state.resi=' '+rasmol_state.resi;
-                    if (rasmol_state.resi.size()>4) rasmol_state.resi=rasmol_state.resi.substr(0,4);
-                
-                    rasmol_state.inscode=' ';
-                    if (rasmol_state._atom_site.count("pdbx_PDB_ins_code") && 
-                        rasmol_state.line_vec[rasmol_state._atom_site["pdbx_PDB_ins_code"]]!="?")
-                        rasmol_state.inscode=rasmol_state.line_vec[rasmol_state._atom_site["pdbx_PDB_ins_code"]][0];
+                    normalize_mmcif_atom_fields(rasmol_state._atom_site, rasmol_state.line_vec,
+                        rasmol_state.atom, rasmol_state.AA, rasmol_state.resi, rasmol_state.inscode);
 
                     if (rasmol_state._atom_site.count("auth_asym_id"))
                     {
@@ -2336,31 +2345,8 @@ inline void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
                     rasmol_state.line_vec[rasmol_state._atom_site["label_alt_id"]]=="." ||
                     rasmol_state.line_vec[rasmol_state._atom_site["label_alt_id"]]=="A")
                 {
-                    rasmol_state.atom=rasmol_state.line_vec[rasmol_state._atom_site["label_atom_id"]];
-                    if (rasmol_state.atom[0]=='"') rasmol_state.atom=rasmol_state.atom.substr(1);
-                    if (rasmol_state.atom.size() && rasmol_state.atom[rasmol_state.atom.size()-1]=='"')
-                        rasmol_state.atom=rasmol_state.atom.substr(0,rasmol_state.atom.size()-1);
-                    if      (rasmol_state.atom.size()==0) rasmol_state.atom="    ";
-                    else if (rasmol_state.atom.size()==1) rasmol_state.atom=" "+rasmol_state.atom+"  ";
-                    else if (rasmol_state.atom.size()==2) rasmol_state.atom=" "+rasmol_state.atom+" ";
-                    else if (rasmol_state.atom.size()==3) rasmol_state.atom=" "+rasmol_state.atom;
-                    else if (rasmol_state.atom.size()>=5) rasmol_state.atom=rasmol_state.atom.substr(0,4);
-            
-                    rasmol_state.AA=rasmol_state.line_vec[rasmol_state._atom_site["label_comp_id"]]; // residue name
-                    if      (rasmol_state.AA.size()==1) rasmol_state.AA="  "+rasmol_state.AA;
-                    else if (rasmol_state.AA.size()==2) rasmol_state.AA=" " +rasmol_state.AA;
-                    else if (rasmol_state.AA.size()>=4) rasmol_state.AA=rasmol_state.AA.substr(0,3);
-                
-                    if (rasmol_state._atom_site.count("auth_seq_id"))
-                        rasmol_state.resi=rasmol_state.line_vec[rasmol_state._atom_site["auth_seq_id"]];
-                    else rasmol_state.resi=rasmol_state.line_vec[rasmol_state._atom_site["label_seq_id"]];
-                    while (rasmol_state.resi.size()<4) rasmol_state.resi=' '+rasmol_state.resi;
-                    if (rasmol_state.resi.size()>4) rasmol_state.resi=rasmol_state.resi.substr(0,4);
-                
-                    rasmol_state.inscode=' ';
-                    if (rasmol_state._atom_site.count("pdbx_PDB_ins_code") && 
-                        rasmol_state.line_vec[rasmol_state._atom_site["pdbx_PDB_ins_code"]]!="?")
-                        rasmol_state.inscode=rasmol_state.line_vec[rasmol_state._atom_site["pdbx_PDB_ins_code"]][0];
+                    normalize_mmcif_atom_fields(rasmol_state._atom_site, rasmol_state.line_vec,
+                        rasmol_state.atom, rasmol_state.AA, rasmol_state.resi, rasmol_state.inscode);
                     
                     if (rasmol_state._atom_site.count("auth_asym_id"))
                     {
