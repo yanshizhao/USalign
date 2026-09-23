@@ -2121,6 +2121,79 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
 
 
 
+inline void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, CoordArray& xt, const std::string& seqx,
+    const std::string& seqy, const std::vector<int>& m1, const std::vector<int>& m2, const int n_ali8,
+    const double d0_out, const int xlen, const int ylen, const Vec3& t0,
+    const RotMat& u0, double& Liden, std::string& seqxA, std::string& seqyA,
+    std::string& seqM)
+{
+    double d;
+    // derive alignment from superposition
+    int ali_len=xlen+ylen; //maximum length of alignment
+    seqxA.assign(ali_len,'-');
+    seqM.assign( ali_len,' ');
+    seqyA.assign(ali_len,'-');
+
+    do_rotation(xa_c, xt, xlen, t0, u0);
+
+    int kk=0;
+    int i_old=0;
+    int j_old=0;
+    d=0;
+    for(int k=0; k<n_ali8; k++)
+    {
+        for(int i=i_old; i<m1[k]; i++)
+        {
+            //align x to gap
+            seqxA[kk]=seqx[i];
+            seqyA[kk]='-';
+            seqM[kk]=' ';                    
+            kk++;
+        }
+
+        for(int j=j_old; j<m2[k]; j++)
+        {
+            //align y to gap
+            seqxA[kk]='-';
+            seqyA[kk]=seqy[j];
+            seqM[kk]=' ';
+            kk++;
+        }
+
+        seqxA[kk]=seqx[m1[k]];
+        seqyA[kk]=seqy[m2[k]];
+        Liden+=(seqxA[kk]==seqyA[kk]);
+        d=sqrt(dist(xt[m1[k]], ya_c[m2[k]]));
+        if(d<d0_out) seqM[kk]=':';
+        else         seqM[kk]='.';
+        kk++;  
+        i_old=m1[k]+1;
+        j_old=m2[k]+1;
+    }
+
+    //tail
+    for(int i=i_old; i<xlen; i++)
+    {
+        //align x to gap
+        seqxA[kk]=seqx[i];
+        seqyA[kk]='-';
+        seqM[kk]=' ';
+        kk++;
+    }    
+    for(int j=j_old; j<ylen; j++)
+    {
+        //align y to gap
+        seqxA[kk]='-';
+        seqyA[kk]=seqy[j];
+        seqM[kk]=' ';
+        kk++;
+    }
+    seqxA=seqxA.substr(0,kk);
+    seqyA=seqyA.substr(0,kk);
+    seqM =seqM.substr(0,kk);
+
+}
+
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4,
@@ -2659,70 +2732,8 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
         TM_0=TM5;
     }
 
-    // derive alignment from superposition
-    int ali_len=xlen+ylen; //maximum length of alignment
-    seqxA.assign(ali_len,'-');
-    seqM.assign( ali_len,' ');
-    seqyA.assign(ali_len,'-');
-
-    do_rotation(xa_c, xt, xlen, t0, u0);
-
-    int kk=0;
-    int i_old=0;
-    int j_old=0;
-    d=0;
-    for(int k=0; k<n_ali8; k++)
-    {
-        for(int i=i_old; i<m1[k]; i++)
-        {
-            //align x to gap
-            seqxA[kk]=seqx[i];
-            seqyA[kk]='-';
-            seqM[kk]=' ';                    
-            kk++;
-        }
-
-        for(int j=j_old; j<m2[k]; j++)
-        {
-            //align y to gap
-            seqxA[kk]='-';
-            seqyA[kk]=seqy[j];
-            seqM[kk]=' ';
-            kk++;
-        }
-
-        seqxA[kk]=seqx[m1[k]];
-        seqyA[kk]=seqy[m2[k]];
-        Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(xt[m1[k]], ya_c[m2[k]]));
-        if(d<d0_out) seqM[kk]=':';
-        else         seqM[kk]='.';
-        kk++;  
-        i_old=m1[k]+1;
-        j_old=m2[k]+1;
-    }
-
-    //tail
-    for(int i=i_old; i<xlen; i++)
-    {
-        //align x to gap
-        seqxA[kk]=seqx[i];
-        seqyA[kk]='-';
-        seqM[kk]=' ';
-        kk++;
-    }    
-    for(int j=j_old; j<ylen; j++)
-    {
-        //align y to gap
-        seqxA[kk]='-';
-        seqyA[kk]=seqy[j];
-        seqM[kk]=' ';
-        kk++;
-    }
-    seqxA=seqxA.substr(0,kk);
-    seqyA=seqyA.substr(0,kk);
-    seqM =seqM.substr(0,kk);
-
+    derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, m1, m2, n_ali8, d0_out, xlen, ylen,
+        t0, u0, Liden, seqxA, seqyA, seqM);
     return 0; // zero for no exception
 }
 
