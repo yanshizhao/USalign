@@ -1997,88 +1997,11 @@ struct TMalignRasmolState
     std::string chain2_sele;
 };
 
-void output_rasmol(const std::string xname, const std::string yname,
-    const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
-    const int mm_opt, const int split_opt, const int mirror_opt,
-    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
-    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
-    const std::string chainID1, const std::string chainID2,
-    const int xlen, const int ylen, const double d0A, const int n_ali8,
-    const double rmsd, const double TM1, const double Liden)
+inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
+    const std::string& xname, const Vec3& t, const RotMat& u,
+    const int ter_opt, const int mm_opt, const int mirror_opt)
 {
-    TMalignRasmolState rasmol_state;
-    rasmol_state.is_mmcif=false;
-    rasmol_state.ca_idx1=0;
-    rasmol_state.lig_idx1=0;
-    rasmol_state.ca_idx2=0;
-    rasmol_state.lig_idx2=0;
-    rasmol_state.i1=-1;
-    rasmol_state.i2=-1;
-
-
-    rasmol_state.buf_tm<<"REMARK US-align"
-        <<"\nREMARK Structure 1:"<<std::setw(11)<<std::left<<xname+chainID1<<" Size= "<<xlen
-        <<"\nREMARK Structure 2:"<<std::setw(11)<<yname+chainID2<<std::right<<" Size= "<<ylen
-        <<" (TM-score is normalized by "<<std::setw(4)<<ylen<<", d0="
-        <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<std::setw(6)<<d0A<<")"
-        <<"\nREMARK Aligned length="<<std::setw(4)<<n_ali8<<", RMSD="
-        <<std::setw(6)<<setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
-        <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
-        <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
-        <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
-    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
-    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+rasmol_state.buf_tm.str();
-    if (!mm_opt) rasmol_state.buf<<rasmol_CA_header;
-    rasmol_state.buf_all<<rasmol_CA_header;
-    if (!mm_opt) rasmol_state.buf_atm<<rasmol_cartoon_header;
-    rasmol_state.buf_all_atm<<rasmol_cartoon_header;
-    rasmol_state.buf_all_atm_lig<<rasmol_cartoon_header;
-
-    // selecting chains for -mol
     int i;
-    if (!mm_opt)
-    {
-        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
-        {
-            rasmol_state.chain1_sele=chainID1.substr(1);
-            rasmol_state.chain2_sele=chainID2.substr(1);
-        }
-        else if (split_opt==2 && ter_opt==0) // align one chain from each model
-        {
-            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
-            rasmol_state.chain1_sele=chainID1.substr(i+1);
-            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
-            rasmol_state.chain2_sele=chainID2.substr(i+1);
-        }
-    }
-
-
-    // for PDBx/mmCIF only
-
-    // used for CONECT record of chain1
-
-    // used for CONECT record of chain2
-
-    // extract aligned region
-    if (!mm_opt)
-    {
-        for (i=0;i<seqM.size();i++)
-        {
-            rasmol_state.i1+=(seqxA[i]!='-');
-            rasmol_state.i2+=(seqyA[i]!='-');
-            if (seqM[i]==' ') continue;
-            rasmol_state.resi_aln1.push_back(resi_vec1[rasmol_state.i1].substr(0,4));
-            rasmol_state.resi_aln2.push_back(resi_vec2[rasmol_state.i2].substr(0,4));
-            if (seqM[i]!=':') continue;
-            rasmol_state.buf    <<"select "<<rasmol_state.resi_aln1.back()<<":A,"
-                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
-            rasmol_state.buf_all<<"select "<<rasmol_state.resi_aln1.back()<<":A,"
-                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
-        }
-        rasmol_state.buf<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
-    }
-    rasmol_state.buf_all<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
-
     std::ifstream fin;
     // read first file
     rasmol_state.after_ter=false;
@@ -2321,7 +2244,13 @@ void output_rasmol(const std::string xname, const std::string yname,
     if (!mm_opt) for (i=1;i<rasmol_state.idx_vec.size();i++) rasmol_state.buf<<"CONECT"
         <<std::setw(5)<<rasmol_state.idx_vec[i-1]%100000<<std::setw(5)<<rasmol_state.idx_vec[i]%100000<<'\n';
     rasmol_state.idx_vec.clear();
+}
 
+inline void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
+    const std::string& yname, const int ter_opt, const int mm_opt)
+{
+    int i;
+    std::ifstream fin;
     // read second file
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
@@ -2531,6 +2460,94 @@ void output_rasmol(const std::string xname, const std::string yname,
     for (i=1;i<rasmol_state.idx_vec.size();i++) rasmol_state.buf<<"CONECT"
         <<std::setw(5)<<rasmol_state.idx_vec[i-1]%100000<<std::setw(5)<<rasmol_state.idx_vec[i]%100000<<'\n';
     rasmol_state.idx_vec.clear();
+}
+
+void output_rasmol(const std::string xname, const std::string yname,
+    const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
+    const int mm_opt, const int split_opt, const int mirror_opt,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2,
+    const int xlen, const int ylen, const double d0A, const int n_ali8,
+    const double rmsd, const double TM1, const double Liden)
+{
+    TMalignRasmolState rasmol_state;
+    rasmol_state.is_mmcif=false;
+    rasmol_state.ca_idx1=0;
+    rasmol_state.lig_idx1=0;
+    rasmol_state.ca_idx2=0;
+    rasmol_state.lig_idx2=0;
+    rasmol_state.i1=-1;
+    rasmol_state.i2=-1;
+
+
+    rasmol_state.buf_tm<<"REMARK US-align"
+        <<"\nREMARK Structure 1:"<<std::setw(11)<<std::left<<xname+chainID1<<" Size= "<<xlen
+        <<"\nREMARK Structure 2:"<<std::setw(11)<<yname+chainID2<<std::right<<" Size= "<<ylen
+        <<" (TM-score is normalized by "<<std::setw(4)<<ylen<<", d0="
+        <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<std::setw(6)<<d0A<<")"
+        <<"\nREMARK Aligned length="<<std::setw(4)<<n_ali8<<", RMSD="
+        <<std::setw(6)<<setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
+        <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
+        <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
+    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
+    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+rasmol_state.buf_tm.str();
+    if (!mm_opt) rasmol_state.buf<<rasmol_CA_header;
+    rasmol_state.buf_all<<rasmol_CA_header;
+    if (!mm_opt) rasmol_state.buf_atm<<rasmol_cartoon_header;
+    rasmol_state.buf_all_atm<<rasmol_cartoon_header;
+    rasmol_state.buf_all_atm_lig<<rasmol_cartoon_header;
+
+    // selecting chains for -mol
+    int i;
+    if (!mm_opt)
+    {
+        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
+        {
+            rasmol_state.chain1_sele=chainID1.substr(1);
+            rasmol_state.chain2_sele=chainID2.substr(1);
+        }
+        else if (split_opt==2 && ter_opt==0) // align one chain from each model
+        {
+            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
+            rasmol_state.chain1_sele=chainID1.substr(i+1);
+            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
+            rasmol_state.chain2_sele=chainID2.substr(i+1);
+        }
+    }
+
+
+    // for PDBx/mmCIF only
+
+    // used for CONECT record of chain1
+
+    // used for CONECT record of chain2
+
+    // extract aligned region
+    if (!mm_opt)
+    {
+        for (i=0;i<seqM.size();i++)
+        {
+            rasmol_state.i1+=(seqxA[i]!='-');
+            rasmol_state.i2+=(seqyA[i]!='-');
+            if (seqM[i]==' ') continue;
+            rasmol_state.resi_aln1.push_back(resi_vec1[rasmol_state.i1].substr(0,4));
+            rasmol_state.resi_aln2.push_back(resi_vec2[rasmol_state.i2].substr(0,4));
+            if (seqM[i]!=':') continue;
+            rasmol_state.buf    <<"select "<<rasmol_state.resi_aln1.back()<<":A,"
+                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
+            rasmol_state.buf_all<<"select "<<rasmol_state.resi_aln1.back()<<":A,"
+                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
+        }
+        rasmol_state.buf<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+    }
+    rasmol_state.buf_all<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+
+    read_rasmol_structure1(rasmol_state, xname, t, u, ter_opt, mm_opt, mirror_opt);
+
+    read_rasmol_structure2(rasmol_state, yname, ter_opt, mm_opt);
+
 
     // write rasmol script
     std::ofstream fp;
