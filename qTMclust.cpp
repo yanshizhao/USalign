@@ -654,46 +654,42 @@ int main(int argc, char *argv[])
             bool overwrite_fast_opt=(fast_opt==true || Lave>=fast_ub);
             
             // declare variable specific to this pair of TMalign
-            Vec3 t0; RotMat u0;
-            double TM1;
-            double TM2;
-            double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt
-            double d0_0;
-            double TM_0;
-            double d0A;
-            double d0B;
-            double d0u;
-            double d0a;
-            double d0_out=5.0;
-            std::string seqM, seqxA, seqyA;// for output alignment
-            double rmsd0 = 0.0;
-            int L_ali;                // Aligned length in standard_TMscore
-            double Liden=0;
-            double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-            int n_ali=0;
-            int n_ali8=0;
-            std::vector<double> do_vec;
-            
+            ChainPairAlignResult chain_align_res = {};
+            chain_align_res.d0_out = 5.0;
+            double& TM1 = chain_align_res.TM1;
+            double& TM2 = chain_align_res.TM2;
+            double& TM3 = chain_align_res.TM3;
+
+            ChainPairAlignOptions align_opts;
+            align_opts.i_opt = i_opt;
+            align_opts.a_opt = a_opt;
+            align_opts.u_opt = u_opt;
+            align_opts.d_opt = d_opt;
+            align_opts.fast_opt = overwrite_fast_opt;
+            align_opts.se_opt = false;
+            align_opts.cp_opt = false;
+            align_opts.Lnorm = Lnorm_ass;
+            align_opts.d0_scale = d0_scale;
+            align_opts.TMcut = TMcut;
+            align_opts.parallel_threads = 1;
+            align_opts.ss_opt = 0;
+            align_opts.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
+
             // entry function for structure alignment
             int status=TMalign_main(
                 xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
                 &sec_vec[chain_i][0], &sec_vec[chain_j][0],
-                t0, u0, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                i_opt, a_opt, u_opt, d_opt, overwrite_fast_opt,
-                mol_vec[chain_i]+mol_vec[chain_j],TMcut);
+                chain_align_res,
+                xlen, ylen, sequence, align_opts);
 
             std::cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
                 <<setiosflags(std::ios::fixed)<<std::setprecision(4)
                 <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<std::endl;
 
-            seqM.clear();
-            seqxA.clear();
-            seqyA.clear();
-            do_vec.clear();
+            chain_align_res.seqM.clear();
+            chain_align_res.seqxA.clear();
+            chain_align_res.seqyA.clear();
+            chain_align_res.do_vec.clear();
 
             double TM=TM3; // average length
             if      (s_opt==1) TM=TM2; // shorter length
@@ -719,21 +715,17 @@ int main(int argc, char *argv[])
 
             if (TM<lb_TMfast && overwrite_fast_opt==false)
             {
+                align_opts.fast_opt = false;
                 TMalign_main(
                     xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
                     &sec_vec[chain_i][0], &sec_vec[chain_j][0],
-                    t0, u0, TM1, TM2, TM3, TM4, TM5,
-                    d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                    seqM, seqxA, seqyA, do_vec,
-                    rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                    xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                    i_opt, a_opt, u_opt, d_opt, false,
-                    mol_vec[chain_i]+mol_vec[chain_j],TMcut);
-                seqM.clear();
-                seqxA.clear();
-                seqyA.clear();
-                do_vec.clear();
-                
+                    chain_align_res,
+                    xlen, ylen, sequence, align_opts);
+                chain_align_res.seqM.clear();
+                chain_align_res.seqxA.clear();
+                chain_align_res.seqyA.clear();
+                chain_align_res.do_vec.clear();
+
                 TM=TM3;                // average length
                 if      (s_opt==1) TM=TM2; // shorter length
                 else if (s_opt==2) TM=TM1; // longer length
