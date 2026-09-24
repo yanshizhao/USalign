@@ -89,31 +89,49 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
-    std::vector<int> invmap_tmp(ylen+1);
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = d0_out;
+    chain_align_res.invmap.assign(ylen+1, 0);
+    std::vector<int>& invmap_tmp = chain_align_res.invmap;
+    std::vector<double>& do_vec = chain_align_res.do_vec;
 
     int i;
     int j;
     int i1;
     int i2;
     int L;
-    double TM1_tmp;
-    double TM2_tmp;
-    double TM3_tmp;
-    double TM4_tmp;
-    double TM5_tmp;
-    double TM_ali_tmp;
-    std::string seqxA_tmp;
-    std::string seqyA_tmp;
-    std::string seqM_tmp;
-    double rmsd0_tmp;
-    int L_ali_tmp;
-    int n_ali_tmp;
-    int n_ali8_tmp;
-    double Liden_tmp;
-    double rmsd_ali_tmp;
+    double& TM1_tmp = chain_align_res.TM1;
+    double& TM2_tmp = chain_align_res.TM2;
+    double& TM3_tmp = chain_align_res.TM3;
+    double& TM4_tmp = chain_align_res.TM4;
+    double& TM5_tmp = chain_align_res.TM5;
+    double& TM_ali_tmp = chain_align_res.TM_ali;
+    std::string& seqxA_tmp = chain_align_res.seqxA;
+    std::string& seqyA_tmp = chain_align_res.seqyA;
+    std::string& seqM_tmp = chain_align_res.seqM;
+    double& rmsd0_tmp = chain_align_res.rmsd0;
+    int& L_ali_tmp = chain_align_res.L_ali;
+    int& n_ali_tmp = chain_align_res.n_ali;
+    int& n_ali8_tmp = chain_align_res.n_ali8;
+    double& Liden_tmp = chain_align_res.Liden;
+    double& rmsd_ali_tmp = chain_align_res.rmsd_ali;
     double max_TM=0;
     double cur_TM=0;
-    std::vector<double>do_vec;
+
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = (i_opt==3);
+    align_opts.a_opt = a_opt;
+    align_opts.u_opt = u_opt;
+    align_opts.d_opt = d_opt;
+    align_opts.fast_opt = false;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = Lnorm_ass;
+    align_opts.d0_scale = d0_scale;
+    align_opts.TMcut = -1;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = mol_type;
 
     TM1=TM2=TM1_tmp=TM2_tmp=L_ali=-1;
 
@@ -139,13 +157,12 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
         Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
             L_ali, t, u, mol_type);
 
-        se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1_tmp, TM2_tmp, TM3_tmp, TM4_tmp,
-            TM5_tmp, d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-            seqM_tmp, seqxA_tmp, seqyA_tmp, do_vec, 
-            rmsd0_tmp, L_ali_tmp, Liden_tmp,
-            TM_ali_tmp, rmsd_ali_tmp, n_ali_tmp, n_ali8_tmp, xlen, ylen,
-            sequence, Lnorm_ass, d0_scale, i_opt==3, a_opt, u_opt, d_opt,
-            mol_type, 1, invmap_tmp);
+        se_main(xt, ya, seqx.c_str(), seqy.c_str(), chain_align_res,
+            xlen, ylen, sequence, align_opts, 1);
+        d0A = chain_align_res.d0A;
+        d0B = chain_align_res.d0B;
+        d0u = chain_align_res.d0u;
+        d0a = chain_align_res.d0a;
 
         if (n_ali8_tmp==0)
         {
@@ -171,13 +188,8 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
             Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
                 L_ali, t, u, mol_type);
 
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), TM1_tmp, TM2_tmp, TM3_tmp, TM4_tmp,
-                TM5_tmp, d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                seqM_tmp, seqxA_tmp, seqyA_tmp, do_vec,
-                rmsd0_tmp, L_ali_tmp, Liden_tmp,
-                TM_ali_tmp, rmsd_ali_tmp, n_ali_tmp, n_ali8_tmp, xlen, ylen,
-                sequence, Lnorm_ass, d0_scale, i_opt==3, a_opt, u_opt, d_opt,
-                mol_type, 1, invmap_tmp);
+            se_main(xt, ya, seqx.c_str(), seqy.c_str(), chain_align_res,
+                xlen, ylen, sequence, align_opts, 1);
         }
 
         if (TM1_tmp>TM1 && TM2_tmp>TM2)
