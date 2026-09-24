@@ -2112,15 +2112,6 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-
-
-/* Entry function for TM-align. Return TM-score calculation status:
- * 0   - full TM-score calculation
- * 1   - terminated due to exception
- * 2-7 - pre-terminated due to low TM-score */
-
-
-
 inline void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, CoordArray& xt, const std::string& seqx,
     const std::string& seqy, const std::vector<int>& m1, const std::vector<int>& m2, const int n_ali8,
     const double d0_out, const int xlen, const int ylen, const Vec3& t0,
@@ -2743,6 +2734,10 @@ inline void dimer_final_tmscore(const int xlen, const int ylen, const ChainPairA
     }
 }
 
+/* Entry function for TM-align. Return TM-score calculation status:
+ * 0   - full TM-score calculation
+ * 1   - terminated due to exception
+ * 2-7 - pre-terminated due to low TM-score */
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
     const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts)
@@ -2819,8 +2814,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     int rc = dimer_build_initial_alignment(xa_c, ya_c, secx, secy, xlen, ylen, mask, sequence,
         align_opts, tmalign_state, chain_align_res);
     if (rc) return rc;
-
-
 
     //*******************************************************************//
     //    The alignment will not be changed any more in the following    //
