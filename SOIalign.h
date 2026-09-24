@@ -377,36 +377,8 @@ inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
 {
     Vec3& t0 = res.t0;
     RotMat& u0 = res.u0;
-    double &TM1 = res.TM1;
-    double &TM2 = res.TM2;
-    double &TM3 = res.TM3;
-    double &TM4 = res.TM4;
-    double &TM5 = res.TM5;
-    double &d0_0 = res.d0_0;
-    double &TM_0 = res.TM_0;
-    double &d0A = res.d0A;
-    double &d0B = res.d0B;
-    double &d0u = res.d0u;
-    double &d0a = res.d0a;
-    double &d0_out = res.d0_out;
-    std::string &seqM = res.seqM;
     std::string &seqxA = res.seqxA;
     std::string &seqyA = res.seqyA;
-    double &rmsd0 = res.rmsd0;
-    int &L_ali = res.L_ali;
-    double &Liden = res.Liden;
-    double &TM_ali = res.TM_ali;
-    double &rmsd_ali = res.rmsd_ali;
-    int &n_ali = res.n_ali;
-    int &n_ali8 = res.n_ali8;
-    const double Lnorm_ass = opt.Lnorm;
-    const double d0_scale = opt.d0_scale;
-    const int i_opt = opt.i_opt;
-    const int a_opt = opt.a_opt;
-    const bool u_opt = opt.u_opt;
-    const bool d_opt = opt.d_opt;
-    const bool fast_opt = opt.fast_opt;
-    const int mol_type = opt.mol_type;
     double &Lnorm = st.Lnorm;
     double &score_d8 = st.score_d8;
     double &d0 = st.d0;
@@ -428,15 +400,10 @@ inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
     int &iteration_max = st.iteration_max;
     int i;
     int j;
-    std::vector<double> do_vec;
     CPalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, fast_opt,
-        mol_type,-1);
-    do_vec.clear();
+        res,
+        xlen, ylen, sequence, opt);
+    res.do_vec.clear();
     if (mm_opt==6)
     {
         i=0;
