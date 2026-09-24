@@ -2195,32 +2195,66 @@ inline void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, Coo
 }
 
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy, Vec3& t0, RotMat& u0,
-    double &TM1, double &TM2, double &TM3, double &TM4,
-    double &TM5, double &d0_0, double &TM_0, double &d0A,
-    double &d0B, double &d0u, double &d0a, double &d0_out,
-    std::string &seqM, std::string &seqxA, std::string &seqyA, double &rmsd0,
-    int &L_ali, double &Liden, double &TM_ali, double &rmsd_ali,
-    int &n_ali, int &n_ali8, const int xlen, const int ylen,
-    CharMatrix& mask, const std::vector<std::string> sequence, const double Lnorm_ass, const double d0_scale,
-    const int i_opt, const int a_opt, const bool u_opt, const bool d_opt,
-    const bool fast_opt, const int mol_type, const double TMcut=-1)
+    const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
+    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts)
 {
-
-
-
-
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
-    Vec3 t;
-    RotMat u;
-    DoubleMatrix score;       // Input score table for dynamic programming
-    CharMatrix  path;        // for dynamic programming
-    DoubleMatrix val;         // for dynamic programming
-    CoordArray xtm, ytm;      // for TMscore search engine
-    CoordArray xt;            //for saving the superposed version of r_1 or xtm
-    CoordArray r1, r2;        // for Kabsch rotation
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali = chain_align_res.n_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
+    const int i_opt = align_opts.i_opt;
+    const int a_opt = align_opts.a_opt;
+    const bool u_opt = align_opts.u_opt;
+    const bool d_opt = align_opts.d_opt;
+    const bool fast_opt = align_opts.fast_opt;
+    const int mol_type = align_opts.mol_type;
+    const double Lnorm_ass = align_opts.Lnorm;
+    const double d0_scale = align_opts.d0_scale;
+    const double TMcut = align_opts.TMcut;
+    TMalignAlignState tmalign_state;
+    double& D0_MIN = tmalign_state.D0_MIN;
+    double& Lnorm = tmalign_state.Lnorm;
+    double& score_d8 = tmalign_state.score_d8;
+    double& d0 = tmalign_state.d0;
+    double& d0_search = tmalign_state.d0_search;
+    double& dcu0 = tmalign_state.dcu0;
+    double& local_d0_search = tmalign_state.local_d0_search;
+    int& simplify_step = tmalign_state.simplify_step;
+    int& score_sum_method = tmalign_state.score_sum_method;
+    double& ddcc = tmalign_state.ddcc;
+    DoubleMatrix& score = tmalign_state.score;
+    CharMatrix& path = tmalign_state.path;
+    DoubleMatrix& val = tmalign_state.val;
+    CoordArray& xtm = tmalign_state.xtm;
+    CoordArray& ytm = tmalign_state.ytm;
+    CoordArray& xt = tmalign_state.xt;
+    CoordArray& r1 = tmalign_state.r1;
+    CoordArray& r2 = tmalign_state.r2;
+    std::vector<int>& invmap0 = tmalign_state.invmap0;
+    std::vector<int>& invmap = tmalign_state.invmap;
+    Vec3& t = tmalign_state.t;
+    RotMat& u = tmalign_state.u;
+    double& TMmax = tmalign_state.TMmax;
 
     /***********************/
     // allocate memory
@@ -2234,28 +2268,24 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
-    std::vector<double*> sv(xlen+1), vv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++){sv[_i]=score[_i].data();vv[_i]=val[_i].data();}
-    std::vector<char*> pv(xlen+1);
-    for(int _i=0;_i<=xlen;_i++) pv[_i]=path[_i].data();
 
     /***********************/
     //    parameter set   
     /***********************/
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
         score_d8, d0, d0_search, dcu0);
-    int simplify_step    = 40; //for simplified search engine
-    int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
+    simplify_step    = 40; //for simplified search engine
+    score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
 
     int i;
-    std::vector<int> invmap0(ylen+1, -1);
-    std::vector<int> invmap(ylen+1);
+    invmap0.assign(ylen+1, -1);
+    invmap.assign(ylen+1, 0);
     double TM;
-    double TMmax=-1;
+    TMmax=-1;
 
-    double ddcc=0.4;
+    ddcc=0.4;
     if (Lnorm <= 40) ddcc=0.1;   //Lnorm was setted in parameter_set4search
-    double local_d0_search = d0_search;
+    local_d0_search = d0_search;
 
     //************************************************//
     //    get initial alignment from user's input:    //
@@ -2805,34 +2835,50 @@ inline void MMalign_dimer(double & total_score,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    Vec3 t0 = {};    // zero-init
-    RotMat u0 = {};
-    double TM1;
-    double TM2;
-    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-    double d0_0;
-    double TM_0;
-    double d0A;
-    double d0B;
-    double d0u;
-    double d0a;
-    double d0_out=5.0;
-    std::string seqM, seqxA, seqyA;// for output alignment
-    double rmsd0 = 0.0;
-    int L_ali;                // Aligned length in standard_TMscore
-    double Liden=0;
-    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-    int n_ali=0;
-    int n_ali8=0;
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali = chain_align_res.n_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
 
-    double Lnorm_ass=len_aa+len_na;
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = 1;
+    align_opts.a_opt = 0;
+    align_opts.u_opt = true;
+    align_opts.d_opt = false;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = len_aa+len_na;
+    align_opts.d0_scale = d0_scale;
+    align_opts.TMcut = -1;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = mol_type;
 
-    if (TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
-        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0, d0A,
-        d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, rmsd0,
-        L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8, xlen, ylen,
-        mask, sequence, Lnorm_ass, d0_scale, 1, false, true, false,
-        fast_opt, mol_type, -1) != 0)
+    if (TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy, chain_align_res, xlen,
+        ylen, mask, sequence, align_opts) != 0)
     {
         return;   // no alignment: skip re-scoring, keep total_score unchanged
     }
