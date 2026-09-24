@@ -2635,10 +2635,24 @@ inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const
     rmsd0 = sqrt(rmsd0 / n_ali8);
 }
 
-inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
-    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts)
+inline void dimer_final_tmscore(const int xlen, const int ylen, const ChainPairAlignOptions& align_opts,
+    TMalignAlignState& tmalign_state, ChainPairAlignResult& chain_align_res)
 {
+    double& D0_MIN = tmalign_state.D0_MIN;
+    double& Lnorm = tmalign_state.Lnorm;
+    double& score_d8 = tmalign_state.score_d8;
+    double& d0 = tmalign_state.d0;
+    double& d0_search = tmalign_state.d0_search;
+    double& local_d0_search = tmalign_state.local_d0_search;
+    int& simplify_step = tmalign_state.simplify_step;
+    int& score_sum_method = tmalign_state.score_sum_method;
+    CoordArray& xtm = tmalign_state.xtm;
+    CoordArray& ytm = tmalign_state.ytm;
+    CoordArray& xt = tmalign_state.xt;
+    CoordArray& r1 = tmalign_state.r1;
+    CoordArray& r2 = tmalign_state.r2;
+    Vec3& t = tmalign_state.t;
+    RotMat& u = tmalign_state.u;
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
     double& TM1 = chain_align_res.TM1;
@@ -2653,17 +2667,101 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     double& d0u = chain_align_res.d0u;
     double& d0a = chain_align_res.d0a;
     double& d0_out = chain_align_res.d0_out;
-    std::string& seqM = chain_align_res.seqM;
-    std::string& seqxA = chain_align_res.seqxA;
-    std::string& seqyA = chain_align_res.seqyA;
-    double& Liden = chain_align_res.Liden;
-    int& n_ali8 = chain_align_res.n_ali8;
+    const int n_ali8 = chain_align_res.n_ali8;
     const int a_opt = align_opts.a_opt;
     const bool u_opt = align_opts.u_opt;
     const bool d_opt = align_opts.d_opt;
     const int mol_type = align_opts.mol_type;
     const double Lnorm_ass = align_opts.Lnorm;
     const double d0_scale = align_opts.d0_scale;
+
+    //****************************************//
+    //              Final TMscore             //
+    //    Please set parameters for output    //
+    //****************************************//
+    double rmsd;
+    simplify_step=1;
+    score_sum_method=0;
+    double Lnorm_0=ylen;
+
+
+    //normalized by length of structure A
+    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+    d0A=d0;
+    d0_0=d0A;
+    local_d0_search = d0_search;
+    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
+    TM_0 = TM1;
+
+    //normalized by length of structure B
+    parameter_set4final(xlen+0.0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+    d0B=d0;
+    local_d0_search = d0_search;
+    TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
+
+    if (a_opt>0)
+    {
+        //normalized by average length of structures A, B
+        Lnorm_0=(xlen+ylen)*0.5;
+        parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+        d0a=d0;
+        d0_0=d0a;
+        local_d0_search = d0_search;
+
+        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
+            score_d8, d0);
+        TM_0=TM3;
+    }
+    if (u_opt)
+    {
+        //normalized by user assigned length
+        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
+            d0, d0_search, mol_type);
+        d0u=d0;
+        d0_0=d0u;
+        Lnorm_0=Lnorm_ass;
+        local_d0_search = d0_search;
+        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
+            score_d8, d0);
+        TM_0=TM4;
+    }
+    if (d_opt)
+    {
+        //scaled by user assigned d0
+        parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
+        d0_out=d0_scale;
+        d0_0=d0_scale;
+        local_d0_search = d0_search;
+        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
+            score_d8, d0);
+        TM_0=TM5;
+    }
+}
+
+inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
+    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts)
+{
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& Liden = chain_align_res.Liden;
+    int& n_ali8 = chain_align_res.n_ali8;
+    const int a_opt = align_opts.a_opt;
+    const int mol_type = align_opts.mol_type;
     const double TMcut = align_opts.TMcut;
     TMalignAlignState tmalign_state;
     double& D0_MIN = tmalign_state.D0_MIN;
@@ -2686,8 +2784,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     CoordArray& r2 = tmalign_state.r2;
     std::vector<int>& invmap0 = tmalign_state.invmap0;
     std::vector<int>& invmap = tmalign_state.invmap;
-    Vec3& t = tmalign_state.t;
-    RotMat& u = tmalign_state.u;
     double& TMmax = tmalign_state.TMmax;
 
     /***********************/
@@ -2765,75 +2861,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     dimer_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, tmalign_state, chain_align_res);
 
 
-    //****************************************//
-    //              Final TMscore             //
-    //    Please set parameters for output    //
-    //****************************************//
-    double rmsd;
-    simplify_step=1;
-    score_sum_method=0;
-    double Lnorm_0=ylen;
-
-
-    //normalized by length of structure A
-    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-    d0A=d0;
-    d0_0=d0A;
-    local_d0_search = d0_search;
-    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
-        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
-    TM_0 = TM1;
-
-    //normalized by length of structure B
-    parameter_set4final(xlen+0.0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-    d0B=d0;
-    local_d0_search = d0_search;
-    TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
-        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
-
-    double Lnorm_d0;
-    if (a_opt>0)
-    {
-        //normalized by average length of structures A, B
-        Lnorm_0=(xlen+ylen)*0.5;
-        parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-        d0a=d0;
-        d0_0=d0a;
-        local_d0_search = d0_search;
-
-        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM3;
-    }
-    if (u_opt)
-    {
-        //normalized by user assigned length
-        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
-            d0, d0_search, mol_type);
-        d0u=d0;
-        d0_0=d0u;
-        Lnorm_0=Lnorm_ass;
-        local_d0_search = d0_search;
-        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM4;
-    }
-    if (d_opt)
-    {
-        //scaled by user assigned d0
-        parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
-        d0_out=d0_scale;
-        d0_0=d0_scale;
-        //Lnorm_0=ylen;
-        Lnorm_d0=Lnorm_0;
-        local_d0_search = d0_search;
-        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM5;
-    }
+    dimer_final_tmscore(xlen, ylen, align_opts, tmalign_state, chain_align_res);
 
     derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, tmalign_state.m1, tmalign_state.m2, n_ali8, d0_out, xlen, ylen,
         t0, u0, Liden, seqxA, seqyA, seqM);
