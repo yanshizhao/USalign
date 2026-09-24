@@ -336,18 +336,14 @@ int main(int argc, char *argv[])
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
-    int    i,j;                // file index
-    int    chain_i,chain_j;    // chain index
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     CoordArray xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure 
                                // --> superpose xa onto ya
     std::vector<std::string> resi_vec1;  // residue index for chain1
     std::vector<std::string> resi_vec2;  // residue index for chain2
-    Vec3 t0 = {0,0,0};
-    RotMat u0 = {}; // zero-initialized (identity set by first use)
 
     // loop over file names
     for (int i=0;i<chain1_list.size();i++)
@@ -413,54 +409,42 @@ int main(int argc, char *argv[])
                         seqx, seqy, resi_vec1, resi_vec2, byresi_opt);
 
                     // declare variable specific to this pair of TMalign
-                    double TM1;
-                    double TM2;
-                    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0;
-                    double TM_0;
-                    double d0A;
-                    double d0B;
-                    double d0u;
-                    double d0a;
-                    double d0_out=5.0;
-                    std::string seqM, seqxA, seqyA;// for output alignment
-                    double rmsd0 = 0.0;
-                    int L_ali;                // Aligned length in standard_TMscore
-                    double Liden=0;
-                    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                    int n_ali=0;
-                    int n_ali8=0;
-                    std::vector<int> invmap(ylen+1);
-                    std::vector<double> do_vec;
+                    ChainPairAlignResult chain_align_res = {};
+                    chain_align_res.d0_out = 5.0;
+                    chain_align_res.invmap.assign(ylen+1, 0);
+
+                    ChainPairAlignOptions align_opts;
+                    align_opts.i_opt = i_opt;
+                    align_opts.a_opt = a_opt;
+                    align_opts.u_opt = u_opt;
+                    align_opts.d_opt = d_opt;
+                    align_opts.fast_opt = false;
+                    align_opts.se_opt = false;
+                    align_opts.cp_opt = false;
+                    align_opts.Lnorm = Lnorm_ass;
+                    align_opts.d0_scale = d0_scale;
+                    align_opts.TMcut = -1;
+                    align_opts.parallel_threads = 1;
+                    align_opts.ss_opt = 0;
+                    align_opts.mol_type = mol_vec1[chain_i]+mol_vec2[chain_j];
 
                     // entry function for structure alignment
-                    se_main(
-                        xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j], 
-                        outfmt_opt, invmap);
+                    se_main(xa, ya, seqx, seqy, chain_align_res,
+                        xlen, ylen, sequence, align_opts, outfmt_opt);
 
                     if (outfmt_opt>=2)
-                        get_seqID(invmap, seqx, seqy, ylen, Liden, n_ali);
+                        get_seqID(chain_align_res.invmap, seqx, seqy, ylen,
+                            chain_align_res.Liden, chain_align_res.n_ali);
 
                     // print result
                     output_results(
-                        xname.substr(dir1_opt.size()+dir_opt.size()).c_str(),
-                        yname.substr(dir2_opt.size()+dir_opt.size()).c_str(),
-                        chainID_list1[chain_i].c_str(),
-                        chainID_list2[chain_j].c_str(),
-                        xlen, ylen, t0, u0, TM1, TM2, 
-                        TM3, TM4, TM5, rmsd0, d0_out,
-                        seqM, seqxA, seqyA, Liden,
-                        n_ali8, L_ali, TM_ali, rmsd_ali,
-                        TM_0, d0_0, d0A, d0B,
-                        Lnorm_ass, d0_scale, d0a, d0u, 
+                        xname.substr(dir1_opt.size()+dir_opt.size()),
+                        yname.substr(dir2_opt.size()+dir_opt.size()),
+                        chainID_list1[chain_i], chainID_list2[chain_j],
+                        xlen, ylen, chain_align_res,
+                        Lnorm_ass, d0_scale,
                         "", outfmt_opt, ter_opt, 0, split_opt,
-                        0, "", false, a_opt, u_opt, d_opt, 0,
+                        0, "", 0, a_opt, u_opt, d_opt, 0,
                         resi_vec1, resi_vec2);
                     
                     if (do_opt)
@@ -470,22 +454,22 @@ int main(int argc, char *argv[])
                         size_t r1=0;
                         size_t r2=0;
                         int    postcp=0;
-                        for (size_t r=0;r<seqxA.size();r++)
+                        for (size_t r=0;r<chain_align_res.seqxA.size();r++)
                         {
-                            r1+=seqxA[r]!='-';
-                            r2+=seqyA[r]!='-';
-                            if (seqxA[r]=='*')
+                            r1+=chain_align_res.seqxA[r]!='-';
+                            r2+=chain_align_res.seqyA[r]!='-';
+                            if (chain_align_res.seqxA[r]=='*')
                             {
                                 std::cout<<"###### Circular\tPermutation ###\t#########\n";
                                 r1=0;
                                 postcp=1;
                             }
-                            else if (seqxA[r]!='-' && seqyA[r]!='-')
+                            else if (chain_align_res.seqxA[r]!='-' && chain_align_res.seqyA[r]!='-')
                             {
                                 std::cout<<PDB_lines1[chain_i][r1-1].substr(12,15)<<'\t'
                                     <<PDB_lines2[chain_j][r2-1].substr(12,15)<<'\t'
                                     <<std::setw(9)<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
-                                    <<do_vec[r-postcp]<<'\n';
+                                    <<chain_align_res.do_vec[r-postcp]<<'\n';
                             }
                         }
                         std::cout<<"###############\t###############\t#########"<<std::endl;
@@ -493,18 +477,16 @@ int main(int argc, char *argv[])
 
                     // Done! Free memory
 
-                    seqM.clear();
-                    seqxA.clear();
-                    seqyA.clear();
+                    chain_align_res.seqM.clear();
+                    chain_align_res.seqxA.clear();
+                    chain_align_res.seqyA.clear();
                     // ya auto-cleared by read_PDB (CoordArray)
                     resi_vec2.clear();
-                    do_vec.clear();
+                    chain_align_res.do_vec.clear();
                 } // chain_j
                 if (chain2_list.size()>1)
                 {
                     yname.clear();
-                    for (int chain_j=0;chain_j<ychainnum;chain_j++)
-                        PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
                     chainID_list2.clear();
                     mol_vec2.clear();
@@ -521,8 +503,6 @@ int main(int argc, char *argv[])
     if (chain2_list.size()==1)
     {
         yname.clear();
-        for (int chain_j=0;chain_j<ychainnum;chain_j++)
-            PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
         resi_vec2.clear();
         chainID_list2.clear();
