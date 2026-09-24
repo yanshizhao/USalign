@@ -490,25 +490,34 @@ int main(int argc, char *argv[])
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of HwRMSD
-                    Vec3 t0; RotMat u0;
-                    double TM1;
-                    double TM2;
-                    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0;
-                    double TM_0;
-                    double d0A;
-                    double d0B;
-                    double d0u;
-                    double d0a;
-                    double d0_out=5.0;
-                    std::string seqM, seqxA, seqyA;// for output alignment
-                    double rmsd0 = 0.0;
-                    int L_ali;                // Aligned length in standard_TMscore
-                    double Liden=0;
-                    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                    int n_ali=0;
-                    int n_ali8=0;
-                    std::vector<int> invmap(ylen+1);
+                    ChainPairAlignResult chain_align_res = {};
+                    chain_align_res.d0_out = 5.0;
+                    chain_align_res.invmap.assign(ylen+1, 0);
+                    Vec3& t0 = chain_align_res.t0;
+                    RotMat& u0 = chain_align_res.u0;
+                    double& TM1 = chain_align_res.TM1;
+                    double& TM2 = chain_align_res.TM2;
+                    double& TM3 = chain_align_res.TM3;
+                    double& TM4 = chain_align_res.TM4;
+                    double& TM5 = chain_align_res.TM5;
+                    double& d0_0 = chain_align_res.d0_0;
+                    double& TM_0 = chain_align_res.TM_0;
+                    double& d0A = chain_align_res.d0A;
+                    double& d0B = chain_align_res.d0B;
+                    double& d0u = chain_align_res.d0u;
+                    double& d0a = chain_align_res.d0a;
+                    double& d0_out = chain_align_res.d0_out;
+                    std::string& seqM = chain_align_res.seqM;
+                    std::string& seqxA = chain_align_res.seqxA;
+                    std::string& seqyA = chain_align_res.seqyA;
+                    double& rmsd0 = chain_align_res.rmsd0;
+                    int& L_ali = chain_align_res.L_ali;
+                    double& Liden = chain_align_res.Liden;
+                    double& TM_ali = chain_align_res.TM_ali;
+                    double& rmsd_ali = chain_align_res.rmsd_ali;
+                    int& n_ali = chain_align_res.n_ali;
+                    int& n_ali8 = chain_align_res.n_ali8;
+                    std::vector<int>& invmap = chain_align_res.invmap;
 
                     // entry function for structure alignment
                     HwRMSD_main(xa, ya, seqx, seqy, secx, secy, t0, u0,
@@ -520,24 +529,20 @@ int main(int argc, char *argv[])
                         mol_vec1[chain_i]+mol_vec2[chain_j],
                         invmap, glocal, iter_opt, seq_opt, early_opt);
 
-                    if (outfmt_opt>=2) 
+                    if (outfmt_opt>=2)
                         get_seqID(invmap, seqx, seqy, ylen, Liden, n_ali8);
 
                     // print result
                     output_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()),
                         yname.substr(dir2_opt.size()+dir_opt.size()),
-                        chainID_list1[chain_i].c_str(),
-                        chainID_list2[chain_j].c_str(),
-                        xlen, ylen, t0, u0, TM1, TM2, 
-                        TM3, TM4, TM5, rmsd0, d0_out,
-                        seqM, seqxA, seqyA, Liden,
-                        n_ali8, L_ali, TM_ali, rmsd_ali,
-                        TM_0, d0_0, d0A, d0B,
-                        Lnorm_ass, d0_scale, d0a, d0u, 
-                        (m_opt?fname_matrix+chainID_list1[chain_i]:"").c_str(),
+                        chainID_list1[chain_i],
+                        chainID_list2[chain_j],
+                        xlen, ylen, chain_align_res,
+                        Lnorm_ass, d0_scale,
+                        (m_opt?fname_matrix+chainID_list1[chain_i]:""),
                         outfmt_opt, ter_opt, false, split_opt, o_opt,
-                        (o_opt?fname_super+chainID_list1[chain_i]:"").c_str(),
+                        (o_opt?fname_super+chainID_list1[chain_i]:""),
                         false, a_opt, u_opt, d_opt, 0,
                         resi_vec1, resi_vec2);
 
