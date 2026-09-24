@@ -554,72 +554,56 @@ int main(int argc, char *argv[])
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
-                    Vec3 t0; RotMat u0;
-                    double TM1;
-                    double TM2;
-                    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0;
-                    double TM_0;
-                    double d0A;
-                    double d0B;
-                    double d0u;
-                    double d0a;
-                    double d0_out=5.0;
-                    std::string seqM, seqxA, seqyA;// for output alignment
-                    double rmsd0 = 0.0;
-                    int L_ali;                // Aligned length in standard_TMscore
-                    double Liden=0;
-                    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                    int n_ali=0;
-                    int n_ali8=0;
-                    std::vector<double> do_vec;
+                    ChainPairAlignResult chain_align_res = {};
+                    chain_align_res.d0_out = 5.0;
+
+                    ChainPairAlignOptions align_opts;
+                    align_opts.i_opt = i_opt;
+                    align_opts.a_opt = a_opt;
+                    align_opts.u_opt = u_opt;
+                    align_opts.d_opt = d_opt;
+                    align_opts.fast_opt = fast_opt;
+                    align_opts.se_opt = false;
+                    align_opts.cp_opt = (cp_opt!=0);
+                    align_opts.Lnorm = Lnorm_ass;
+                    align_opts.d0_scale = d0_scale;
+                    align_opts.TMcut = TMcut;
+                    align_opts.parallel_threads = 1;
+                    align_opts.ss_opt = 0;
+                    align_opts.mol_type = mol_vec1[chain_i]+mol_vec2[chain_j];
 
                     // entry function for structure alignment
                     if (cp_opt) CPalign_main(
                         xa, ya, seqx, seqy, secx.c_str(), secy.c_str(),
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt, fast_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
+                        chain_align_res,
+                        xlen, ylen, sequence, align_opts);
                     else TMalign_main(
                         xa, ya, seqx, seqy, secx, secy,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA, do_vec,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                        i_opt, a_opt, u_opt, d_opt, fast_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j],TMcut);
+                        chain_align_res,
+                        xlen, ylen, sequence, align_opts);
 
                     // print result
                     if (outfmt_opt==0) print_version();
                     output_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()),
                         yname.substr(dir2_opt.size()+dir_opt.size()),
-                        chainID_list1[chain_i].c_str(),
-                        chainID_list2[chain_j].c_str(),
-                        xlen, ylen, t0, u0, TM1, TM2, 
-                        TM3, TM4, TM5, rmsd0, d0_out,
-                        seqM, seqxA, seqyA, Liden,
-                        n_ali8, L_ali, TM_ali, rmsd_ali,
-                        TM_0, d0_0, d0A, d0B,
-                        Lnorm_ass, d0_scale, d0a, d0u, 
-                        (m_opt?fname_matrix:"").c_str(),
+                        chainID_list1[chain_i],
+                        chainID_list2[chain_j],
+                        xlen, ylen, chain_align_res,
+                        Lnorm_ass, d0_scale,
+                        (m_opt?fname_matrix:""),
                         outfmt_opt, ter_opt, 0, split_opt, o_opt,
-                        (o_opt?fname_super:"").c_str(),
-                        i_opt, a_opt, u_opt, d_opt,mirror_opt,
-                        resi_vec1, resi_vec2 );
+                        (o_opt?fname_super:""),
+                        i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                        resi_vec1, resi_vec2);
 
                     // Done! Free memory
-                    seqM.clear();
-                    seqxA.clear();
-                    seqyA.clear();
+                    chain_align_res.seqM.clear();
+                    chain_align_res.seqxA.clear();
+                    chain_align_res.seqyA.clear();
                     // ya auto-cleared by read_PDB (CoordArray)
                     resi_vec2.clear();
-                    do_vec.clear();
+                    chain_align_res.do_vec.clear();
                 } // chain_j
                 if (chain2_list.size()>1)
                 {

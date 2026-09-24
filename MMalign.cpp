@@ -411,6 +411,7 @@ int main(int argc, char *argv[])
         
         // declare variable specific to this pair of TMalign
         ChainPairAlignResult chain_align_res = {};
+        chain_align_res.d0_out = 5.0;
 
         ChainPairAlignOptions align_opts;
         align_opts.i_opt = 0;
@@ -536,6 +537,7 @@ int main(int argc, char *argv[])
 
             // declare variable specific to this pair of TMalign
             ChainPairAlignResult chain_align_res = {};
+            chain_align_res.d0_out = 5.0;
             int Lnorm_tmp=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
 
