@@ -2552,6 +2552,89 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
     return 0;
 }
 
+inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const int xlen, const int ylen,
+    const ChainPairAlignOptions& align_opts, TMalignAlignState& tmalign_state, ChainPairAlignResult& chain_align_res)
+{
+    double& score_d8 = tmalign_state.score_d8;
+    double& d0 = tmalign_state.d0;
+    double& Lnorm = tmalign_state.Lnorm;
+    double& local_d0_search = tmalign_state.local_d0_search;
+    int& simplify_step = tmalign_state.simplify_step;
+    int& score_sum_method = tmalign_state.score_sum_method;
+    CoordArray& xtm = tmalign_state.xtm;
+    CoordArray& ytm = tmalign_state.ytm;
+    CoordArray& xt = tmalign_state.xt;
+    CoordArray& r1 = tmalign_state.r1;
+    CoordArray& r2 = tmalign_state.r2;
+    std::vector<int>& invmap0 = tmalign_state.invmap0;
+    std::vector<int>& m1 = tmalign_state.m1;
+    std::vector<int>& m2 = tmalign_state.m2;
+    Vec3& t = tmalign_state.t;
+    RotMat& u = tmalign_state.u;
+    int& n_ali = chain_align_res.n_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
+    double& rmsd0 = chain_align_res.rmsd0;
+    const bool fast_opt = align_opts.fast_opt;
+    const int i_opt = align_opts.i_opt;
+    double TM;
+    int i;
+
+    //********************************************************************//
+    //    Detailed TMscore search engine --> prepare for final TMscore    //
+    //********************************************************************//
+    //run detailed TMscore search engine for the best alignment, and
+    //extract the best rotation matrix (t, u) for the best alignment
+    simplify_step=1;
+    if (fast_opt) simplify_step=40;
+    score_sum_method=8;
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
+        false, Lnorm, score_d8, d0);
+
+    //select pairs with dis<d8 for final TMscore computation and output alignment
+    int k=0;
+    double d;
+    m1.resize(xlen); //alignd index in x
+    m2.resize(ylen); //alignd index in y
+    do_rotation(xa_c, xt, xlen, t, u);
+    k=0;
+    for(int j=0; j<ylen; j++)
+    {
+        i=invmap0[j];
+        if(i>=0)//aligned
+        {
+            n_ali++;
+            d=sqrt(dist(xt[i], ya_c[j]));
+            if (d <= score_d8 || (i_opt == 3))
+            {
+                m1[k]=i;
+                m2[k]=j;
+
+                xtm[k][0]=xa_c[i][0];
+                xtm[k][1]=xa_c[i][1];
+                xtm[k][2]=xa_c[i][2];
+
+                ytm[k][0]=ya_c[j][0];
+                ytm[k][1]=ya_c[j][1];
+                ytm[k][2]=ya_c[j][2];
+
+                r1[k][0] = xt[i][0];
+                r1[k][1] = xt[i][1];
+                r1[k][2] = xt[i][2];
+                r2[k][0] = ya_c[j][0];
+                r2[k][1] = ya_c[j][1];
+                r2[k][2] = ya_c[j][2];
+
+                k++;
+            }
+        }
+    }
+    n_ali8=k;
+
+    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    rmsd0 = sqrt(rmsd0 / n_ali8);
+}
+
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
     const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts)
@@ -2573,15 +2656,11 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     std::string& seqM = chain_align_res.seqM;
     std::string& seqxA = chain_align_res.seqxA;
     std::string& seqyA = chain_align_res.seqyA;
-    double& rmsd0 = chain_align_res.rmsd0;
     double& Liden = chain_align_res.Liden;
-    int& n_ali = chain_align_res.n_ali;
     int& n_ali8 = chain_align_res.n_ali8;
-    const int i_opt = align_opts.i_opt;
     const int a_opt = align_opts.a_opt;
     const bool u_opt = align_opts.u_opt;
     const bool d_opt = align_opts.d_opt;
-    const bool fast_opt = align_opts.fast_opt;
     const int mol_type = align_opts.mol_type;
     const double Lnorm_ass = align_opts.Lnorm;
     const double d0_scale = align_opts.d0_scale;
@@ -2635,7 +2714,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     int i;
     invmap0.assign(ylen+1, -1);
     invmap.assign(ylen+1, 0);
-    double TM;
     TMmax=-1;
 
     ddcc=0.4;
@@ -2684,60 +2762,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
         }
     }
 
-    //********************************************************************//
-    //    Detailed TMscore search engine --> prepare for final TMscore    //
-    //********************************************************************//
-    //run detailed TMscore search engine for the best alignment, and
-    //extract the best rotation matrix (t, u) for the best alignment
-    simplify_step=1;
-    if (fast_opt) simplify_step=40;
-    score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
-        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
-        false, Lnorm, score_d8, d0);
-
-    //select pairs with dis<d8 for final TMscore computation and output alignment
-    int k=0;
-    double d;
-    std::vector<int> m1(xlen); //alignd index in x
-    std::vector<int> m2(ylen); //alignd index in y
-    do_rotation(xa_c, xt, xlen, t, u);
-    k=0;
-    for(int j=0; j<ylen; j++)
-    {
-        i=invmap0[j];
-        if(i>=0)//aligned
-        {
-            n_ali++;
-            d=sqrt(dist(xt[i], ya_c[j]));
-            if (d <= score_d8 || (i_opt == 3))
-            {
-                m1[k]=i;
-                m2[k]=j;
-
-                xtm[k][0]=xa_c[i][0];
-                xtm[k][1]=xa_c[i][1];
-                xtm[k][2]=xa_c[i][2];
-
-                ytm[k][0]=ya_c[j][0];
-                ytm[k][1]=ya_c[j][1];
-                ytm[k][2]=ya_c[j][2];
-
-                r1[k][0] = xt[i][0];
-                r1[k][1] = xt[i][1];
-                r1[k][2] = xt[i][2];
-                r2[k][0] = ya_c[j][0];
-                r2[k][1] = ya_c[j][1];
-                r2[k][2] = ya_c[j][2];
-
-                k++;
-            }
-        }
-    }
-    n_ali8=k;
-
-    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
-    rmsd0 = sqrt(rmsd0 / n_ali8);
+    dimer_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, tmalign_state, chain_align_res);
 
 
     //****************************************//
@@ -2810,7 +2835,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
         TM_0=TM5;
     }
 
-    derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, m1, m2, n_ali8, d0_out, xlen, ylen,
+    derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, tmalign_state.m1, tmalign_state.m2, n_ali8, d0_out, xlen, ylen,
         t0, u0, Liden, seqxA, seqyA, seqM);
     return 0; // zero for no exception
 }
