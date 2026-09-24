@@ -2006,31 +2006,41 @@ inline void search_hinge_regions(
             xlen_hinge_trimmed, ylen_hinge_trimmed, xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed, r1toi, r2toj);
 
         CurHingeResult cur_hing_res;
-        TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed, chain_align_res.t0, chain_align_res.u0,
-            cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3, cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5,
-            cur_hing_res.tmalign_res.d0_0, cur_hing_res.tmalign_res.TM_0,
-            cur_hing_res.tmalign_res.d0A, cur_hing_res.tmalign_res.d0B, cur_hing_res.tmalign_res.d0u, cur_hing_res.tmalign_res.d0a,
-            cur_hing_res.tmalign_res.d0_out, cur_hing_res.tmalign_res.seqM, cur_hing_res.tmalign_res.seqxA, cur_hing_res.tmalign_res.seqyA,
-            chain_align_res.do_vec, cur_hing_res.tmalign_res.rmsd0, cur_hing_res.tmalign_res.L_ali, cur_hing_res.tmalign_res.Liden,
-            cur_hing_res.tmalign_res.TM_ali, cur_hing_res.tmalign_res.rmsd_ali,
-            cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
-            xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts.Lnorm,
-            align_opts.d0_scale, align_opts.i_opt, align_opts.a_opt, align_opts.u_opt, align_opts.d_opt,
-            align_opts.fast_opt, align_opts.mol_type, -1, 1, align_opts.ss_opt);
+        cur_hing_res.tmalign_res.t0 = chain_align_res.t0;
+        cur_hing_res.tmalign_res.u0 = chain_align_res.u0;
+        cur_hing_res.tmalign_res.do_vec = chain_align_res.do_vec;
+        TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed,
+            cur_hing_res.tmalign_res,
+            xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts);
+        chain_align_res.t0 = cur_hing_res.tmalign_res.t0;
+        chain_align_res.u0 = cur_hing_res.tmalign_res.u0;
+        chain_align_res.do_vec = cur_hing_res.tmalign_res.do_vec;
 
         do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
         fill_hing_res(cur_hing_res, chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5, chain_align_res.rmsd0,
             chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, chain_align_res.n_ali, chain_align_res.n_ali8, chain_align_res.invmap, ylen);
 
+        cur_hing_res.tmalign_res.d0_0 = chain_align_res.d0_0;
+        cur_hing_res.tmalign_res.TM_0 = chain_align_res.TM_0;
+        cur_hing_res.tmalign_res.d0A = chain_align_res.d0A;
+        cur_hing_res.tmalign_res.d0B = chain_align_res.d0B;
+        cur_hing_res.tmalign_res.d0u = chain_align_res.d0u;
+        cur_hing_res.tmalign_res.d0a = chain_align_res.d0a;
+        cur_hing_res.tmalign_res.d0_out = chain_align_res.d0_out;
+        cur_hing_res.tmalign_res.do_vec = chain_align_res.do_vec;
+        cur_hing_res.tmalign_res.L_ali = chain_align_res.L_ali;
+        cur_hing_res.tmalign_res.Liden = chain_align_res.Liden;
+        cur_hing_res.tmalign_res.TM_ali = chain_align_res.TM_ali;
+        cur_hing_res.tmalign_res.rmsd_ali = chain_align_res.rmsd_ali;
         se_main(xt, ya, seqx, seqy,
-            cur_hing_res.tmalign_res.TM1, cur_hing_res.tmalign_res.TM2, cur_hing_res.tmalign_res.TM3,
-            cur_hing_res.tmalign_res.TM4, cur_hing_res.tmalign_res.TM5, chain_align_res.d0_0, chain_align_res.TM_0,
-            chain_align_res.d0A, chain_align_res.d0B, chain_align_res.d0u, chain_align_res.d0a, chain_align_res.d0_out,
-            cur_hing_res.tmalign_res.seqM, cur_hing_res.tmalign_res.seqxA, cur_hing_res.tmalign_res.seqyA,
-            chain_align_res.do_vec, cur_hing_res.tmalign_res.rmsd0, chain_align_res.L_ali, chain_align_res.Liden, chain_align_res.TM_ali, chain_align_res.rmsd_ali,
-            cur_hing_res.tmalign_res.n_ali, cur_hing_res.tmalign_res.n_ali8,
-            xlen, ylen, sequence, align_opts.Lnorm, align_opts.d0_scale, align_opts.i_opt,
-            align_opts.a_opt, align_opts.u_opt, align_opts.d_opt, align_opts.mol_type, 0, cur_hing_res.tmalign_res.invmap, hinge+1);
+            cur_hing_res.tmalign_res,
+            xlen, ylen, sequence, align_opts, 0, hinge+1);
+        chain_align_res.d0A = cur_hing_res.tmalign_res.d0A;
+        chain_align_res.d0B = cur_hing_res.tmalign_res.d0B;
+        chain_align_res.d0u = cur_hing_res.tmalign_res.d0u;
+        chain_align_res.d0a = cur_hing_res.tmalign_res.d0a;
+        chain_align_res.do_vec = cur_hing_res.tmalign_res.do_vec;
+        chain_align_res.Liden = cur_hing_res.tmalign_res.Liden;
 
         int new_ali=0;
         for (r=0;r<cur_hing_res.tmalign_res.seqM.size();r++)
