@@ -594,8 +594,6 @@ struct MMalignContext
     double iteration_score;         // iteration total score (was max_total_score)
     std::string iter_seqx;               // iteration working buffer (was sx)
     std::string iter_seqy;               // was sy
-    std::string iter_secx;               // was scx
-    std::string iter_secy;               // was scy
 
     MMalignContext(AlignCommonInput& common_inputs_in,
         const MMalignParams& mm_params_in)
@@ -2302,7 +2300,6 @@ void recover_best_monomer_pair(MMalignContext& ctx,
         ctx.iteration_score = ctx.pair_result.best_pair_tm;
         MMalign_iter(ctx.iteration_score, max_iter,
             ctx.parsed.complex1, ctx.parsed.complex2,
-            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
             ctx.pair_result.aligned_seq2,
@@ -2336,7 +2333,6 @@ void run_cross_chain_alignment(MMalignContext& ctx,
     {
         MMalign_dimer(cross_score,
             ctx.parsed.complex1, ctx.parsed.complex2,
-            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pair_result_origin.tm_matrix, ctx.pair_result_origin.aligned_seq1,
             ctx.pair_result_origin.aligned_seq2,
@@ -2771,7 +2767,6 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
         ctx.iteration_score = 0;   // ignore old score from monomeric superpositions
         MMalign_iter(ctx.iteration_score, max_iter,
             ctx.parsed.complex1, ctx.parsed.complex2,
-            ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len,
             struct1_chain_num, struct2_chain_num,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,

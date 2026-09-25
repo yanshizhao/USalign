@@ -1242,7 +1242,6 @@ inline int copy_chain_pair_data(
 
 inline double MMalign_search(
     const ComplexData& complex1, const ComplexData& complex2,
-    const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
@@ -1824,7 +1823,6 @@ inline void copy_chain_assign_data(int chain1_num, int chain2_num,
 
 inline void MMalign_iter(double & max_total_score, const int max_iter,
     const ComplexData& complex1, const ComplexData& complex2,
-    std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
@@ -1848,7 +1846,7 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
     for (int iter=0;iter<max_iter;iter++)
     {
         total_score=MMalign_search(complex1, complex2,
-            seqx, seqy, secx, secy, len_aa, len_na,
+            len_aa, len_na,
             chain1_num, chain2_num,
             TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
             sequence, d0_scale, fast_opt, 3, byresi_opt, chain_pair_map);
@@ -2886,7 +2884,6 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
 
 inline void MMalign_dimer(double & total_score,
     const ComplexData& complex1, const ComplexData& complex2,
-    const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,

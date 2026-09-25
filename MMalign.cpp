@@ -669,10 +669,8 @@ std::vector<int> assign2_init(chain2_num);
                               // score was from monomeric chain superpositions
     int max_iter=5-static_cast<int>((len_aa+len_na)/200);
     if (max_iter<2) max_iter=2;
-    // MMalign_iter/MMalign_final/MMalign_dimer internally overwrite work buffers
-    std::string sx, sy, scx, scy;
     MMalign_iter(max_total_score, max_iter, complex1, complex2,
-        sx, sy, scx, scy, len_aa, len_na, chain1_num,
+        len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap);
 
@@ -756,9 +754,8 @@ std::vector<int> assign2_init(chain2_num);
         sequence[0]=seqxA_mat[maxTMmono_i][maxTMmono_j];
         sequence[1]=seqyA_mat[maxTMmono_i][maxTMmono_j];
         max_total_score=maxTMmono;
-        std::string sx, sy, scx, scy;
         MMalign_iter(max_total_score, max_iter, complex1, complex2,
-            sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
+            len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
     }
@@ -780,7 +777,7 @@ std::vector<int> assign2_init(chain2_num);
     if (len_aa+len_na<10000)
     {
         MMalign_dimer(max_total_score_cross, complex1, complex2,
-            std::string(), std::string(), std::string(), std::string(), len_aa, len_na, chain1_num, chain2_num,
+            len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);
         if (max_total_score_cross>max_total_score) 
