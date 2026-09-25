@@ -455,7 +455,6 @@ void get_seqID(const std::vector<int>& invmap, const std::string& seqx, const st
         L_ali+=1;
         Liden+=(seqx[i]==seqy[j]);
     }
-    //return L_ali?1.*Liden/L_ali:0;
 }
 
 void get_seqID(const std::string& seqxA, const std::string& seqyA,
@@ -473,7 +472,6 @@ void get_seqID(const std::string& seqxA, const std::string& seqyA,
         else seqM+=' ';
         L_ali+=(seqxA[i]!='-' && seqyA[i]!='-');
     }
-    //return L_ali?1.*Liden/L_ali:0;
 }
 
 void output_NWalign_results(

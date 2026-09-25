@@ -4020,7 +4020,6 @@ void msta_build_msa(MstaIterationState& state, MstaIterContext& ctx)
                 if (r<state.msa.size()) state.msa[r]=msa_ext[r];
                 else state.msa.push_back(msa_ext[r]);
             }
-                    //<<ya[r][0]<<'\t'<<ya[r][1]<<'\t'<<ya[r][2]<<'\t'<<secy[r]<<endl;
 
             // clean up
             tmp_gap.clear();
@@ -4318,7 +4317,6 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 TMave_mat[i][j]=result.TM4; TMave_mat[j][i]=result.TM4;
                 seqxA_mat[i][j]=seqyA_mat[j][i]=result.seqxA;
                 seqyA_mat[i][j]=seqxA_mat[j][i]=result.seqyA;
-                    //<<chain_list[j]<<':'<<chainID_list[j]<<"\tTM4="<<TM4<<endl;
                 if (ctrl_opts.full_opt) output_results(
                     parsed_input.chain1_list[i],parsed_input.chain1_list[j], chainID_list[i], chainID_list[j],
                     xlen, ylen, result,
@@ -5008,10 +5006,6 @@ void check_numeric_and_conflicts(UserOptions& user_opts, ControlOptions& control
         if (byresi_ter_conflict)
             PrintErrorAndQuit("-TMscore 2 and 6 must be used with -ter <=1");
     }
-    //if (split_opt==1 && ter_opt!=0)
-        //PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    //else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
-        //PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (user_opts.split_opt<0)
         if (user_opts.byresi_opt==2 || user_opts.byresi_opt==3) user_opts.split_opt=0;
         else user_opts.split_opt=2;
@@ -5047,7 +5041,6 @@ void check_mm_conflicts(UserOptions& user_opts, ControlOptions& control)
     {
         if (user_opts.i_opt) PrintErrorAndQuit("-mm cannot be used with -i or -I");
         if (user_opts.u_opt) PrintErrorAndQuit("-mm cannot be used with -u or -L");
-        //if (cp_opt) PrintErrorAndQuit("-mm cannot be used with -cp");
         if (user_opts.dir_opt.size() && control.mm_opt==2) PrintErrorAndQuit("-mm 2 cannot be used with -dir");
         if (user_opts.byresi_opt) PrintErrorAndQuit("-mm cannot be used with -byresi");
         if (user_opts.ter_opt>=2 && (control.mm_opt==1 || control.mm_opt==2)) PrintErrorAndQuit("-mm 1 or 2 must be used with -ter 0 or -ter 1");

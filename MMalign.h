@@ -563,7 +563,6 @@ inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vect
                 assign2_tmp[j]=i;
                 TMsum+=TMave_mat[i][j];
                 TMscore+=ut_tmc_mat[i*chain2_num+j];
-                    //<<"\ti="<<i<<"\tj="<<j<<"\ttm="<<ut_tm_vec[ut_idx].first<<endl;
             }
 
             // final MMscore
@@ -575,8 +574,6 @@ inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vect
                 MMscore_max=MMscore;
                 for (i=0;i<chain1_num;i++) assign1_list[i]=assign1_tmp[i];
                 for (j=0;j<chain2_num;j++) assign2_list[j]=assign2_tmp[j];
-                //for (i=0;i<chain1_num;i++) 
-                //for (j=0;j<chain2_num;j++)
             }
         }
     }
@@ -605,10 +602,6 @@ inline double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::ve
     // calculate MMscore
     MMscore=MMscore_old=calMMscore(TMave_mat, assign1_list, chain1_num,
         chain2_num, xcentroids, ycentroids, d0MM, r1, r2, xt, t, u, L);
-    //for (i=0;i<chain1_num;i++)
-        //for (j=0; j<chain2_num; j++)
-            //if (j<chain2_num-1) cout<<TMave_mat[i][j]<<'\t';
-            //else                cout<<TMave_mat[i][j]<<endl;
 
     /* iteratively refine chain assignment. in each iteration, attempt
      * to swap (i,old_j=assign1_list[i]) with (i,j) */
@@ -640,8 +633,6 @@ inline double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::ve
                 MMscore=calMMscore(TMave_mat, assign1_tmp, chain1_num,
                     chain2_num, xcentroids, ycentroids, d0MM,
                     r1, r2, xt, t, u, L);
-
-                    //<<old_i<<","<<old_j<<","<<MMscore<<")"<<endl;
 
                 if (MMscore>MMscore_old) // successful swap
                 {
@@ -1889,7 +1880,6 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
                 assign2_tmp[kv->second]=kv->first;
             }
         }
-        //if (total_score<=0) PrintErrorAndQuit("ERROR! No assignable chain");
         if (total_score<=max_total_score) break;
         max_total_score=total_score;
         copy_chain_assign_data(chain1_num, chain2_num, sequence,

@@ -433,7 +433,6 @@ inline void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                             if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
                             {
                                 rasmol_state.ca_idx1++;
-            //mm_opt, split_opt, mirror_opt, chainID1,chainID2);
                                 rasmol_state.buf_all<<"ATOM  "<<std::setw(6)
                                     <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
                                     <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "

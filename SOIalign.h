@@ -763,7 +763,6 @@ inline void soi_align_final_tmscore_inv(CoordArray& xa_c, CoordArray& ya_c,
         parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
         d0_out=d0_scale;
         d0_0=d0_scale;
-        //Lnorm_0=ylen;
         local_d0_search = d0_search;
         TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
@@ -801,7 +800,6 @@ inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
     do_rotation(xa_c, xt, xlen, t0, u0);
 
     Liden=0;
-    //double SO=0;
     for (j=0;j<ylen;j++)
     {
         seqyA[j]=seqy[j];
@@ -812,11 +810,9 @@ inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
         if (d<d0_out) seqM[j]=':';
         else seqM[j]='.';
         dist_list[j]=d;
-        //SO+=(d<3.5);
         seqxA[j]=seqx[i];
         Liden+=(seqx[i]==seqy[j]);
     }
-    //SO/=getmin(xlen,ylen);
     k=0;
     for (i=0;i<xlen;i++)
     {
@@ -825,14 +821,8 @@ inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
         seqxA[ylen+k]=seqx[i];
         k++;
     }
-        //<<rmsd0<<'\t'
-        //<<100.*SO<<endl;
-
 
     // clean up
-
-
-
 
 }
 

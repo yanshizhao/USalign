@@ -595,7 +595,6 @@ void output_TMscore_results(
             seq_scale[i]=(i+1)%10+'0';
         }
         fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d\n", d0_out, L_lt_d);
-        //fcout("\nSuperposition in the TM-score: Length(d<%3.1f)= %d  RMSD=%6.2f\n", d0_out, L_lt_d, rmsd_d0_out);
         fcout("(\":\" denotes the residue pairs of distance <%4.1f Angstrom)\n", d0_out);
         std::cout << seqxA << "\n";
         std::cout << seqM << "\n";
