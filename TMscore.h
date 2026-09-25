@@ -643,6 +643,35 @@ void output_TMscore_results(
             resi_vec1, resi_vec2, chainID1, chainID2);
 }
 
+void output_TMscore_results(const std::string xname, const std::string yname,
+    const std::string chainID1, const std::string chainID2,
+    const int xlen, const int ylen, const ChainPairAlignResult& res,
+    const double Lnorm_ass, const double d0_scale,
+    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
+    const std::string& fname_super,
+    const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
+    int L_lt_d, const double rmsd_d0_out,
+    double GDT_list[5], double maxsub, const int split_opt,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2)
+{
+    output_TMscore_results(
+        xname, yname, chainID1, chainID2,
+        xlen, ylen, res.t0, res.u0,
+        res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
+        res.rmsd0, res.d0_out,
+        res.seqM, res.seqxA, res.seqyA, res.Liden,
+        res.n_ali8, res.L_ali,
+        res.TM_ali, res.rmsd_ali, res.TM_0,
+        res.d0_0, res.d0A, res.d0B,
+        Lnorm_ass, d0_scale,
+        res.d0a, res.d0u, fname_matrix,
+        outfmt_opt, ter_opt, fname_super,
+        a_opt, u_opt, d_opt, mirror_opt,
+        L_lt_d, rmsd_d0_out,
+        GDT_list, maxsub, split_opt,
+        resi_vec1, resi_vec2);
+}
+
 
 int TMscore_main(CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy, Vec3& t0, RotMat& u0,

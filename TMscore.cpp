@@ -473,24 +473,32 @@ int main(int argc, char *argv[])
                     if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
 
                     // declare variable specific to this pair of TMalign
-                    Vec3 t0; RotMat u0;
-                    double TM1;
-                    double TM2;
-                    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-                    double d0_0;
-                    double TM_0;
-                    double d0A;
-                    double d0B;
-                    double d0u;
-                    double d0a;
-                    double d0_out=5.0;
-                    std::string seqM, seqxA, seqyA;// for output alignment
-                    double rmsd0 = 0.0;
-                    int L_ali;                // Aligned length in standard_TMscore
-                    double Liden=0;
-                    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-                    int n_ali=0;
-                    int n_ali8=0;
+                    ChainPairAlignResult chain_align_res = {};
+                    chain_align_res.d0_out = 5.0;
+                    Vec3& t0 = chain_align_res.t0;
+                    RotMat& u0 = chain_align_res.u0;
+                    double& TM1 = chain_align_res.TM1;
+                    double& TM2 = chain_align_res.TM2;
+                    double& TM3 = chain_align_res.TM3;
+                    double& TM4 = chain_align_res.TM4;
+                    double& TM5 = chain_align_res.TM5;
+                    double& d0_0 = chain_align_res.d0_0;
+                    double& TM_0 = chain_align_res.TM_0;
+                    double& d0A = chain_align_res.d0A;
+                    double& d0B = chain_align_res.d0B;
+                    double& d0u = chain_align_res.d0u;
+                    double& d0a = chain_align_res.d0a;
+                    double& d0_out = chain_align_res.d0_out;
+                    std::string& seqM = chain_align_res.seqM;
+                    std::string& seqxA = chain_align_res.seqxA;
+                    std::string& seqyA = chain_align_res.seqyA;
+                    double& rmsd0 = chain_align_res.rmsd0;
+                    int& L_ali = chain_align_res.L_ali;
+                    double& Liden = chain_align_res.Liden;
+                    double& TM_ali = chain_align_res.TM_ali;
+                    double& rmsd_ali = chain_align_res.rmsd_ali;
+                    int& n_ali = chain_align_res.n_ali;
+                    int& n_ali8 = chain_align_res.n_ali8;
 
                     double rmsd_d0_out=0;
                     int L_lt_d=0;
@@ -517,15 +525,11 @@ int main(int argc, char *argv[])
                         yname.substr(dir2_opt.size()+dir_opt.size()),
                         chainID_list1[chain_i],
                         chainID_list2[chain_j],
-                        xlen, ylen, t0, u0, TM1, TM2, 
-                        TM3, TM4, TM5, rmsd0, d0_out,
-                        seqM, seqxA, seqyA, Liden,
-                        n_ali8, L_ali, TM_ali, rmsd_ali,
-                        TM_0, d0_0, d0A, d0B,
-                        Lnorm_ass, d0_scale, d0a, d0u, 
-                        (m_opt?fname_matrix:"").c_str(),
-                        outfmt_opt, ter_opt, 
-                        (o_opt?fname_super:"").c_str(),
+                        xlen, ylen, chain_align_res,
+                        Lnorm_ass, d0_scale,
+                        (m_opt?fname_matrix:""),
+                        outfmt_opt, ter_opt,
+                        (o_opt?fname_super:""),
                         a_opt, u_opt, d_opt, mirror_opt,
                         L_lt_d, rmsd_d0_out, GDT_list, maxsub,
                         split_opt, resi_vec1, resi_vec2);
