@@ -53,21 +53,6 @@ inline bool is_chain_pair_allowed(const std::map<int,int>& chain_pair_map,
     return !chain1_is_key && !chain2_is_value;
 }
 
-
-inline void print_assign_list(const std::vector<int>& assign1_list, const int chain1_num,
-    const std::vector<std::string> &chainID_list1,
-    const std::vector<std::string> &chainID_list2)
-{
-    int i;
-    int j;
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        if (j>=0)
-            std::cout<<chainID_list1[i]<<'\t'<<chainID_list2[j]<<std::endl;
-    }
-}
-
 /* count the number of nucleic acid chains (na_chain_num) and
  * protein chains (aa_chain_num) in a complex */
 inline int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
@@ -452,30 +437,6 @@ inline double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1
     TMscore/=getmin(chain1_num,chain2_num);
     MMscore*=TMscore;
     return MMscore;
-}
-
-/* check if this is alignment of heterooligomer or homooligomer
- * return het_deg, which ranges from 0 to 1.
- * The larger the value, the more "hetero"; 
- * Tthe smaller the value, the more "homo" */
-inline double check_heterooligomer(const DoubleMatrix& TMave_mat, const int chain1_num,
-    const int chain2_num)
-{
-    double het_deg=0;
-    double min_TM=-1;
-    double max_TM=-1;
-    int i;
-    int j;
-    for (i=0;i<chain1_num;i++)
-    {
-        for (j=0;j<chain2_num;j++)
-        {
-            if (min_TM<0 || TMave_mat[i][j] <min_TM) min_TM=TMave_mat[i][j];
-            if (max_TM<0 || TMave_mat[i][j]>=max_TM) max_TM=TMave_mat[i][j];
-        }
-    }
-    het_deg=(max_TM-min_TM)/max_TM;
-    return het_deg;
 }
 
 // reassign chain-chain correspondence, specific for homooligomer
@@ -3176,45 +3137,6 @@ inline int trimComplex(DoubleCube&a_trim_vec,
     std::vector<double> ().swap(xcoor);
     std::vector<double> ().swap(ycoor);
     return trim_chain_count;
-}
-
-inline void writeTrimComplex(DoubleCube&a_trim_vec,
-    CharMatrix&seq_trim_vec, std::vector<int>&len_trim_vec,
-    std::vector<std::string>&chainID_list, std::vector<int>&mol_vec,
-    const std::string &atom_opt, std::string filename)
-{
-    int c;
-    int r;
-    int a=0;
-    std::string chainID;
-    std::string atom;
-    std::ofstream fp(filename.c_str());
-    for (c=0;c<chainID_list.size();c++)
-    {
-        chainID=chainID_list[c];
-        if (chainID.size()==1) chainID=" "+chainID;
-        else if (chainID.size()>2) chainID=chainID.substr(chainID.size()-2,2);
-        if (chainID[0]==':') chainID=" "+chainID.substr(1);
-        atom=atom_opt;
-        if (atom_opt=="auto")
-        {
-            if (mol_vec[c]>0) atom=" C3'";
-            else              atom=" CA ";
-        }
-
-        for (r=0;r<len_trim_vec[c];r++)
-            fp<<"ATOM  "<<std::resetiosflags(std::ios::right)<<std::setw(5)<<++a<<' '
-              <<atom<<' '<<AAmap(seq_trim_vec[c][r])<<chainID
-              <<std::setw(4)<<r+1<<"    "
-              <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
-              <<std::setw(8)<<a_trim_vec[c][r][0]
-              <<std::setw(8)<<a_trim_vec[c][r][1]
-              <<std::setw(8)<<a_trim_vec[c][r][2]<<std::endl;
-    }
-    fp.close();
-    atom.clear();
-    chainID.clear();
-    return;
 }
 
 inline void output_dock_rotation_matrix(const std::string& fname_matrix,

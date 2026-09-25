@@ -29,25 +29,6 @@ inline void tu2t_u(std::vector<double> tu_tmp, Vec3& t0, RotMat& u0)
     }
 }
 
-void aln2invmap(const std::string &seqxA, const std::string &seqyA, std::vector<int>& invmap)
-{
-    int i;
-    int j;
-    int r;
-    int ylen=0;
-    for (r=0;r<seqyA.size();r++) ylen+=seqyA[r]!='-';
-    for(j=0; j<ylen; j++) invmap[j]=-1;
-
-    i=j=-1;
-    for (r=0;r<seqxA.size();r++)
-    {
-        i+=seqxA[r]!='-';
-        j+=seqyA[r]!='-';
-        if (seqxA[r]!='-' && seqyA[r]!='-') invmap[j]=i;
-    }
-}
-
-
 // extract rotation matrix based on TMscore8
 inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
     const DoubleMatrix&tu_vec)
