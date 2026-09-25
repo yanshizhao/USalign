@@ -540,8 +540,7 @@ void output_TMscore_results(
     const double d0a, const double d0u, const std::string& fname_matrix,
     const int outfmt_opt, const int ter_opt, const std::string& fname_super,
     const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
-    int L_lt_d, const double rmsd_d0_out,
-    double GDT_list[5], double maxsub, const int split_opt,
+    int L_lt_d, double GDT_list[5], double maxsub, const int split_opt,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2)
 {
     if (outfmt_opt<=0)
@@ -649,8 +648,7 @@ void output_TMscore_results(const std::string xname, const std::string yname,
     const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const std::string& fname_super,
     const int a_opt, const bool u_opt, const bool d_opt, const int mirror_opt,
-    int L_lt_d, const double rmsd_d0_out,
-    double GDT_list[5], double maxsub, const int split_opt,
+    int L_lt_d, double GDT_list[5], double maxsub, const int split_opt,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2)
 {
     output_TMscore_results(
@@ -666,8 +664,7 @@ void output_TMscore_results(const std::string xname, const std::string yname,
         chain_align_res.d0a, chain_align_res.d0u, fname_matrix,
         outfmt_opt, ter_opt, fname_super,
         a_opt, u_opt, d_opt, mirror_opt,
-        L_lt_d, rmsd_d0_out,
-        GDT_list, maxsub, split_opt,
+        L_lt_d, GDT_list, maxsub, split_opt,
         resi_vec1, resi_vec2);
 }
 

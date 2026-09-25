@@ -500,7 +500,6 @@ int main(int argc, char *argv[])
                     int& n_ali = chain_align_res.n_ali;
                     int& n_ali8 = chain_align_res.n_ali8;
 
-                    double rmsd_d0_out=0;
                     int L_lt_d=0;
                     double GDT_list[5]={0,0,0,0,0}; // 0.5, 1, 2, 4, 8
                     double maxsub=0;
@@ -531,8 +530,8 @@ int main(int argc, char *argv[])
                         outfmt_opt, ter_opt,
                         (o_opt?fname_super:""),
                         a_opt, u_opt, d_opt, mirror_opt,
-                        L_lt_d, rmsd_d0_out, GDT_list, maxsub,
-                        split_opt, resi_vec1, resi_vec2);
+                        L_lt_d, GDT_list, maxsub, split_opt,
+                        resi_vec1, resi_vec2);
 
                     // Done! Free memory
                     seqM.clear();
