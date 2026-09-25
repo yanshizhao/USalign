@@ -3703,6 +3703,7 @@ inline void tmalign_final_tmscore(int xlen, int ylen,
 
 inline void tmalign_extract_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& seqx, const std::string& seqy, int xlen, int ylen,
+    const double d0_out, const int n_ali8,
     TMalignAlignState& st, ChainPairAlignResult& res)
 {
     std::string &seqM = res.seqM;
@@ -3710,8 +3711,6 @@ inline void tmalign_extract_alignment_strings(CoordArray& xa_c, CoordArray& ya_c
     std::string &seqyA = res.seqyA;
     std::vector<double> &do_vec = res.do_vec;
     double &Liden = res.Liden;
-    const double d0_out = res.d0_out;
-    const int n_ali8 = res.n_ali8;
     CoordArray &xt = st.xt;
     std::vector<int> &m1 = st.m1;
     std::vector<int> &m2 = st.m2;
@@ -3877,7 +3876,8 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
     tmalign_select_aligned_pairs(xa_c, ya_c, xlen, ylen, opt, st, res);
     tmalign_final_tmscore(xlen, ylen, opt, st, res);
-    tmalign_extract_alignment_strings(xa_c, ya_c, seqx, seqy, xlen, ylen, st, res);
+    tmalign_extract_alignment_strings(xa_c, ya_c, seqx, seqy, xlen, ylen,
+        res.d0_out, res.n_ali8, st, res);
 
     return 0; // zero for no exception
 }
@@ -3931,20 +3931,56 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     return rc;
 }
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
-    Vec3& t0, RotMat& u0,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
-    std::string &seqM, std::string &seqxA, std::string &seqyA, std::vector<double> &do_vec,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    ChainPairAlignResult& res,
     const int xlen, const int ylen,
-    const std::vector<std::string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, const double TMcut)
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& opt)
 {
+    Vec3& t0 = res.t0;
+    RotMat& u0 = res.u0;
+    double& TM1 = res.TM1;
+    double& TM2 = res.TM2;
+    double& TM3 = res.TM3;
+    double& TM4 = res.TM4;
+    double& TM5 = res.TM5;
+    double& d0_0 = res.d0_0;
+    double& TM_0 = res.TM_0;
+    double& d0A = res.d0A;
+    double& d0B = res.d0B;
+    double& d0u = res.d0u;
+    double& d0a = res.d0a;
+    double& d0_out = res.d0_out;
+    std::string& seqM = res.seqM;
+    std::string& seqxA = res.seqxA;
+    std::string& seqyA = res.seqyA;
+    std::vector<double>& do_vec = res.do_vec;
+    double& rmsd0 = res.rmsd0;
+    int& L_ali = res.L_ali;
+    double& Liden = res.Liden;
+    double& TM_ali = res.TM_ali;
+    double& rmsd_ali = res.rmsd_ali;
+    int& n_ali = res.n_ali;
+    int& n_ali8 = res.n_ali8;
+    const double d0_scale = opt.d0_scale;
+    const double Lnorm_tmp=getmin(xlen,ylen);
+    double TM4_cp;
+    ChainPairAlignOptions cp_trial_opts;
+    cp_trial_opts.i_opt = 0;
+    cp_trial_opts.a_opt = 0;
+    cp_trial_opts.u_opt = true;
+    cp_trial_opts.d_opt = false;
+    cp_trial_opts.fast_opt = true;
+    cp_trial_opts.se_opt = false;
+    cp_trial_opts.cp_opt = false;
+    cp_trial_opts.Lnorm = Lnorm_tmp;
+    cp_trial_opts.d0_scale = d0_scale;
+    cp_trial_opts.TMcut = -1;
+    cp_trial_opts.parallel_threads = 1;
+    cp_trial_opts.ss_opt = 0;
+    cp_trial_opts.mol_type = opt.mol_type;
+
     std::string seqx_cp;
     std::string secx_cp;
     CoordArray xa_cp;
@@ -3967,16 +4003,32 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
         secx_cp[r+xlen]=secx_cp[r]=secx[r];
     }
 
-    double TM1_cp;
-    double TM2_cp;
-    double TM4_cp;
-    const double Lnorm_tmp=getmin(xlen,ylen);
+    ChainPairAlignResult cp_trial_res = res;
     TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen*2, ylen, sequence, Lnorm_tmp, d0_scale,
-        0, false, true, false, true, mol_type, -1);
+        cp_trial_res, xlen*2, ylen, sequence, cp_trial_opts);
+    t0 = cp_trial_res.t0;
+    u0 = cp_trial_res.u0;
+    TM3 = cp_trial_res.TM3;
+    TM4_cp = cp_trial_res.TM4;
+    TM5 = cp_trial_res.TM5;
+    d0_0 = cp_trial_res.d0_0;
+    TM_0 = cp_trial_res.TM_0;
+    d0A = cp_trial_res.d0A;
+    d0B = cp_trial_res.d0B;
+    d0u = cp_trial_res.d0u;
+    d0a = cp_trial_res.d0a;
+    d0_out = cp_trial_res.d0_out;
+    seqM = cp_trial_res.seqM;
+    seqxA_cp = cp_trial_res.seqxA;
+    seqyA_cp = cp_trial_res.seqyA;
+    do_vec = cp_trial_res.do_vec;
+    rmsd0 = cp_trial_res.rmsd0;
+    L_ali = cp_trial_res.L_ali;
+    Liden = cp_trial_res.Liden;
+    TM_ali = cp_trial_res.TM_ali;
+    rmsd_ali = cp_trial_res.rmsd_ali;
+    n_ali = cp_trial_res.n_ali;
+    n_ali8 = cp_trial_res.n_ali8;
 
     r=0;
     seqxA=seqxA_cp;
@@ -4012,11 +4064,9 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     rmsd0=Liden=n_ali=n_ali8=0;
 
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-        0, false, true, false, true, mol_type, -1);
+        res, xlen, ylen, sequence, cp_trial_opts);
+    seqxA_cp = res.seqxA;
+    seqyA_cp = res.seqyA;
 
     if (n_ali8>=cp_aln_best || TM4>=TM4_cp) cp_point=0;
 
@@ -4040,12 +4090,33 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
 
     if (cp_point!=0)
     {
+        ChainPairAlignResult cp_best_res = res;
+        cp_best_res.n_ali8 = cp_aln_best;
         TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-            t0, u0, TM1_cp, TM2_cp, TM3, TM4_cp, TM5,
-            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
-            do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, cp_aln_best,
-            xlen, ylen, sequence, Lnorm_tmp, d0_scale,
-            0, false, true, false, true, mol_type, -1);
+            cp_best_res, xlen, ylen, sequence, cp_trial_opts);
+        t0 = cp_best_res.t0;
+        u0 = cp_best_res.u0;
+        TM3 = cp_best_res.TM3;
+        TM4_cp = cp_best_res.TM4;
+        TM5 = cp_best_res.TM5;
+        d0_0 = cp_best_res.d0_0;
+        TM_0 = cp_best_res.TM_0;
+        d0A = cp_best_res.d0A;
+        d0B = cp_best_res.d0B;
+        d0u = cp_best_res.d0u;
+        d0a = cp_best_res.d0a;
+        d0_out = cp_best_res.d0_out;
+        seqM = cp_best_res.seqM;
+        seqxA_cp = cp_best_res.seqxA;
+        seqyA_cp = cp_best_res.seqyA;
+        do_vec = cp_best_res.do_vec;
+        rmsd0 = cp_best_res.rmsd0;
+        L_ali = cp_best_res.L_ali;
+        Liden = cp_best_res.Liden;
+        TM_ali = cp_best_res.TM_ali;
+        rmsd_ali = cp_best_res.rmsd_ali;
+        n_ali = cp_best_res.n_ali;
+        cp_aln_best = cp_best_res.n_ali8;
         if (n_ali8>=cp_aln_best || TM4>=TM4_cp)
         {
             cp_point=0;
@@ -4061,11 +4132,30 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     }
 
     TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA_cp, seqyA_cp,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, a_opt, u_opt, d_opt, fast_opt, mol_type, TMcut);
+        res, xlen, ylen, sequence, opt);
+    TM1 = res.TM1;
+    TM2 = res.TM2;
+    TM3 = res.TM3;
+    TM4 = res.TM4;
+    TM5 = res.TM5;
+    d0_0 = res.d0_0;
+    TM_0 = res.TM_0;
+    d0A = res.d0A;
+    d0B = res.d0B;
+    d0u = res.d0u;
+    d0a = res.d0a;
+    d0_out = res.d0_out;
+    seqM = res.seqM;
+    seqxA_cp = res.seqxA;
+    seqyA_cp = res.seqyA;
+    do_vec = res.do_vec;
+    rmsd0 = res.rmsd0;
+    L_ali = res.L_ali;
+    Liden = res.Liden;
+    TM_ali = res.TM_ali;
+    rmsd_ali = res.rmsd_ali;
+    n_ali = res.n_ali;
+    n_ali8 = res.n_ali8;
 
     if (cp_point>0)
     {
@@ -4092,22 +4182,4 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     seqxA_cp.clear();
     seqyA_cp.clear();
     return cp_point;
-}
-
-inline int CPalign_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    const std::string &secx, const std::string &secy,
-    ChainPairAlignResult& res,
-    const int xlen, const int ylen,
-    const std::vector<std::string>& sequence,
-    const ChainPairAlignOptions& opt)
-{
-    return CPalign_main(xa, ya, seqx, seqy, secx, secy,
-        res.t0, res.u0, res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
-        res.d0_0, res.TM_0, res.d0A, res.d0B, res.d0u, res.d0a, res.d0_out,
-        res.seqM, res.seqxA, res.seqyA, res.do_vec,
-        res.rmsd0, res.L_ali, res.Liden, res.TM_ali, res.rmsd_ali, res.n_ali, res.n_ali8,
-        xlen, ylen, sequence, opt.Lnorm, opt.d0_scale,
-        opt.i_opt, opt.a_opt, opt.u_opt, opt.d_opt, opt.fast_opt,
-        opt.mol_type, opt.TMcut);
 }
