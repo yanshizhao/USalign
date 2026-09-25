@@ -2301,11 +2301,7 @@ void recover_best_monomer_pair(MMalignContext& ctx,
             ctx.pair_result.tm_matrix);
         ctx.iteration_score = ctx.pair_result.best_pair_tm;
         MMalign_iter(ctx.iteration_score, max_iter,
-            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
-            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
-            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
-            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
-            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
+            ctx.parsed.complex1, ctx.parsed.complex2,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pair_result.tm_matrix, ctx.pair_result.aligned_seq1,
@@ -2339,11 +2335,7 @@ void run_cross_chain_alignment(MMalignContext& ctx,
     if (ctx.common_inputs.user_options.byresi_opt == 0 && ctx.parsed.protein_norm_len + ctx.parsed.na_norm_len < 10000)
     {
         MMalign_dimer(cross_score,
-            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
-            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
-            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
-            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
-            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
+            ctx.parsed.complex1, ctx.parsed.complex2,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len, chain1_num, chain2_num,
             ctx.pair_result_origin.tm_matrix, ctx.pair_result_origin.aligned_seq1,
@@ -2778,11 +2770,7 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
     {
         ctx.iteration_score = 0;   // ignore old score from monomeric superpositions
         MMalign_iter(ctx.iteration_score, max_iter,
-            ctx.parsed.complex1.coords, ctx.parsed.complex2.coords,
-            ctx.parsed.complex1.seqs, ctx.parsed.complex2.seqs,
-            ctx.parsed.complex1.secs, ctx.parsed.complex2.secs,
-            ctx.parsed.complex1.mol_types, ctx.parsed.complex2.mol_types,
-            ctx.parsed.complex1.lengths, ctx.parsed.complex2.lengths,
+            ctx.parsed.complex1, ctx.parsed.complex2,
             ctx.iter_seqx, ctx.iter_seqy, ctx.iter_secx, ctx.iter_secy,
             ctx.parsed.protein_norm_len, ctx.parsed.na_norm_len,
             struct1_chain_num, struct2_chain_num,

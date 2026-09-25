@@ -391,6 +391,23 @@ int main(int argc, char *argv[])
 
     std::map<int,int> chainmap;
 
+    ComplexData complex1;
+    complex1.coords = xa_vec;
+    complex1.seqs = seqx_vec;
+    complex1.secs = secx_vec;
+    complex1.mol_types = mol_vec1;
+    complex1.lengths = xlen_vec;
+    complex1.chain_ids = chainID_list1;
+    complex1.resi = resi_vec1;
+    ComplexData complex2;
+    complex2.coords = ya_vec;
+    complex2.seqs = seqy_vec;
+    complex2.secs = secy_vec;
+    complex2.mol_types = mol_vec2;
+    complex2.lengths = ylen_vec;
+    complex2.chain_ids = chainID_list2;
+    complex2.resi = resi_vec2;
+
     // perform monomer alignment if there is only one chain
     if (xa_vec.size()==1 && ya_vec.size()==1)
     {
@@ -663,9 +680,8 @@ std::vector<int> assign2_init(chain2_num);
     if (max_iter<2) max_iter=2;
     // MMalign_iter/MMalign_final/MMalign_dimer internally overwrite work buffers
     std::string sx, sy, scx, scy;
-    MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
-        seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
-        ylen_vec, sx, sy, scx, scy, len_aa, len_na, chain1_num,
+    MMalign_iter(max_total_score, max_iter, complex1, complex2,
+        sx, sy, scx, scy, len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
         sequence, d0_scale, fast_opt, chainmap);
 
@@ -750,8 +766,7 @@ std::vector<int> assign2_init(chain2_num);
         sequence[1]=seqyA_mat[maxTMmono_i][maxTMmono_j];
         max_total_score=maxTMmono;
         std::string sx, sy, scx, scy;
-        MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+        MMalign_iter(max_total_score, max_iter, complex1, complex2,
             sx, sy, scx, scy, len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
             d0_scale, fast_opt, chainmap);
@@ -773,8 +788,7 @@ std::vector<int> assign2_init(chain2_num);
         //d0_scale, true);
     if (len_aa+len_na<10000)
     {
-        MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+        MMalign_dimer(max_total_score_cross, complex1, complex2,
             std::string(), std::string(), std::string(), std::string(), len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
             sequence_init, d0_scale, fast_opt);

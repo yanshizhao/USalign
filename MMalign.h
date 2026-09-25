@@ -1201,17 +1201,22 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
 }
 
 inline int copy_chain_pair_data(
-    const DoubleCube&xa_vec,
-    const DoubleCube&ya_vec,
-    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
-    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
-    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
+    const ComplexData& complex1, const ComplexData& complex2,
     CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int chain1_num, int chain2_num,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence)
 {
+    const DoubleCube&xa_vec = complex1.coords;
+    const DoubleCube&ya_vec = complex2.coords;
+    const CharMatrix&seqx_vec = complex1.seqs;
+    const CharMatrix&seqy_vec = complex2.seqs;
+    const CharMatrix&secx_vec = complex1.secs;
+    const CharMatrix&secy_vec = complex2.secs;
+    const std::vector<int>&mol_vec1 = complex1.mol_types;
+    const std::vector<int>&mol_vec2 = complex2.mol_types;
+    const std::vector<int>&xlen_vec = complex1.lengths;
+    const std::vector<int>&ylen_vec = complex2.lengths;
     int i;
     int j;
     int r;
@@ -1254,12 +1259,7 @@ inline int copy_chain_pair_data(
 }
 
 inline double MMalign_search(
-    const DoubleCube&xa_vec,
-    const DoubleCube&ya_vec,
-    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
-    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
-    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
+    const ComplexData& complex1, const ComplexData& complex2,
     const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
@@ -1267,6 +1267,16 @@ inline double MMalign_search(
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0,
     const std::map<int,int>& chain_pair_map = std::map<int,int>())
 {
+    const DoubleCube& xa_vec = complex1.coords;
+    const DoubleCube& ya_vec = complex2.coords;
+    const CharMatrix& seqx_vec = complex1.seqs;
+    const CharMatrix& seqy_vec = complex2.seqs;
+    const CharMatrix& secx_vec = complex1.secs;
+    const CharMatrix& secy_vec = complex2.secs;
+    const std::vector<int>& mol_vec1 = complex1.mol_types;
+    const std::vector<int>& mol_vec2 = complex2.mol_types;
+    const std::vector<int>& xlen_vec = complex1.lengths;
+    const std::vector<int>& ylen_vec = complex2.lengths;
     double total_score=0;
     int i;
     int j;
@@ -1291,8 +1301,7 @@ inline double MMalign_search(
     secy.resize(ylen+1);
     ya.resize(ylen);
 
-    int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+    int mol_type=copy_chain_pair_data(complex1, complex2,
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
@@ -1649,8 +1658,7 @@ inline void MMalign_final(
     secy.resize(ylen+1);
     ya.resize(ylen);
 
-    int mol_type=copy_chain_pair_data(complex1.coords, complex2.coords, complex1.seqs, complex2.seqs,
-        complex1.secs, complex2.secs, complex1.mol_types, complex2.mol_types, complex1.lengths, complex2.lengths,
+    int mol_type=copy_chain_pair_data(complex1, complex2,
         xa, ya, seqx, seqy, secx, secy, params.chain1_num, params.chain2_num,
         pairs.aligned_seq1, pairs.aligned_seq2, assign.chain2_of_chain1, assign.chain1_of_chain2, sequence);
     seqx.resize(xlen+1);
@@ -1793,12 +1801,7 @@ inline void copy_chain_assign_data(int chain1_num, int chain2_num,
 }
 
 inline void MMalign_iter(double & max_total_score, const int max_iter,
-    const DoubleCube&xa_vec,
-    const DoubleCube&ya_vec,
-    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
-    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
-    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
+    const ComplexData& complex1, const ComplexData& complex2,
     std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
@@ -1822,8 +1825,7 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
 
     for (int iter=0;iter<max_iter;iter++)
     {
-        total_score=MMalign_search(xa_vec, ya_vec, seqx_vec, seqy_vec,
-            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+        total_score=MMalign_search(complex1, complex2,
             seqx, seqy, secx, secy, len_aa, len_na,
             chain1_num, chain2_num,
             TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
@@ -2862,12 +2864,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
 }
 
 inline void MMalign_dimer(double & total_score,
-    const DoubleCube&xa_vec,
-    const DoubleCube&ya_vec,
-    const CharMatrix&seqx_vec, const CharMatrix&seqy_vec,
-    const CharMatrix&secx_vec, const CharMatrix&secy_vec,
-    const std::vector<int> &mol_vec1, const std::vector<int> &mol_vec2,
-    const std::vector<int> &xlen_vec, const std::vector<int> &ylen_vec,
+    const ComplexData& complex1, const ComplexData& complex2,
     const std::string &seqx_arg, const std::string &seqy_arg, const std::string & /*secx*/, const std::string & /*secy*/,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
@@ -2875,6 +2872,16 @@ inline void MMalign_dimer(double & total_score,
     double d0_scale, bool fast_opt,
     const std::map<int,int>& chain_pair_map = std::map<int,int>())
 {
+    const DoubleCube& xa_vec = complex1.coords;
+    const DoubleCube& ya_vec = complex2.coords;
+    const CharMatrix& seqx_vec = complex1.seqs;
+    const CharMatrix& seqy_vec = complex2.seqs;
+    const CharMatrix& secx_vec = complex1.secs;
+    const CharMatrix& secy_vec = complex2.secs;
+    const std::vector<int>& mol_vec1 = complex1.mol_types;
+    const std::vector<int>& mol_vec2 = complex2.mol_types;
+    const std::vector<int>& xlen_vec = complex1.lengths;
+    const std::vector<int>& ylen_vec = complex2.lengths;
     int i;
     int j;
     int xlen=0;
@@ -2923,8 +2930,7 @@ inline void MMalign_dimer(double & total_score,
     secy.resize(ylen+1);
     ya.resize(ylen);
 
-    int mol_type=copy_chain_pair_data(xa_vec, ya_vec, seqx_vec, seqy_vec,
-        secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+    int mol_type=copy_chain_pair_data(complex1, complex2,
         xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
