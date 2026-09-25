@@ -1,8 +1,6 @@
 #pragma once
 /* Functions for the core TMalign algorithm, including the entry function
  * flexalign_main */
-#ifndef flexalign_h
-#define flexalign_h 1
 
 #include "TMalign.h"
 #include "align_types.h"
@@ -2163,7 +2161,6 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
 
     return flexalign_res.tu_vec.size();
 }
-#endif
 
 struct USBCAT_AFP
 {

@@ -1,8 +1,6 @@
 #pragma once
 /* Functions for the core TMalign algorithm, including the entry function
  * TMalign_main */
-#ifndef TMalign_h
-#define TMalign_h 1
 
 #include "param_set.h"
 #include "NW.h"
@@ -2867,10 +2865,6 @@ inline double approx_TM(const int xlen, const int ylen, const int a_opt,
     TMtmp/=Lnorm_0;
     return TMtmp;
 }
-
-
-#endif
-
 
 bool output_cp(const std::string&xname, const std::string&yname,
     const std::string &seqxA, const std::string &seqyA, const int outfmt_opt,
