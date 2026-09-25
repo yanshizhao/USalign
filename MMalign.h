@@ -1070,14 +1070,22 @@ inline void output_dock(const std::vector<std::string>&chain_list, const int ter
 }
 
 inline void parse_chain_list(const std::vector<std::string>&chain_list,
-    DoubleCube&a_vec, CharMatrix&seq_vec,
-    CharMatrix&sec_vec, std::vector<int>&mol_vec, std::vector<int>&len_vec,
-    std::vector<std::string>&chainID_list, const int ter_opt, const int split_opt,
+    ComplexData& complex,
+    const int ter_opt, const int split_opt,
     const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
     const bool autojustify, const int mirror_opt, const int het_opt,
-    int &len_aa, int &len_na,  const int o_opt, std::vector<std::string>&resi_vec,
-    const std::vector<std::string> &chain2parse, const std::vector<std::string> &model2parse)
+    const int o_opt, const std::vector<std::string> &chain2parse,
+    const std::vector<std::string> &model2parse)
 {
+    DoubleCube& a_vec = complex.coords;
+    CharMatrix& seq_vec = complex.seqs;
+    CharMatrix& sec_vec = complex.secs;
+    std::vector<int>& mol_vec = complex.mol_types;
+    std::vector<int>& len_vec = complex.lengths;
+    std::vector<std::string>& chainID_list = complex.chain_ids;
+    int& len_aa = complex.total_len_aa;
+    int& len_na = complex.total_len_na;
+    std::vector<std::string>& resi_vec = complex.resi;
     size_t i;
     int chain_i;
     int r;
@@ -1181,23 +1189,6 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
         if (mol_vec[i]>0) len_na+=len_vec[i];
         else              len_aa+=len_vec[i];
     }
-}
-
-inline void parse_chain_list(const std::vector<std::string>&chain_list,
-    ComplexData& complex,
-    const int ter_opt, const int split_opt,
-    const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
-    const bool autojustify, const int mirror_opt, const int het_opt,
-    const int o_opt, const std::vector<std::string> &chain2parse,
-    const std::vector<std::string> &model2parse)
-{
-    parse_chain_list(chain_list,
-        complex.coords, complex.seqs, complex.secs,
-        complex.mol_types, complex.lengths, complex.chain_ids,
-        ter_opt, split_opt, mol_opt, infmt_opt, atom_opt,
-        autojustify, mirror_opt, het_opt,
-        complex.total_len_aa, complex.total_len_na, o_opt, complex.resi,
-        chain2parse, model2parse);
 }
 
 inline int copy_chain_pair_data(

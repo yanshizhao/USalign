@@ -371,15 +371,23 @@ int main(int argc, char *argv[])
     std::vector<std::string> resi_vec2;  // residue index for chain2
 
     // parse complex
-    parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
-        xlen_vec, chainID_list1, ter_opt, split_opt, mol_opt, infmt1_opt,
-        atom_opt, false, mirror_opt, het_opt, xlen_aa, xlen_na, o_opt,
-        resi_vec1, chain2parse1, model2parse1);
+    ComplexData complex1;
+    ComplexData complex2;
+    parse_chain_list(chain1_list, complex1, ter_opt, split_opt, mol_opt,
+        infmt1_opt, atom_opt, false, mirror_opt, het_opt, o_opt,
+        chain2parse1, model2parse1);
+    xa_vec=complex1.coords; seqx_vec=complex1.seqs; secx_vec=complex1.secs;
+    mol_vec1=complex1.mol_types; xlen_vec=complex1.lengths;
+    chainID_list1=complex1.chain_ids; resi_vec1=complex1.resi;
+    xlen_aa=complex1.total_len_aa; xlen_na=complex1.total_len_na;
     if (xa_vec.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 1");
-    parse_chain_list(chain2_list, ya_vec, seqy_vec, secy_vec, mol_vec2,
-        ylen_vec, chainID_list2, ter_opt, split_opt, mol_opt, infmt2_opt,
-        atom_opt, false, 0, het_opt, ylen_aa, ylen_na, o_opt,
-        resi_vec2, chain2parse2, model2parse2);
+    parse_chain_list(chain2_list, complex2, ter_opt, split_opt, mol_opt,
+        infmt2_opt, atom_opt, false, 0, het_opt, o_opt,
+        chain2parse2, model2parse2);
+    ya_vec=complex2.coords; seqy_vec=complex2.seqs; secy_vec=complex2.secs;
+    mol_vec2=complex2.mol_types; ylen_vec=complex2.lengths;
+    chainID_list2=complex2.chain_ids; resi_vec2=complex2.resi;
+    ylen_aa=complex2.total_len_aa; ylen_na=complex2.total_len_na;
     if (ya_vec.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 2");
     int len_aa=getmin(xlen_aa,ylen_aa);
     int len_na=getmin(xlen_na,ylen_na);
@@ -390,23 +398,6 @@ int main(int argc, char *argv[])
     }
 
     std::map<int,int> chainmap;
-
-    ComplexData complex1;
-    complex1.coords = xa_vec;
-    complex1.seqs = seqx_vec;
-    complex1.secs = secx_vec;
-    complex1.mol_types = mol_vec1;
-    complex1.lengths = xlen_vec;
-    complex1.chain_ids = chainID_list1;
-    complex1.resi = resi_vec1;
-    ComplexData complex2;
-    complex2.coords = ya_vec;
-    complex2.seqs = seqy_vec;
-    complex2.secs = secy_vec;
-    complex2.mol_types = mol_vec2;
-    complex2.lengths = ylen_vec;
-    complex2.chain_ids = chainID_list2;
-    complex2.resi = resi_vec2;
 
     // perform monomer alignment if there is only one chain
     if (xa_vec.size()==1 && ya_vec.size()==1)
