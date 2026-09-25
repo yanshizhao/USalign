@@ -2561,15 +2561,8 @@ void output_rotation_matrix(const std::string& fname_matrix,
 //output the final results
 void output_results(const std::string xname, const std::string yname,
     const std::string chainID1, const std::string chainID2,
-    const int xlen, const int ylen, const Vec3& t, const RotMat& u,
-    const double TM1, const double TM2,
-    const double TM3, const double TM4, const double TM5,
-    const double rmsd, const double d0_out, const std::string& seqM,
-    const std::string& seqxA, const std::string& seqyA, const double Liden,
-    const int n_ali8, const int L_ali, const double TM_ali,
-    const double rmsd_ali, const double TM_0, const double d0_0,
-    const double d0A, const double d0B, const double Lnorm_ass,
-    const double d0_scale, const double d0a, const double d0u,
+    const int xlen, const int ylen, const ChainPairAlignResult& res,
+    const double Lnorm_ass, const double d0_scale,
     const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
     const int mm_opt, const int split_opt, const int o_opt,
     const std::string fname_super, const int i_opt, const int a_opt,
@@ -2577,6 +2570,29 @@ void output_results(const std::string xname, const std::string yname,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     std::ostream& os = std::cout)
 {
+    const Vec3& t = res.t0;
+    const RotMat& u = res.u0;
+    const double& TM1 = res.TM1;
+    const double& TM2 = res.TM2;
+    const double& TM3 = res.TM3;
+    const double& TM4 = res.TM4;
+    const double& TM5 = res.TM5;
+    const double& rmsd = res.rmsd0;
+    const double& d0_out = res.d0_out;
+    const std::string& seqM = res.seqM;
+    const std::string& seqxA = res.seqxA;
+    const std::string& seqyA = res.seqyA;
+    const double& Liden = res.Liden;
+    const int& n_ali8 = res.n_ali8;
+    const int& L_ali = res.L_ali;
+    const double& TM_ali = res.TM_ali;
+    const double& rmsd_ali = res.rmsd_ali;
+    const double& TM_0 = res.TM_0;
+    const double& d0_0 = res.d0_0;
+    const double& d0A = res.d0A;
+    const double& d0B = res.d0B;
+    const double& d0a = res.d0a;
+    const double& d0u = res.d0u;
     if (outfmt_opt<=0)
     {
         fcout(os,"\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
@@ -2655,27 +2671,6 @@ void output_results(const std::string xname, const std::string yname,
             resi_vec1, resi_vec2, chainID1, chainID2,
             xlen, ylen, d0A, n_ali8,
             rmsd, TM1, Liden);
-}
-
-void output_results(const std::string xname, const std::string yname,
-    const std::string chainID1, const std::string chainID2,
-    const int xlen, const int ylen, const ChainPairAlignResult& res,
-    const double Lnorm_ass, const double d0_scale,
-    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
-    const int mm_opt, const int split_opt, const int o_opt,
-    const std::string fname_super, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const int mirror_opt,
-    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
-    std::ostream& os = std::cout)
-{
-    output_results(xname, yname, chainID1, chainID2, xlen, ylen,
-        res.t0, res.u0, res.TM1, res.TM2, res.TM3, res.TM4, res.TM5,
-        res.rmsd0, res.d0_out, res.seqM, res.seqxA, res.seqyA, res.Liden,
-        res.n_ali8, res.L_ali, res.TM_ali, res.rmsd_ali, res.TM_0, res.d0_0,
-        res.d0A, res.d0B, Lnorm_ass, d0_scale, res.d0a, res.d0u,
-        fname_matrix, outfmt_opt, ter_opt, mm_opt, split_opt, o_opt,
-        fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
-        resi_vec1, resi_vec2, os);
 }
 
 void output_mTMalign_results(const std::string xname, const std::string yname,
