@@ -2009,8 +2009,8 @@ inline void search_hinge_regions(
         cur_hing_res.tmalign_res.t0 = chain_align_res.t0;
         cur_hing_res.tmalign_res.u0 = chain_align_res.u0;
         cur_hing_res.tmalign_res.do_vec = chain_align_res.do_vec;
-        TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed,
-            cur_hing_res.tmalign_res,
+        TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed,
+            secx_hinge_trimmed, secy_hinge_trimmed, cur_hing_res.tmalign_res,
             xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts);
         chain_align_res.t0 = cur_hing_res.tmalign_res.t0;
         chain_align_res.u0 = cur_hing_res.tmalign_res.u0;
