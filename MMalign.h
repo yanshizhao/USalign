@@ -1306,39 +1306,42 @@ inline double MMalign_search(
         seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
 
     // declare variable specific to this pair of TMalign
-    Vec3 t0;
-    RotMat u0;
-    double TM1;
-    double TM2;
-    double TM3, TM4, TM5;     // for a_opt, u_opt, d_opt
-    double d0_0;
-    double TM_0;
-    double d0A;
-    double d0B;
-    double d0u;
-    double d0a;
-    double d0_out=5.0;
-    std::string seqM, seqxA, seqyA;// for output alignment
-    double rmsd0 = 0.0;
-    int L_ali;                // Aligned length in standard_TMscore
-    double Liden=0;
-    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-    int n_ali=0;
-    int n_ali8=0;
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM4 = chain_align_res.TM4;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    double& Liden = chain_align_res.Liden;
 
     double Lnorm_ass=len_aa+len_na;
-    std::vector<double> do_vec;
+
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = i_opt;
+    align_opts.a_opt = false;
+    align_opts.u_opt = true;
+    align_opts.d_opt = false;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = Lnorm_ass;
+    align_opts.d0_scale = d0_scale;
+    align_opts.TMcut = -1;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = mol_type;
 
     // entry function for structure alignment
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-        do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-        i_opt, false, true, false, fast_opt, mol_type, -1);
+        chain_align_res,
+        xlen, ylen, sequence, align_opts);
 
     // clean up
-    do_vec.clear();
+    chain_align_res.do_vec.clear();
 
     // re-compute chain level alignment
     for (i=0;i<chain1_num;i++)
@@ -1402,11 +1405,14 @@ inline double MMalign_search(
             }
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, sequence_tmp, Lnorm_ass, d0_scale,
-                byresi_opt, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
+            ChainPairAlignOptions se_opts = align_opts;
+            se_opts.i_opt = byresi_opt;
+            se_opts.u_opt = 2;
+            se_opts.Lnorm = Lnorm_ass;
+            se_opts.mol_type = mol_vec1[i]+mol_vec2[j];
+            chain_align_res.invmap.assign(ylen+1, 0);
+            se_main(xt, ya, seqx, seqy, chain_align_res,
+                xlen, ylen, sequence_tmp, se_opts, 1);
 
             // print result
             seqxA_mat[i][j]=seqxA;
@@ -1421,7 +1427,7 @@ inline double MMalign_search(
             seqyA.clear();
             std::vector<std::string>().swap(sequence_tmp);
 
-            do_vec.clear();
+            chain_align_res.do_vec.clear();
         }
     }
     if (byresi_opt)
@@ -1520,24 +1526,29 @@ inline void mmalign_output_per_chain_alignments(
     std::string secy;
     CoordArray xa;
     CoordArray ya;
-    double TM1;
-    double TM2;
-    double TM3, TM4, TM5;
-    double d0_0;
-    double TM_0;
-    double d0A;
-    double d0B;
-    double d0u;
-    double d0a;
-    double d0_out=5.0;
-    std::string seqM, seqxA, seqyA;
-    double rmsd0 = 0.0;
-    int L_ali;
-    double Liden=0;
-    double TM_ali, rmsd_ali;
-    int n_ali=0;
-    int n_ali8=0;
-    std::vector<double>do_vec;
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
 
     // re-compute chain level alignment
     for (i=0;i<params.chain1_num;i++)
@@ -1579,11 +1590,23 @@ inline void mmalign_output_per_chain_alignments(
             sequence[1]=pairs.aligned_seq2[i][j];
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-                do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, sequence, Lnorm_ass, params.d0_scale,
-                1, params.a_opt, 2, params.d_opt, complex1.mol_types[i]+complex2.mol_types[j], 1, invmap);
+            ChainPairAlignOptions se_opts;
+            se_opts.i_opt = 1;
+            se_opts.a_opt = params.a_opt;
+            se_opts.u_opt = 2;
+            se_opts.d_opt = params.d_opt;
+            se_opts.fast_opt = false;
+            se_opts.se_opt = false;
+            se_opts.cp_opt = false;
+            se_opts.Lnorm = Lnorm_ass;
+            se_opts.d0_scale = params.d0_scale;
+            se_opts.TMcut = -1;
+            se_opts.parallel_threads = 1;
+            se_opts.ss_opt = 0;
+            se_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
+            chain_align_res.invmap.assign(ylen+1, 0);
+            se_main(xt, ya, seqx, seqy, chain_align_res,
+                xlen, ylen, sequence, se_opts, 1);
 
             pairs.tm_matrix[i][j]=TM4*Lnorm_ass;
 
@@ -1628,7 +1651,7 @@ inline void mmalign_output_per_chain_alignments(
             sequence[0].clear();
             sequence[1].clear();
 
-            do_vec.clear();
+            chain_align_res.do_vec.clear();
         }
     }
 }
@@ -1665,26 +1688,31 @@ inline void MMalign_final(
     seqy.resize(ylen+1);
 
     // declare variable specific to this pair of TMalign
-    Vec3 t0;
-    RotMat u0;
-    double TM1;
-    double TM2;
-    double TM3, TM4, TM5;     // for params.a_opt, u_opt, params.d_opt
-    double d0_0;
-    double TM_0;
-    double d0A;
-    double d0B;
-    double d0u;
-    double d0a;
-    double d0_out=5.0;
-    std::string seqM, seqxA, seqyA;// for output alignment
-    double rmsd0 = 0.0;
-    int L_ali;                // Aligned length in standard_TMscore
-    double Liden=0;
-    double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-    int n_ali=0;
-    int n_ali8=0;
-    std::vector<double>do_vec;
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
     double Lnorm_ass=params.len_aa+params.len_na;
 
     u0[0][0]=u0[1][1]=u0[2][2]=1;
@@ -1694,20 +1722,32 @@ inline void MMalign_final(
     t0[0]   =t0[1]   =t0[2]   =0;
     std::vector<int> invmap(ylen+1);
 
+    ChainPairAlignOptions final_align_opts;
+    final_align_opts.i_opt = 3;
+    final_align_opts.a_opt = params.a_opt;
+    final_align_opts.u_opt = false;
+    final_align_opts.d_opt = params.d_opt;
+    final_align_opts.fast_opt = params.fast_opt;
+    final_align_opts.se_opt = false;
+    final_align_opts.cp_opt = false;
+    final_align_opts.Lnorm = Lnorm_ass;
+    final_align_opts.d0_scale = params.d0_scale;
+    final_align_opts.TMcut = -1;
+    final_align_opts.parallel_threads = 1;
+    final_align_opts.ss_opt = 0;
+    final_align_opts.mol_type = mol_type;
+
     // entry function for structure alignment
     if (se_opt)
-        se_main(xa, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-            do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, params.d0_scale,
-            3, params.a_opt, false, params.d_opt, mol_type, 1, invmap);
-    else
-        TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
-            d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA, do_vec,
-            rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-            xlen, ylen, sequence, Lnorm_ass, params.d0_scale,
-            3, params.a_opt, false, params.d_opt, params.fast_opt, mol_type, -1);
+    {
+        final_align_opts.u_opt = 2;
+        chain_align_res.invmap.assign(ylen+1, 0);
+        se_main(xa, ya, seqx, seqy, chain_align_res,
+            xlen, ylen, sequence, final_align_opts, 1);
+    }
+    else TMalign_main(xa, ya, seqx, seqy, secx, secy,
+        chain_align_res,
+        xlen, ylen, sequence, final_align_opts);
 
     // prepare full complex alignment
     std::string chainID1="";
@@ -1754,7 +1794,7 @@ inline void MMalign_final(
     sequence[0].clear();
     sequence[1].clear();
     sequence[2].clear();
-    do_vec.clear();
+    chain_align_res.do_vec.clear();
 
     if (!params.full_opt) return;
 
@@ -2939,28 +2979,13 @@ inline void MMalign_dimer(double & total_score,
     chain_align_res.d0_out = 5.0;
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
-    double& TM1 = chain_align_res.TM1;
-    double& TM2 = chain_align_res.TM2;
-    double& TM3 = chain_align_res.TM3;
     double& TM4 = chain_align_res.TM4;
-    double& TM5 = chain_align_res.TM5;
-    double& d0_0 = chain_align_res.d0_0;
-    double& TM_0 = chain_align_res.TM_0;
-    double& d0A = chain_align_res.d0A;
-    double& d0B = chain_align_res.d0B;
-    double& d0u = chain_align_res.d0u;
-    double& d0a = chain_align_res.d0a;
     double& d0_out = chain_align_res.d0_out;
     std::string& seqM = chain_align_res.seqM;
     std::string& seqxA = chain_align_res.seqxA;
     std::string& seqyA = chain_align_res.seqyA;
     double& rmsd0 = chain_align_res.rmsd0;
-    int& L_ali = chain_align_res.L_ali;
     double& Liden = chain_align_res.Liden;
-    double& TM_ali = chain_align_res.TM_ali;
-    double& rmsd_ali = chain_align_res.rmsd_ali;
-    int& n_ali = chain_align_res.n_ali;
-    int& n_ali8 = chain_align_res.n_ali8;
 
     ChainPairAlignOptions align_opts;
     align_opts.i_opt = 1;
@@ -3038,16 +3063,19 @@ inline void MMalign_dimer(double & total_score,
             rmsd0 = 0.0;
             Liden=0;
             std::vector<int> invmap(ylen+1);
-            std::vector<double> do_vec;
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
 
             // entry function for structure alignment
-            se_main(xt, ya, seqx, seqy, TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-                do_vec, rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                0, false, 2, false, mol_vec1[i]+mol_vec2[j], 1, invmap);
+            ChainPairAlignOptions se_opts = align_opts;
+            se_opts.i_opt = 0;
+            se_opts.u_opt = 2;
+            se_opts.fast_opt = false;
+            se_opts.Lnorm = Lnorm_ass;
+            se_opts.mol_type = mol_vec1[i]+mol_vec2[j];
+            chain_align_res.invmap.assign(ylen+1, 0);
+            se_main(xt, ya, seqx, seqy, chain_align_res,
+                xlen, ylen, sequence, se_opts, 1);
 
             // print result
             seqxA_mat[i][j]=seqxA;
@@ -3074,7 +3102,7 @@ inline void MMalign_dimer(double & total_score,
             seqyA.clear();
 
 
-            do_vec.clear();
+            chain_align_res.do_vec.clear();
         }
     }
     return;
