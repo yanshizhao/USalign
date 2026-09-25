@@ -3189,6 +3189,8 @@ inline void build_domains_bounds(
 
     remove_single_elem_block(candidate_blocks, usb_cat_para, xlen, ylen);
 
+    merge_adjacent_blocks(candidate_blocks, xa, ya, cur_local_badRmsd);
+
     std::vector<RegionBounds> usbcat_regions_list;
     build_usbcat_regions(candidate_blocks, usbcat_regions_list);
     if (usbcat_regions_list.empty())
