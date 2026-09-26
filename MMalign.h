@@ -1555,33 +1555,33 @@ inline void mmalign_output_per_chain_alignments(
             // print result
             if (j==assign.chain2_of_chain1[i])
             {
-                ChainPairAlignResult result = { 0};
-                result.t0 = t0;
-                result.u0 = u0;
-                result.TM1 = TM1;
-                result.TM2 = TM2;
-                result.TM3 = TM3;
-                result.TM4 = TM4;
-                result.TM5 = TM5;
-                result.rmsd0 = rmsd0;
-                result.d0_out = d0_out;
-                result.Liden = Liden;
-                result.n_ali8 = n_ali8;
-                result.L_ali = L_ali;
-                result.TM_ali = TM_ali;
-                result.rmsd_ali = rmsd_ali;
-                result.TM_0 = TM_0;
-                result.d0_0 = d0_0;
-                result.d0A = d0A;
-                result.d0B = d0B;
-                result.d0a = d0a;
-                result.d0u = d0u;
-                result.seqM = pairs.aligned_consensus[i][j];
-                result.seqxA = pairs.aligned_seq1[i][j];
-                result.seqyA = pairs.aligned_seq2[i][j];
+                ChainPairAlignResult print_align_res = { 0};
+                print_align_res.t0 = t0;
+                print_align_res.u0 = u0;
+                print_align_res.TM1 = TM1;
+                print_align_res.TM2 = TM2;
+                print_align_res.TM3 = TM3;
+                print_align_res.TM4 = TM4;
+                print_align_res.TM5 = TM5;
+                print_align_res.rmsd0 = rmsd0;
+                print_align_res.d0_out = d0_out;
+                print_align_res.Liden = Liden;
+                print_align_res.n_ali8 = n_ali8;
+                print_align_res.L_ali = L_ali;
+                print_align_res.TM_ali = TM_ali;
+                print_align_res.rmsd_ali = rmsd_ali;
+                print_align_res.TM_0 = TM_0;
+                print_align_res.d0_0 = d0_0;
+                print_align_res.d0A = d0A;
+                print_align_res.d0B = d0B;
+                print_align_res.d0a = d0a;
+                print_align_res.d0u = d0u;
+                print_align_res.seqM = pairs.aligned_consensus[i][j];
+                print_align_res.seqxA = pairs.aligned_seq1[i][j];
+                print_align_res.seqyA = pairs.aligned_seq2[i][j];
                 output_results(params.xname, params.yname,
                     complex1.chain_ids[i], complex2.chain_ids[j],
-                    xlen, ylen, result,
+                    xlen, ylen, print_align_res,
                     Lnorm_ass, params.d0_scale, "", params.outfmt_opt, params.ter_opt, false, params.split_opt, 0,
                     "", false, params.a_opt, false, params.d_opt, 0, complex1.resi, complex2.resi);
             }
@@ -1699,32 +1699,32 @@ inline void MMalign_final(
         params.chain1_num, params.chain2_num, pairs.aligned_seq1, pairs.aligned_seq2, pairs.aligned_consensus,
         chainID1, chainID2, sequence);
     // print alignment
-    ChainPairAlignResult result = { 0};
-    result.t0 = t0;
-    result.u0 = u0;
-    result.TM1 = TM1;
-    result.TM2 = TM2;
-    result.TM3 = TM3;
-    result.TM4 = TM4;
-    result.TM5 = TM5;
-    result.rmsd0 = rmsd0;
-    result.d0_out = d0_out;
-    result.Liden = Liden;
-    result.n_ali8 = n_ali8;
-    result.L_ali = L_ali;
-    result.TM_ali = TM_ali;
-    result.rmsd_ali = rmsd_ali;
-    result.TM_0 = TM_0;
-    result.d0_0 = d0_0;
-    result.d0A = d0A;
-    result.d0B = d0B;
-    result.d0a = d0a;
-    result.d0u = d0u;
-    result.seqM = sequence[2];
-    result.seqxA = sequence[0];
-    result.seqyA = sequence[1];
+    ChainPairAlignResult print_align_res = { 0};
+    print_align_res.t0 = t0;
+    print_align_res.u0 = u0;
+    print_align_res.TM1 = TM1;
+    print_align_res.TM2 = TM2;
+    print_align_res.TM3 = TM3;
+    print_align_res.TM4 = TM4;
+    print_align_res.TM5 = TM5;
+    print_align_res.rmsd0 = rmsd0;
+    print_align_res.d0_out = d0_out;
+    print_align_res.Liden = Liden;
+    print_align_res.n_ali8 = n_ali8;
+    print_align_res.L_ali = L_ali;
+    print_align_res.TM_ali = TM_ali;
+    print_align_res.rmsd_ali = rmsd_ali;
+    print_align_res.TM_0 = TM_0;
+    print_align_res.d0_0 = d0_0;
+    print_align_res.d0A = d0A;
+    print_align_res.d0B = d0B;
+    print_align_res.d0a = d0a;
+    print_align_res.d0u = d0u;
+    print_align_res.seqM = sequence[2];
+    print_align_res.seqxA = sequence[0];
+    print_align_res.seqyA = sequence[1];
     output_results(params.xname, params.yname, chainID1, chainID2,
-        xlen, ylen, result,
+        xlen, ylen, print_align_res,
         Lnorm_ass, params.d0_scale, (params.m_opt?params.fname_matrix:""),
         params.outfmt_opt, params.ter_opt, true, params.split_opt, params.o_opt, params.fname_super,
         false, params.a_opt, false, params.d_opt, params.mirror_opt, complex1.resi, complex2.resi);
