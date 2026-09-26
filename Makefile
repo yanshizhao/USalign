@@ -28,7 +28,7 @@ USalign.exe: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h 
 TMalign: TMalign.cpp param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h cli_parse.h
 		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
 
-TMscore: TMscore.cpp TMscore.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
+TMscore: TMscore.cpp TMscore.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h cli_parse.h
 		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
 
 MMalign: MMalign.cpp MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h cli_parse.h
