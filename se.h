@@ -18,14 +18,14 @@ struct SeSearchState
 
 
 inline void se_prepare_search_parameters(int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, int mol_type, ChainPairAlignResult& chain_align_res, SeSearchState& search)
+    const ChainPairAlignOptions& align_opts, int mol_type, ChainPairAlignResult& chain_align_res, SeSearchState& se_search_state)
 {
-    double &D0_MIN = search.D0_MIN;
-    double &Lnorm = search.Lnorm;
-    double &score_d8 = search.score_d8;
-    double &d0 = search.d0;
-    double &d0_search = search.d0_search;
-    double &dcu0 = search.dcu0;
+    double &D0_MIN = se_search_state.D0_MIN;
+    double &Lnorm = se_search_state.Lnorm;
+    double &score_d8 = se_search_state.score_d8;
+    double &d0 = se_search_state.d0;
+    double &d0_search = se_search_state.d0_search;
+    double &dcu0 = se_search_state.dcu0;
     double &d0A = chain_align_res.d0A;
     double &d0B = chain_align_res.d0B;
     double &d0a = chain_align_res.d0a;
@@ -59,9 +59,9 @@ inline void se_prepare_search_parameters(int xlen, int ylen,
 inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
     CoordArray& xa, CoordArray& ya, int xlen, int ylen,
     const std::vector<std::string>& sequence, const ChainPairAlignOptions& align_opts,
-    const SeSearchState& search, ChainPairAlignResult& chain_align_res, const int hinge)
+    const SeSearchState& se_search_state, ChainPairAlignResult& chain_align_res, const int hinge)
 {
-    const double d0 = search.d0;
+    const double d0 = se_search_state.d0;
     const bool i_opt = align_opts.i_opt;
     std::vector<int> &invmap = chain_align_res.invmap;
     int j;
@@ -90,7 +90,7 @@ inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
 }
 
 inline void se_score_alignment(CoordArray& xa, CoordArray& ya, int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, const SeSearchState& search, const std::vector<int>& invmap0,
+    const ChainPairAlignOptions& align_opts, const SeSearchState& se_search_state, const std::vector<int>& invmap0,
     ChainPairAlignResult& chain_align_res, std::vector<int>& m1, std::vector<int>& m2,
     const int outfmt_opt, const int hinge)
 {
@@ -109,7 +109,7 @@ inline void se_score_alignment(CoordArray& xa, CoordArray& ya, int xlen, int yle
     const double d0B = chain_align_res.d0B;
     const double d0a = chain_align_res.d0a;
     const double d0u = chain_align_res.d0u;
-    const double score_d8 = search.score_d8;
+    const double score_d8 = se_search_state.score_d8;
     const bool a_opt = align_opts.a_opt;
     const int u_opt = align_opts.u_opt;
     const bool d_opt = align_opts.d_opt;

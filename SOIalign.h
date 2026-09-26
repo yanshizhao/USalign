@@ -1130,7 +1130,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
 }
 
 
-inline void soi_align_pair(ChainPairAlignResult& result,
+inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
     CoordArray& xa, CoordArray& ya,
     CoordArray& xk, CoordArray& yk, const int closeK_opt,
     const std::string& seqx, const std::string& seqy,
@@ -1142,32 +1142,32 @@ inline void soi_align_pair(ChainPairAlignResult& result,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
     int outfmt_opt)
 {
-    result.invmap.assign(ylen + 1, 0);
+    chain_align_res.invmap.assign(ylen + 1, 0);
     if (align_opts.se_opt)
     {
-        result.u0[0][0]=result.u0[1][1]=result.u0[2][2]=1;
-        result.u0[0][1]=         result.u0[0][2]=
-        result.u0[1][0]=         result.u0[1][2]=
-        result.u0[2][0]=         result.u0[2][1]=
-        result.t0[0]   =result.t0[1]   =result.t0[2]   =0;
-        soi_se_main(xa, ya, seqx, seqy, result,
+        chain_align_res.u0[0][0]=chain_align_res.u0[1][1]=chain_align_res.u0[2][2]=1;
+        chain_align_res.u0[0][1]=         chain_align_res.u0[0][2]=
+        chain_align_res.u0[1][0]=         chain_align_res.u0[1][2]=
+        chain_align_res.u0[2][0]=         chain_align_res.u0[2][1]=
+        chain_align_res.t0[0]   =chain_align_res.t0[1]   =chain_align_res.t0[2]   =0;
+        soi_se_main(xa, ya, seqx, seqy, chain_align_res,
             xlen, ylen, align_opts, outfmt_opt, dist_list, secx_bond, secy_bond, mm_opt);
         if (outfmt_opt >= 2)
         {
-            result.Liden=result.L_ali=0;
+            chain_align_res.Liden=chain_align_res.L_ali=0;
             int r1;
             int r2;
             for (r2=0;r2<ylen;r2++)
             {
-                r1=result.invmap[r2];
+                r1=chain_align_res.invmap[r2];
                 if (r1<0) continue;
-                result.L_ali+=1;
-                result.Liden+=(seqx[r1]==seqy[r2]);
+                chain_align_res.L_ali+=1;
+                chain_align_res.Liden+=(seqx[r1]==seqy[r2]);
             }
         }
     }
     else SOIalign_main(xa, ya, xk, yk, closeK_opt,
-        seqx, seqy, secx, secy, result,
+        seqx, seqy, secx, secy, chain_align_res,
         xlen, ylen, sequence, align_opts, dist_list, secx_bond, secy_bond, mm_opt);
 }
 
