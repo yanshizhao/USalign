@@ -788,34 +788,6 @@ std::vector<int> assign2_init(chain2_num);
     std::vector<std::vector<std::string> >().swap(seqxA_mat);
     std::vector<std::vector<std::string> >().swap(seqM_mat);
     std::vector<std::vector<std::string> >().swap(seqyA_mat);
-    std::vector<std::string>().swap(tmp_str_vec);
-
-
-
-    std::vector<std::vector<std::string> >().swap(seqxA_init);
-    std::vector<std::vector<std::string> >().swap(seqyA_init);
-
-    std::vector<std::vector<std::vector<double> > >().swap(xa_vec); // structure of complex1
-    std::vector<std::vector<std::vector<double> > >().swap(ya_vec); // structure of complex2
-    CharMatrix().swap(seqx_vec); // sequence of complex1
-    CharMatrix().swap(seqy_vec); // sequence of complex2
-    CharMatrix().swap(secx_vec); // secondary structure of complex1
-    CharMatrix().swap(secy_vec); // secondary structure of complex2
-    mol_vec1.clear();       // molecule type of complex1, RNA if >0
-    mol_vec2.clear();       // molecule type of complex2, RNA if >0
-    std::vector<std::string>().swap(chainID_list1);  // list of chainID1
-    std::vector<std::string>().swap(chainID_list2);  // list of chainID2
-    xlen_vec.clear();       // length of complex1
-    ylen_vec.clear();       // length of complex2
-    std::vector<std::string>().swap(chain1_list);
-    std::vector<std::string>().swap(chain2_list);
-    std::vector<std::string>().swap(sequence);
-    std::vector<std::string>().swap(resi_vec1);  // residue index for chain1
-    std::vector<std::string>().swap(resi_vec2);  // residue index for chain2
-    std::vector<std::string>().swap(chain2parse1);
-    std::vector<std::string>().swap(chain2parse2);
-    std::vector<std::string>().swap(model2parse1);
-    std::vector<std::string>().swap(model2parse2);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;

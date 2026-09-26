@@ -579,10 +579,6 @@ int main(int argc, char *argv[])
     chain1_list.clear();
     chain2_list.clear();
     sequence.clear();
-    std::vector<std::string>().swap(chain2parse1);
-    std::vector<std::string>().swap(chain2parse2);
-    std::vector<std::string>().swap(model2parse1);
-    std::vector<std::string>().swap(model2parse2);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;

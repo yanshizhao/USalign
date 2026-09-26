@@ -1845,9 +1845,6 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
             seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
             seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
     }
-    std::vector<std::string>().swap(tmp_str_vec);
-    std::vector<std::vector<std::string> >().swap(seqxA_tmp);
-    std::vector<std::vector<std::string> >().swap(seqyA_tmp);
 }
 
 
@@ -3132,10 +3129,6 @@ inline int trimComplex(DoubleCube&a_trim_vec,
         }
         include_vec.clear();
     }
-    std::vector<std::pair<double,int> >().swap(dinter_vec);
-    std::vector<bool>().swap(include_vec);
-    std::vector<double> ().swap(xcoor);
-    std::vector<double> ().swap(ycoor);
     return trim_chain_count;
 }
 

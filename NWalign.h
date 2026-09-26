@@ -649,8 +649,6 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
         }
         
     }
-    std::map<std::string,std::string>().swap(chainID_map1);
-    std::map<std::string,std::string>().swap(chainID_map2);
     chainID1.clear();
     chainID2.clear();
     chainID1_prev.clear();

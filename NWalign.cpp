@@ -400,9 +400,5 @@ int main(int argc, char *argv[])
     }
     chain1_list.clear();
     chain2_list.clear();
-    std::vector<std::string>().swap(chain2parse1);
-    std::vector<std::string>().swap(chain2parse2);
-    std::vector<std::string>().swap(model2parse1);
-    std::vector<std::string>().swap(model2parse2);
     return 0;
 }

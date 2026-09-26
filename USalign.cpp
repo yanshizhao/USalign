@@ -3243,18 +3243,6 @@ int MMdock(AlignCommonInput& common_inputs)
         result.seqyA.clear();
         result.do_vec.clear();
 
-        DoubleCube().swap(complex1.coords); // structure of complex1
-        DoubleCube().swap(complex2.coords); // structure of complex2
-        CharMatrix().swap(complex1.seqs); // sequence of complex1
-        CharMatrix().swap(complex2.seqs); // sequence of complex2
-        CharMatrix().swap(complex1.secs); // secondary structure of complex1
-        CharMatrix().swap(complex2.secs); // secondary structure of complex2
-        complex1.mol_types.clear();       // molecule type of complex1, RNA if >0
-        complex2.mol_types.clear();       // molecule type of complex2, RNA if >0
-        complex1.chain_ids.clear();  // list of chainID1
-        complex2.chain_ids.clear();  // list of chainID2
-        complex1.lengths.clear();       // length of complex1
-        complex2.lengths.clear();       // length of complex2
         return 0;
     }
 
@@ -3300,20 +3288,6 @@ int MMdock(AlignCommonInput& common_inputs)
     std::vector<std::vector<std::string> >().swap(seqxA_mat);
     std::vector<std::vector<std::string> >().swap(seqM_mat);
     std::vector<std::vector<std::string> >().swap(seqyA_mat);
-    std::vector<std::string>().swap(tmp_str_vec);
-
-    DoubleCube().swap(complex1.coords); // structure of complex1
-    DoubleCube().swap(complex2.coords); // structure of complex2
-    CharMatrix().swap(complex1.seqs); // sequence of complex1
-    CharMatrix().swap(complex2.seqs); // sequence of complex2
-    CharMatrix().swap(complex1.secs); // secondary structure of complex1
-    CharMatrix().swap(complex2.secs); // secondary structure of complex2
-    complex1.mol_types.clear();       // molecule type of complex1, RNA if >0
-    complex2.mol_types.clear();       // molecule type of complex2, RNA if >0
-    std::vector<std::string>().swap(complex1.chain_ids);  // list of chainID1
-    std::vector<std::string>().swap(complex2.chain_ids);  // list of chainID2
-    complex1.lengths.clear();       // length of complex1
-    complex2.lengths.clear();       // length of complex2
     return 1;
 }
 
@@ -4520,19 +4494,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     }
 
     // clean up
-    std::vector<std::string>().swap(state.msa);
-    std::vector<std::string>().swap(tmp_str_vec);
-    std::vector<std::vector<std::string> >().swap(seqxA_mat);
-    std::vector<std::vector<std::string> >().swap(seqyA_mat);
-    std::vector<std::string>().swap(state.xname_vec);
-    std::vector<std::string>().swap(state.yname_vec);
-    DoubleCube().swap(a_vec); // structure of complex
-    std::vector<double>().swap(state.TM_vec);
-    std::vector<double>().swap(state.d0_vec);
-    std::vector<double>().swap(state.seqID_vec);
-    DoubleMatrix().swap(state.TM_mat);
-    DoubleMatrix().swap(state.d0_mat);
-    DoubleMatrix().swap(state.seqID_mat);
     return 1;
 }
 
