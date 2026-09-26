@@ -1256,7 +1256,7 @@ struct FlexalignParams
 
 inline void output_flexalign_results(
     const ParsedChain& chain1_data, const ParsedChain& chain2_data,
-    const FlexAlignResult& res,
+    const FlexAlignResult& flexalign_res,
     const UserOptions& opts,
     const int mm_opt)
 {
@@ -1279,49 +1279,49 @@ inline void output_flexalign_results(
         fcout("Length of Structure_2: %d residues\n\n", ylen);
 
         if (opts.i_opt)
-            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", res.TM_ali, res.L_ali, res.rmsd_ali);
+            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
 
-        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", res.n_ali8, res.rmsd0, (res.n_ali8>0)?res.Liden/res.n_ali8:0);
-        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", res.TM2, xlen, res.d0B);
-        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", res.TM1, ylen, res.d0A);
+        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
+        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", flexalign_res.TM2, xlen, flexalign_res.d0B);
+        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", flexalign_res.TM1, ylen, flexalign_res.d0A);
 
         if (opts.a_opt==1)
-            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", res.TM3, (xlen+ylen)*0.5, res.d0a);
+            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
         if (opts.u_opt)
-            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", res.TM4, opts.Lnorm_ass, res.d0u);
+            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
         if (opts.d_opt)
-            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", res.TM5, opts.d0_scale, ylen);
+            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
         std::cout << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
         std::cout << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
-        std::cout << res.seqxA << "\n";
-        std::cout << res.seqM << "\n";
-        std::cout << res.seqyA << "\n";
+        std::cout << flexalign_res.seqxA << "\n";
+        std::cout << flexalign_res.seqM << "\n";
+        std::cout << flexalign_res.seqyA << "\n";
     }
     else if (opts.outfmt_opt==1)
     {
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            xname, chainID1, xlen, res.d0B, res.Liden/xlen, res.TM2);
-        std::cout << res.seqxA << "\n";
+            xname, chainID1, xlen, flexalign_res.d0B, flexalign_res.Liden/xlen, flexalign_res.TM2);
+        std::cout << flexalign_res.seqxA << "\n";
         fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
-            yname, chainID2, ylen, res.d0A, res.Liden/ylen, res.TM1);
-        std::cout << res.seqyA << "\n";
+            yname, chainID2, ylen, flexalign_res.d0A, flexalign_res.Liden/ylen, flexalign_res.TM1);
+        std::cout << flexalign_res.seqyA << "\n";
 
         fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
-            res.n_ali8, res.rmsd0, (res.n_ali8>0)?res.Liden/res.n_ali8:0);
+            flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
 
         if (opts.i_opt)
-            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", res.TM_ali, res.L_ali, res.rmsd_ali);
+            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
 
         if(opts.a_opt)
-            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", res.TM3, (xlen+ylen)*0.5, res.d0a);
+            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
 
         if(opts.u_opt)
-            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", res.TM4, opts.Lnorm_ass, res.d0u);
+            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
 
         if(opts.d_opt)
-            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", res.TM5, opts.d0_scale, ylen);
+            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
 
         std::cout << "$$$$\n";
     }
@@ -1329,22 +1329,22 @@ inline void output_flexalign_results(
     {
         fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname, chainID1, yname, chainID2,
-            res.TM2, res.TM1, res.rmsd0, res.Liden/xlen, res.Liden/ylen, (res.n_ali8>0)?res.Liden/res.n_ali8:0,
-            xlen, ylen, res.n_ali8);
+            flexalign_res.TM2, flexalign_res.TM1, flexalign_res.rmsd0, flexalign_res.Liden/xlen, flexalign_res.Liden/ylen, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0,
+            xlen, ylen, flexalign_res.n_ali8);
     }
     std::cout << std::endl;
 
     if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_rotation_matrix(
-            opts.fname_matrix, res.tu_vec);
+            opts.fname_matrix, flexalign_res.tu_vec);
 
-    if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, res.tu_vec,
-            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, res.seqM, res.seqxA, res.seqyA,
+    if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
+            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2);
     else if (opts.o_opt==2)
-        output_flexalign_rasmol(xname, yname, opts.fname_super, res.tu_vec,
-            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, res.seqM, res.seqxA, res.seqyA,
+        output_flexalign_rasmol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
+            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2,
-            xlen, ylen, res.d0A, res.n_ali8, res.rmsd0, res.TM1, res.Liden);
+            xlen, ylen, flexalign_res.d0A, flexalign_res.n_ali8, flexalign_res.rmsd0, flexalign_res.TM1, flexalign_res.Liden);
 }
 
 
@@ -2276,7 +2276,7 @@ inline void flexalign_usbcat_main(
     int mol_type, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     int sparse_val,
     const FlexalignParams& flex_params,
-    FlexAlignResult& res);
+    FlexAlignResult& flexalign_res);
 
 
 
@@ -2287,7 +2287,7 @@ inline void run_flexalign(
     const ParsedChain& chain2_data,
     const AlignCommonInput& common_inputs,
     const FlexalignParams& flex_params,
-    FlexAlignResult& res)
+    FlexAlignResult& flexalign_res)
 {
     CoordArray xa = chain1_data.chain_coords;
     CoordArray ya = chain2_data.chain_coords;
@@ -2310,19 +2310,19 @@ inline void run_flexalign(
         case FLEX_USBCAT:
             if (best_global_max_TM >= flex_params.TMpass)
             {
-                res = flexalign_main_res;
-                res.hingeNum = res.tu_vec.size();
+                flexalign_res = flexalign_main_res;
+                flexalign_res.hingeNum = flexalign_res.tu_vec.size();
             }
             else
             {
                 flexalign_usbcat_main(
                     xa, ya, seqx, seqy, secx, secy, xa_len, ya_len, common_inputs,
                     flexalign_main_res, mol_type, best_global_max_TM, flex_params.sparse_val,
-                    flex_params, res);
+                    flex_params, flexalign_res);
             }
             break;
         case FLEX_BEST:
-            res = flexalign_main_res;
+            flexalign_res = flexalign_main_res;
             break;
         default:
             PrintErrorAndQuit("ERROR! Unknown FlexAlignMode.");
@@ -3517,24 +3517,24 @@ inline void build_global_align_result(
             continue;
         }
 
-        FlexAlignResult& res = region_align_res[region_idx].align_re;
-        if (res.tu_vec.empty())
+        FlexAlignResult& flexalign_res = region_align_res[region_idx].align_re;
+        if (flexalign_res.tu_vec.empty())
         {
             std::vector<double> tu_tmp(12);
-            t_u2tu(res.t0, res.u0, tu_tmp);
-            res.tu_vec.push_back(tu_tmp);
+            t_u2tu(flexalign_res.t0, flexalign_res.u0, tu_tmp);
+            flexalign_res.tu_vec.push_back(tu_tmp);
         }
 
         int base_tu_idx = (int)global_align_res.tu_vec.size();
-        for (size_t m = 0; m < res.tu_vec.size(); m++)
-            global_align_res.tu_vec.push_back(res.tu_vec[m]);
+        for (size_t m = 0; m < flexalign_res.tu_vec.size(); m++)
+            global_align_res.tu_vec.push_back(flexalign_res.tu_vec[m]);
 
         int rx = chain1_bounds[region_idx];
         int current_global_idx = base_tu_idx;
 
-        for (size_t i = 0; i < res.seqxA.length(); i++)
+        for (size_t i = 0; i < flexalign_res.seqxA.length(); i++)
         {
-            char c = res.seqM[i];
+            char c = flexalign_res.seqM[i];
             if (c != ' ' && c != '.' && c != ':')
             {
                 int local_hinge_idx = -1;
@@ -3545,17 +3545,17 @@ inline void build_global_align_result(
                 else if (c >= 'A' && c <= 'Z')
                     local_hinge_idx = c - 'A' + 36;
 
-                if (local_hinge_idx >= 0 && local_hinge_idx < (int)res.tu_vec.size())
+                if (local_hinge_idx >= 0 && local_hinge_idx < (int)flexalign_res.tu_vec.size())
                     current_global_idx = base_tu_idx + local_hinge_idx;
             }
 
-            if (res.seqxA[i] != '-')
+            if (flexalign_res.seqxA[i] != '-')
             {
                 global_align_res.res_tu[rx] = current_global_idx;
                 rx++;
             }
 
-            if (res.seqxA[i] != '-' && res.seqyA[i] != '-')
+            if (flexalign_res.seqxA[i] != '-' && flexalign_res.seqyA[i] != '-')
             {
                 if (c != ' ' && c != '.' && c != ':')
                 {
@@ -3568,18 +3568,18 @@ inline void build_global_align_result(
                         global_c = 'A' + (current_global_idx - 36);
                     else
                         global_c = '*';
-                    res.seqM[i] = global_c;
+                    flexalign_res.seqM[i] = global_c;
                 }
                 else
-                    res.seqM[i] = c;
+                    flexalign_res.seqM[i] = c;
             }
             else
-                res.seqM[i] = ' ';
+                flexalign_res.seqM[i] = ' ';
         }
 
-        global_align_res.seqM += res.seqM;
-        global_align_res.seqxA += res.seqxA;
-        global_align_res.seqyA += res.seqyA;
+        global_align_res.seqM += flexalign_res.seqM;
+        global_align_res.seqxA += flexalign_res.seqxA;
+        global_align_res.seqyA += flexalign_res.seqyA;
     }
 }
 
@@ -3601,19 +3601,19 @@ inline void calc_cur_d0(
         parameter_set4final(opts.Lnorm_ass, dummy_D0_MIN, dummy_Lnorm, d0u, dummy_d0_search, mol_type);
 }
 
-inline void reset_flexalign_result(FlexAlignResult& res, const size_t aln_len)
+inline void reset_flexalign_result(FlexAlignResult& flexalign_res, const size_t aln_len)
 {
-    res.do_vec.clear();
-    res.do_vec.reserve(aln_len);
-    res.TM1 = 0.0;
-    res.TM2 = 0.0;
-    res.TM3 = 0.0;
-    res.TM4 = 0.0;
-    res.TM5 = 0.0;
-    res.rmsd0 = 0.0;
-    res.Liden = 0.0;
-    res.n_ali = 0;
-    res.n_ali8 = 0;
+    flexalign_res.do_vec.clear();
+    flexalign_res.do_vec.reserve(aln_len);
+    flexalign_res.TM1 = 0.0;
+    flexalign_res.TM2 = 0.0;
+    flexalign_res.TM3 = 0.0;
+    flexalign_res.TM4 = 0.0;
+    flexalign_res.TM5 = 0.0;
+    flexalign_res.rmsd0 = 0.0;
+    flexalign_res.Liden = 0.0;
+    flexalign_res.n_ali = 0;
+    flexalign_res.n_ali8 = 0;
 }
 
 inline void recompute_global_metrics(
@@ -3627,13 +3627,13 @@ inline void recompute_global_metrics(
     const AlignCommonInput& common_inputs,
     const int mol_type,
     const double d0_out,
-    FlexAlignResult& res)
+    FlexAlignResult& flexalign_res)
 {
     const UserOptions& opts = common_inputs.user_options;
 
     double cur_d0A, cur_d0B, cur_d0a, cur_d0u;
     calc_cur_d0(xlen, ylen, opts, mol_type, cur_d0A, cur_d0B, cur_d0a, cur_d0u);
-    reset_flexalign_result(res, sd.seqxA.length());
+    reset_flexalign_result(flexalign_res, sd.seqxA.length());
 
     int i_res = 0, j_res = 0;
     int cached_matrix_idx = -1;
@@ -3661,27 +3661,27 @@ inline void recompute_global_metrics(
                 double dist2 = dist(x_rot, ya[j_res]);
                 d = std::sqrt(dist2);
 
-                res.TM2 += 1.0 / (1.0 + dist2 / (cur_d0B * cur_d0B));
-                res.TM1 += 1.0 / (1.0 + dist2 / (cur_d0A * cur_d0A));
+                flexalign_res.TM2 += 1.0 / (1.0 + dist2 / (cur_d0B * cur_d0B));
+                flexalign_res.TM1 += 1.0 / (1.0 + dist2 / (cur_d0A * cur_d0A));
                 if (opts.a_opt)
-                    res.TM3 += 1.0 / (1.0 + dist2 / (cur_d0a * cur_d0a));
+                    flexalign_res.TM3 += 1.0 / (1.0 + dist2 / (cur_d0a * cur_d0a));
                 if (opts.u_opt)
-                    res.TM4 += 1.0 / (1.0 + dist2 / (cur_d0u * cur_d0u));
+                    flexalign_res.TM4 += 1.0 / (1.0 + dist2 / (cur_d0u * cur_d0u));
                 if (opts.d_opt)
-                    res.TM5 += 1.0 / (1.0 + dist2 / (opts.d0_scale * opts.d0_scale));
+                    flexalign_res.TM5 += 1.0 / (1.0 + dist2 / (opts.d0_scale * opts.d0_scale));
 
-                res.n_ali++;
+                flexalign_res.n_ali++;
 
                 if (d <= d0_out)
                 {
-                    res.rmsd0 += dist2;
-                    res.n_ali8++;
+                    flexalign_res.rmsd0 += dist2;
+                    flexalign_res.n_ali8++;
                     if (seqx[i_res] == seqy[j_res])
-                        res.Liden += 1.0;
+                        flexalign_res.Liden += 1.0;
                 }
             }
         }
-        res.do_vec.push_back(d);
+        flexalign_res.do_vec.push_back(d);
 
         if (x_valid)
             i_res++;
@@ -3689,33 +3689,33 @@ inline void recompute_global_metrics(
             j_res++;
     }
 
-    res.TM2 /= xlen;
-    res.TM1 /= ylen;
+    flexalign_res.TM2 /= xlen;
+    flexalign_res.TM1 /= ylen;
     if (opts.a_opt)
-        res.TM3 /= (xlen + ylen) * 0.5;
+        flexalign_res.TM3 /= (xlen + ylen) * 0.5;
     if (opts.u_opt)
-        res.TM4 /= opts.Lnorm_ass;
+        flexalign_res.TM4 /= opts.Lnorm_ass;
     if (opts.d_opt)
-        res.TM5 /= ylen;
-    if (res.n_ali8 > 0)
-        res.rmsd0 = std::sqrt(res.rmsd0 / res.n_ali8);
+        flexalign_res.TM5 /= ylen;
+    if (flexalign_res.n_ali8 > 0)
+        flexalign_res.rmsd0 = std::sqrt(flexalign_res.rmsd0 / flexalign_res.n_ali8);
     else
-        res.rmsd0 = 0.0;
+        flexalign_res.rmsd0 = 0.0;
 
-    res.seqM = sd.seqM;
-    res.seqxA = sd.seqxA;
-    res.seqyA = sd.seqyA;
-    res.tu_vec = sd.tu_vec;
-    res.d0A = cur_d0A;
-    res.d0B = cur_d0B;
-    res.d0a = cur_d0a;
-    res.d0u = cur_d0u;
-    if (!res.tu_vec.empty())
-        tu2t_u(res.tu_vec[0], res.t0, res.u0);
+    flexalign_res.seqM = sd.seqM;
+    flexalign_res.seqxA = sd.seqxA;
+    flexalign_res.seqyA = sd.seqyA;
+    flexalign_res.tu_vec = sd.tu_vec;
+    flexalign_res.d0A = cur_d0A;
+    flexalign_res.d0B = cur_d0B;
+    flexalign_res.d0a = cur_d0a;
+    flexalign_res.d0u = cur_d0u;
+    if (!flexalign_res.tu_vec.empty())
+        tu2t_u(flexalign_res.tu_vec[0], flexalign_res.t0, flexalign_res.u0);
     // Consistent with the semantics of the original best update site
-    res.TM_ali = res.TM1;
-    res.rmsd_ali = res.rmsd0;
-    res.L_ali = res.n_ali;
+    flexalign_res.TM_ali = flexalign_res.TM1;
+    flexalign_res.rmsd_ali = flexalign_res.rmsd0;
+    flexalign_res.L_ali = flexalign_res.n_ali;
 }
 
 inline void update_global_best_align(
@@ -3789,7 +3789,7 @@ void flexalign_usbcat_main(
     int mol_type, double best_global_max_TM,
     int sparse_val,
     const FlexalignParams& flex_params,
-    FlexAlignResult& res)
+    FlexAlignResult& flexalign_res)
 {
     FlexAlignResult global_best_align = flexalign_main_res;
 
@@ -3816,17 +3816,17 @@ void flexalign_usbcat_main(
         region_bound_pool, flex_params.hinge_set, 
         flex_params.hinge_opt, usb_cat_para, xa, 
         ya, seqx, seqy, secx, secy, common_inputs, 
-        mol_type, xlen, ylen, res.d0_out,
+        mol_type, xlen, ylen, flexalign_res.d0_out,
         global_best_align, best_global_max_TM);
 
     // Safety check
     if (best_global_max_TM < 0)
     {
-        res.hingeNum = 0;
+        flexalign_res.hingeNum = 0;
         return;
     }
 
     // Output best values back to the reference parameters
-    res = global_best_align;
-    res.hingeNum = res.tu_vec.size();
+    flexalign_res = global_best_align;
+    flexalign_res.hingeNum = flexalign_res.tu_vec.size();
 }

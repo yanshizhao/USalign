@@ -345,7 +345,7 @@ void align_chain_pair(ChainPairAlignResult& result,
     const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen,
-    const ChainPairAlignOptions& opts,
+    const ChainPairAlignOptions& align_opts,
     const std::vector<std::string>& sequence,
     int outfmt_opt);
 
@@ -1334,18 +1334,18 @@ bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
 // Return: false means the structure cannot be parsed
 bool detect_complex_filtered_chains(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
 {
-    UserOptions& uo = common_inputs.user_options;
-    ParsedInput& pi = common_inputs.parsed_input;
-    if (!detect_filtered_chains(mm_params.chain1_list, uo.mol_opt,
-        uo.ter_opt, uo.infmt1_opt, pi.autojustify,
-        uo.split_opt, uo.het_opt, uo.chain2parse1, uo.model2parse1))
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    if (!detect_filtered_chains(mm_params.chain1_list, user_opts.mol_opt,
+        user_opts.ter_opt, user_opts.infmt1_opt, parsed_input.autojustify,
+        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1))
     {
         return false;
     }
 
-    if (!detect_filtered_chains(mm_params.chain2_list, uo.mol_opt,
-        uo.ter_opt, uo.infmt2_opt, pi.autojustify,
-        uo.split_opt, uo.het_opt, uo.chain2parse2, uo.model2parse2))
+    if (!detect_filtered_chains(mm_params.chain2_list, user_opts.mol_opt,
+        user_opts.ter_opt, user_opts.infmt2_opt, parsed_input.autojustify,
+        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2))
     {
         return false;
     }
@@ -1355,16 +1355,16 @@ bool detect_complex_filtered_chains(AlignCommonInput& common_inputs, const MMali
 // ---- Parse complexes (pure parsing; pre-scan is done by MMalign before this) ----
 bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_params, MMalignParsed& parsed)
 {
-    UserOptions& uo = common_inputs.user_options;
-    ParsedInput& pi = common_inputs.parsed_input;
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
     parse_chain_list(mm_params.chain1_list, parsed.complex1,
-        uo.ter_opt, uo.split_opt, uo.mol_opt,
-        uo.infmt1_opt, uo.atom_opt, pi.autojustify, uo.mirror_opt,
-        uo.het_opt, uo.o_opt, uo.chain2parse1, uo.model2parse1);
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt,
+        user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify, user_opts.mirror_opt,
+        user_opts.het_opt, user_opts.o_opt, user_opts.chain2parse1, user_opts.model2parse1);
     parse_chain_list(mm_params.chain2_list, parsed.complex2,
-        uo.ter_opt, uo.split_opt, uo.mol_opt,
-        uo.infmt2_opt, uo.atom_opt, pi.autojustify, 0,
-        uo.het_opt, uo.o_opt, uo.chain2parse2, uo.model2parse2);
+        user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt,
+        user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify, 0,
+        user_opts.het_opt, user_opts.o_opt, user_opts.chain2parse2, user_opts.model2parse2);
 
     if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
     {
@@ -1378,7 +1378,7 @@ bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_p
 
     parsed.protein_norm_len = getmin(parsed.complex1.total_len_aa, parsed.complex2.total_len_aa);
     parsed.na_norm_len = getmin(parsed.complex1.total_len_na, parsed.complex2.total_len_na);
-    if (uo.a_opt)
+    if (user_opts.a_opt)
     {
         parsed.protein_norm_len = (parsed.complex1.total_len_aa + parsed.complex2.total_len_aa) / 2;
         parsed.na_norm_len = (parsed.complex1.total_len_na + parsed.complex2.total_len_na) / 2;
@@ -1605,15 +1605,15 @@ void align_chain_pair(ChainPairAlignResult& result,
     const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen,
-    const ChainPairAlignOptions& opts,
+    const ChainPairAlignOptions& align_opts,
     const std::vector<std::string>& sequence,
     int outfmt_opt)
 {
-    if (opts.cp_opt) CPalign_main(
+    if (align_opts.cp_opt) CPalign_main(
         xa, ya, seqx, seqy, secx, secy,
         result,
-        xlen, ylen, sequence, opts);
-    else if (opts.se_opt)
+        xlen, ylen, sequence, align_opts);
+    else if (align_opts.se_opt)
     {
         result.invmap.assign(ylen + 1, 0);
         result.u0[0][0]=result.u0[1][1]=result.u0[2][2]=1;
@@ -1623,7 +1623,7 @@ void align_chain_pair(ChainPairAlignResult& result,
         result.t0[0]   =result.t0[1]   =result.t0[2]   =0;
         se_main(xa, ya, seqx, seqy,
             result,
-            xlen, ylen, sequence, opts, outfmt_opt);
+            xlen, ylen, sequence, align_opts, outfmt_opt);
         if (outfmt_opt >= 2)
         {
             result.Liden=result.L_ali=0;
@@ -1641,7 +1641,7 @@ void align_chain_pair(ChainPairAlignResult& result,
     else TMalign_main(
         xa, ya, seqx, seqy, secx, secy,
         result,
-        xlen, ylen, sequence, opts);
+        xlen, ylen, sequence, align_opts);
 }
 
 // ---- Output one chain-pair alignment result (version / CP / results / do-block) ----
@@ -2653,19 +2653,19 @@ void output_chain_pairing_summary(const MMalignContext& ctx,
 
 void fill_mmalign_final_params(MMalignFinalParams& params, const AlignCommonInput& common_inputs)
 {
-    const UserOptions& uo = common_inputs.user_options;
-    params.fname_super = uo.fname_super;
-    params.fname_lign = uo.fname_lign;
-    params.fname_matrix = uo.fname_matrix;
-    params.d0_scale = uo.d0_scale;
-    params.m_opt = uo.m_opt;
-    params.o_opt = uo.o_opt;
-    params.outfmt_opt = uo.outfmt_opt;
-    params.ter_opt = uo.ter_opt;
-    params.split_opt = uo.split_opt;
-    params.a_opt = uo.a_opt;
-    params.d_opt = uo.d_opt;
-    params.mirror_opt = uo.mirror_opt;
+    const UserOptions& user_opts = common_inputs.user_options;
+    params.fname_super = user_opts.fname_super;
+    params.fname_lign = user_opts.fname_lign;
+    params.fname_matrix = user_opts.fname_matrix;
+    params.d0_scale = user_opts.d0_scale;
+    params.m_opt = user_opts.m_opt;
+    params.o_opt = user_opts.o_opt;
+    params.outfmt_opt = user_opts.outfmt_opt;
+    params.ter_opt = user_opts.ter_opt;
+    params.split_opt = user_opts.split_opt;
+    params.a_opt = user_opts.a_opt;
+    params.d_opt = user_opts.d_opt;
+    params.mirror_opt = user_opts.mirror_opt;
     params.full_opt = common_inputs.control_options.full_opt;
 }
 
