@@ -4079,29 +4079,8 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
 
     TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
         res, xlen, ylen, sequence, opt);
-    TM1 = res.TM1;
-    TM2 = res.TM2;
-    TM3 = res.TM3;
-    TM4 = res.TM4;
-    TM5 = res.TM5;
-    d0_0 = res.d0_0;
-    TM_0 = res.TM_0;
-    d0A = res.d0A;
-    d0B = res.d0B;
-    d0u = res.d0u;
-    d0a = res.d0a;
-    d0_out = res.d0_out;
-    seqM = res.seqM;
     seqxA_cp = res.seqxA;
     seqyA_cp = res.seqyA;
-    do_vec = res.do_vec;
-    rmsd0 = res.rmsd0;
-    L_ali = res.L_ali;
-    Liden = res.Liden;
-    TM_ali = res.TM_ali;
-    rmsd_ali = res.rmsd_ali;
-    n_ali = res.n_ali;
-    n_ali8 = res.n_ali8;
 
     if (cp_point>0)
     {
