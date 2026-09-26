@@ -58,7 +58,7 @@ biounitasym: biounitasym.cpp basic_fun.h pstream.h
 NWalign: NWalign.cpp NWalign.h basic_fun.h pstream.h BLOSUM.h
 		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
 
-HwRMSD: HwRMSD.cpp HwRMSD.h NWalign.h BLOSUM.h se.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h
+HwRMSD: HwRMSD.cpp HwRMSD.h NWalign.h BLOSUM.h se.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h cli_parse.h
 		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
 
 cif2pdb: cif2pdb.cpp pstream.h
