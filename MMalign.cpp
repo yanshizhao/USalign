@@ -1,6 +1,7 @@
 // command line argument parsing and document of MMalign main program
 
 #include "MMalign.h"
+#include "cli_parse.h"
 
 void print_version()
 {
@@ -172,17 +173,40 @@ int main(int argc, char *argv[])
     std::vector<std::string> model2parse1;
     std::vector<std::string> model2parse2;
 
+    const CliArgSpec common_specs[] =
+    {
+        { "-o",       &fname_super,  &o_opt,  CLI_ARG_STRING },
+        { "-d",       &d0_scale,     &d_opt,  CLI_ARG_DOUBLE },
+        { "-v",       &v_opt,        nullptr, CLI_ARG_FLAG },
+        { "-h",       &h_opt,        nullptr, CLI_ARG_FLAG },
+        { "-m",       &fname_matrix, &m_opt,  CLI_ARG_STRING },
+        { "-fast",    &fast_opt,     nullptr, CLI_ARG_FLAG },
+        { "-infmt1",  &infmt1_opt,   nullptr, CLI_ARG_INT },
+        { "-infmt2",  &infmt2_opt,   nullptr, CLI_ARG_INT },
+        { "-ter",     &ter_opt,      nullptr, CLI_ARG_INT },
+        { "-split",   &split_opt,    nullptr, CLI_ARG_INT },
+        { "-atom",    &atom_opt,     nullptr, CLI_ARG_STRING },
+        { "-mol",     &mol_opt,      nullptr, CLI_ARG_STRING },
+        { "-dir1",    &dir1_opt,     nullptr, CLI_ARG_STRING },
+        { "-dir2",    &dir2_opt,     nullptr, CLI_ARG_STRING },
+        { "-suffix",  &suffix_opt,   nullptr, CLI_ARG_STRING },
+        { "-outfmt",  &outfmt_opt,   nullptr, CLI_ARG_INT },
+        { "-TMcut",   &TMcut,        nullptr, CLI_ARG_DOUBLE },
+        { "-het",     &het_opt,      nullptr, CLI_ARG_INT },
+    };
+    const std::size_t common_spec_num = sizeof(common_specs) / sizeof(common_specs[0]);
+
     for(int i = 1; i < argc; i++)
     {
-        if ( std::string(argv[i]) == "-o" && i < (argc-1) )
+        if (parse_cli_arg(common_specs, common_spec_num, argc, argv, i) == CLI_ARG_MATCHED)
         {
-            fname_super = argv[i + 1];     o_opt = true; i++;
+            continue;
         }
-        else if ( std::string(argv[i]) == "-a" && i < (argc-1) )
+        if ( std::string(argv[i]) == "-a" && i < (argc-1) )
         {
             if (std::string(argv[i + 1]) == "T")      a_opt=true;
             else if (std::string(argv[i + 1]) == "F") a_opt=false;
-            else 
+            else
             {
                 a_opt=safe_stoi(argv[i + 1]);
                 if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
@@ -197,101 +221,33 @@ int main(int argc, char *argv[])
             else PrintErrorAndQuit("-full must be T or F");
             i++;
         }
-        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
-        {
-            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
-        }
-        else if ( std::string(argv[i]) == "-v" )
-        {
-            v_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-h" )
-        {
-            h_opt = true;
-        }
         else if (std::string(argv[i]) == "-chain1" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
             split(argv[i+1],chain2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-chain2" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
             split(argv[i+1],chain2parse2,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model1" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
             split(argv[i+1],model2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model2" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
             split(argv[i+1],model2parse2,',');
             i++;
-        }
-        else if (std::string(argv[i]) == "-m" && i < (argc-1) )
-        {
-            fname_matrix = argv[i + 1];    m_opt = true; i++;
-        }// get filename for rotation matrix
-        else if (std::string(argv[i]) == "-fast")
-        {
-            fast_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-infmt1" && i < (argc-1) )
-        {
-            infmt1_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-infmt2" && i < (argc-1) )
-        {
-            infmt2_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
-        {
-            ter_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            split_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
-        {
-            mol_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir1" && i < (argc-1) )
-        {
-            dir1_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir2" && i < (argc-1) )
-        {
-            dir2_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-outfmt" && i < (argc-1) )
-        {
-            outfmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-TMcut" && i < (argc-1) )
-        {
-            TMcut=safe_stod(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (xname.size() == 0) xname=argv[i];
         else if (yname.size() == 0) yname=argv[i];
