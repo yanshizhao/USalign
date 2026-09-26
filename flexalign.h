@@ -1604,13 +1604,13 @@ inline void score_with_cur_transform(
     const std::vector<std::string> &sequence,
     const ChainPairAlignOptions& align_opts,
     const int hinge,
-    ChainPairAlignResult& res)
+    ChainPairAlignResult& chain_align_res)
 {
-    do_rotation(xa, xt, xlen, res.t0, res.u0);
+    do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
     ChainPairAlignOptions opt = align_opts;
     opt.fast_opt = false;
     opt.ss_opt = 0;
-    se_main(xt, ya, seqx, seqy, res, xlen, ylen, sequence, opt, 0, hinge);
+    se_main(xt, ya, seqx, seqy, chain_align_res, xlen, ylen, sequence, opt, 0, hinge);
 }
 
 #define NUM_SPLIT_VARIANTS 2
