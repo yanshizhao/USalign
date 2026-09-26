@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> model2parse1;
     std::vector<std::string> model2parse2;
 
-    const CliArgSpec common_specs[] =
+    const CliArgSpec cli_arg_specs[] =
     {
         { "-o",       &fname_super,  &o_opt,  CLI_ARG_STRING },
         { "-d",       &d0_scale,     &d_opt,  CLI_ARG_DOUBLE },
@@ -194,11 +194,11 @@ int main(int argc, char *argv[])
         { "-TMcut",   &TMcut,        nullptr, CLI_ARG_DOUBLE },
         { "-het",     &het_opt,      nullptr, CLI_ARG_INT },
     };
-    const std::size_t common_spec_num = sizeof(common_specs) / sizeof(common_specs[0]);
+    const std::size_t cli_arg_spec_num = sizeof(cli_arg_specs) / sizeof(cli_arg_specs[0]);
 
     for(int i = 1; i < argc; i++)
     {
-        if (parse_cli_arg(common_specs, common_spec_num, argc, argv, i) == CLI_ARG_MATCHED)
+        if (parse_cli_arg(cli_arg_specs, cli_arg_spec_num, argc, argv, i) == CLI_ARG_MATCHED)
         {
             continue;
         }
