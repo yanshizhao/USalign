@@ -1,5 +1,5 @@
 #include "HwRMSD.h"
-#include "cli_parse.h"
+#include "option_parse.h"
 
 void print_extra_help()
 {
@@ -174,37 +174,37 @@ int main(int argc, char *argv[])
     double early_opt =0.01;
     int    seq_opt   =3;
 
-    const CliArgSpec cli_arg_specs[] =
+    const OptionSpec option_specs[] =
     {
-        { "-o",       &fname_super,  &o_opt,  CLI_ARG_STRING },
-        { "-u",       &Lnorm_ass,    &u_opt,  CLI_ARG_DOUBLE },
-        { "-L",       &Lnorm_ass,    &u_opt,  CLI_ARG_DOUBLE },
-        { "-d",       &d0_scale,     &d_opt,  CLI_ARG_DOUBLE },
-        { "-h",       &h_opt,        nullptr, CLI_ARG_FLAG },
-        { "-m",       &fname_matrix, &m_opt,  CLI_ARG_STRING },
-        { "-infmt1",  &infmt1_opt,   nullptr, CLI_ARG_INT },
-        { "-infmt2",  &infmt2_opt,   nullptr, CLI_ARG_INT },
-        { "-ter",     &ter_opt,      nullptr, CLI_ARG_INT },
-        { "-split",   &split_opt,    nullptr, CLI_ARG_INT },
-        { "-atom",    &atom_opt,     nullptr, CLI_ARG_STRING },
-        { "-mol",     &mol_opt,      nullptr, CLI_ARG_STRING },
-        { "-dir",     &dir_opt,      nullptr, CLI_ARG_STRING },
-        { "-dir1",    &dir1_opt,     nullptr, CLI_ARG_STRING },
-        { "-dir2",    &dir2_opt,     nullptr, CLI_ARG_STRING },
-        { "-suffix",  &suffix_opt,   nullptr, CLI_ARG_STRING },
-        { "-outfmt",  &outfmt_opt,   nullptr, CLI_ARG_INT },
-        { "-byresi",  &byresi_opt,   nullptr, CLI_ARG_INT },
-        { "-glocal",  &glocal,       nullptr, CLI_ARG_INT },
-        { "-iter",    &iter_opt,     nullptr, CLI_ARG_INT },
-        { "-early",   &early_opt,    nullptr, CLI_ARG_DOUBLE },
-        { "-seq",     &seq_opt,      nullptr, CLI_ARG_INT },
-        { "-het",     &het_opt,      nullptr, CLI_ARG_INT },
+        { "-o",       &fname_super,  &o_opt, OPTION_STRING },
+        { "-u",       &Lnorm_ass,    &u_opt, OPTION_DOUBLE },
+        { "-L",       &Lnorm_ass,    &u_opt, OPTION_DOUBLE },
+        { "-d",       &d0_scale,     &d_opt, OPTION_DOUBLE },
+        { "-h",       &h_opt,        nullptr, OPTION_FLAG },
+        { "-m",       &fname_matrix, &m_opt, OPTION_STRING },
+        { "-infmt1",  &infmt1_opt,   nullptr, OPTION_INT },
+        { "-infmt2",  &infmt2_opt,   nullptr, OPTION_INT },
+        { "-ter",     &ter_opt,      nullptr, OPTION_INT },
+        { "-split",   &split_opt,    nullptr, OPTION_INT },
+        { "-atom",    &atom_opt,     nullptr, OPTION_STRING },
+        { "-mol",     &mol_opt,      nullptr, OPTION_STRING },
+        { "-dir",     &dir_opt,      nullptr, OPTION_STRING },
+        { "-dir1",    &dir1_opt,     nullptr, OPTION_STRING },
+        { "-dir2",    &dir2_opt,     nullptr, OPTION_STRING },
+        { "-suffix",  &suffix_opt,   nullptr, OPTION_STRING },
+        { "-outfmt",  &outfmt_opt,   nullptr, OPTION_INT },
+        { "-byresi",  &byresi_opt,   nullptr, OPTION_INT },
+        { "-glocal",  &glocal,       nullptr, OPTION_INT },
+        { "-iter",    &iter_opt,     nullptr, OPTION_INT },
+        { "-early",   &early_opt,    nullptr, OPTION_DOUBLE },
+        { "-seq",     &seq_opt,      nullptr, OPTION_INT },
+        { "-het",     &het_opt,      nullptr, OPTION_INT },
     };
-    const std::size_t cli_arg_spec_num = sizeof(cli_arg_specs) / sizeof(cli_arg_specs[0]);
+    const std::size_t option_spec_num = sizeof(option_specs) / sizeof(option_specs[0]);
 
     for(int i = 1; i < argc; i++)
     {
-        if (parse_cli_arg(cli_arg_specs, cli_arg_spec_num, argc, argv, i) == CLI_ARG_MATCHED)
+        if (parse_option(option_specs, option_spec_num, argc, argv, i) == OPTION_MATCHED)
         {
             continue;
         }

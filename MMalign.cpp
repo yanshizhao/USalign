@@ -1,7 +1,7 @@
 // command line argument parsing and document of MMalign main program
 
 #include "MMalign.h"
-#include "cli_parse.h"
+#include "option_parse.h"
 
 void print_version()
 {
@@ -173,32 +173,32 @@ int main(int argc, char *argv[])
     std::vector<std::string> model2parse1;
     std::vector<std::string> model2parse2;
 
-    const CliArgSpec cli_arg_specs[] =
+    const OptionSpec option_specs[] =
     {
-        { "-o",       &fname_super,  &o_opt,  CLI_ARG_STRING },
-        { "-d",       &d0_scale,     &d_opt,  CLI_ARG_DOUBLE },
-        { "-v",       &v_opt,        nullptr, CLI_ARG_FLAG },
-        { "-h",       &h_opt,        nullptr, CLI_ARG_FLAG },
-        { "-m",       &fname_matrix, &m_opt,  CLI_ARG_STRING },
-        { "-fast",    &fast_opt,     nullptr, CLI_ARG_FLAG },
-        { "-infmt1",  &infmt1_opt,   nullptr, CLI_ARG_INT },
-        { "-infmt2",  &infmt2_opt,   nullptr, CLI_ARG_INT },
-        { "-ter",     &ter_opt,      nullptr, CLI_ARG_INT },
-        { "-split",   &split_opt,    nullptr, CLI_ARG_INT },
-        { "-atom",    &atom_opt,     nullptr, CLI_ARG_STRING },
-        { "-mol",     &mol_opt,      nullptr, CLI_ARG_STRING },
-        { "-dir1",    &dir1_opt,     nullptr, CLI_ARG_STRING },
-        { "-dir2",    &dir2_opt,     nullptr, CLI_ARG_STRING },
-        { "-suffix",  &suffix_opt,   nullptr, CLI_ARG_STRING },
-        { "-outfmt",  &outfmt_opt,   nullptr, CLI_ARG_INT },
-        { "-TMcut",   &TMcut,        nullptr, CLI_ARG_DOUBLE },
-        { "-het",     &het_opt,      nullptr, CLI_ARG_INT },
+        { "-o",       &fname_super,  &o_opt, OPTION_STRING },
+        { "-d",       &d0_scale,     &d_opt, OPTION_DOUBLE },
+        { "-v",       &v_opt,        nullptr, OPTION_FLAG },
+        { "-h",       &h_opt,        nullptr, OPTION_FLAG },
+        { "-m",       &fname_matrix, &m_opt, OPTION_STRING },
+        { "-fast",    &fast_opt,     nullptr, OPTION_FLAG },
+        { "-infmt1",  &infmt1_opt,   nullptr, OPTION_INT },
+        { "-infmt2",  &infmt2_opt,   nullptr, OPTION_INT },
+        { "-ter",     &ter_opt,      nullptr, OPTION_INT },
+        { "-split",   &split_opt,    nullptr, OPTION_INT },
+        { "-atom",    &atom_opt,     nullptr, OPTION_STRING },
+        { "-mol",     &mol_opt,      nullptr, OPTION_STRING },
+        { "-dir1",    &dir1_opt,     nullptr, OPTION_STRING },
+        { "-dir2",    &dir2_opt,     nullptr, OPTION_STRING },
+        { "-suffix",  &suffix_opt,   nullptr, OPTION_STRING },
+        { "-outfmt",  &outfmt_opt,   nullptr, OPTION_INT },
+        { "-TMcut",   &TMcut,        nullptr, OPTION_DOUBLE },
+        { "-het",     &het_opt,      nullptr, OPTION_INT },
     };
-    const std::size_t cli_arg_spec_num = sizeof(cli_arg_specs) / sizeof(cli_arg_specs[0]);
+    const std::size_t option_spec_num = sizeof(option_specs) / sizeof(option_specs[0]);
 
     for(int i = 1; i < argc; i++)
     {
-        if (parse_cli_arg(cli_arg_specs, cli_arg_spec_num, argc, argv, i) == CLI_ARG_MATCHED)
+        if (parse_option(option_specs, option_spec_num, argc, argv, i) == OPTION_MATCHED)
         {
             continue;
         }
