@@ -19,10 +19,10 @@ all: USalign
 qTMclust: qTMclust.cpp HwRMSD.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
 		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
 
-USalign: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h chain_pair_align.h NWalign.h BLOSUM.h flexalign.h UPGMA.h
+USalign: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h NWalign.h BLOSUM.h flexalign.h UPGMA.h
 		${CC} ${CFLAGS} ${OMPFLAGS} USalign.cpp UPGMA.cpp -o $@ ${LDFLAGS}
 
-USalign.exe: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h chain_pair_align.h NWalign.h BLOSUM.h flexalign.h UPGMA.h
+USalign.exe: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h NWalign.h BLOSUM.h flexalign.h UPGMA.h
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} USalign.cpp UPGMA.cpp -o $@ ${LDFLAGS}
 
 TMalign: TMalign.cpp param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h option_parse.h
