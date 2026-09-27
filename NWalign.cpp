@@ -280,7 +280,7 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
     int xlen, ylen;         // chain length
-    int xchainnum,ychainnum;// number of chains in a PDB file
+    int xchainnum=0, ychainnum=0;// number of chains in a PDB file
     std::string yname;
 
     // loop over file names
