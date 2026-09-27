@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
     int    xlen, ylen;         // chain length
-    int    xchainnum,ychainnum;// number of chains in a PDB file
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     std::string secx;                // for the secondary structure
     std::string secy;
     CoordArray xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
