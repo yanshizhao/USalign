@@ -2080,15 +2080,10 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     bool fast_opt = (std::min(xlen, ylen) > 1500) ? true : user_opts.fast_opt;
 
     ChainPairAlignOptions align_opts;
-    align_opts.i_opt = user_opts.i_opt;
-    align_opts.a_opt = user_opts.a_opt;
-    align_opts.u_opt = user_opts.u_opt;
-    align_opts.d_opt = user_opts.d_opt;
+    fill_chain_pair_align_options(align_opts, user_opts, common_inputs.control_options);
     align_opts.fast_opt = fast_opt;
     align_opts.se_opt = false;
     align_opts.cp_opt = false;
-    align_opts.Lnorm = user_opts.Lnorm_ass;
-    align_opts.d0_scale = user_opts.d0_scale;
     align_opts.TMcut = -1;
     align_opts.parallel_threads = 1;
     align_opts.ss_opt = ss_opt;

@@ -990,21 +990,9 @@ void output_soi_dist_block(std::ostream& os, int ylen,
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs)
 {
     const UserOptions& user_opts = common_inputs.user_options;
-    const ControlOptions& ctrl_opts = common_inputs.control_options;
 
     params.read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;
-    params.align.i_opt    = user_opts.i_opt;
-    params.align.a_opt    = user_opts.a_opt;
-    params.align.u_opt    = user_opts.u_opt;
-    params.align.d_opt    = user_opts.d_opt;
-    params.align.fast_opt = user_opts.fast_opt;
-    params.align.se_opt   = ctrl_opts.se_opt;
-    params.align.cp_opt   = ctrl_opts.cp_opt;
-    params.align.Lnorm    = user_opts.Lnorm_ass;
-    params.align.d0_scale = user_opts.d0_scale;
-    params.align.TMcut    = user_opts.TMcut;
-    params.align.parallel_threads = ctrl_opts.parallel_threads;
-    params.align.ss_opt   = 0;
+    fill_chain_pair_align_options(params.align, user_opts, common_inputs.control_options);
 }
 
 struct SoiAlignParams
@@ -1023,18 +1011,7 @@ void fill_soi_params(SoiAlignParams& params, const AlignCommonInput& common_inpu
     params.read_resi  = (user_opts.o_opt != 0) ? 2 : 0;
     params.closeK_opt = ctrl_opts.closeK_opt;
     params.mm_opt     = ctrl_opts.mm_opt;
-    params.align.i_opt    = user_opts.i_opt;
-    params.align.a_opt    = user_opts.a_opt;
-    params.align.u_opt    = user_opts.u_opt;
-    params.align.d_opt    = user_opts.d_opt;
-    params.align.fast_opt = user_opts.fast_opt;
-    params.align.se_opt   = ctrl_opts.se_opt;
-    params.align.cp_opt   = ctrl_opts.cp_opt;
-    params.align.Lnorm    = user_opts.Lnorm_ass;
-    params.align.d0_scale = user_opts.d0_scale;
-    params.align.TMcut    = user_opts.TMcut;
-    params.align.parallel_threads = ctrl_opts.parallel_threads;
-    params.align.ss_opt   = 0;
+    fill_chain_pair_align_options(params.align, user_opts, ctrl_opts);
 }
 
 int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
@@ -2970,18 +2947,13 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         ChainPairAlignResult chain_align_res = { 0};
         chain_align_res.d0_out = 5.0;
         ChainPairAlignOptions align_opts;
+        fill_chain_pair_align_options(align_opts, user_opts, common_inputs.control_options);
         align_opts.i_opt = 3;
-        align_opts.a_opt = user_opts.a_opt;
-        align_opts.u_opt = user_opts.u_opt;
-        align_opts.d_opt = user_opts.d_opt;
         align_opts.fast_opt = fast_opt;
         align_opts.se_opt = false;
         align_opts.cp_opt = false;
-        align_opts.Lnorm = user_opts.Lnorm_ass;
-        align_opts.d0_scale = user_opts.d0_scale;
         align_opts.TMcut = -1;
         align_opts.parallel_threads = 1;
-        align_opts.ss_opt = 0;
         align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
 
         int c;
@@ -3218,18 +3190,12 @@ int MMdock(AlignCommonInput& common_inputs)
         ChainPairAlignResult chain_align_res = { 0};
         chain_align_res.d0_out = 5.0;
         ChainPairAlignOptions align_opts;
+        fill_chain_pair_align_options(align_opts, user_opts, common_inputs.control_options);
         align_opts.i_opt = 0;
-        align_opts.a_opt = user_opts.a_opt;
-        align_opts.u_opt = user_opts.u_opt;
-        align_opts.d_opt = user_opts.d_opt;
         align_opts.fast_opt = fast_opt;
         align_opts.se_opt = false;
         align_opts.cp_opt = false;
-        align_opts.Lnorm = user_opts.Lnorm_ass;
-        align_opts.d0_scale = user_opts.d0_scale;
-        align_opts.TMcut = user_opts.TMcut;
         align_opts.parallel_threads = 1;
-        align_opts.ss_opt = 0;
         align_opts.mol_type = complex1.mol_types[0]+complex2.mol_types[0];
 
         // entry function for structure alignment
@@ -3842,18 +3808,12 @@ void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaI
             ChainPairAlignResult chain_align_res = { 0};
             chain_align_res.d0_out = 5.0;
             ChainPairAlignOptions align_opts;
+            fill_chain_pair_align_options(align_opts, user_opts, ctrl_opts);
             align_opts.i_opt = 2;
-            align_opts.a_opt = user_opts.a_opt;
             align_opts.u_opt = u_opt;
-            align_opts.d_opt = user_opts.d_opt;
             align_opts.fast_opt = fast_opt;
-            align_opts.se_opt = ctrl_opts.se_opt;
             align_opts.cp_opt = false;
             align_opts.Lnorm = Lnorm_ass;
-            align_opts.d0_scale = user_opts.d0_scale;
-            align_opts.TMcut = user_opts.TMcut;
-            align_opts.parallel_threads = ctrl_opts.parallel_threads;
-            align_opts.ss_opt = 0;
             align_opts.mol_type = cur_complex_mol_list;
             // entry function for structure alignment
             align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
@@ -3960,18 +3920,14 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
             std::string& seqxA = chain_align_res.seqxA;
             std::string& seqyA = chain_align_res.seqyA;
             ChainPairAlignOptions align_opts;
+            fill_chain_pair_align_options(align_opts, user_opts, ctx.ctrl_opts);
             align_opts.i_opt = 0;
-            align_opts.a_opt = user_opts.a_opt;
             align_opts.u_opt = u_opt;
-            align_opts.d_opt = user_opts.d_opt;
             align_opts.fast_opt = fast_opt;
             align_opts.se_opt = true;
             align_opts.cp_opt = false;
             align_opts.Lnorm = Lnorm_ass;
-            align_opts.d0_scale = user_opts.d0_scale;
-            align_opts.TMcut = user_opts.TMcut;
             align_opts.parallel_threads = 1;
-            align_opts.ss_opt = 0;
             align_opts.mol_type = cur_complex_mol_list;
             se_main(xa, ya, seqx, seqy, chain_align_res, xlen, ylen,
                 parsed_input.sequence, align_opts, 1);
@@ -4154,18 +4110,14 @@ bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& 
                 chain_align_res.d0_out = 5.0;
                 chain_align_res.invmap.assign(ylen + 1, 0);
                 ChainPairAlignOptions align_opts;
+                fill_chain_pair_align_options(align_opts, user_opts, ctx.ctrl_opts);
                 align_opts.i_opt = 1;
-                align_opts.a_opt = user_opts.a_opt;
                 align_opts.u_opt = u_opt;
-                align_opts.d_opt = user_opts.d_opt;
                 align_opts.fast_opt = fast_opt;
                 align_opts.se_opt = true;
                 align_opts.cp_opt = false;
                 align_opts.Lnorm = Lnorm_ass;
-                align_opts.d0_scale = user_opts.d0_scale;
-                align_opts.TMcut = user_opts.TMcut;
                 align_opts.parallel_threads = 1;
-                align_opts.ss_opt = 0;
                 align_opts.mol_type = cur_complex_mol_list;
                 se_main(xa, ya, seqx, seqy, chain_align_res, xlen, ylen,
                     parsed_input.sequence, align_opts, 1);

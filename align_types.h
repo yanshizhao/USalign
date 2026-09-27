@@ -1,9 +1,5 @@
 #pragma once
 
-// 常设公共层共享类型：跨模式共享的数据结构。
-// 仅依赖 basic_fun.h 的基础类型（CoordArray/Vec3/RotMat/DoubleMatrix 等），
-// 不引用任何引擎头（TMalign.h/MMalign.h/flexalign.h/…），避免 include 环。
-// 全部使用 std:: 前缀，不在共享头引入 using namespace std。
 #include "basic_fun.h"
 
 #include <string>
@@ -296,6 +292,23 @@ struct OutputOptions
     bool   u_opt;
     bool   d_opt;
 };
+
+inline void fill_chain_pair_align_options(ChainPairAlignOptions& align_opts,
+    const UserOptions& user_opts, const ControlOptions& ctrl_opts)
+{
+    align_opts.i_opt = user_opts.i_opt;
+    align_opts.a_opt = user_opts.a_opt;
+    align_opts.u_opt = user_opts.u_opt;
+    align_opts.d_opt = user_opts.d_opt;
+    align_opts.fast_opt = user_opts.fast_opt;
+    align_opts.se_opt = ctrl_opts.se_opt;
+    align_opts.cp_opt = ctrl_opts.cp_opt;
+    align_opts.Lnorm = user_opts.Lnorm_ass;
+    align_opts.d0_scale = user_opts.d0_scale;
+    align_opts.TMcut = user_opts.TMcut;
+    align_opts.parallel_threads = ctrl_opts.parallel_threads;
+    align_opts.ss_opt = 0;
+}
 
 inline void fill_output_options_from_user_options(OutputOptions& out_opts, const UserOptions& user_opts)
 {
