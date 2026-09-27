@@ -1584,6 +1584,7 @@ inline void mmalign_output_per_chain_alignments(
                 out_opts.Lnorm_ass = Lnorm_ass;
                 out_opts.fname_matrix = "";
                 out_opts.fname_super = "";
+                out_opts.o_opt = 0;
                 out_opts.mirror_opt = 0;
                 output_results(params.xname, params.yname,
                     complex1.chain_ids[i], complex2.chain_ids[j],
