@@ -161,11 +161,11 @@ void output_xyz_chain(const std::string& filename, const Pdb2xyzOptions& opts,
     std::cout<<std::endl;
 }
 
-void convert_file_to_xyz(const std::string& filename, const Pdb2xyzOptions& opts,
-    std::vector<std::string>& chainID_list)
+void convert_file_to_xyz(const std::string& filename, const Pdb2xyzOptions& opts)
 {
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
+    std::vector<std::string> chainID_list; // list of chainID1
 
     int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
         opts.ter_opt, opts.infmt_opt, opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
@@ -199,10 +199,9 @@ int main(int argc, char *argv[])
     std::vector<std::string> chain_list;
     build_file_list(opts, chain_list);
 
-    std::vector<std::string> chainID_list; // list of chainID1
     // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
-        convert_file_to_xyz(chain_list[i], opts, chainID_list);
+        convert_file_to_xyz(chain_list[i], opts);
 
     return 0;
 }
