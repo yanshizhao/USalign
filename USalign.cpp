@@ -3281,9 +3281,9 @@ int MMdock(AlignCommonInput& common_inputs)
         if      (complex1.mol_types[i]>0  && xlen>trimmed.max_na_len) trimmed.max_na_len=xlen;
         else if (complex1.mol_types[i]<=0 && xlen>trimmed.max_aa_len) trimmed.max_aa_len=xlen;
     }
-    trimmed.chain_count=trimComplex(trimmed.coords,trimmed.seqs,
+    trimComplex(trimmed.coords,trimmed.seqs,
         trimmed.secs,trimmed.lengths,complex2.coords,complex2.seqs,complex2.secs,complex2.lengths,
-        complex2.mol_types,trimmed.max_aa_len,trimmed.max_na_len);
+        complex2.mol_types,trimmed.max_aa_len,trimmed.max_na_len,trimmed.chain_count);
 
     // Auto-enable fast mode BEFORE parallel entry to keep both paths consistent
     if (len_aa + len_na > 500) fast_opt = true;

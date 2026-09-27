@@ -3054,15 +3054,15 @@ inline void MMalign_dimer(double & total_score,
 
 
 // return the number of chains that are trimmed
-inline int trimComplex(DoubleCube&a_trim_vec,
+inline void trimComplex(DoubleCube&a_trim_vec,
     CharMatrix&seq_trim_vec, CharMatrix&sec_trim_vec,
     std::vector<int>&len_trim_vec,
     const DoubleCube&a_vec,
     const CharMatrix&seq_vec, const CharMatrix&sec_vec,
     const std::vector<int> &len_vec, const std::vector<int> &mol_vec,
-    const int Lchain_aa_max, const int Lchain_na_max)
+    const int Lchain_aa_max, const int Lchain_na_max, int& trim_chain_count)
 {
-    int trim_chain_count=0;
+    trim_chain_count=0;
     int chain_num=a_vec.size();
     int i;
     int j;
@@ -3137,7 +3137,6 @@ inline int trimComplex(DoubleCube&a_trim_vec,
         }
         include_vec.clear();
     }
-    return trim_chain_count;
 }
 
 inline void output_dock_rotation_matrix(const std::string& fname_matrix,
