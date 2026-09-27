@@ -5,7 +5,7 @@
 
 void print_version()
 {
-    std::cout << 
+    std::cout <<
 "\n"
 " **********************************************************************\n"
 " * MM-align (Version 20231222): complex structure alignment           *\n"
@@ -126,73 +126,66 @@ void print_help(bool h_opt=false)
     exit(EXIT_SUCCESS);
 }
 
-int main(int argc, char *argv[])
+struct MMalignOptions
 {
-    if (argc < 2) print_help();
-
-    std::clock_t t1, t2;
-    t1 = std::clock();
-
-    /**********************/
-    //    get argument   
-    /**********************/
     std::string xname       = "";
     std::string yname       = "";
     std::string fname_super = ""; // file name for superposed structure
     std::string fname_lign  = ""; // file name for user alignment
     std::string fname_matrix= ""; // file name for output matrix
-    std::vector<std::string> sequence; // get value from alignment file
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir1_opt  ="";    // set -dir1 to empty
+    std::string dir2_opt  ="";    // set -dir2 to empty
+    std::vector<std::string> chain2parse1;
+    std::vector<std::string> chain2parse2;
+    std::vector<std::string> model2parse1;
+    std::vector<std::string> model2parse2;
     double d0_scale    =0;
-
-    bool h_opt = false; // print full help message
-    bool v_opt = false; // print version
-    bool m_opt = false; // flag for -m, output rotation matrix
-    bool o_opt = false; // flag for -o, output superposed structure
-    int  a_opt = 0;     // flag for -a, do not normalized by average length
-    bool d_opt = false; // flag for -d, user specified d0
-
-    bool   full_opt  = false;// do not show chain level alignment
     double TMcut     =-1;
     int    infmt1_opt=-1;    // PDB or PDBx/mmCIF format for chain_1
     int    infmt2_opt=-1;    // PDB or PDBx/mmCIF format for chain_2
     int    ter_opt   =1;     // ENDMDL or END
     int    split_opt =2;     // split by chain
     int    outfmt_opt=0;     // set -outfmt to full output
-    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
     int    mirror_opt=0;     // do not align mirror
     int    het_opt   =0;     // do not read HETATM residues
-    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    std::string suffix_opt="";    // set -suffix to empty
-    std::string dir1_opt  ="";    // set -dir1 to empty
-    std::string dir2_opt  ="";    // set -dir2 to empty
-    std::vector<std::string> chain1_list; // only when -dir1 is set
-    std::vector<std::string> chain2_list; // only when -dir2 is set
-    std::vector<std::string> chain2parse1;
-    std::vector<std::string> chain2parse2;
-    std::vector<std::string> model2parse1;
-    std::vector<std::string> model2parse2;
+    int    a_opt = 0;     // flag for -a, do not normalized by average length
+    bool h_opt = false; // print full help message
+    bool v_opt = false; // print version
+    bool m_opt = false; // flag for -m, output rotation matrix
+    bool o_opt = false; // flag for -o, output superposed structure
+    bool d_opt = false; // flag for -d, user specified d0
+    bool   full_opt  = false;// do not show chain level alignment
+    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
+};
 
+/**********************/
+//    get argument
+/**********************/
+void parse_arguments(int argc, char* argv[], MMalignOptions& mmalign_opts)
+{
     const OptionSpec option_specs[] =
     {
-        { "-o",       &fname_super,  &o_opt, OPTION_STRING },
-        { "-d",       &d0_scale,     &d_opt, OPTION_DOUBLE },
-        { "-v",       &v_opt,        nullptr, OPTION_FLAG },
-        { "-h",       &h_opt,        nullptr, OPTION_FLAG },
-        { "-m",       &fname_matrix, &m_opt, OPTION_STRING },
-        { "-fast",    &fast_opt,     nullptr, OPTION_FLAG },
-        { "-infmt1",  &infmt1_opt,   nullptr, OPTION_INT },
-        { "-infmt2",  &infmt2_opt,   nullptr, OPTION_INT },
-        { "-ter",     &ter_opt,      nullptr, OPTION_INT },
-        { "-split",   &split_opt,    nullptr, OPTION_INT },
-        { "-atom",    &atom_opt,     nullptr, OPTION_STRING },
-        { "-mol",     &mol_opt,      nullptr, OPTION_STRING },
-        { "-dir1",    &dir1_opt,     nullptr, OPTION_STRING },
-        { "-dir2",    &dir2_opt,     nullptr, OPTION_STRING },
-        { "-suffix",  &suffix_opt,   nullptr, OPTION_STRING },
-        { "-outfmt",  &outfmt_opt,   nullptr, OPTION_INT },
-        { "-TMcut",   &TMcut,        nullptr, OPTION_DOUBLE },
-        { "-het",     &het_opt,      nullptr, OPTION_INT },
+        { "-o",       &mmalign_opts.fname_super,  &mmalign_opts.o_opt, OPTION_STRING },
+        { "-d",       &mmalign_opts.d0_scale,     &mmalign_opts.d_opt, OPTION_DOUBLE },
+        { "-v",       &mmalign_opts.v_opt,        nullptr, OPTION_FLAG },
+        { "-h",       &mmalign_opts.h_opt,        nullptr, OPTION_FLAG },
+        { "-m",       &mmalign_opts.fname_matrix, &mmalign_opts.m_opt, OPTION_STRING },
+        { "-fast",    &mmalign_opts.fast_opt,     nullptr, OPTION_FLAG },
+        { "-infmt1",  &mmalign_opts.infmt1_opt,   nullptr, OPTION_INT },
+        { "-infmt2",  &mmalign_opts.infmt2_opt,   nullptr, OPTION_INT },
+        { "-ter",     &mmalign_opts.ter_opt,      nullptr, OPTION_INT },
+        { "-split",   &mmalign_opts.split_opt,    nullptr, OPTION_INT },
+        { "-atom",    &mmalign_opts.atom_opt,     nullptr, OPTION_STRING },
+        { "-mol",     &mmalign_opts.mol_opt,      nullptr, OPTION_STRING },
+        { "-dir1",    &mmalign_opts.dir1_opt,     nullptr, OPTION_STRING },
+        { "-dir2",    &mmalign_opts.dir2_opt,     nullptr, OPTION_STRING },
+        { "-suffix",  &mmalign_opts.suffix_opt,   nullptr, OPTION_STRING },
+        { "-outfmt",  &mmalign_opts.outfmt_opt,   nullptr, OPTION_INT },
+        { "-TMcut",   &mmalign_opts.TMcut,        nullptr, OPTION_DOUBLE },
+        { "-het",     &mmalign_opts.het_opt,      nullptr, OPTION_INT },
     };
     const std::size_t option_spec_num = sizeof(option_specs) / sizeof(option_specs[0]);
 
@@ -204,20 +197,20 @@ int main(int argc, char *argv[])
         }
         if ( std::string(argv[i]) == "-a" && i < (argc-1) )
         {
-            if (std::string(argv[i + 1]) == "T")      a_opt=true;
-            else if (std::string(argv[i + 1]) == "F") a_opt=false;
+            if (std::string(argv[i + 1]) == "T")      mmalign_opts.a_opt=true;
+            else if (std::string(argv[i + 1]) == "F") mmalign_opts.a_opt=false;
             else
             {
-                a_opt=safe_stoi(argv[i + 1]);
-                if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
+                mmalign_opts.a_opt=safe_stoi(argv[i + 1]);
+                if (mmalign_opts.a_opt!=-2 && mmalign_opts.a_opt!=-1 && mmalign_opts.a_opt!=1)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
             i++;
         }
         else if ( std::string(argv[i]) == "-full" && i < (argc-1) )
         {
-            if (std::string(argv[i + 1]) == "T")      full_opt=true;
-            else if (std::string(argv[i + 1]) == "F") full_opt=false;
+            if (std::string(argv[i + 1]) == "T")      mmalign_opts.full_opt=true;
+            else if (std::string(argv[i + 1]) == "F") mmalign_opts.full_opt=false;
             else PrintErrorAndQuit("-full must be T or F");
             i++;
         }
@@ -225,129 +218,182 @@ int main(int argc, char *argv[])
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],chain2parse1,',');
+            split(argv[i+1],mmalign_opts.chain2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],chain2parse2,',');
+            split(argv[i+1],mmalign_opts.chain2parse2,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],model2parse1,',');
+            split(argv[i+1],mmalign_opts.model2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],model2parse2,',');
+            split(argv[i+1],mmalign_opts.model2parse2,',');
             i++;
         }
-        else if (xname.size() == 0) xname=argv[i];
-        else if (yname.size() == 0) yname=argv[i];
+        else if (mmalign_opts.xname.size() == 0) mmalign_opts.xname=argv[i];
+        else if (mmalign_opts.yname.size() == 0) mmalign_opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
+}
 
-    if(yname.size()==0)
+void postprocess_arguments(MMalignOptions& mmalign_opts)
+{
+    if(mmalign_opts.yname.size()==0)
     {
-        if (h_opt) print_help(h_opt);
-        if (v_opt)
+        if (mmalign_opts.h_opt) print_help(mmalign_opts.h_opt);
+        if (mmalign_opts.v_opt)
         {
             print_version();
             exit(EXIT_FAILURE);
         }
-        if (xname.size()==0)
+        if (mmalign_opts.xname.size()==0)
             PrintErrorAndQuit("Please provide input structures");
         PrintErrorAndQuit("Please provide the second input structure");
     }
 
-    if (suffix_opt.size() && dir1_opt.size()+dir2_opt.size()==0)
+    if (mmalign_opts.suffix_opt.size() && mmalign_opts.dir1_opt.size()+mmalign_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir1 or -dir2 is set");
-    if ((dir1_opt.size() || dir2_opt.size()) && (m_opt || o_opt))
+    if ((mmalign_opts.dir1_opt.size() || mmalign_opts.dir2_opt.size()) && (mmalign_opts.m_opt || mmalign_opts.o_opt))
         PrintErrorAndQuit("-m or -o cannot be set with -dir1 or -dir2");
-    if (atom_opt.size()!=4)
+    if (mmalign_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
+    if (mmalign_opts.mol_opt!="auto" && mmalign_opts.mol_opt!="protein" && mmalign_opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (mol_opt=="protein" && atom_opt=="auto")
-        atom_opt=" CA ";
-    else if (mol_opt=="RNA" && atom_opt=="auto")
-        atom_opt=" C3'";
+    else if (mmalign_opts.mol_opt=="protein" && mmalign_opts.atom_opt=="auto")
+        mmalign_opts.atom_opt=" CA ";
+    else if (mmalign_opts.mol_opt=="RNA" && mmalign_opts.atom_opt=="auto")
+        mmalign_opts.atom_opt=" C3'";
 
-    if (d_opt && d0_scale<=0)
+    if (mmalign_opts.d_opt && mmalign_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (outfmt_opt>=2 && (a_opt || d_opt))
+    if (mmalign_opts.outfmt_opt>=2 && (mmalign_opts.a_opt || mmalign_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -d");
-    if (ter_opt!=0 && ter_opt!=1)
+    if (mmalign_opts.ter_opt!=0 && mmalign_opts.ter_opt!=1)
         PrintErrorAndQuit("-ter should be 1 or 0");
-    if (split_opt!=1 && split_opt!=2)
+    if (mmalign_opts.split_opt!=1 && mmalign_opts.split_opt!=2)
         PrintErrorAndQuit("-split should be 1 or 2");
-    else if (split_opt==1 && ter_opt!=0)
+    else if (mmalign_opts.split_opt==1 && mmalign_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
 
-    if (m_opt && fname_matrix == "") // Output rotation matrix: matrix.txt
+    if (mmalign_opts.m_opt && mmalign_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+}
 
-    // parse file list
-    if (dir1_opt.size()==0) chain1_list.push_back(xname);
-    else file2chainlist(chain1_list, xname, dir1_opt, suffix_opt);
+// parse file list
+void build_file_lists(const MMalignOptions& mmalign_opts, std::vector<std::string>& chain1_list,
+    std::vector<std::string>& chain2_list)
+{
+    if (mmalign_opts.dir1_opt.size()==0) chain1_list.push_back(mmalign_opts.xname);
+    else file2chainlist(chain1_list, mmalign_opts.xname, mmalign_opts.dir1_opt, mmalign_opts.suffix_opt);
 
-    if (dir2_opt.size()==0) chain2_list.push_back(yname);
-    else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
+    if (mmalign_opts.dir2_opt.size()==0) chain2_list.push_back(mmalign_opts.yname);
+    else file2chainlist(chain2_list, mmalign_opts.yname, mmalign_opts.dir2_opt, mmalign_opts.suffix_opt);
+}
 
-    if (outfmt_opt==2)
-        std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+// parse complex
+void parse_complexes(const MMalignOptions& mmalign_opts, const std::vector<std::string>& chain1_list,
+    const std::vector<std::string>& chain2_list, ComplexData& complex1, ComplexData& complex2)
+{
+    parse_chain_list(chain1_list, complex1, mmalign_opts.ter_opt, mmalign_opts.split_opt, mmalign_opts.mol_opt,
+        mmalign_opts.infmt1_opt, mmalign_opts.atom_opt, false, mmalign_opts.mirror_opt, mmalign_opts.het_opt, mmalign_opts.o_opt,
+        mmalign_opts.chain2parse1, mmalign_opts.model2parse1);
+    if (complex1.coords.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 1");
+    parse_chain_list(chain2_list, complex2, mmalign_opts.ter_opt, mmalign_opts.split_opt, mmalign_opts.mol_opt,
+        mmalign_opts.infmt2_opt, mmalign_opts.atom_opt, false, 0, mmalign_opts.het_opt, mmalign_opts.o_opt,
+        mmalign_opts.chain2parse2, mmalign_opts.model2parse2);
+    if (complex2.coords.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 2");
+}
 
-    // declare previously global variables
-    std::vector<std::vector<std::vector<double> > > xa_vec; // structure of complex1
-    std::vector<std::vector<std::vector<double> > > ya_vec; // structure of complex2
-    CharMatrix seqx_vec; // sequence of complex1
-    CharMatrix seqy_vec; // sequence of complex2
-    CharMatrix secx_vec; // secondary structure of complex1
-    CharMatrix secy_vec; // secondary structure of complex2
-    std::vector<int> mol_vec1;          // molecule type of complex1, RNA if >0
-    std::vector<int> mol_vec2;          // molecule type of complex2, RNA if >0
-    std::vector<std::string> chainID_list1;  // list of chainID1
-    std::vector<std::string> chainID_list2;  // list of chainID2
-    std::vector<int> xlen_vec;          // length of complex1
-    std::vector<int> ylen_vec;          // length of complex2
-    int    xlen, ylen;             // chain length
+void align_monomer_pair(const ComplexData& complex1, const ComplexData& complex2,
+    const MMalignOptions& mmalign_opts, std::vector<std::string>& sequence)
+{
+    int xlen = complex1.lengths[0];
+    int ylen = complex2.lengths[0];
+    std::string secx;
+    std::string secy;
+    std::string seqx;
+    std::string seqy;
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
-    int    xlen_aa,ylen_aa;        // total length of protein
-    int    xlen_na,ylen_na;        // total length of RNA/DNA
-    std::vector<std::string> resi_vec1;  // residue index for chain1
-    std::vector<std::string> resi_vec2;  // residue index for chain2
+    secx.resize(xlen+1);
+    secy.resize(ylen+1);
+    xa.clear();
+    xa.reserve(xlen);
+    ya.clear();
+    ya.reserve(ylen);
+    copy_chain_data(complex1.coords[0],complex1.seqs[0],complex1.secs[0], xlen,xa,seqx,secx);
+    copy_chain_data(complex2.coords[0],complex2.seqs[0],complex2.secs[0], ylen,ya,seqy,secy);
 
-    // parse complex
-    ComplexData complex1;
-    ComplexData complex2;
-    parse_chain_list(chain1_list, complex1, ter_opt, split_opt, mol_opt,
-        infmt1_opt, atom_opt, false, mirror_opt, het_opt, o_opt,
-        chain2parse1, model2parse1);
-    xa_vec=complex1.coords; seqx_vec=complex1.seqs; secx_vec=complex1.secs;
-    mol_vec1=complex1.mol_types; xlen_vec=complex1.lengths;
-    chainID_list1=complex1.chain_ids; resi_vec1=complex1.resi;
-    xlen_aa=complex1.total_len_aa; xlen_na=complex1.total_len_na;
-    if (xa_vec.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 1");
-    parse_chain_list(chain2_list, complex2, ter_opt, split_opt, mol_opt,
-        infmt2_opt, atom_opt, false, 0, het_opt, o_opt,
-        chain2parse2, model2parse2);
-    ya_vec=complex2.coords; seqy_vec=complex2.seqs; secy_vec=complex2.secs;
-    mol_vec2=complex2.mol_types; ylen_vec=complex2.lengths;
-    chainID_list2=complex2.chain_ids; resi_vec2=complex2.resi;
-    ylen_aa=complex2.total_len_aa; ylen_na=complex2.total_len_na;
-    if (ya_vec.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 2");
+    // declare variable specific to this pair of TMalign
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = 0;
+    align_opts.a_opt = mmalign_opts.a_opt;
+    align_opts.u_opt = false;
+    align_opts.d_opt = mmalign_opts.d_opt;
+    align_opts.fast_opt = mmalign_opts.fast_opt;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = 0;
+    align_opts.d0_scale = mmalign_opts.d0_scale;
+    align_opts.TMcut = mmalign_opts.TMcut;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = complex1.mol_types[0]+complex2.mol_types[0];
+
+    // entry function for structure alignment
+    TMalign_main(xa, ya, seqx, seqy, secx, secy,
+        chain_align_res,
+        xlen, ylen, sequence, align_opts);
+
+    // print result
+    OutputOptions out_opts;
+    out_opts.fname_matrix = (mmalign_opts.m_opt?mmalign_opts.fname_matrix:"");
+    out_opts.fname_super = mmalign_opts.fname_super;
+    out_opts.Lnorm_ass = 0;
+    out_opts.d0_scale = mmalign_opts.d0_scale;
+    out_opts.outfmt_opt = mmalign_opts.outfmt_opt;
+    out_opts.ter_opt = mmalign_opts.ter_opt;
+    out_opts.mm_opt = true;
+    out_opts.split_opt = mmalign_opts.split_opt;
+    out_opts.o_opt = mmalign_opts.o_opt;
+    out_opts.i_opt = 0;
+    out_opts.a_opt = mmalign_opts.a_opt;
+    out_opts.mirror_opt = mmalign_opts.mirror_opt;
+    out_opts.u_opt = false;
+    out_opts.d_opt = mmalign_opts.d_opt;
+    output_results(
+        mmalign_opts.xname.substr(mmalign_opts.dir1_opt.size()),
+        mmalign_opts.yname.substr(mmalign_opts.dir2_opt.size()),
+        complex1.chain_ids[0], complex2.chain_ids[0],
+        xlen, ylen, chain_align_res,
+        out_opts, complex1.resi, complex2.resi);
+}
+
+void align_oligomer_pairs(const ComplexData& complex1, const ComplexData& complex2,
+    const MMalignOptions& mmalign_opts, std::vector<std::string>& sequence)
+{
+    int xlen_aa=complex1.total_len_aa;
+    int ylen_aa=complex2.total_len_aa;
+    int xlen_na=complex1.total_len_na;
+    int ylen_na=complex2.total_len_na;
     int len_aa=getmin(xlen_aa,ylen_aa);
     int len_na=getmin(xlen_na,ylen_na);
-    if (a_opt)
+    if (mmalign_opts.a_opt)
     {
         len_aa=(xlen_aa+ylen_aa)/2;
         len_na=(xlen_na+ylen_na)/2;
@@ -355,102 +401,9 @@ int main(int argc, char *argv[])
 
     std::map<int,int> chainmap;
 
-    // perform monomer alignment if there is only one chain
-    if (xa_vec.size()==1 && ya_vec.size()==1)
-    {
-        xlen = xlen_vec[0];
-        ylen = ylen_vec[0];
-        std::string secx;
-        std::string secy;
-        std::string seqx;
-        std::string seqy;
-        secx.resize(xlen+1);
-        secy.resize(ylen+1);
-        xa.clear();
-        xa.reserve(xlen);
-        ya.clear();
-        ya.reserve(ylen);
-        copy_chain_data(xa_vec[0],seqx_vec[0],secx_vec[0], xlen,xa,seqx,secx);
-        copy_chain_data(ya_vec[0],seqy_vec[0],secy_vec[0], ylen,ya,seqy,secy);
-        
-        // declare variable specific to this pair of TMalign
-        ChainPairAlignResult chain_align_res = {};
-        chain_align_res.d0_out = 5.0;
-
-        ChainPairAlignOptions align_opts;
-        align_opts.i_opt = 0;
-        align_opts.a_opt = a_opt;
-        align_opts.u_opt = false;
-        align_opts.d_opt = d_opt;
-        align_opts.fast_opt = fast_opt;
-        align_opts.se_opt = false;
-        align_opts.cp_opt = false;
-        align_opts.Lnorm = 0;
-        align_opts.d0_scale = d0_scale;
-        align_opts.TMcut = TMcut;
-        align_opts.parallel_threads = 1;
-        align_opts.ss_opt = 0;
-        align_opts.mol_type = mol_vec1[0]+mol_vec2[0];
-
-        // entry function for structure alignment
-        TMalign_main(xa, ya, seqx, seqy, secx, secy,
-            chain_align_res,
-            xlen, ylen, sequence, align_opts);
-
-        // print result
-        OutputOptions out_opts;
-        out_opts.fname_matrix = (m_opt?fname_matrix:"");
-        out_opts.fname_super = fname_super;
-        out_opts.Lnorm_ass = 0;
-        out_opts.d0_scale = d0_scale;
-        out_opts.outfmt_opt = outfmt_opt;
-        out_opts.ter_opt = ter_opt;
-        out_opts.mm_opt = true;
-        out_opts.split_opt = split_opt;
-        out_opts.o_opt = o_opt;
-        out_opts.i_opt = 0;
-        out_opts.a_opt = a_opt;
-        out_opts.mirror_opt = mirror_opt;
-        out_opts.u_opt = false;
-        out_opts.d_opt = d_opt;
-        output_results(
-            xname.substr(dir1_opt.size()),
-            yname.substr(dir2_opt.size()),
-            chainID_list1[0], chainID_list2[0],
-            xlen, ylen, chain_align_res,
-            out_opts, resi_vec1, resi_vec2);
-
-        // clean up
-        chain_align_res.seqM.clear();
-        chain_align_res.seqxA.clear();
-        chain_align_res.seqyA.clear();
-
-        chain1_list.clear();
-        chain2_list.clear();
-        sequence.clear();
-
-        std::vector<std::vector<std::vector<double> > >().swap(xa_vec); // structure of complex1
-        std::vector<std::vector<std::vector<double> > >().swap(ya_vec); // structure of complex2
-        CharMatrix().swap(seqx_vec); // sequence of complex1
-        CharMatrix().swap(seqy_vec); // sequence of complex2
-        CharMatrix().swap(secx_vec); // secondary structure of complex1
-        CharMatrix().swap(secy_vec); // secondary structure of complex2
-        mol_vec1.clear();       // molecule type of complex1, RNA if >0
-        mol_vec2.clear();       // molecule type of complex2, RNA if >0
-        chainID_list1.clear();  // list of chainID1
-        chainID_list2.clear();  // list of chainID2
-        xlen_vec.clear();       // length of complex1
-        ylen_vec.clear();       // length of complex2
-
-        t2 = std::clock();
-        float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
-        fcout("#Total CPU time is %5.2f seconds\n", diff);
-        return 0;
-    }
-
     // declare TM-score tables
-    int chain1_num=xa_vec.size();
-    int chain2_num=ya_vec.size();
+    int chain1_num=complex1.coords.size();
+    int chain2_num=complex2.coords.size();
     std::vector<std::string> tmp_str_vec(chain2_num,"");
     DoubleMatrix TMave_mat;
     TMave_mat.assign(chain1_num,std::vector<double>(chain2_num));
@@ -466,14 +419,18 @@ int main(int argc, char *argv[])
     int maxTMmono_j;
 
     // get all-against-all alignment
+    bool fast_opt=mmalign_opts.fast_opt;
     if (len_aa+len_na>500) fast_opt=true;
     std::string seqx;
     std::string seqy;
     std::string secx;
     std::string secy;
+    CoordArray xa;                     // structure of single chain
+    CoordArray ya;
+    int xlen, ylen;             // chain length
     for (int i=0;i<chain1_num;i++)
     {
-        xlen=xlen_vec[i];
+        xlen=complex1.lengths[i];
         if (xlen<3)
         {
             for (int j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
@@ -482,7 +439,7 @@ int main(int argc, char *argv[])
         secx.resize(xlen+1);
         xa.clear();
         xa.reserve(xlen);
-        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+        copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i],
             xlen,xa,seqx,secx);
 
         for (int j=0;j<chain2_num;j++)
@@ -494,13 +451,13 @@ int main(int argc, char *argv[])
             ut_mat[ut_idx][4]=1;
             ut_mat[ut_idx][8]=1;
 
-            if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+            if (complex1.mol_types[i]*complex2.mol_types[j]<0) //no protein-RNA alignment
             {
                 TMave_mat[i][j]=-1;
                 continue;
             }
 
-            ylen=ylen_vec[j];
+            ylen=complex2.lengths[j];
             if (ylen<3)
             {
                 TMave_mat[i][j]=-1;
@@ -509,14 +466,14 @@ int main(int argc, char *argv[])
             secy.resize(ylen+1);
             ya.clear();
             ya.reserve(ylen);
-            copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+            copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
                 ylen,ya,seqy,secy);
 
             // declare variable specific to this pair of TMalign
             ChainPairAlignResult chain_align_res = {};
             chain_align_res.d0_out = 5.0;
             int Lnorm_pair=len_aa;
-            if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_pair=len_na;
+            if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_pair=len_na;
 
             ChainPairAlignOptions align_opts;
             align_opts.i_opt = 0;
@@ -527,11 +484,11 @@ int main(int argc, char *argv[])
             align_opts.se_opt = false;
             align_opts.cp_opt = false;
             align_opts.Lnorm = Lnorm_pair;
-            align_opts.d0_scale = d0_scale;
-            align_opts.TMcut = TMcut;
+            align_opts.d0_scale = mmalign_opts.d0_scale;
+            align_opts.TMcut = mmalign_opts.TMcut;
             align_opts.parallel_threads = 1;
             align_opts.ss_opt = 0;
-            align_opts.mol_type = mol_vec1[i]+mol_vec2[j];
+            align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
 
             // entry function for structure alignment
             TMalign_main(xa, ya, seqx, seqy, secx, secy,
@@ -559,7 +516,7 @@ int main(int argc, char *argv[])
             chain_align_res.do_vec.clear();
         }
 
-        
+
     }
 
     // calculate initial chain-chain assignment
@@ -578,20 +535,20 @@ std::vector<int> assign2_list(chain2_num);
         int na_chain_num2;
         int aa_chain_num1;
         int aa_chain_num2;
-        count_na_aa_chain_num(na_chain_num1,aa_chain_num1,mol_vec1);
-        count_na_aa_chain_num(na_chain_num2,aa_chain_num2,mol_vec2);
+        count_na_aa_chain_num(na_chain_num1,aa_chain_num1,complex1.mol_types);
+        count_na_aa_chain_num(na_chain_num2,aa_chain_num2,complex2.mol_types);
 
         // align protein-RNA hybrid dimer to another hybrid dimer
-        if (na_chain_num1==1 && na_chain_num2==1 && 
+        if (na_chain_num1==1 && na_chain_num2==1 &&
             aa_chain_num1==1 && aa_chain_num2==1) is_oligomer=false;
         // align pure protein dimer or pure RNA dimer
-        else if ((getmin(na_chain_num1,na_chain_num2)==0 && 
+        else if ((getmin(na_chain_num1,na_chain_num2)==0 &&
                     aa_chain_num1==2 && aa_chain_num2==2) ||
-                 (getmin(aa_chain_num1,aa_chain_num2)==0 && 
+                 (getmin(aa_chain_num1,aa_chain_num2)==0 &&
                     na_chain_num1==2 && na_chain_num2==2))
         {
-            adjust_dimer_assignment(xa_vec,ya_vec,xlen_vec,ylen_vec,mol_vec1,
-                mol_vec2,assign1_list,assign2_list,seqxA_mat,seqyA_mat);
+            adjust_dimer_assignment(complex1.coords,complex2.coords,complex1.lengths,complex2.lengths,
+                complex1.mol_types,complex2.mol_types,assign1_list,assign2_list,seqxA_mat,seqyA_mat);
             is_oligomer=false; // cannot refiner further
         }
         else is_oligomer=true; /* align oligomers to dimer */
@@ -605,8 +562,8 @@ std::vector<int> assign2_list(chain2_num);
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM=getmin(
-            calculate_centroids(xa_vec, chain1_num, xcentroids),
-            calculate_centroids(ya_vec, chain2_num, ycentroids));
+            calculate_centroids(complex1.coords, chain1_num, xcentroids),
+            calculate_centroids(complex2.coords, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
         homo_refined_greedy_search(TMave_mat, assign1_list,
@@ -641,13 +598,17 @@ std::vector<int> assign2_init(chain2_num);
     MMalign_iter(max_total_score, max_iter, complex1, complex2,
         len_aa, len_na, chain1_num,
         chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
-        sequence, d0_scale, fast_opt, chainmap);
+        sequence, mmalign_opts.d0_scale, fast_opt, chainmap);
 
     if (aln_chain_num>=4 && is_oligomer && chainmap.size()==0) // oligomer alignment
     {
         {
-            ComplexData final_complex1 = {xa_vec, seqx_vec, secx_vec, mol_vec1, xlen_vec, chainID_list1, resi_vec1, len_aa, len_na};
-            ComplexData final_complex2 = {ya_vec, seqy_vec, secy_vec, mol_vec2, ylen_vec, chainID_list2, resi_vec2, len_aa, len_na};
+            ComplexData final_complex1 = complex1;
+            ComplexData final_complex2 = complex2;
+            final_complex1.total_len_aa = len_aa;
+            final_complex1.total_len_na = len_na;
+            final_complex2.total_len_aa = len_aa;
+            final_complex2.total_len_na = len_na;
             AllChainPairsResult final_pairs;
             final_pairs.tm_matrix = TMave_mat;
             final_pairs.aligned_seq1 = seqxA_mat;
@@ -657,28 +618,28 @@ std::vector<int> assign2_init(chain2_num);
             final_assign.chain2_of_chain1 = assign1_list;
             final_assign.chain1_of_chain2 = assign2_list;
             MMalignFinalParams final_params;
-            final_params.xname = xname.substr(dir1_opt.size());
-            final_params.yname = yname.substr(dir2_opt.size());
-            final_params.fname_super = fname_super;
-            final_params.fname_lign = fname_lign;
-            final_params.fname_matrix = fname_matrix;
+            final_params.xname = mmalign_opts.xname.substr(mmalign_opts.dir1_opt.size());
+            final_params.yname = mmalign_opts.yname.substr(mmalign_opts.dir2_opt.size());
+            final_params.fname_super = mmalign_opts.fname_super;
+            final_params.fname_lign = mmalign_opts.fname_lign;
+            final_params.fname_matrix = mmalign_opts.fname_matrix;
             final_params.seqx_arg = std::string();
             final_params.seqy_arg = std::string();
             final_params.len_aa = len_aa;
             final_params.len_na = len_na;
             final_params.chain1_num = chain1_num;
             final_params.chain2_num = chain2_num;
-            final_params.d0_scale = d0_scale;
+            final_params.d0_scale = mmalign_opts.d0_scale;
             final_params.m_opt = 1;
             final_params.o_opt = 0;
             final_params.outfmt_opt = 5;
-            final_params.ter_opt = ter_opt;
-            final_params.split_opt = split_opt;
+            final_params.ter_opt = mmalign_opts.ter_opt;
+            final_params.split_opt = mmalign_opts.split_opt;
             final_params.a_opt = 0;
             final_params.d_opt = 0;
             final_params.fast_opt = true;
             final_params.full_opt = true;
-            final_params.mirror_opt = mirror_opt;
+            final_params.mirror_opt = mmalign_opts.mirror_opt;
             MMalign_final(final_complex1, final_complex2, final_pairs, final_assign,
                 final_params, sequence, false);
             TMave_mat = final_pairs.tm_matrix;
@@ -690,8 +651,8 @@ std::vector<int> assign2_init(chain2_num);
         xcentroids.resize(chain1_num);
         ycentroids.resize(chain2_num);
         double d0MM=getmin(
-            calculate_centroids(xa_vec, chain1_num, xcentroids),
-            calculate_centroids(ya_vec, chain2_num, ycentroids));
+            calculate_centroids(complex1.coords, chain1_num, xcentroids),
+            calculate_centroids(complex2.coords, chain2_num, ycentroids));
 
         // refine enhanced greedy search with centroid superposition
         homo_refined_greedy_search(TMave_mat, assign1_list,
@@ -726,7 +687,7 @@ std::vector<int> assign2_init(chain2_num);
         MMalign_iter(max_total_score, max_iter, complex1, complex2,
             len_aa, len_na, chain1_num, chain2_num,
             TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence,
-            d0_scale, fast_opt, chainmap);
+            mmalign_opts.d0_scale, fast_opt, chainmap);
     }
 
     /* perform cross chain alignment
@@ -748,21 +709,25 @@ std::vector<int> assign2_init(chain2_num);
         MMalign_dimer(max_total_score_cross, complex1, complex2,
             len_aa, len_na, chain1_num, chain2_num,
             TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
-            sequence_init, d0_scale, fast_opt);
-        if (max_total_score_cross>max_total_score) 
+            sequence_init, mmalign_opts.d0_scale, fast_opt);
+        if (max_total_score_cross>max_total_score)
         {
             max_total_score=max_total_score_cross;
             copy_chain_assign_data(chain1_num, chain2_num, sequence,
                 seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
                 seqxA_mat,  seqyA_mat,  assign1_list, assign2_list, TMave_mat);
         }
-    } 
+    }
 
     // final alignment
-    if (outfmt_opt==0) print_version();
+    if (mmalign_opts.outfmt_opt==0) print_version();
     {
-        ComplexData final_complex1 = {xa_vec, seqx_vec, secx_vec, mol_vec1, xlen_vec, chainID_list1, resi_vec1, len_aa, len_na};
-        ComplexData final_complex2 = {ya_vec, seqy_vec, secy_vec, mol_vec2, ylen_vec, chainID_list2, resi_vec2, len_aa, len_na};
+        ComplexData final_complex1 = complex1;
+        ComplexData final_complex2 = complex2;
+        final_complex1.total_len_aa = len_aa;
+        final_complex1.total_len_na = len_na;
+        final_complex2.total_len_aa = len_aa;
+        final_complex2.total_len_na = len_na;
         AllChainPairsResult final_pairs;
         final_pairs.tm_matrix = TMave_mat;
         final_pairs.aligned_seq1 = seqxA_mat;
@@ -772,35 +737,62 @@ std::vector<int> assign2_init(chain2_num);
         final_assign.chain2_of_chain1 = assign1_list;
         final_assign.chain1_of_chain2 = assign2_list;
         MMalignFinalParams final_params;
-        final_params.xname = xname.substr(dir1_opt.size());
-        final_params.yname = yname.substr(dir2_opt.size());
-        final_params.fname_super = fname_super;
-        final_params.fname_lign = fname_lign;
-        final_params.fname_matrix = fname_matrix;
+        final_params.xname = mmalign_opts.xname.substr(mmalign_opts.dir1_opt.size());
+        final_params.yname = mmalign_opts.yname.substr(mmalign_opts.dir2_opt.size());
+        final_params.fname_super = mmalign_opts.fname_super;
+        final_params.fname_lign = mmalign_opts.fname_lign;
+        final_params.fname_matrix = mmalign_opts.fname_matrix;
         final_params.seqx_arg = std::string();
         final_params.seqy_arg = std::string();
         final_params.len_aa = len_aa;
         final_params.len_na = len_na;
         final_params.chain1_num = chain1_num;
         final_params.chain2_num = chain2_num;
-        final_params.d0_scale = d0_scale;
-        final_params.m_opt = m_opt;
-        final_params.o_opt = o_opt;
-        final_params.outfmt_opt = outfmt_opt;
-        final_params.ter_opt = ter_opt;
-        final_params.split_opt = split_opt;
-        final_params.a_opt = a_opt;
-        final_params.d_opt = d_opt;
+        final_params.d0_scale = mmalign_opts.d0_scale;
+        final_params.m_opt = mmalign_opts.m_opt;
+        final_params.o_opt = mmalign_opts.o_opt;
+        final_params.outfmt_opt = mmalign_opts.outfmt_opt;
+        final_params.ter_opt = mmalign_opts.ter_opt;
+        final_params.split_opt = mmalign_opts.split_opt;
+        final_params.a_opt = mmalign_opts.a_opt;
+        final_params.d_opt = mmalign_opts.d_opt;
         final_params.fast_opt = fast_opt;
-        final_params.full_opt = full_opt;
-        final_params.mirror_opt = mirror_opt;
+        final_params.full_opt = mmalign_opts.full_opt;
+        final_params.mirror_opt = mmalign_opts.mirror_opt;
         MMalign_final(final_complex1, final_complex2, final_pairs, final_assign,
             final_params, sequence, false);
     }
+}
 
-    std::vector<std::vector<std::string> >().swap(seqxA_mat);
-    std::vector<std::vector<std::string> >().swap(seqM_mat);
-    std::vector<std::vector<std::string> >().swap(seqyA_mat);
+int main(int argc, char *argv[])
+{
+    if (argc < 2) print_help();
+
+    std::clock_t t1, t2;
+    t1 = std::clock();
+
+    MMalignOptions mmalign_opts;
+    parse_arguments(argc, argv, mmalign_opts);
+    postprocess_arguments(mmalign_opts);
+
+    std::vector<std::string> chain1_list; // only when -dir1 is set
+    std::vector<std::string> chain2_list; // only when -dir2 is set
+    build_file_lists(mmalign_opts, chain1_list, chain2_list);
+
+    if (mmalign_opts.outfmt_opt==2)
+        std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+
+    std::vector<std::string> sequence; // get value from alignment file
+    ComplexData complex1;
+    ComplexData complex2;
+    parse_complexes(mmalign_opts, chain1_list, chain2_list, complex1, complex2);
+
+    // perform monomer alignment if there is only one chain
+    if (complex1.coords.size()==1 && complex2.coords.size()==1)
+        align_monomer_pair(complex1, complex2, mmalign_opts, sequence);
+    else
+        align_oligomer_pairs(complex1, complex2, mmalign_opts, sequence);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
