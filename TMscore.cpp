@@ -3,7 +3,7 @@
 
 void print_version()
 {
-    std::cout << 
+    std::cout <<
 "\n"
 " *************************************************************************\n"
 " *                                 TM-SCORE                              *\n"
@@ -127,77 +127,74 @@ void print_help(bool h_opt=false)
     exit(EXIT_SUCCESS);
 }
 
-int main(int argc, char *argv[])
+struct TMscoreOptions
 {
-    if (argc < 2) print_help();
-
-    /**********************/
-    //    get argument   
-    /**********************/
     std::string xname       = "";
     std::string yname       = "";
     std::string fname_super = ""; // file name for superposed structure
     std::string fname_lign  = ""; // file name for user alignment
     std::string fname_matrix= ""; // file name for output matrix
-    std::vector<std::string> sequence; // get value from alignment file
-    double Lnorm_ass;
-    double d0_scale;
-
-    bool h_opt = false; // print full help message
-    bool v_opt = false; // print version
-    bool m_opt = false; // flag for -m, output rotation matrix
-    bool o_opt = false; // flag for -o, output superposed structure
-    int  a_opt = 0;     // flag for -a, do not normalized by average length
-    bool u_opt = false; // flag for -u, normalized by user specified length
-    bool d_opt = false; // flag for -d, user specified d0
-
-    double TMcut     =-1;
-    int    infmt1_opt=-1;    // PDB or PDBx/mmCIF format for chain_1
-    int    infmt2_opt=-1;    // PDB or PDBx/mmCIF format for chain_2
-    int    ter_opt   =3;     // TER, END, or different chainID
-    int    split_opt =0;     // do not split chain
-    int    outfmt_opt=0;     // set -outfmt to full output
-    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
-    int    mirror_opt=0;     // do not align mirror
-    int    het_opt=0;        // do not read HETATM residues
     std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
     std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
     std::string suffix_opt="";    // set -suffix to empty
     std::string dir_opt   ="";    // set -dir to empty
     std::string dir1_opt  ="";    // set -dir1 to empty
     std::string dir2_opt  ="";    // set -dir2 to empty
-    int    byresi_opt=1;     // TM-score without -c
-    std::vector<std::string> chain1_list; // only when -dir1 is set
-    std::vector<std::string> chain2_list; // only when -dir2 is set
     std::vector<std::string> chain2parse1;
     std::vector<std::string> chain2parse2;
     std::vector<std::string> model2parse1;
     std::vector<std::string> model2parse2;
+    double Lnorm_ass;
+    double d0_scale;
+    double TMcut     =-1;
+    int    a_opt = 0;     // flag for -a, do not normalized by average length
+    int    infmt1_opt=-1;    // PDB or PDBx/mmCIF format for chain_1
+    int    infmt2_opt=-1;    // PDB or PDBx/mmCIF format for chain_2
+    int    ter_opt   =3;     // TER, END, or different chainID
+    int    split_opt =0;     // do not split chain
+    int    outfmt_opt=0;     // set -outfmt to full output
+    int    mirror_opt=0;     // do not align mirror
+    int    het_opt=0;        // do not read HETATM residues
+    int    byresi_opt=1;     // TM-score without -c
+    bool h_opt = false; // print full help message
+    bool v_opt = false; // print version
+    bool m_opt = false; // flag for -m, output rotation matrix
+    bool o_opt = false; // flag for -o, output superposed structure
+    bool u_opt = false; // flag for -u, normalized by user specified length
+    bool d_opt = false; // flag for -d, user specified d0
+    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
+    bool normalize_atom_name = false;
+};
 
+/**********************/
+//    get argument
+/**********************/
+void parse_arguments(int argc, char* argv[], TMscoreOptions& tmscore_opts)
+{
     const OptionSpec option_specs[] =
     {
-        { "-o",       &fname_super,  &o_opt, OPTION_STRING },
-        { "-u",       &Lnorm_ass,    &u_opt, OPTION_DOUBLE },
-        { "-l",       &Lnorm_ass,    &u_opt, OPTION_DOUBLE },
-        { "-L",       &Lnorm_ass,    &u_opt, OPTION_DOUBLE },
-        { "-d",       &d0_scale,     &d_opt, OPTION_DOUBLE },
-        { "-v",       &v_opt,        nullptr, OPTION_FLAG },
-        { "-h",       &h_opt,        nullptr, OPTION_FLAG },
-        { "-m",       &fname_matrix, &m_opt, OPTION_STRING },
-        { "-fast",    &fast_opt,     nullptr, OPTION_FLAG },
-        { "-infmt1",  &infmt1_opt,   nullptr, OPTION_INT },
-        { "-infmt2",  &infmt2_opt,   nullptr, OPTION_INT },
-        { "-ter",     &ter_opt,      nullptr, OPTION_INT },
-        { "-split",   &split_opt,    nullptr, OPTION_INT },
-        { "-atom",    &atom_opt,     nullptr, OPTION_STRING },
-        { "-mol",     &mol_opt,      nullptr, OPTION_STRING },
-        { "-dir",     &dir_opt,      nullptr, OPTION_STRING },
-        { "-dir1",    &dir1_opt,     nullptr, OPTION_STRING },
-        { "-dir2",    &dir2_opt,     nullptr, OPTION_STRING },
-        { "-suffix",  &suffix_opt,   nullptr, OPTION_STRING },
-        { "-outfmt",  &outfmt_opt,   nullptr, OPTION_INT },
-        { "-mirror",  &mirror_opt,   nullptr, OPTION_INT },
-        { "-het",     &het_opt,      nullptr, OPTION_INT },
+        { "-o",       &tmscore_opts.fname_super,  &tmscore_opts.o_opt, OPTION_STRING },
+        { "-u",       &tmscore_opts.Lnorm_ass,    &tmscore_opts.u_opt, OPTION_DOUBLE },
+        { "-l",       &tmscore_opts.Lnorm_ass,    &tmscore_opts.u_opt, OPTION_DOUBLE },
+        { "-L",       &tmscore_opts.Lnorm_ass,    &tmscore_opts.u_opt, OPTION_DOUBLE },
+        { "-d",       &tmscore_opts.d0_scale,     &tmscore_opts.d_opt, OPTION_DOUBLE },
+        { "-v",       &tmscore_opts.v_opt,        nullptr, OPTION_FLAG },
+        { "-h",       &tmscore_opts.h_opt,        nullptr, OPTION_FLAG },
+        { "-m",       &tmscore_opts.fname_matrix, &tmscore_opts.m_opt, OPTION_STRING },
+        { "-fast",    &tmscore_opts.fast_opt,     nullptr, OPTION_FLAG },
+        { "-infmt1",  &tmscore_opts.infmt1_opt,   nullptr, OPTION_INT },
+        { "-infmt2",  &tmscore_opts.infmt2_opt,   nullptr, OPTION_INT },
+        { "-ter",     &tmscore_opts.ter_opt,      nullptr, OPTION_INT },
+        { "-split",   &tmscore_opts.split_opt,    nullptr, OPTION_INT },
+        { "-atom",    &tmscore_opts.atom_opt,     nullptr, OPTION_STRING },
+        { "-mol",     &tmscore_opts.mol_opt,      nullptr, OPTION_STRING },
+        { "-dir",     &tmscore_opts.dir_opt,      nullptr, OPTION_STRING },
+        { "-dir1",    &tmscore_opts.dir1_opt,     nullptr, OPTION_STRING },
+        { "-dir2",    &tmscore_opts.dir2_opt,     nullptr, OPTION_STRING },
+        { "-suffix",  &tmscore_opts.suffix_opt,   nullptr, OPTION_STRING },
+        { "-outfmt",  &tmscore_opts.outfmt_opt,   nullptr, OPTION_INT },
+        { "-mirror",  &tmscore_opts.mirror_opt,   nullptr, OPTION_INT },
+        { "-het",     &tmscore_opts.het_opt,      nullptr, OPTION_INT },
     };
     const std::size_t option_spec_num = sizeof(option_specs) / sizeof(option_specs[0]);
 
@@ -209,12 +206,12 @@ int main(int argc, char *argv[])
         }
         if ( std::string(argv[i]) == "-a" && i < (argc-1) )
         {
-            if (std::string(argv[i + 1]) == "T")      a_opt=true;
-            else if (std::string(argv[i + 1]) == "F") a_opt=false;
+            if (std::string(argv[i + 1]) == "T")      tmscore_opts.a_opt=true;
+            else if (std::string(argv[i + 1]) == "F") tmscore_opts.a_opt=false;
             else
             {
-                a_opt=safe_stoi(argv[i + 1]);
-                if (a_opt!=-2 && a_opt!=-1 && a_opt!=1)
+                tmscore_opts.a_opt=safe_stoi(argv[i + 1]);
+                if (tmscore_opts.a_opt!=-2 && tmscore_opts.a_opt!=-1 && tmscore_opts.a_opt!=1)
                     PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
             }
             i++;
@@ -223,141 +220,218 @@ int main(int argc, char *argv[])
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],chain2parse1,',');
+            split(argv[i+1],tmscore_opts.chain2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-chain2" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],chain2parse2,',');
+            split(argv[i+1],tmscore_opts.chain2parse2,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model1" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],model2parse1,',');
+            split(argv[i+1],tmscore_opts.model2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model2" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],model2parse2,',');
+            split(argv[i+1],tmscore_opts.model2parse2,',');
             i++;
         }
         else if ( std::string(argv[i]) == "-c" )
         {
-            byresi_opt=2;
+            tmscore_opts.byresi_opt=2;
         }
         else if ( std::string(argv[i]) == "-seq" )
         {
-            byresi_opt=5;
+            tmscore_opts.byresi_opt=5;
         }
-        else if (xname.size() == 0) xname=argv[i];
-        else if (yname.size() == 0) yname=argv[i];
+        else if (tmscore_opts.xname.size() == 0) tmscore_opts.xname=argv[i];
+        else if (tmscore_opts.yname.size() == 0) tmscore_opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
+}
 
-    if(xname.size()==0 || (yname.size()==0 && dir_opt.size()==0) || 
-                          (yname.size()    && dir_opt.size()))
+void postprocess_arguments(TMscoreOptions& tmscore_opts)
+{
+    if(tmscore_opts.xname.size()==0 || (tmscore_opts.yname.size()==0 && tmscore_opts.dir_opt.size()==0) ||
+                          (tmscore_opts.yname.size()    && tmscore_opts.dir_opt.size()))
     {
-        if (h_opt) print_help(h_opt);
-        if (v_opt)
+        if (tmscore_opts.h_opt) print_help(tmscore_opts.h_opt);
+        if (tmscore_opts.v_opt)
         {
             print_version();
             exit(EXIT_FAILURE);
         }
-        if (xname.size()==0)
+        if (tmscore_opts.xname.size()==0)
             PrintErrorAndQuit("Please provide input structures");
-        else if (yname.size()==0 && dir_opt.size()==0)
+        else if (tmscore_opts.yname.size()==0 && tmscore_opts.dir_opt.size()==0)
             PrintErrorAndQuit("Please provide structure B");
-        else if (yname.size() && dir_opt.size())
+        else if (tmscore_opts.yname.size() && tmscore_opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
 
-    if (suffix_opt.size() && dir_opt.size()+dir1_opt.size()+dir2_opt.size()==0)
+    if (tmscore_opts.suffix_opt.size() && tmscore_opts.dir_opt.size()+tmscore_opts.dir1_opt.size()+tmscore_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if ((dir_opt.size() || dir1_opt.size() || dir2_opt.size()))
+    if ((tmscore_opts.dir_opt.size() || tmscore_opts.dir1_opt.size() || tmscore_opts.dir2_opt.size()))
     {
-        if (m_opt || o_opt)
+        if (tmscore_opts.m_opt || tmscore_opts.o_opt)
             PrintErrorAndQuit("-m or -o cannot be set with -dir, -dir1 or -dir2");
-        else if (dir_opt.size() && (dir1_opt.size() || dir2_opt.size()))
+        else if (tmscore_opts.dir_opt.size() && (tmscore_opts.dir1_opt.size() || tmscore_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
 
-    bool normalize_atom_name=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
-    if (atom_opt.size()!=4)
+    tmscore_opts.normalize_atom_name=(tmscore_opts.atom_opt=="auto" || tmscore_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (tmscore_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
+    if (tmscore_opts.mol_opt!="auto" && tmscore_opts.mol_opt!="protein" && tmscore_opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (mol_opt=="protein" && atom_opt=="auto")
-        atom_opt=" CA ";
-    else if (mol_opt=="RNA" && atom_opt=="auto")
-        atom_opt=" C3'";
+    else if (tmscore_opts.mol_opt=="protein" && tmscore_opts.atom_opt=="auto")
+        tmscore_opts.atom_opt=" CA ";
+    else if (tmscore_opts.mol_opt=="RNA" && tmscore_opts.atom_opt=="auto")
+        tmscore_opts.atom_opt=" C3'";
 
-    if (u_opt && Lnorm_ass<=0)
+    if (tmscore_opts.u_opt && tmscore_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
-    if (d_opt && d0_scale<=0)
+    if (tmscore_opts.d_opt && tmscore_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (outfmt_opt>=2 && (a_opt || u_opt || d_opt))
+    if (tmscore_opts.outfmt_opt>=2 && (tmscore_opts.a_opt || tmscore_opts.u_opt || tmscore_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-    if (byresi_opt>=2 && byresi_opt<=3 && ter_opt>=2)
+    if (tmscore_opts.byresi_opt>=2 && tmscore_opts.byresi_opt<=3 && tmscore_opts.ter_opt>=2)
         PrintErrorAndQuit("-c should be used with -ter <=1");
-    if (split_opt==1 && ter_opt!=0)
+    if (tmscore_opts.split_opt==1 && tmscore_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
+    else if (tmscore_opts.split_opt==2 && tmscore_opts.ter_opt!=0 && tmscore_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (split_opt<0 || split_opt>2)
+    if (tmscore_opts.split_opt<0 || tmscore_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
-    if (m_opt && fname_matrix == "") // Output rotation matrix: matrix.txt
+    if (tmscore_opts.m_opt && tmscore_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+}
 
-    // parse file list
-    if (dir1_opt.size()+dir_opt.size()==0) chain1_list.push_back(xname);
-    else file2chainlist(chain1_list, xname, dir_opt+dir1_opt, suffix_opt);
+// parse file list
+void build_file_lists(const TMscoreOptions& tmscore_opts, std::vector<std::string>& chain1_list,
+    std::vector<std::string>& chain2_list)
+{
+    if (tmscore_opts.dir1_opt.size()+tmscore_opts.dir_opt.size()==0) chain1_list.push_back(tmscore_opts.xname);
+    else file2chainlist(chain1_list, tmscore_opts.xname, tmscore_opts.dir_opt+tmscore_opts.dir1_opt, tmscore_opts.suffix_opt);
 
-    if (dir_opt.size())
-        for (int i=0;i<chain1_list.size();i++)
+    if (tmscore_opts.dir_opt.size())
+        for (std::size_t i=0;i<chain1_list.size();i++)
             chain2_list.push_back(chain1_list[i]);
-    else if (dir2_opt.size()==0) chain2_list.push_back(yname);
-    else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
+    else if (tmscore_opts.dir2_opt.size()==0) chain2_list.push_back(tmscore_opts.yname);
+    else file2chainlist(chain2_list, tmscore_opts.yname, tmscore_opts.dir2_opt, tmscore_opts.suffix_opt);
+}
 
-    if (byresi_opt>=4)
-        std::cerr<<"WARNING! The residue correspondence between the two structures"
-            <<" are automatically established by sequence alignment. Results"
-            <<" may be unreliable."<<std::endl;
+void read_chain(const std::vector<std::string>& chain_lines, const std::string& filename,
+    const std::string& chain_id, const TMscoreOptions& tmscore_opts, const int mol_type,
+    const bool mirror, ParsedChain& chain)
+{
+    chain.filename = filename;
+    chain.chain_id = chain_id;
+    chain.cur_complex_mol_list = mol_type;
+    chain.chain_len = read_PDB(chain_lines, chain.chain_coords, chain.chain_seq,
+        chain.resi_vec, tmscore_opts.byresi_opt);
+    if (mirror) for (int r=0;r<chain.chain_len;r++) chain.chain_coords[r][2]=-chain.chain_coords[r][2];
+}
 
-    if (outfmt_opt==2)
-        std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
-            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
+    const TMscoreOptions& tmscore_opts, std::vector<std::string>& sequence)
+{
+    const int xlen = chain1.chain_len;
+    const int ylen = chain2.chain_len;
 
-    // declare previously global variables
+    // declare variable specific to this pair of TMalign
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali = chain_align_res.n_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
+
+    int L_lt_d=0;
+    double GDT_list[5]={0,0,0,0,0}; // 0.5, 1, 2, 4, 8
+    double maxsub=0;
+    TM1=TM2=TM3=TM4=TM5=0;
+
+    // entry function for structure alignment
+    TMscore_main(
+        chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
+        t0, u0, TM1, TM2, TM3, TM4, TM5,
+        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, tmscore_opts.Lnorm_ass, tmscore_opts.d0_scale,
+        tmscore_opts.a_opt, tmscore_opts.u_opt, tmscore_opts.d_opt, tmscore_opts.fast_opt,
+        chain1.cur_complex_mol_list+chain2.cur_complex_mol_list,
+        GDT_list,maxsub,tmscore_opts.TMcut);
+
+    // print result
+    if (tmscore_opts.outfmt_opt==0) print_version();
+    output_TMscore_results(
+        chain1.filename.substr(tmscore_opts.dir1_opt.size()+tmscore_opts.dir_opt.size()),
+        chain2.filename.substr(tmscore_opts.dir2_opt.size()+tmscore_opts.dir_opt.size()),
+        chain1.chain_id,
+        chain2.chain_id,
+        xlen, ylen, chain_align_res,
+        tmscore_opts.Lnorm_ass, tmscore_opts.d0_scale,
+        (tmscore_opts.m_opt?tmscore_opts.fname_matrix:""),
+        tmscore_opts.outfmt_opt, tmscore_opts.ter_opt,
+        (tmscore_opts.o_opt?tmscore_opts.fname_super:""),
+        tmscore_opts.a_opt, tmscore_opts.u_opt, tmscore_opts.d_opt, tmscore_opts.mirror_opt,
+        L_lt_d, GDT_list, maxsub, tmscore_opts.split_opt,
+        chain1.resi_vec, chain2.resi_vec);
+}
+
+void align_all_chain_pairs(std::vector<std::string>& chain1_list,
+    std::vector<std::string>& chain2_list, const TMscoreOptions& tmscore_opts,
+    std::vector<std::string>& sequence)
+{
     std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
     std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
     std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
-    int    xlen, ylen;         // chain length
-    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
-    CoordArray xa, ya;             // for input vectors xa[0...xlen-1][0..2] and
-                               // ya[0...ylen-1][0..2], in general,
-                               // ya is regarded as native structure
-                               // --> superpose xa onto ya
-    std::vector<std::string> resi_vec1;  // residue index for chain1
-    std::vector<std::string> resi_vec2;  // residue index for chain2
+    int xchainnum=0,ychainnum=0;// number of chains in a PDB file
+    std::string yname;
 
     // loop over file names
-    for (int i=0;i<chain1_list.size();i++)
+    for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
-        xname=chain1_list[i];
+        std::string xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
-            ter_opt, infmt1_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
-            chain2parse1, model2parse1);
+            tmscore_opts.ter_opt, tmscore_opts.infmt1_opt, tmscore_opts.atom_opt, tmscore_opts.normalize_atom_name,
+            tmscore_opts.split_opt, tmscore_opts.het_opt,
+            tmscore_opts.chain2parse1, tmscore_opts.model2parse1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -366,34 +440,34 @@ int main(int argc, char *argv[])
         }
         for (int chain_i=0;chain_i<xchainnum;chain_i++)
         {
-            xlen=PDB_lines1[chain_i].size();
-            if (mol_opt=="RNA") mol_vec1[chain_i]=1;
-            else if (mol_opt=="protein") mol_vec1[chain_i]=-1;
-            if (!xlen)
+            if (!PDB_lines1[chain_i].size())
             {
                 std::cerr<<"Warning! Cannot parse file: "<<xname
                     <<". Chain length 0."<<std::endl;
                 continue;
             }
-            else if (xlen<3)
+            else if (PDB_lines1[chain_i].size()<3)
             {
                 std::cerr<<"Sequence is too short <3!: "<<xname<<std::endl;
                 continue;
             }
-            std::string seqx;
-            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
-                resi_vec1, byresi_opt);
-            if (mirror_opt) for (int r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
+            int mol_type1=mol_vec1[chain_i];
+            if (tmscore_opts.mol_opt=="RNA") mol_type1=1;
+            else if (tmscore_opts.mol_opt=="protein") mol_type1=-1;
+            ParsedChain chain1;
+            read_chain(PDB_lines1[chain_i], xname, chainID_list1[chain_i], tmscore_opts, mol_type1,
+                (tmscore_opts.mirror_opt!=0), chain1);
 
-            for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
+            for (int j=(tmscore_opts.dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
                     ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2,
-                        mol_vec2, ter_opt, infmt2_opt, atom_opt, normalize_atom_name,
-                        split_opt, het_opt, chain2parse2, model2parse2);
+                        mol_vec2, tmscore_opts.ter_opt, tmscore_opts.infmt2_opt, tmscore_opts.atom_opt,
+                        tmscore_opts.normalize_atom_name, tmscore_opts.split_opt, tmscore_opts.het_opt,
+                        tmscore_opts.chain2parse2, tmscore_opts.model2parse2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname
@@ -403,93 +477,29 @@ int main(int argc, char *argv[])
                 }
                 for (int chain_j=0;chain_j<ychainnum;chain_j++)
                 {
-                    ylen=PDB_lines2[chain_j].size();
-                    if (mol_opt=="RNA") mol_vec2[chain_j]=1;
-                    else if (mol_opt=="protein") mol_vec2[chain_j]=-1;
-                    if (!ylen)
+                    if (!PDB_lines2[chain_j].size())
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname
                             <<". Chain length 0."<<std::endl;
                         continue;
                     }
-                    else if (ylen<3)
+                    else if (PDB_lines2[chain_j].size()<3)
                     {
                         std::cerr<<"Sequence is too short <3!: "<<yname<<std::endl;
                         continue;
                     }
-                    std::string seqy;
-                    ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
-                        resi_vec2, byresi_opt);
+                    int mol_type2=mol_vec2[chain_j];
+                    if (tmscore_opts.mol_opt=="RNA") mol_type2=1;
+                    else if (tmscore_opts.mol_opt=="protein") mol_type2=-1;
+                    ParsedChain chain2;
+                    read_chain(PDB_lines2[chain_j], yname, chainID_list2[chain_j], tmscore_opts, mol_type2,
+                        false, chain2);
 
-                    if (byresi_opt) extract_aln_from_resi(sequence, seqx, seqy,resi_vec1,resi_vec2,byresi_opt);
+                    if (tmscore_opts.byresi_opt) extract_aln_from_resi(sequence,
+                        chain1.chain_seq, chain2.chain_seq, chain1.resi_vec, chain2.resi_vec,
+                        tmscore_opts.byresi_opt);
 
-                    // declare variable specific to this pair of TMalign
-                    ChainPairAlignResult chain_align_res = {};
-                    chain_align_res.d0_out = 5.0;
-                    Vec3& t0 = chain_align_res.t0;
-                    RotMat& u0 = chain_align_res.u0;
-                    double& TM1 = chain_align_res.TM1;
-                    double& TM2 = chain_align_res.TM2;
-                    double& TM3 = chain_align_res.TM3;
-                    double& TM4 = chain_align_res.TM4;
-                    double& TM5 = chain_align_res.TM5;
-                    double& d0_0 = chain_align_res.d0_0;
-                    double& TM_0 = chain_align_res.TM_0;
-                    double& d0A = chain_align_res.d0A;
-                    double& d0B = chain_align_res.d0B;
-                    double& d0u = chain_align_res.d0u;
-                    double& d0a = chain_align_res.d0a;
-                    double& d0_out = chain_align_res.d0_out;
-                    std::string& seqM = chain_align_res.seqM;
-                    std::string& seqxA = chain_align_res.seqxA;
-                    std::string& seqyA = chain_align_res.seqyA;
-                    double& rmsd0 = chain_align_res.rmsd0;
-                    int& L_ali = chain_align_res.L_ali;
-                    double& Liden = chain_align_res.Liden;
-                    double& TM_ali = chain_align_res.TM_ali;
-                    double& rmsd_ali = chain_align_res.rmsd_ali;
-                    int& n_ali = chain_align_res.n_ali;
-                    int& n_ali8 = chain_align_res.n_ali8;
-
-                    int L_lt_d=0;
-                    double GDT_list[5]={0,0,0,0,0}; // 0.5, 1, 2, 4, 8
-                    double maxsub=0;
-                    TM1=TM2=TM3=TM4=TM5=0;
-
-                    // entry function for structure alignment
-                    TMscore_main(
-                        xa, ya, seqx, seqy,
-                        t0, u0, TM1, TM2, TM3, TM4, TM5,
-                        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
-                        seqM, seqxA, seqyA,
-                        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-                        xlen, ylen, sequence, Lnorm_ass, d0_scale,
-                        a_opt, u_opt, d_opt, fast_opt,
-                        mol_vec1[chain_i]+mol_vec2[chain_j],
-                        GDT_list,maxsub,TMcut);
-
-                    // print result
-                    if (outfmt_opt==0) print_version();
-                    output_TMscore_results(
-                        xname.substr(dir1_opt.size()+dir_opt.size()),
-                        yname.substr(dir2_opt.size()+dir_opt.size()),
-                        chainID_list1[chain_i],
-                        chainID_list2[chain_j],
-                        xlen, ylen, chain_align_res,
-                        Lnorm_ass, d0_scale,
-                        (m_opt?fname_matrix:""),
-                        outfmt_opt, ter_opt,
-                        (o_opt?fname_super:""),
-                        a_opt, u_opt, d_opt, mirror_opt,
-                        L_lt_d, GDT_list, maxsub, split_opt,
-                        resi_vec1, resi_vec2);
-
-                    // Done! Free memory
-                    seqM.clear();
-                    seqxA.clear();
-                    seqyA.clear();
-                    // ya auto-cleared by read_PDB (CoordArray)
-                    resi_vec2.clear();
+                    align_one_chain_pair(chain1, chain2, tmscore_opts, sequence);
                 } // chain_j
                 if (chain2_list.size()>1)
                 {
@@ -502,26 +512,44 @@ int main(int argc, char *argv[])
                 }
             } // j
             PDB_lines1[chain_i].clear();
-            // xa auto-cleared by read_PDB (CoordArray)
-            resi_vec1.clear();
         } // chain_i
-        xname.clear();
         PDB_lines1.clear();
         chainID_list1.clear();
         mol_vec1.clear();
     } // i
     if (chain2_list.size()==1)
     {
-        yname.clear();
         for (int chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
-        resi_vec2.clear();
         chainID_list2.clear();
         mol_vec2.clear();
     }
-    chain1_list.clear();
-    chain2_list.clear();
-    sequence.clear();
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2) print_help();
+
+    TMscoreOptions tmscore_opts;
+    parse_arguments(argc, argv, tmscore_opts);
+    postprocess_arguments(tmscore_opts);
+
+    std::vector<std::string> chain1_list; // only when -dir1 is set
+    std::vector<std::string> chain2_list; // only when -dir2 is set
+    build_file_lists(tmscore_opts, chain1_list, chain2_list);
+
+    if (tmscore_opts.byresi_opt>=4)
+        std::cerr<<"WARNING! The residue correspondence between the two structures"
+            <<" are automatically established by sequence alignment. Results"
+            <<" may be unreliable."<<std::endl;
+
+    if (tmscore_opts.outfmt_opt==2)
+        std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+            <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+
+    std::vector<std::string> sequence; // get value from alignment file
+    align_all_chain_pairs(chain1_list, chain2_list, tmscore_opts, sequence);
+
     return 0;
 }
