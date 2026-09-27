@@ -51,178 +51,187 @@ void print_help()
     exit(EXIT_SUCCESS);
 }
 
-int main(int argc, char *argv[])
+struct Pdb2ssOptions
 {
-    if (argc < 2) print_help();
-
-
-    /**********************/
-    //    get argument   
-    /**********************/
-    std::string xname     = "";
-    int    ter_opt   =3;     // TER, END, or different chainID
-    int    infmt_opt =-1;    // PDB format
-    int    split_opt =0;     // do not split chain
-    int    het_opt=0;        // do not read HETATM residues
-    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    std::string suffix_opt="";    // set -suffix to empty
-    std::string dir_opt   ="";    // set -dir to empty
-    std::vector<std::string> chain_list; // only when -dir1 is set
+    std::string xname = "";
+    std::string atom_opt = "auto";  // use C alpha atom for protein and C3' for RNA
+    std::string mol_opt = "auto";   // auto-detect the molecule type as protein/RNA
+    std::string suffix_opt = "";    // set -suffix to empty
+    std::string dir_opt = "";       // set -dir to empty
     std::vector<std::string> chain2parse;
     std::vector<std::string> model2parse;
+    int ter_opt = 3;                // TER, END, or different chainID
+    int infmt_opt = -1;             // PDB format
+    int split_opt = 0;              // do not split chain
+    int het_opt = 0;                // do not read HETATM residues
+    bool normalize_atom_name = false;
+};
 
-    int nameIdx = 0;
+/**********************/
+//    get argument
+/**********************/
+void parse_arguments(int argc, char* argv[], Pdb2ssOptions& opts)
+{
     for(int i = 1; i < argc; i++)
     {
         if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=safe_stoi(argv[i + 1]); i++;
+            opts.ter_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=safe_stoi(argv[i + 1]); i++;
+            opts.split_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
-            atom_opt=argv[i + 1]; i++;
+            opts.atom_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
         {
-            mol_opt=argv[i + 1]; i++;
+            opts.mol_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
-            dir_opt=argv[i + 1]; i++;
+            opts.dir_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
-            suffix_opt=argv[i + 1]; i++;
+            opts.suffix_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            infmt_opt=safe_stoi(argv[i + 1]); i++;
+            opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=safe_stoi(argv[i + 1]); i++;
+            opts.het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (std::string(argv[i]) == "-chain" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
-            split(argv[i+1],chain2parse,',');
+            split(argv[i+1],opts.chain2parse,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model");
-            split(argv[i+1],model2parse,',');
+            split(argv[i+1],opts.model2parse,',');
             i++;
         }
-        else xname=argv[i];
+        else opts.xname=argv[i];
     }
+}
 
-    if(xname.size()==0||xname=="-h") print_help();
+void postprocess_arguments(Pdb2ssOptions& opts)
+{
+    if(opts.xname.size()==0||opts.xname=="-h") print_help();
 
-    if (suffix_opt.size() && dir_opt.size()==0)
+    if (opts.suffix_opt.size() && opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
 
-    bool normalize_atom_name=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
-    if (atom_opt.size()!=4)
+    opts.normalize_atom_name=(opts.atom_opt=="auto" || opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
+    if (opts.mol_opt!="auto" && opts.mol_opt!="protein" && opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (mol_opt=="protein" && atom_opt=="auto")
-        atom_opt=" CA ";
-    else if (mol_opt=="RNA" && atom_opt=="auto")
-        atom_opt=" C3'";
-    if (split_opt==1 && ter_opt!=0)
+    else if (opts.mol_opt=="protein" && opts.atom_opt=="auto")
+        opts.atom_opt=" CA ";
+    else if (opts.mol_opt=="RNA" && opts.atom_opt=="auto")
+        opts.atom_opt=" C3'";
+    if (opts.split_opt==1 && opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
+    else if (opts.split_opt==2 && opts.ter_opt!=0 && opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (split_opt<0 || split_opt>2)
+    if (opts.split_opt<0 || opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
 
-    // parse file list
-    if (dir_opt.size()==0)
-        chain_list.push_back(xname);
+// parse file list
+void build_file_list(const Pdb2ssOptions& opts, std::vector<std::string>& chain_list)
+{
+    if (opts.dir_opt.size()==0)
+        chain_list.push_back(opts.xname);
     else
     {
-        std::ifstream fp(xname.c_str());
+        std::ifstream fp(opts.xname);
         if (! fp.is_open())
-        {
-            std::string message = "Can not open file: " + xname + "\n";
-            PrintErrorAndQuit(message.c_str());
-        }
+            PrintErrorAndQuit("Can not open file: " + opts.xname + "\n");
         std::string line;
         while (fp.good())
         {
             std::getline(fp, line);
             if (! line.size()) continue;
-            chain_list.push_back(dir_opt+Trim(line)+suffix_opt);
+            chain_list.push_back(opts.dir_opt+Trim(line)+opts.suffix_opt);
         }
         fp.close();
-        line.clear();
     }
+}
 
-    // declare previously global variables
+void output_ss_chain(const std::string& filename, const Pdb2ssOptions& opts,
+    const std::vector<std::string>& chain_lines, const int mol_type, const std::string& chain_id)
+{
+    int xlen=chain_lines.size();
+    CoordArray xa;
+    std::vector<std::string> resi_vec;          // residue index for chain
+    std::string seqx;
+    std::string secx;                     // for the secondary structure
+    secx.resize(xlen + 1);
+    xlen = read_PDB(chain_lines, xa, seqx, resi_vec, 0);
+    if (mol_type>0) make_sec(seqx,xa, xlen, secx,opts.atom_opt);
+    else make_sec(xa, xlen, secx); // protein
+
+    std::cout<<'>'<<filename.substr(opts.dir_opt.size(),
+        filename.size()-opts.dir_opt.size()-opts.suffix_opt.size())
+        <<chain_id<<'\t'<<xlen<<'\n'<<secx.c_str()<<std::endl;
+}
+
+void convert_file_to_ss(const std::string& filename, const Pdb2ssOptions& opts,
+    std::vector<std::string>& chainID_list)
+{
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
-    std::vector<std::string> chainID_list;      // list of chainID1
-    int    i;                         // file index
-    int    l;                         // residue index
-    int    chain_i;                   // chain index
-    int    xlen;                      // chain length
-    int    xchainnum;                 // number of chains in a PDB file    std::string secx;                     // for the secondary structure
-    CoordArray xa;                        // for input vectors xa[0...xlen-1][0..2] and
-    std::vector<std::string> resi_vec;          // residue index for chain
 
-    // loop over file names
-    for (i=0;i<chain_list.size();i++)
+    int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
+        opts.ter_opt, opts.infmt_opt, opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
+        opts.chain2parse, opts.model2parse);
+    if (!xchainnum)
     {
-        xname=chain_list[i];
-        xchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec,
-            ter_opt, infmt_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
-            chain2parse, model2parse);
-        if (!xchainnum)
+        std::cerr<<"Warning! Cannot parse file: "<<filename
+            <<". Chain number 0."<<std::endl;
+        return;
+    }
+    for (int chain_i=0;chain_i<xchainnum;chain_i++)
+    {
+        if (!PDB_lines[chain_i].size())
         {
-            std::cerr<<"Warning! Cannot parse file: "<<xname
-                <<". Chain number 0."<<std::endl;
+            std::cerr<<"Warning! Cannot parse file: "<<filename
+                <<". Chain length 0."<<std::endl;
             continue;
         }
-        for (chain_i=0;chain_i<xchainnum;chain_i++)
-        {
-            xlen=PDB_lines[chain_i].size();
-            if (mol_opt=="RNA") mol_vec[chain_i]=1;
-            else if (mol_opt=="protein") mol_vec[chain_i]=-1;
-            if (!xlen)
-            {
-                std::cerr<<"Warning! Cannot parse file: "<<xname
-                    <<". Chain length 0."<<std::endl;
-                continue;
-            }
-            std::string seqx;
-            std::string secx;
-            secx.resize(xlen + 1);
-            xlen = read_PDB(PDB_lines[chain_i], xa, seqx, resi_vec, 0);
-            if (mol_vec[chain_i]>0) make_sec(seqx,xa, xlen, secx,atom_opt);
-            else make_sec(xa, xlen, secx); // protein
-            
-            std::cout<<'>'<<xname.substr(dir_opt.size(),
-                xname.size()-dir_opt.size()-suffix_opt.size())
-                <<chainID_list[chain_i]<<'\t'<<xlen<<'\n'<<secx.c_str()<<std::endl;
+        int mol_type=mol_vec[chain_i];
+        if (opts.mol_opt=="RNA") mol_type=1;
+        else if (opts.mol_opt=="protein") mol_type=-1;
+        output_ss_chain(filename, opts, PDB_lines[chain_i], mol_type, chainID_list[chain_i]);
+    } // chain_i
+}
 
-            PDB_lines[chain_i].clear();
-        } // chain_i
-        xname.clear();
-        PDB_lines.clear();
-        resi_vec.clear();
-        mol_vec.clear();
-    } // i
-    chain_list.clear();
-    std::vector<std::string>().swap(chain2parse);
-    std::vector<std::string>().swap(model2parse);
+int main(int argc, char *argv[])
+{
+    if (argc < 2) print_help();
+
+    Pdb2ssOptions opts;
+    parse_arguments(argc, argv, opts);
+    postprocess_arguments(opts);
+
+    std::vector<std::string> chain_list;
+    build_file_list(opts, chain_list);
+
+    std::vector<std::string> chainID_list; // list of chainID1
+    // loop over file names
+    for (std::size_t i=0;i<chain_list.size();i++)
+        convert_file_to_ss(chain_list[i], opts, chainID_list);
+
     return 0;
 }
