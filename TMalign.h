@@ -1877,7 +1877,7 @@ const std::vector<std::string> mTMalign_color_list = {
 };
 
 void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
-    const int infmt_opt, const RotArray& ut_mat, const std::string& fname_super, const int o_opt=1)
+    const RotArray& ut_mat, const std::string& fname_super, const int o_opt=1)
 {
     int compress_type=0; // uncompressed file
     size_t m;

@@ -4541,7 +4541,7 @@ int mTMalign(AlignCommonInput& common_inputs)
         
         
         if (user_opts.o_opt) output_mTMalign_pymol(parsed_input.chain1_list,
-            user_opts.infmt1_opt, ut_mat, user_opts.fname_super, user_opts.o_opt);
+            ut_mat, user_opts.fname_super, user_opts.o_opt);
 
     }
 
