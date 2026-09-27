@@ -3891,6 +3891,21 @@ inline void strip_gaps_from_pair_alignment(const std::string& seqxA_cp, const st
     seqyA=seqyA.substr(0,r);
 }
 
+inline void find_cp_point(const std::string& seqyA, const int xlen, int& cp_aln_best, int& cp_point)
+{
+    for (int r=0;r<xlen-1;r++)
+    {
+        int cp_aln_current=0;
+        for (int i=r;i<r+xlen;i++) cp_aln_current+=(seqyA[i]!='-');
+
+        if (cp_aln_current>cp_aln_best)
+        {
+            cp_aln_best=cp_aln_current;
+            cp_point=r;
+        }
+    }
+}
+
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -3950,7 +3965,6 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     int r;
     int    cp_point=0;
     int    cp_aln_best=0;
-    int    cp_aln_current;
 
     xa_cp.resize(xlen*2);
     seqx_cp.resize(xlen*2 + 1);
@@ -3993,17 +4007,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
 
     strip_gaps_from_pair_alignment(seqxA_cp, seqyA_cp, seqxA, seqyA);
 
-    for (r=0;r<xlen-1;r++)
-    {
-        cp_aln_current=0;
-        for (i=r;i<r+xlen;i++) cp_aln_current+=(seqyA[i]!='-');
-
-        if (cp_aln_current>cp_aln_best)
-        {
-            cp_aln_best=cp_aln_current;
-            cp_point=r;
-        }
-    }
+    find_cp_point(seqyA, xlen, cp_aln_best, cp_point);
     seqM.clear();
     seqxA.clear();
     seqyA.clear();
