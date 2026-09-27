@@ -3906,6 +3906,26 @@ inline void find_cp_point(const std::string& seqyA, const int xlen, int& cp_aln_
     }
 }
 
+inline void apply_cp_marker_to_alignment(const std::string& seqxA_cp, const std::string& seqyA_cp,
+    const int xlen, const int cp_point,
+    std::string& seqM, std::string& seqxA, std::string& seqyA)
+{
+    int r=0;
+    int i;
+    for (i=0;i<seqxA_cp.size();i++)
+    {
+        r+=(seqxA_cp[i]!='-');
+        if (r>=(xlen-cp_point))
+        {
+            i++;
+            break;
+        }
+    }
+    seqxA=seqxA_cp.substr(0,i)+'*'+seqxA_cp.substr(i);
+    seqM =seqM.substr(0,i)    +' '+seqM.substr(i);
+    seqyA=seqyA_cp.substr(0,i)+'-'+seqyA_cp.substr(i);
+}
+
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -3961,7 +3981,6 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     std::string secx_cp;
     CoordArray xa_cp;
     std::string seqxA_cp,seqyA_cp;
-    int i;
     int r;
     int    cp_point=0;
     int    cp_aln_best=0;
@@ -4090,19 +4109,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
 
     if (cp_point>0)
     {
-        r=0;
-        for (i=0;i<seqxA_cp.size();i++)
-        {
-            r+=(seqxA_cp[i]!='-');
-            if (r>=(xlen-cp_point))
-            {
-                i++;
-                break;
-            }
-        }
-        seqxA=seqxA_cp.substr(0,i)+'*'+seqxA_cp.substr(i);
-        seqM =seqM.substr(0,i)    +' '+seqM.substr(i);
-        seqyA=seqyA_cp.substr(0,i)+'-'+seqyA_cp.substr(i);
+        apply_cp_marker_to_alignment(seqxA_cp, seqyA_cp, xlen, cp_point, seqM, seqxA, seqyA);
     }
     else
     {
