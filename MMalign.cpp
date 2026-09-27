@@ -398,14 +398,27 @@ int main(int argc, char *argv[])
             xlen, ylen, sequence, align_opts);
 
         // print result
+        OutputOptions out_opts;
+        out_opts.fname_matrix = (m_opt?fname_matrix:"");
+        out_opts.fname_super = fname_super;
+        out_opts.Lnorm_ass = 0;
+        out_opts.d0_scale = d0_scale;
+        out_opts.outfmt_opt = outfmt_opt;
+        out_opts.ter_opt = ter_opt;
+        out_opts.mm_opt = true;
+        out_opts.split_opt = split_opt;
+        out_opts.o_opt = o_opt;
+        out_opts.i_opt = 0;
+        out_opts.a_opt = a_opt;
+        out_opts.mirror_opt = mirror_opt;
+        out_opts.u_opt = false;
+        out_opts.d_opt = d_opt;
         output_results(
             xname.substr(dir1_opt.size()),
             yname.substr(dir2_opt.size()),
             chainID_list1[0], chainID_list2[0],
             xlen, ylen, chain_align_res,
-            0, d0_scale, (m_opt?fname_matrix:""),
-            outfmt_opt, ter_opt, true, split_opt, o_opt, fname_super,
-            0, a_opt, false, d_opt, mirror_opt, resi_vec1, resi_vec2);
+            out_opts, resi_vec1, resi_vec2);
 
         // clean up
         chain_align_res.seqM.clear();

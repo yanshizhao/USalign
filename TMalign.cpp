@@ -526,17 +526,28 @@ int main(int argc, char *argv[])
 
                     // print result
                     if (outfmt_opt==0) print_version();
+                    OutputOptions out_opts;
+                    out_opts.fname_matrix = (m_opt?fname_matrix:"");
+                    out_opts.fname_super = (o_opt?fname_super:"");
+                    out_opts.Lnorm_ass = Lnorm_ass;
+                    out_opts.d0_scale = d0_scale;
+                    out_opts.outfmt_opt = outfmt_opt;
+                    out_opts.ter_opt = ter_opt;
+                    out_opts.mm_opt = 0;
+                    out_opts.split_opt = split_opt;
+                    out_opts.o_opt = o_opt;
+                    out_opts.i_opt = i_opt;
+                    out_opts.a_opt = a_opt;
+                    out_opts.mirror_opt = mirror_opt;
+                    out_opts.u_opt = u_opt;
+                    out_opts.d_opt = d_opt;
                     output_results(
                         xname.substr(dir1_opt.size()+dir_opt.size()),
                         yname.substr(dir2_opt.size()+dir_opt.size()),
                         chainID_list1[chain_i],
                         chainID_list2[chain_j],
                         xlen, ylen, chain_align_res,
-                        Lnorm_ass, d0_scale,
-                        (m_opt?fname_matrix:""),
-                        outfmt_opt, ter_opt, 0, split_opt, o_opt,
-                        (o_opt?fname_super:""),
-                        i_opt, a_opt, u_opt, d_opt, mirror_opt,
+                        out_opts,
                         resi_vec1, resi_vec2);
 
                     // Done! Free memory

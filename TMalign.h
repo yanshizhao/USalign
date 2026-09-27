@@ -2560,11 +2560,7 @@ void output_rotation_matrix(const std::string& fname_matrix,
 void output_results(const std::string xname, const std::string yname,
     const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const ChainPairAlignResult& chain_align_res,
-    const double Lnorm_ass, const double d0_scale,
-    const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
-    const int mm_opt, const int split_opt, const int o_opt,
-    const std::string fname_super, const int i_opt, const int a_opt,
-    const bool u_opt, const bool d_opt, const int mirror_opt,
+    const OutputOptions& out_opts,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     std::ostream& os = std::cout)
 {
@@ -2591,7 +2587,7 @@ void output_results(const std::string xname, const std::string yname,
     const double& d0B = chain_align_res.d0B;
     const double& d0a = chain_align_res.d0a;
     const double& d0u = chain_align_res.d0u;
-    if (outfmt_opt<=0)
+    if (out_opts.outfmt_opt<=0)
     {
         fcout(os,"\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
             xname, chainID1);
@@ -2599,19 +2595,19 @@ void output_results(const std::string xname, const std::string yname,
         fcout(os,"Length of Structure_1: %d residues\n", xlen);
         fcout(os,"Length of Structure_2: %d residues\n\n", ylen);
 
-        if (i_opt)
+        if (out_opts.i_opt)
             fcout(os,"User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", TM_ali, L_ali, rmsd_ali);
 
         fcout(os,"Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
         fcout(os,"TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", TM2, xlen, d0B);
         fcout(os,"TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", TM1, ylen, d0A);
 
-        if (a_opt==1)
+        if (out_opts.a_opt==1)
             fcout(os,"TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
-        if (u_opt)
-            fcout(os,"TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, Lnorm_ass, d0u);
-        if (d_opt)
-            fcout(os,"TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, d0_scale, ylen);
+        if (out_opts.u_opt)
+            fcout(os,"TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", TM4, out_opts.Lnorm_ass, d0u);
+        if (out_opts.d_opt)
+            fcout(os,"TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", TM5, out_opts.d0_scale, ylen);
         os << "(You should use TM-score normalized by length of the reference structure)\n";
     
         //output alignment
@@ -2621,7 +2617,7 @@ void output_results(const std::string xname, const std::string yname,
         os << seqM << "\n";
         os << seqyA << "\n";
     }
-    else if (outfmt_opt==1)
+    else if (out_opts.outfmt_opt==1)
     {
         fcout(os,">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname, chainID1, xlen, d0B, Liden/xlen, TM2);
@@ -2633,39 +2629,39 @@ void output_results(const std::string xname, const std::string yname,
         fcout(os,"# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             n_ali8, rmsd, (n_ali8>0)?Liden/n_ali8:0);
 
-        if (i_opt)
+        if (out_opts.i_opt)
             fcout(os,"# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", TM_ali, L_ali, rmsd_ali);
 
-        if(a_opt)
+        if(out_opts.a_opt)
             fcout(os,"# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", TM3, (xlen+ylen)*0.5, d0a);
 
-        if(u_opt)
-            fcout(os,"# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, Lnorm_ass, d0u);
+        if(out_opts.u_opt)
+            fcout(os,"# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", TM4, out_opts.Lnorm_ass, d0u);
 
-        if(d_opt)
-            fcout(os,"# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, d0_scale, ylen);
+        if(out_opts.d_opt)
+            fcout(os,"# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", TM5, out_opts.d0_scale, ylen);
 
         os << "$$$$\n";
     }
-    else if (outfmt_opt==2)
+    else if (out_opts.outfmt_opt==2)
     {
         fcout(os,"%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname, chainID1, yname, chainID2,
             TM2, TM1, rmsd, Liden/xlen, Liden/ylen, (n_ali8>0)?Liden/n_ali8:0,
             xlen, ylen, n_ali8);
     }
-    if (outfmt_opt<5) os << std::endl;
+    if (out_opts.outfmt_opt<5) os << std::endl;
 
-    if (!fname_matrix.empty()) output_rotation_matrix(fname_matrix, t, u, os);
+    if (!out_opts.fname_matrix.empty()) output_rotation_matrix(out_opts.fname_matrix, t, u, os);
 
-    if (o_opt==1 || o_opt==3)
-        output_pymol(xname, yname, fname_super, t, u, ter_opt,
-            mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
-            resi_vec1, resi_vec2, chainID1, chainID2, o_opt);
-    else if (o_opt==2)
-        output_rasmol(xname, yname, fname_super, t,
-            u, ter_opt, mm_opt, split_opt,
-            mirror_opt, seqM, seqxA, seqyA,
+    if (out_opts.o_opt==1 || out_opts.o_opt==3)
+        output_pymol(xname, yname, out_opts.fname_super, t, u, out_opts.ter_opt,
+            out_opts.mm_opt, out_opts.split_opt, out_opts.mirror_opt, seqM, seqxA, seqyA,
+            resi_vec1, resi_vec2, chainID1, chainID2, out_opts.o_opt);
+    else if (out_opts.o_opt==2)
+        output_rasmol(xname, yname, out_opts.fname_super, t,
+            u, out_opts.ter_opt, out_opts.mm_opt, out_opts.split_opt,
+            out_opts.mirror_opt, seqM, seqxA, seqyA,
             resi_vec1, resi_vec2, chainID1, chainID2,
             xlen, ylen, d0A, n_ali8,
             rmsd, TM1, Liden);

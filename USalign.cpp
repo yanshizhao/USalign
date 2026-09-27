@@ -524,13 +524,25 @@ int run_batch_parallel(
             chain_align_res.seqxA, chain_align_res.seqyA, outfmt_opt, left_num, right_num,
             left_aln_num, right_aln_num, ss);
 
+        OutputOptions out_opts;
+        out_opts.fname_matrix = (m_opt?fname_matrix:"");
+        out_opts.fname_super = fname_super;
+        out_opts.Lnorm_ass = Lnorm_ass;
+        out_opts.d0_scale = d0_scale;
+        out_opts.outfmt_opt = outfmt_opt;
+        out_opts.ter_opt = ter_opt;
+        out_opts.mm_opt = 0;
+        out_opts.split_opt = split_opt;
+        out_opts.o_opt = o_opt;
+        out_opts.i_opt = i_opt;
+        out_opts.a_opt = a_opt;
+        out_opts.mirror_opt = mirror_opt;
+        out_opts.u_opt = u_opt;
+        out_opts.d_opt = d_opt;
         output_results(xname_out, yname_out,
             c1.chain_id, c2.chain_id,
             c1.chain_len, c2.chain_len, chain_align_res,
-            Lnorm_ass, d0_scale,
-            (m_opt?fname_matrix:""),
-            outfmt_opt, ter_opt, false, split_opt, o_opt,
-            fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
+            out_opts,
             c1.resi_vec, c2.resi_vec, ss);
 
         if (do_opt || (cp_opt && outfmt_opt <= 0))
@@ -1669,15 +1681,14 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
         user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size()),
         chain_align_res.seqxA, chain_align_res.seqyA, user_opts.outfmt_opt,
         left_num, right_num, left_aln_num, right_aln_num);
+    OutputOptions out_opts;
+    fill_output_options_from_user_options(out_opts, user_opts);
     output_results(
         user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()),
         user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()),
         chain_id1, chain_id2,
         xlen, ylen, chain_align_res,
-        user_opts.Lnorm_ass, user_opts.d0_scale,
-        (user_opts.m_opt ? user_opts.fname_matrix : "").c_str(),
-        user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, user_opts.o_opt,
-        user_opts.fname_super, user_opts.i_opt, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
+        out_opts,
         resi_vec1, resi_vec2);
     if (dist_arg) output_soi_dist_block(std::cout, ylen,
         chain_align_res.invmap, *dist_arg, pdb_lines1, pdb_lines2);
@@ -1797,16 +1808,16 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
 
     if (common_inputs.user_options.outfmt_opt == 0) print_version();
 
+    OutputOptions out_opts;
+    fill_output_options_from_user_options(out_opts, common_inputs.user_options);
+    out_opts.Lnorm_ass = 0;
+    out_opts.mm_opt = true;
     output_results(
         common_inputs.user_options.xname.substr(mm_params.dir1_opt.size()),
         common_inputs.user_options.yname.substr(mm_params.dir2_opt.size()),
         complex1.chain_ids[0], complex2.chain_ids[0],
         chain1_len, chain2_len, chain_align_res,
-        0, common_inputs.user_options.d0_scale,
-        (common_inputs.user_options.m_opt ? common_inputs.user_options.fname_matrix : "").c_str(),
-        common_inputs.user_options.outfmt_opt, common_inputs.user_options.ter_opt, true, common_inputs.user_options.split_opt,
-        common_inputs.user_options.o_opt, common_inputs.user_options.fname_super, 0, common_inputs.user_options.a_opt, false,
-        common_inputs.user_options.d_opt, common_inputs.user_options.mirror_opt, complex1.resi, complex2.resi);
+        out_opts, complex1.resi, complex2.resi);
     return 0;
 }
 
@@ -2989,14 +3000,16 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         TM_vec.push_back(chain_align_res.TM1);
         TM_vec.push_back(chain_align_res.TM2);
 
+        OutputOptions out_opts;
+        fill_output_options_from_user_options(out_opts, user_opts);
+        out_opts.fname_matrix = "";
+        out_opts.fname_super = "";
+        out_opts.o_opt = 0;
         if (user_opts.outfmt_opt<2) output_results(
             user_opts.xname.c_str(), user_opts.yname.c_str(),
             complex1.chain_ids[i], complex2.chain_ids[j],
             xlen, ylen, chain_align_res,
-            user_opts.Lnorm_ass, user_opts.d0_scale, 
-            "", user_opts.outfmt_opt, user_opts.ter_opt, false, user_opts.split_opt, 
-            false, "",//o_opt, fname_super+complex1.chain_ids[i], 
-            false, user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, user_opts.mirror_opt,
+            out_opts,
             complex1.resi, complex2.resi);
         
         // clean up
@@ -3224,14 +3237,16 @@ int MMdock(AlignCommonInput& common_inputs)
             xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
 
         // print chain_align_res
+        OutputOptions out_opts;
+        fill_output_options_from_user_options(out_opts, user_opts);
+        out_opts.outfmt_opt = (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3);
+        out_opts.mm_opt = true;
         output_results(
             user_opts.xname.substr(user_opts.dir1_opt.size()),
             user_opts.yname.substr(user_opts.dir2_opt.size()),
             complex1.chain_ids[0], complex2.chain_ids[0],
             xlen, ylen, chain_align_res,
-            user_opts.Lnorm_ass, user_opts.d0_scale, (user_opts.m_opt?user_opts.fname_matrix:"").c_str(),
-            (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3), user_opts.ter_opt, true, user_opts.split_opt, user_opts.o_opt, user_opts.fname_super,
-            0, user_opts.a_opt, false, user_opts.d_opt, user_opts.mirror_opt, complex1.resi, complex2.resi);
+            out_opts, complex1.resi, complex2.resi);
         if (user_opts.outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
             user_opts.xname.substr(user_opts.dir1_opt.size()), complex1.chain_ids[0],
             user_opts.yname.substr(user_opts.dir2_opt.size()), complex2.chain_ids[0],
@@ -3633,12 +3648,25 @@ static void run_mTMalign_pairwise_parallel(
             if (full_opt)
             {
                 std::stringstream ss;
+                OutputOptions out_opts;
+                out_opts.fname_matrix = "";
+                out_opts.fname_super = "";
+                out_opts.Lnorm_ass = Lnorm_ass;
+                out_opts.d0_scale = d0_scale;
+                out_opts.outfmt_opt = outfmt_opt;
+                out_opts.ter_opt = ter_opt;
+                out_opts.mm_opt = true;
+                out_opts.split_opt = split_opt;
+                out_opts.o_opt = o_opt;
+                out_opts.i_opt = 0;
+                out_opts.a_opt = a_opt;
+                out_opts.mirror_opt = 0;
+                out_opts.u_opt = false;
+                out_opts.d_opt = d_opt;
                 output_results(
                     chain_list[chain_i], chain_list[chain_j], chainID_list[chain_i], chainID_list[chain_j],
                     xlen, ylen, chain_align_res,
-                    Lnorm_ass, d0_scale, "",
-                    outfmt_opt, ter_opt, true, split_opt, o_opt, "",
-                    0, a_opt, false, d_opt, false, resi_vec, resi_vec,
+                    out_opts, resi_vec, resi_vec,
                     ss);
                 full_out[chain_i * chain_num + chain_j] = ss.str();
             }
@@ -3832,14 +3860,25 @@ void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaI
                 xlen, ylen, align_opts, parsed_input.sequence,
                 user_opts.outfmt_opt);
 
+            OutputOptions out_opts;
+            out_opts.fname_matrix = "";
+            out_opts.fname_super = "";
+            out_opts.Lnorm_ass = Lnorm_ass;
+            out_opts.d0_scale = user_opts.d0_scale;
+            out_opts.outfmt_opt = 2;
+            out_opts.ter_opt = user_opts.ter_opt;
+            out_opts.mm_opt = 0;
+            out_opts.split_opt = user_opts.split_opt;
+            out_opts.o_opt = 0;
+            out_opts.i_opt = 0;
+            out_opts.a_opt = user_opts.a_opt;
+            out_opts.mirror_opt = 0;
+            out_opts.u_opt = u_opt;
+            out_opts.d_opt = user_opts.d_opt;
             if (user_opts.outfmt_opt<0) output_results(
                 msta_iter_state.xname_vec[i].c_str(), msta_iter_state.xname_vec[j].c_str(), "", "",
                 xlen, ylen, chain_align_res,
-                Lnorm_ass, user_opts.d0_scale, 
-                "", 2,//outfmt_opt,
-                user_opts.ter_opt, false, user_opts.split_opt, 
-                false, "",//o_opt, fname_super+chainID_list1[i], 
-                false, user_opts.a_opt, u_opt, user_opts.d_opt, false,
+                out_opts,
                 resi_vec, resi_vec);
          
             xt.resize(xlen);
@@ -4286,12 +4325,25 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 TMave_mat[i][j]=chain_align_res.TM4; TMave_mat[j][i]=chain_align_res.TM4;
                 seqxA_mat[i][j]=seqyA_mat[j][i]=chain_align_res.seqxA;
                 seqyA_mat[i][j]=seqxA_mat[j][i]=chain_align_res.seqyA;
+                OutputOptions out_opts;
+                out_opts.fname_matrix = "";
+                out_opts.fname_super = "";
+                out_opts.Lnorm_ass = Lnorm_ass;
+                out_opts.d0_scale = user_opts.d0_scale;
+                out_opts.outfmt_opt = user_opts.outfmt_opt;
+                out_opts.ter_opt = user_opts.ter_opt;
+                out_opts.mm_opt = true;
+                out_opts.split_opt = user_opts.split_opt;
+                out_opts.o_opt = user_opts.o_opt;
+                out_opts.i_opt = 0;
+                out_opts.a_opt = user_opts.a_opt;
+                out_opts.mirror_opt = 0;
+                out_opts.u_opt = false;
+                out_opts.d_opt = user_opts.d_opt;
                 if (ctrl_opts.full_opt) output_results(
                     parsed_input.chain1_list[i],parsed_input.chain1_list[j], chainID_list[i], chainID_list[j],
                     xlen, ylen, chain_align_res,
-                    Lnorm_ass, user_opts.d0_scale, "",
-                    user_opts.outfmt_opt, user_opts.ter_opt, true, user_opts.split_opt, user_opts.o_opt, "",
-                    0, user_opts.a_opt, false, user_opts.d_opt, false, resi_vec, resi_vec);
+                    out_opts, resi_vec, resi_vec);
 
                 // clean up
                 chain_align_res.seqM.clear();

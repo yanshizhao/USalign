@@ -1579,11 +1579,16 @@ inline void mmalign_output_per_chain_alignments(
                 print_align_res.seqM = pairs.aligned_consensus[i][j];
                 print_align_res.seqxA = pairs.aligned_seq1[i][j];
                 print_align_res.seqyA = pairs.aligned_seq2[i][j];
+                OutputOptions out_opts;
+                fill_output_options_from_mmalign_final_params(out_opts, params);
+                out_opts.Lnorm_ass = Lnorm_ass;
+                out_opts.fname_matrix = "";
+                out_opts.fname_super = "";
+                out_opts.mirror_opt = 0;
                 output_results(params.xname, params.yname,
                     complex1.chain_ids[i], complex2.chain_ids[j],
                     xlen, ylen, print_align_res,
-                    Lnorm_ass, params.d0_scale, "", params.outfmt_opt, params.ter_opt, false, params.split_opt, 0,
-                    "", false, params.a_opt, false, params.d_opt, 0, complex1.resi, complex2.resi);
+                    out_opts, complex1.resi, complex2.resi);
             }
 
             // clean up
@@ -1723,11 +1728,13 @@ inline void MMalign_final(
     print_align_res.seqM = sequence[2];
     print_align_res.seqxA = sequence[0];
     print_align_res.seqyA = sequence[1];
+    OutputOptions out_opts;
+    fill_output_options_from_mmalign_final_params(out_opts, params);
+    out_opts.Lnorm_ass = Lnorm_ass;
+    out_opts.mm_opt = true;
     output_results(params.xname, params.yname, chainID1, chainID2,
         xlen, ylen, print_align_res,
-        Lnorm_ass, params.d0_scale, (params.m_opt?params.fname_matrix:""),
-        params.outfmt_opt, params.ter_opt, true, params.split_opt, params.o_opt, params.fname_super,
-        false, params.a_opt, false, params.d_opt, params.mirror_opt, complex1.resi, complex2.resi);
+        out_opts, complex1.resi, complex2.resi);
 
     // clean up
     seqM.clear();

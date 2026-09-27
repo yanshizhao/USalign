@@ -278,3 +278,57 @@ struct ChainPairAlignOptions
     int    ss_opt;             // 1=跳过基于二级结构的初始策略
     int    mol_type;           // 两链分子类型之和（-1/0/1，逐对覆盖）
 };
+
+struct OutputOptions
+{
+    std::string fname_matrix;
+    std::string fname_super;
+    double Lnorm_ass;
+    double d0_scale;
+    int    outfmt_opt;
+    int    ter_opt;
+    int    mm_opt;
+    int    split_opt;
+    int    o_opt;
+    int    i_opt;
+    int    a_opt;
+    int    mirror_opt;
+    bool   u_opt;
+    bool   d_opt;
+};
+
+inline void fill_output_options_from_user_options(OutputOptions& out_opts, const UserOptions& user_opts)
+{
+    out_opts.fname_matrix = user_opts.m_opt ? user_opts.fname_matrix : "";
+    out_opts.fname_super = user_opts.fname_super;
+    out_opts.Lnorm_ass = user_opts.Lnorm_ass;
+    out_opts.d0_scale = user_opts.d0_scale;
+    out_opts.outfmt_opt = user_opts.outfmt_opt;
+    out_opts.ter_opt = user_opts.ter_opt;
+    out_opts.mm_opt = 0;
+    out_opts.split_opt = user_opts.split_opt;
+    out_opts.o_opt = user_opts.o_opt;
+    out_opts.i_opt = user_opts.i_opt;
+    out_opts.a_opt = user_opts.a_opt;
+    out_opts.mirror_opt = user_opts.mirror_opt;
+    out_opts.u_opt = user_opts.u_opt;
+    out_opts.d_opt = user_opts.d_opt;
+}
+
+inline void fill_output_options_from_mmalign_final_params(OutputOptions& out_opts, const MMalignFinalParams& params)
+{
+    out_opts.fname_matrix = params.m_opt ? params.fname_matrix : "";
+    out_opts.fname_super = params.fname_super;
+    out_opts.Lnorm_ass = 0;
+    out_opts.d0_scale = params.d0_scale;
+    out_opts.outfmt_opt = params.outfmt_opt;
+    out_opts.ter_opt = params.ter_opt;
+    out_opts.mm_opt = 0;
+    out_opts.split_opt = params.split_opt;
+    out_opts.o_opt = params.o_opt;
+    out_opts.i_opt = 0;
+    out_opts.a_opt = params.a_opt;
+    out_opts.mirror_opt = params.mirror_opt;
+    out_opts.u_opt = false;
+    out_opts.d_opt = params.d_opt;
+}
