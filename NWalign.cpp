@@ -86,198 +86,213 @@ void print_help(bool h_opt=false)
     exit(EXIT_SUCCESS);
 }
 
-int main(int argc, char *argv[])
+struct NWalignOptions
 {
-    if (argc < 2) print_help();
-
-
-    std::clock_t t1, t2;
-    t1 = std::clock();
-
-    /**********************/
-    //    get argument   
-    /**********************/
-    std::string xname     ="";
-    std::string yname     ="";
-    bool   h_opt     =false; // print full help message
-    int    infmt1_opt=-1;    // FASTA sequence
-    int    infmt2_opt=-1;    // FASTA sequence
-    int    ter_opt   =3;     // TER, END, or different chainID
-    int    split_opt =0;     // do not split chain
-    int    outfmt_opt=0;     // set -outfmt to full output
-    int    het_opt=0;        // do not read HETATM residues
-    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    std::string suffix_opt="";    // set -suffix to empty
-    std::string dir_opt   ="";    // set -dir to empty
-    std::string dir1_opt  ="";    // set -dir1 to empty
-    std::string dir2_opt  ="";    // set -dir2 to empty
-    std::vector<std::string> chain1_list; // only when -dir1 is set
-    std::vector<std::string> chain2_list; // only when -dir2 is set
+    std::string xname = "";
+    std::string yname = "";
+    std::string atom_opt = "auto";  // use C alpha atom for protein and C3' for RNA
+    std::string mol_opt = "auto";   // auto-detect the molecule type as protein/RNA
+    std::string suffix_opt = "";    // set -suffix to empty
+    std::string dir_opt = "";       // set -dir to empty
+    std::string dir1_opt = "";      // set -dir1 to empty
+    std::string dir2_opt = "";      // set -dir2 to empty
     std::vector<std::string> chain2parse1;
     std::vector<std::string> chain2parse2;
     std::vector<std::string> model2parse1;
     std::vector<std::string> model2parse2;
-    int    glocal    =0;
+    int infmt1_opt = -1;            // FASTA sequence
+    int infmt2_opt = -1;            // FASTA sequence
+    int ter_opt = 3;                // TER, END, or different chainID
+    int split_opt = 0;              // do not split chain
+    int outfmt_opt = 0;             // set -outfmt to full output
+    int glocal = 0;
+    int het_opt = 0;                // do not read HETATM residues
+    bool h_opt = false;             // print full help message
+    bool normalize_atom_name = false;
+};
 
+/**********************/
+//    get argument
+/**********************/
+void parse_arguments(int argc, char* argv[], NWalignOptions& opts)
+{
     for(int i = 1; i < argc; i++)
     {
         if ( std::string(argv[i]) == "-h" )
         {
-            h_opt = true;
+            opts.h_opt = true;
         }
         else if ( std::string(argv[i]) == "-infmt1" && i < (argc-1) )
         {
-            infmt1_opt=safe_stoi(argv[i + 1]); i++;
+            opts.infmt1_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-infmt2" && i < (argc-1) )
         {
-            infmt2_opt=safe_stoi(argv[i + 1]); i++;
+            opts.infmt2_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            ter_opt=safe_stoi(argv[i + 1]); i++;
+            opts.ter_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
-            split_opt=safe_stoi(argv[i + 1]); i++;
+            opts.split_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
-            atom_opt=argv[i + 1]; i++;
+            opts.atom_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
         {
-            mol_opt=argv[i + 1]; i++;
+            opts.mol_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
-            dir_opt=argv[i + 1]; i++;
+            opts.dir_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir1" && i < (argc-1) )
         {
-            dir1_opt=argv[i + 1]; i++;
+            opts.dir1_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir2" && i < (argc-1) )
         {
-            dir2_opt=argv[i + 1]; i++;
+            opts.dir2_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
-            suffix_opt=argv[i + 1]; i++;
+            opts.suffix_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-outfmt" && i < (argc-1) )
         {
-            outfmt_opt=safe_stoi(argv[i + 1]); i++;
+            opts.outfmt_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-glocal" && i < (argc-1) )
         {
-            glocal=safe_stoi(argv[i + 1]); i++;
+            opts.glocal=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
-            het_opt=safe_stoi(argv[i + 1]); i++;
+            opts.het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (std::string(argv[i]) == "-chain1" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],chain2parse1,',');
+            split(argv[i+1],opts.chain2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-chain2" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],chain2parse2,',');
+            split(argv[i+1],opts.chain2parse2,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model1" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],model2parse1,',');
+            split(argv[i+1],opts.model2parse1,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model2" )
         {
-            if (i>=(argc-1)) 
+            if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],model2parse2,',');
+            split(argv[i+1],opts.model2parse2,',');
             i++;
         }
-        else if (xname.size() == 0) xname=argv[i];
-        else if (yname.size() == 0) yname=argv[i];
+        else if (opts.xname.size() == 0) opts.xname=argv[i];
+        else if (opts.yname.size() == 0) opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
+}
 
-    if(xname.size()==0 || (yname.size()==0 && dir_opt.size()==0) || 
-                          (yname.size()    && dir_opt.size()))
+void postprocess_arguments(NWalignOptions& opts)
+{
+    if(opts.xname.size()==0 || (opts.yname.size()==0 && opts.dir_opt.size()==0) ||
+                              (opts.yname.size()    && opts.dir_opt.size()))
     {
-        if (h_opt) print_help(h_opt);
-        if (xname.size()==0)
+        if (opts.h_opt) print_help(opts.h_opt);
+        if (opts.xname.size()==0)
             PrintErrorAndQuit("Please provide input sequences");
-        else if (yname.size()==0 && dir_opt.size()==0)
+        else if (opts.yname.size()==0 && opts.dir_opt.size()==0)
             PrintErrorAndQuit("Please provide sequence 2");
-        else if (yname.size() && dir_opt.size())
+        else if (opts.yname.size() && opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
 
-    if (suffix_opt.size() && dir_opt.size()+dir1_opt.size()+dir2_opt.size()==0)
+    if (opts.suffix_opt.size() && opts.dir_opt.size()+opts.dir1_opt.size()+opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if (dir_opt.size() && (dir1_opt.size() || dir2_opt.size()))
+    if (opts.dir_opt.size() && (opts.dir1_opt.size() || opts.dir2_opt.size()))
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 
-    bool normalize_atom_name=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
-    if (atom_opt.size()!=4)
+    opts.normalize_atom_name=(opts.atom_opt=="auto" || opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
+    if (opts.mol_opt!="auto" && opts.mol_opt!="protein" && opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (mol_opt=="protein" && atom_opt=="auto")
-        atom_opt=" CA ";
-    else if (mol_opt=="RNA" && atom_opt=="auto")
-        atom_opt=" C3'";
+    else if (opts.mol_opt=="protein" && opts.atom_opt=="auto")
+        opts.atom_opt=" CA ";
+    else if (opts.mol_opt=="RNA" && opts.atom_opt=="auto")
+        opts.atom_opt=" C3'";
 
-    if (split_opt==1 && ter_opt!=0)
+    if (opts.split_opt==1 && opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
+    else if (opts.split_opt==2 && opts.ter_opt!=0 && opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (split_opt<0 || split_opt>2)
+    if (opts.split_opt<0 || opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
 
-    // parse file list
-    if (dir1_opt.size()+dir_opt.size()==0) chain1_list.push_back(xname);
-    else file2chainlist(chain1_list, xname, dir_opt+dir1_opt, suffix_opt);
+// parse file list
+void build_file_lists(const NWalignOptions& opts, std::vector<std::string>& chain1_list,
+    std::vector<std::string>& chain2_list)
+{
+    if (opts.dir1_opt.size()+opts.dir_opt.size()==0) chain1_list.push_back(opts.xname);
+    else file2chainlist(chain1_list, opts.xname, opts.dir_opt+opts.dir1_opt, opts.suffix_opt);
 
-    if (dir_opt.size())
-        for (int i=0;i<chain1_list.size();i++)
+    if (opts.dir_opt.size())
+        for (std::size_t i=0;i<chain1_list.size();i++)
             chain2_list.push_back(chain1_list[i]);
-    else if (dir2_opt.size()==0) chain2_list.push_back(yname);
-    else file2chainlist(chain2_list, yname, dir2_opt, suffix_opt);
+    else if (opts.dir2_opt.size()==0) chain2_list.push_back(opts.yname);
+    else file2chainlist(chain2_list, opts.yname, opts.dir2_opt, opts.suffix_opt);
+}
 
-    if (outfmt_opt==2)
-        std::cout<<"#sequence1\tsequence2\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+void extract_chain_sequence(const std::vector<std::string>& chain_lines, const int infmt_opt,
+    const int xlen, std::string& seq)
+{
+    if (infmt_opt>=4) seq = chain_lines[0];
+    else {
+        seq.reserve(xlen);
+        for (int l=0;l<xlen;l++)
+            seq += AAmap(chain_lines[l].substr(17,3));
+    }
+}
 
-    // declare previously global variables
+void align_all_chain_pairs(std::vector<std::string>& chain1_list,
+    std::vector<std::string>& chain2_list, const NWalignOptions& opts)
+{
     std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
     std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
     std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
-    int  xlen, ylen;         // chain length
-    int  xchainnum,ychainnum;// number of chains in a PDB file
+    int xlen, ylen;         // chain length
+    int xchainnum,ychainnum;// number of chains in a PDB file
+    std::string yname;
 
     // loop over file names
-    for (int i=0;i<chain1_list.size();i++)
+    for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
-        xname=chain1_list[i];
-        if (infmt1_opt>=4) xchainnum=get_FASTA_lines(xname, PDB_lines1, 
-                chainID_list1, mol_vec1, ter_opt, split_opt);
+        std::string xname=chain1_list[i];
+        if (opts.infmt1_opt>=4) xchainnum=get_FASTA_lines(xname, PDB_lines1,
+                chainID_list1, mol_vec1, opts.ter_opt, opts.split_opt);
         else xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
-            ter_opt, infmt1_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
-            chain2parse1, model2parse1);
+            opts.ter_opt, opts.infmt1_opt, opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
+            opts.chain2parse1, opts.model2parse1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -286,10 +301,10 @@ int main(int argc, char *argv[])
         }
         for (int chain_i=0;chain_i<xchainnum;chain_i++)
         {
-            if (infmt1_opt>=4) xlen=PDB_lines1[chain_i][0].size();
+            if (opts.infmt1_opt>=4) xlen=PDB_lines1[chain_i][0].size();
             else xlen=PDB_lines1[chain_i].size();
-            if (mol_opt=="RNA") mol_vec1[chain_i]=1;
-            else if (mol_opt=="protein") mol_vec1[chain_i]=-1;
+            if (opts.mol_opt=="RNA") mol_vec1[chain_i]=1;
+            else if (opts.mol_opt=="protein") mol_vec1[chain_i]=-1;
             if (!xlen)
             {
                 std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -297,26 +312,21 @@ int main(int argc, char *argv[])
                 continue;
             }
             std::string seqx;
-            if (infmt1_opt>=4) seqx = PDB_lines1[chain_i][0];
-            else {
-                seqx.reserve(xlen);
-                for (int l=0;l<xlen;l++)
-                    seqx += AAmap(PDB_lines1[chain_i][l].substr(17,3));
-            }
-            
-            for (int j=(dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
+            extract_chain_sequence(PDB_lines1[chain_i], opts.infmt1_opt, xlen, seqx);
+
+            for (int j=(opts.dir_opt.size()>0)*(i+1);j<chain2_list.size();j++)
             {
                 // parse chain 2
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
-                    if (infmt2_opt>=4)
+                    if (opts.infmt2_opt>=4)
                          ychainnum=get_FASTA_lines(yname, PDB_lines2,
-                            chainID_list2, mol_vec2, ter_opt, split_opt);
+                            chainID_list2, mol_vec2, opts.ter_opt, opts.split_opt);
                     else ychainnum=get_PDB_lines(yname, PDB_lines2,
-                            chainID_list2, mol_vec2, ter_opt, infmt2_opt,
-                            atom_opt, normalize_atom_name, split_opt, het_opt,
-                            chain2parse2, model2parse2);
+                            chainID_list2, mol_vec2, opts.ter_opt, opts.infmt2_opt,
+                            opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
+                            opts.chain2parse2, opts.model2parse2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname
@@ -326,10 +336,10 @@ int main(int argc, char *argv[])
                 }
                 for (int chain_j=0;chain_j<ychainnum;chain_j++)
                 {
-                    if (infmt2_opt>=4) ylen=PDB_lines2[chain_j][0].size();
+                    if (opts.infmt2_opt>=4) ylen=PDB_lines2[chain_j][0].size();
                     else ylen=PDB_lines2[chain_j].size();
-                    if (mol_opt=="RNA") mol_vec2[chain_j]=1;
-                    else if (mol_opt=="protein") mol_vec2[chain_j]=-1;
+                    if (opts.mol_opt=="RNA") mol_vec2[chain_j]=1;
+                    else if (opts.mol_opt=="protein") mol_vec2[chain_j]=-1;
                     if (!ylen)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname
@@ -337,34 +347,28 @@ int main(int argc, char *argv[])
                         continue;
                     }
                     std::string seqy;
-                    if (infmt2_opt>=4)
-                        seqy = PDB_lines2[chain_j][0];
-                    else {
-                        seqy.reserve(ylen);
-                        for (int l=0;l<ylen;l++)
-                            seqy += AAmap(PDB_lines2[chain_j][l].substr(17,3));
-                    }
+                    extract_chain_sequence(PDB_lines2[chain_j], opts.infmt2_opt, ylen, seqy);
 
                     int L_ali;                // Aligned length
                     double Liden=0;
                     std::string seqM, seqxA, seqyA;// for output alignment
                     std::vector<int> invmap(ylen+1);
-                    
+
                     int aln_score=NWalign_main(seqx, seqy, xlen, ylen,
                         seqxA, seqyA, mol_vec1[chain_i]+mol_vec2[chain_j],
-                        invmap, (outfmt_opt>=2)?1:0, glocal);
+                        invmap, (opts.outfmt_opt>=2)?1:0, opts.glocal);
 
-                    if (outfmt_opt>=2) get_seqID(invmap, seqx, seqy,
+                    if (opts.outfmt_opt>=2) get_seqID(invmap, seqx, seqy,
                         ylen, Liden, L_ali);
                     else get_seqID(seqxA, seqyA, seqM, Liden, L_ali);
 
                     output_NWalign_results(
-                        xname.substr(dir1_opt.size()+dir_opt.size()),
-                        yname.substr(dir2_opt.size()+dir_opt.size()),
-                        chainID_list1[chain_i].c_str(),
-                        chainID_list2[chain_j].c_str(),
+                        xname.substr(opts.dir1_opt.size()+opts.dir_opt.size()),
+                        yname.substr(opts.dir2_opt.size()+opts.dir_opt.size()),
+                        chainID_list1[chain_i],
+                        chainID_list2[chain_j],
                         xlen, ylen, seqM, seqxA,
-                        seqyA, Liden, L_ali, aln_score, outfmt_opt);
+                        seqyA, Liden, L_ali, aln_score, opts.outfmt_opt);
 
                     // Done! Free memory
                     seqM.clear();
@@ -384,21 +388,36 @@ int main(int argc, char *argv[])
             } // j
             PDB_lines1[chain_i].clear();
         } // chain_i
-        xname.clear();
         PDB_lines1.clear();
         chainID_list1.clear();
         mol_vec1.clear();
     } // i
     if (chain2_list.size()==1)
     {
-        yname.clear();
         for (int chain_j=0;chain_j<ychainnum;chain_j++)
             PDB_lines2[chain_j].clear();
         PDB_lines2.clear();
         chainID_list2.clear();
         mol_vec2.clear();
     }
-    chain1_list.clear();
-    chain2_list.clear();
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2) print_help();
+
+    NWalignOptions opts;
+    parse_arguments(argc, argv, opts);
+    postprocess_arguments(opts);
+
+    std::vector<std::string> chain1_list; // only when -dir1 is set
+    std::vector<std::string> chain2_list; // only when -dir2 is set
+    build_file_lists(opts, chain1_list, chain2_list);
+
+    if (opts.outfmt_opt==2)
+        std::cout<<"#sequence1\tsequence2\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+
+    align_all_chain_pairs(chain1_list, chain2_list, opts);
+
     return 0;
 }
