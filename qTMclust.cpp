@@ -120,7 +120,7 @@ void read_init_cluster(const std::string&filename,
     std::ifstream fin;
     std::string line;
     std::vector<std::string> line_vec;
-    std::map<std::string, bool> tmp_map;
+    std::map<std::string, bool> cluster_cooccur;
     fin.open(filename.c_str());
     while (fin.good())
     {
@@ -129,9 +129,9 @@ void read_init_cluster(const std::string&filename,
         for (size_t i=0;i<line_vec.size();i++)
         {
             for (size_t j=0;j<line_vec.size();j++)
-                if (i!=j) tmp_map[line_vec[j]]=1;
-            init_cluster[line_vec[i]]=tmp_map;
-            std::map<std::string, bool> ().swap(tmp_map);
+                if (i!=j) cluster_cooccur[line_vec[j]]=1;
+            init_cluster[line_vec[i]]=cluster_cooccur;
+            std::map<std::string, bool> ().swap(cluster_cooccur);
         }
         for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
     }
@@ -333,10 +333,10 @@ int main(int argc, char *argv[])
 
     // parse files
     std::string chain_name;
-    std::vector<char>  seq_tmp;
-    std::string  sec_tmp;
-    std::vector<float> flt_tmp(3,0);
-    std::vector<std::vector<float> >xyz_tmp;
+    std::vector<char>  chain_seq_buf;
+    std::string  chain_sec_buf;
+    std::vector<float> coord_template(3,0);
+    std::vector<std::vector<float> >chain_coord_buf;
     size_t newchainnum;
     double ub_HwRMSD=0.90*TMcut+0.10;
     double lb_HwRMSD=0.5*TMcut;
@@ -386,40 +386,40 @@ int main(int argc, char *argv[])
 
             xa.clear();
             xa.reserve(xlen);
-            seq_tmp.assign(xlen+1,'A');
-            sec_tmp.assign(xlen+1,0);
+            chain_seq_buf.assign(xlen+1,'A');
+            chain_sec_buf.assign(xlen+1,0);
 
-            std::string seq_str;
-            read_PDB(PDB_lines[j], xa, seq_str, resi_vec, byresi_opt);
-            seq_tmp.assign(seq_str.begin(), seq_str.end());
+            std::string raw_sequence;
+            read_PDB(PDB_lines[j], xa, raw_sequence, resi_vec, byresi_opt);
+            chain_seq_buf.assign(raw_sequence.begin(), raw_sequence.end());
 
-            if (mol_vec[j]<=0) make_sec(xa, xlen, sec_tmp);
-            else make_sec(&seq_tmp[0],xa,xlen,sec_tmp,atom_opt);
+            if (mol_vec[j]<=0) make_sec(xa, xlen, chain_sec_buf);
+            else make_sec(&chain_seq_buf[0],xa,xlen,chain_sec_buf,atom_opt);
 
-            xyz_tmp.assign(xlen,flt_tmp);
+            chain_coord_buf.assign(xlen,coord_template);
             for (int r=0;r<xlen;r++)
             {
-                xyz_tmp[r][0]=xa[r][0];
-                xyz_tmp[r][1]=xa[r][1];
-                xyz_tmp[r][2]=xa[r][2];
+                chain_coord_buf[r][0]=xa[r][0];
+                chain_coord_buf[r][1]=xa[r][1];
+                chain_coord_buf[r][2]=xa[r][2];
             }
 
-            seq_vec.push_back(seq_tmp);
-            sec_vec.push_back(sec_tmp);
-            xyz_vec.push_back(xyz_tmp);
+            seq_vec.push_back(chain_seq_buf);
+            sec_vec.push_back(chain_sec_buf);
+            xyz_vec.push_back(chain_coord_buf);
 
             chainLen_list.push_back(
                 std::make_pair(PDB_lines[j].size(),j+xchainnum));
 
-            seq_tmp.clear();
-            sec_tmp.clear();
-            xyz_tmp.clear();
+            chain_seq_buf.clear();
+            chain_sec_buf.clear();
+            chain_coord_buf.clear();
             PDB_lines[j].clear();
         }
         PDB_lines.clear();
         xchainnum+=newchainnum;
     }
-    flt_tmp.clear();
+    coord_template.clear();
     chain_list.clear();
 
     // swap completely destroy the vector and free up the memory capacity

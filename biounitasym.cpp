@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
             "following:\nauto, prot (the same as 'protein'), and "
             "RNA (the same as 'DNA').");
     
-    bool autojustify=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
+    bool normalize_atom_name=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
     if (mol_opt=="protein" && atom_opt=="auto")
         atom_opt=" CA ";
     else if (mol_opt=="RNA" && atom_opt=="auto")
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     {
         xname=chain_list[i];
         chainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec,
-            ter_opt, infmt_opt, atom_opt, autojustify, split_opt, het_opt,
+            ter_opt, infmt_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
             chain2parse, model2parse);
         if (!chainnum)
         {

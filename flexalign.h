@@ -2167,7 +2167,7 @@ inline bool parse_chain(
     int ter_opt,
     int infmt_opt,
     const std::string& atom_opt,
-    bool autojustify,
+    bool normalize_atom_name,
     int split_opt,
     int het_opt,
     const std::vector<std::string>& chain2parse,

@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
     if (dir_opt.size() && (dir1_opt.size() || dir2_opt.size()))
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 
-    bool autojustify=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
+    bool normalize_atom_name=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
     if (atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
     if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
         if (infmt1_opt>=4) xchainnum=get_FASTA_lines(xname, PDB_lines1, 
                 chainID_list1, mol_vec1, ter_opt, split_opt);
         else xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
-            ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
+            ter_opt, infmt1_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
             chain2parse1, model2parse1);
         if (!xchainnum)
         {
@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
                             chainID_list2, mol_vec2, ter_opt, split_opt);
                     else ychainnum=get_PDB_lines(yname, PDB_lines2,
                             chainID_list2, mol_vec2, ter_opt, infmt2_opt,
-                            atom_opt, autojustify, split_opt, het_opt,
+                            atom_opt, normalize_atom_name, split_opt, het_opt,
                             chain2parse2, model2parse2);
                     if (!ychainnum)
                     {

@@ -502,8 +502,8 @@ int main(int argc, char *argv[])
             // declare variable specific to this pair of TMalign
             ChainPairAlignResult chain_align_res = {};
             chain_align_res.d0_out = 5.0;
-            int Lnorm_tmp=len_aa;
-            if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_tmp=len_na;
+            int Lnorm_pair=len_aa;
+            if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_pair=len_na;
 
             ChainPairAlignOptions align_opts;
             align_opts.i_opt = 0;
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
             align_opts.fast_opt = fast_opt;
             align_opts.se_opt = false;
             align_opts.cp_opt = false;
-            align_opts.Lnorm = Lnorm_tmp;
+            align_opts.Lnorm = Lnorm_pair;
             align_opts.d0_scale = d0_scale;
             align_opts.TMcut = TMcut;
             align_opts.parallel_threads = 1;
@@ -531,7 +531,7 @@ int main(int argc, char *argv[])
             for (int uj=0;uj<3;uj++) ut_mat[ut_idx][9+uj]=chain_align_res.t0[uj];
             seqxA_mat[i][j]=chain_align_res.seqxA;
             seqyA_mat[i][j]=chain_align_res.seqyA;
-            TMave_mat[i][j]=chain_align_res.TM4*Lnorm_tmp;
+            TMave_mat[i][j]=chain_align_res.TM4*Lnorm_pair;
             if (TMave_mat[i][j]>maxTMmono)
             {
                 maxTMmono=TMave_mat[i][j];

@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
     if (suffix_opt.size() && dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
 
-    bool autojustify=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
+    bool normalize_atom_name=(atom_opt=="auto" || atom_opt=="PC4'"); // auto re-pad atom name
     if (atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
     if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
     {
         xname=chain_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec,
-            ter_opt, infmt_opt, atom_opt, autojustify, split_opt, het_opt,
+            ter_opt, infmt_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
             chain2parse, model2parse);
         if (!xchainnum)
         {

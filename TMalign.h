@@ -3910,7 +3910,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     int& n_ali = chain_align_res.n_ali;
     int& n_ali8 = chain_align_res.n_ali8;
     const double d0_scale = align_opts.d0_scale;
-    const double Lnorm_tmp=getmin(xlen,ylen);
+    const double Lnorm_cp=getmin(xlen,ylen);
     double TM4_cp;
     ChainPairAlignOptions cp_trial_opts;
     cp_trial_opts.i_opt = 0;
@@ -3920,7 +3920,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     cp_trial_opts.fast_opt = true;
     cp_trial_opts.se_opt = false;
     cp_trial_opts.cp_opt = false;
-    cp_trial_opts.Lnorm = Lnorm_tmp;
+    cp_trial_opts.Lnorm = Lnorm_cp;
     cp_trial_opts.d0_scale = d0_scale;
     cp_trial_opts.TMcut = -1;
     cp_trial_opts.parallel_threads = 1;

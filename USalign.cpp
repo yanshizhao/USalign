@@ -294,7 +294,7 @@ struct ChainParseOptions {
     std::string mol_opt;
     int ter_opt;
     std::string atom_opt;
-    bool autojustify;
+    bool normalize_atom_name;
     int split_opt;
     int het_opt;
     int read_resi;
@@ -361,7 +361,7 @@ void parse_file_into_cache(const std::string& fname,
     std::vector<std::string> chainID_list;
     int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
         parse_opts.ter_opt, parse_opts.infmt_opt, parse_opts.atom_opt,
-        parse_opts.autojustify, parse_opts.split_opt, parse_opts.het_opt,
+        parse_opts.normalize_atom_name, parse_opts.split_opt, parse_opts.het_opt,
         parse_opts.chain2parse, parse_opts.model2parse);
     if (nchain == 0)
     {
@@ -427,7 +427,7 @@ int run_batch_parallel(
     int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
     bool fast_opt, bool cp_opt, bool se_opt, bool do_opt,
     bool u_opt, bool d_opt, bool m_opt,
-    bool autojustify, int het_opt, int mirror_opt,
+    bool normalize_atom_name, int het_opt, int mirror_opt,
     int parallel_threads = 1)
 {
     int i, j, chain_i, chain_j;
@@ -445,7 +445,7 @@ int run_batch_parallel(
     parse_opts1.mol_opt = mol_opt;
     parse_opts1.ter_opt = ter_opt;
     parse_opts1.atom_opt = atom_opt;
-    parse_opts1.autojustify = autojustify;
+    parse_opts1.normalize_atom_name = normalize_atom_name;
     parse_opts1.split_opt = split_opt;
     parse_opts1.het_opt = het_opt;
     parse_opts1.read_resi = read_resi;
@@ -800,7 +800,7 @@ void mmdock_align_trimmed(ChainPairAlignResult& chain_align_res,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen,
     const TrimmedComplex& trimmed, int trim_idx,
-    int mol_type, double Lnorm_tmp, double d0_scale, double TMcut,
+    int mol_type, double Lnorm_pair, double d0_scale, double TMcut,
     bool fast_opt, int parallel_threads,
     std::vector<std::string>& sequence)
 {
@@ -820,7 +820,7 @@ void mmdock_align_trimmed(ChainPairAlignResult& chain_align_res,
     trim_opts.fast_opt = fast_opt;
     trim_opts.se_opt = false;
     trim_opts.cp_opt = false;
-    trim_opts.Lnorm = Lnorm_tmp;
+    trim_opts.Lnorm = Lnorm_pair;
     trim_opts.d0_scale = d0_scale;
     trim_opts.TMcut = TMcut;
     trim_opts.parallel_threads = parallel_threads;
@@ -911,8 +911,8 @@ inline void run_mmdock_parallel(
             copy_chain_data(ya_vec[j], seqy_vec[j], secy_vec[j],
                 ylen, ya, seqy, secy);
 
-            int Lnorm_tmp = len_aa;
-            if (mol_vec1[i] + mol_vec2[j] > 0) Lnorm_tmp = len_na;
+            int Lnorm_pair = len_aa;
+            if (mol_vec1[i] + mol_vec2[j] > 0) Lnorm_pair = len_na;
 
             ChainPairAlignResult chain_align_res = { 0};
             chain_align_res.d0_out = 5.0;
@@ -922,7 +922,7 @@ inline void run_mmdock_parallel(
             {
                 mmdock_align_trimmed(chain_align_res, xa, ya, seqx, seqy, secx, secy,
                     xlen, ylen, trimmed, j,
-                    mol_vec1[i] + mol_vec2[j], Lnorm_tmp, d0_scale, TMcut,
+                    mol_vec1[i] + mol_vec2[j], Lnorm_pair, d0_scale, TMcut,
                     fast_opt, 1, pair_sequence);
             }
             else
@@ -935,7 +935,7 @@ inline void run_mmdock_parallel(
                 align_opts.fast_opt = fast_opt;
                 align_opts.se_opt = false;
                 align_opts.cp_opt = false;
-                align_opts.Lnorm = Lnorm_tmp;
+                align_opts.Lnorm = Lnorm_pair;
                 align_opts.d0_scale = d0_scale;
                 align_opts.TMcut = TMcut;
                 align_opts.parallel_threads = 1;
@@ -948,7 +948,7 @@ inline void run_mmdock_parallel(
             // Store chain_align_res (rectangular matrix, no symmetric write)
             seqxA_mat[i][j] = chain_align_res.seqxA;
             seqyA_mat[i][j] = chain_align_res.seqyA;
-            TMave_mat[i][j] = chain_align_res.TM4 * Lnorm_tmp;
+            TMave_mat[i][j] = chain_align_res.TM4 * Lnorm_pair;
         }
     }
 }
@@ -1068,7 +1068,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
             tm_params.read_resi,
             user_opts.fast_opt, ctrl_opts.cp_opt, ctrl_opts.se_opt, false,
             user_opts.u_opt, user_opts.d_opt, user_opts.m_opt,
-            parsed_input.autojustify, user_opts.het_opt, user_opts.mirror_opt,
+            parsed_input.normalize_atom_name, user_opts.het_opt, user_opts.mirror_opt,
             ctrl_opts.parallel_threads);
     }
 #endif  // _OPENMP
@@ -1080,7 +1080,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
             user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt,
-            parsed_input.autojustify, user_opts.split_opt, user_opts.het_opt,
+            parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt,
             user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
@@ -1124,7 +1124,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                     user_opts.yname=parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
                         mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt,
-                        parsed_input.autojustify, user_opts.split_opt, user_opts.het_opt,
+                        parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt,
                         user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
@@ -1249,14 +1249,14 @@ void output_mol_filter_warning(const std::string& file_path,
 // Check the molecule type of chains for the -mol forced type: scan the file list and count protein / RNA chains
 // Params: pdb_file_list - structure file list
 //         mol_opt - value of the -mol option (protein / RNA; auto returns true directly)
-//         ter_opt, infmt_opt, autojustify, split_opt, het_opt - parsing parameters
+//         ter_opt, infmt_opt, normalize_atom_name, split_opt, het_opt - parsing parameters
 //         chain2parse, model2parse - chain / model filtering
 // Return: false means the accumulated count of chains satisfying the -mol type in the files is 0
 bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
     const std::string& mol_opt,
     const int ter_opt,
     const int infmt_opt,
-    const bool autojustify,
+    const bool normalize_atom_name,
     const int split_opt,
     const int het_opt,
     const std::vector<std::string>& chain2parse,
@@ -1274,7 +1274,7 @@ bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
         std::vector<std::string> chain_id_list;               // chain ID list of the current PDB file
         std::vector<int> chain_mol_types;                // molecule type of each chain in the current PDB file (>0 = RNA, <=0 = protein)
         size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types,
-            ter_opt, infmt_opt, "auto", autojustify, split_opt, het_opt,
+            ter_opt, infmt_opt, "auto", normalize_atom_name, split_opt, het_opt,
             chain2parse, model2parse);
         if (chain_num == 0)
         {
@@ -1337,14 +1337,14 @@ bool detect_complex_filtered_chains(AlignCommonInput& common_inputs, const MMali
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
     if (!detect_filtered_chains(mm_params.chain1_list, user_opts.mol_opt,
-        user_opts.ter_opt, user_opts.infmt1_opt, parsed_input.autojustify,
+        user_opts.ter_opt, user_opts.infmt1_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1))
     {
         return false;
     }
 
     if (!detect_filtered_chains(mm_params.chain2_list, user_opts.mol_opt,
-        user_opts.ter_opt, user_opts.infmt2_opt, parsed_input.autojustify,
+        user_opts.ter_opt, user_opts.infmt2_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2))
     {
         return false;
@@ -1359,11 +1359,11 @@ bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_p
     ParsedInput& parsed_input = common_inputs.parsed_input;
     parse_chain_list(mm_params.chain1_list, parsed.complex1,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt,
-        user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify, user_opts.mirror_opt,
+        user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.mirror_opt,
         user_opts.het_opt, user_opts.o_opt, user_opts.chain2parse1, user_opts.model2parse1);
     parse_chain_list(mm_params.chain2_list, parsed.complex2,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt,
-        user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify, 0,
+        user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, 0,
         user_opts.het_opt, user_opts.o_opt, user_opts.chain2parse2, user_opts.model2parse2);
 
     if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
@@ -3105,15 +3105,15 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
 
                 ChainPairAlignResult chain_align_res = { 0};
                 chain_align_res.d0_out = 5.0;
-                int Lnorm_tmp=len_aa;
-                if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_tmp=len_na;
+                int Lnorm_pair=len_aa;
+                if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_pair=len_na;
 
                 // entry function for structure alignment
                 if (trimmed.chain_count && trimmed.lengths[j]<ylen)
                 {
                     mmdock_align_trimmed(chain_align_res, xa, ya, seqx, seqy, secx, secy,
                         xlen, ylen, trimmed, j,
-                        complex1.mol_types[i]+complex2.mol_types[j], Lnorm_tmp, user_opts.d0_scale, user_opts.TMcut,
+                        complex1.mol_types[i]+complex2.mol_types[j], Lnorm_pair, user_opts.d0_scale, user_opts.TMcut,
                         fast_opt, ctrl_opts.parallel_threads, parsed_input.sequence);
                 }
                 else
@@ -3126,7 +3126,7 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                     align_opts.fast_opt = fast_opt;
                     align_opts.se_opt = false;
                     align_opts.cp_opt = false;
-                    align_opts.Lnorm = Lnorm_tmp;
+                    align_opts.Lnorm = Lnorm_pair;
                     align_opts.d0_scale = user_opts.d0_scale;
                     align_opts.TMcut = user_opts.TMcut;
                     align_opts.parallel_threads = 1;
@@ -3139,7 +3139,7 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                 // store chain_align_res
                 seqxA_mat[i][j]=chain_align_res.seqxA;
                 seqyA_mat[i][j]=chain_align_res.seqyA;
-                TMave_mat[i][j]=chain_align_res.TM4*Lnorm_tmp;
+                TMave_mat[i][j]=chain_align_res.TM4*Lnorm_pair;
 
                 // clean up
                 chain_align_res.seqM.clear();
@@ -3171,12 +3171,12 @@ int MMdock(AlignCommonInput& common_inputs)
     // parse complex
     parse_chain_list(parsed_input.chain1_list, complex1,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.autojustify, user_opts.mirror_opt, user_opts.het_opt, user_opts.o_opt,
+        user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.mirror_opt, user_opts.het_opt, user_opts.o_opt,
         user_opts.chain2parse1, user_opts.model2parse1);
     if (complex1.coords.size()==0) PrintErrorAndQuit("ERROR! 0 individual chain");
     parse_chain_list(parsed_input.chain2_list, complex2,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt2_opt,
-        user_opts.atom_opt, parsed_input.autojustify, 0, user_opts.het_opt, user_opts.o_opt,
+        user_opts.atom_opt, parsed_input.normalize_atom_name, 0, user_opts.het_opt, user_opts.o_opt,
         user_opts.chain2parse2, user_opts.model2parse2);
     if (complex1.coords.size()>complex2.coords.size()) 
         PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
@@ -4323,7 +4323,7 @@ int mTMalign(AlignCommonInput& common_inputs)
     ComplexData complex;
     parse_chain_list(parsed_input.chain1_list, complex,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.autojustify, false, user_opts.het_opt, user_opts.o_opt,
+        user_opts.atom_opt, parsed_input.normalize_atom_name, false, user_opts.het_opt, user_opts.o_opt,
         user_opts.chain2parse1, user_opts.model2parse1);
     int chain_num=complex.coords.size();
     if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
@@ -4568,7 +4568,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
-            user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify, user_opts.split_opt, user_opts.het_opt, 
+            user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, 
             user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
@@ -4592,7 +4592,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                 {
                     user_opts.yname=parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
-                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify, 
+                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, 
                         user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
@@ -4728,7 +4728,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1,
-            mol_vec1, user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify,
+            mol_vec1, user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
             user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1);
         if (!xchainnum)
         {
@@ -4741,7 +4741,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
             ParsedChain chain1_data;
             if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
                     chain_i, user_opts.mol_opt, user_opts.mirror_opt, read_resi,
-                    user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.autojustify,
+                    user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
                     user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1, chain1_data))
                 continue;
 
@@ -4754,7 +4754,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                 {
                     user_opts.yname = parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
-                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify,
+                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
                         user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
                     if (!ychainnum)
                     {
@@ -4767,7 +4767,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                     ParsedChain chain2_data;
                     if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,
                             chain_j, user_opts.mol_opt, 0, read_resi,
-                            user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.autojustify,
+                            user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
                             user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2, chain2_data))
                         continue;
 
@@ -4928,7 +4928,7 @@ void check_dir_option_limits(UserOptions& user_opts, ControlOptions& control)
 
 void normalize_atom_option(UserOptions& user_opts, ParsedInput& parsed)
 {
-    parsed.autojustify=(user_opts.atom_opt=="auto" || user_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    parsed.normalize_atom_name=(user_opts.atom_opt=="auto" || user_opts.atom_opt=="PC4'"); // auto re-pad atom name
     if (user_opts.mol_opt=="protein" && user_opts.atom_opt=="auto")
         user_opts.atom_opt=" CA ";
     else if (user_opts.mol_opt=="RNA" && user_opts.atom_opt=="auto")

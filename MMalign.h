@@ -1025,7 +1025,7 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
     ComplexData& complex,
     const int ter_opt, const int split_opt,
     const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
-    const bool autojustify, const int mirror_opt, const int het_opt,
+    const bool normalize_atom_name, const int mirror_opt, const int het_opt,
     const int o_opt, const std::vector<std::string> &chain2parse,
     const std::vector<std::string> &model2parse)
 {
@@ -1059,7 +1059,7 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
     {
         name=chain_list[i];
         chainnum=get_PDB_lines(name, PDB_lines, chainID_list, mol_vec,
-            ter_opt, infmt_opt, atom_opt, autojustify, split_opt, het_opt,
+            ter_opt, infmt_opt, atom_opt, normalize_atom_name, split_opt, het_opt,
             chain2parse, model2parse);
         if (!chainnum)
         {

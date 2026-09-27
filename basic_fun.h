@@ -284,7 +284,7 @@ struct PdbParseOptions
 {
     int ter_opt;
     std::string atom_opt;
-    bool autojustify;
+    bool normalize_atom_name;
     int split_opt;
     int het_opt;
     std::vector<std::string> chain2parse;
@@ -334,7 +334,7 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
 {
     const int ter_opt = parse_opts.ter_opt;
     const std::string& atom_opt = parse_opts.atom_opt;
-    const bool autojustify = parse_opts.autojustify;
+    const bool normalize_atom_name = parse_opts.normalize_atom_name;
     const int split_opt = parse_opts.split_opt;
     const int het_opt = parse_opts.het_opt;
     const std::vector<std::string>& chain2parse = parse_opts.chain2parse;
@@ -371,7 +371,7 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
         if (!is_atom_record(line, het_opt)) continue;
 
         atom = line.substr(12,4);
-        if (autojustify)
+        if (normalize_atom_name)
         {
             resn = line.substr(17,3);
             if (aa_resn_set.count(resn))
@@ -863,7 +863,7 @@ inline int detect_format(std::stringstream& buf, int infmt_opt)
 size_t get_PDB_lines(const std::string filename,
     std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list,
     std::vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
-    const std::string atom_opt, const bool autojustify, const int split_opt,
+    const std::string atom_opt, const bool normalize_atom_name, const int split_opt,
     const int het_opt, const std::vector<std::string>&chain2parse,
     const std::vector<std::string>&model2parse)
 {
@@ -881,7 +881,7 @@ size_t get_PDB_lines(const std::string filename,
     PdbParseOptions parse_opts;
     parse_opts.ter_opt = ter_opt;
     parse_opts.atom_opt = atom_opt;
-    parse_opts.autojustify = autojustify;
+    parse_opts.normalize_atom_name = normalize_atom_name;
     parse_opts.split_opt = split_opt;
     parse_opts.het_opt = het_opt;
     parse_opts.chain2parse = chain2parse;

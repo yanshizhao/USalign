@@ -169,9 +169,9 @@ struct ParsedInput
     std::vector<std::string> chain1_list;
     std::vector<std::string> chain2_list;
     std::vector<std::string> sequence;
-    bool autojustify;
+    bool normalize_atom_name;
 
-    ParsedInput() : autojustify(false) {}
+    ParsedInput() : normalize_atom_name(false) {}
 };
 
 struct ControlOptions
