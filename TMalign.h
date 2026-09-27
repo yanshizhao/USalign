@@ -3958,6 +3958,19 @@ inline void shift_cp_template_by_point(CoordArray& xa_cp, std::string& seqx_cp, 
     }
 }
 
+inline void restore_cp_template_from_source(CoordArray& xa_cp, std::string& seqx_cp, std::string& secx_cp,
+    const CoordArray& xa, const std::string& seqx, const std::string& secx, const int xlen)
+{
+    for (int r=0;r<xlen;r++)
+    {
+        xa_cp[r][0]=xa[r][0];
+        xa_cp[r][1]=xa[r][1];
+        xa_cp[r][2]=xa[r][2];
+        seqx_cp[r]=seqx[r];
+        secx_cp[r]=secx[r];
+    }
+}
+
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -4013,9 +4026,8 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     std::string secx_cp;
     CoordArray xa_cp;
     std::string seqxA_cp,seqyA_cp;
-    int r;
-    int    cp_point=0;
-    int    cp_aln_best=0;
+    int cp_point=0;
+    int cp_aln_best=0;
 
     build_cp_doubled_template(xa, seqx, secx, xlen, xa_cp, seqx_cp, secx_cp);
 
@@ -4103,14 +4115,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
         if (n_ali8>=cp_aln_best || TM4>=TM4_cp)
         {
             cp_point=0;
-            for (r=0;r<xlen;r++)
-            {
-                xa_cp[r][0]=xa[r][0];
-                xa_cp[r][1]=xa[r][1];
-                xa_cp[r][2]=xa[r][2];
-                seqx_cp[r]=seqx[r];
-                secx_cp[r]=secx[r];
-            }
+            restore_cp_template_from_source(xa_cp, seqx_cp, secx_cp, xa, seqx, secx, xlen);
         }
     }
 
