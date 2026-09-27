@@ -1,6 +1,7 @@
 // command line argument parsing and document of US-align main program
 
 #include "align_types.h"
+#include "chain_pair_align.h"
 #include "MMalign.h"
 #include "SOIalign.h"
 #include "flexalign.h"
@@ -339,16 +340,6 @@ void output_do_block(std::ostream& os,
     os << "###############\t###############\t#########" << std::endl;
 }
 
-// ---- Forward declaration of align_chain_pair (defined later in this file; used first by run_mmalign_parallel) ----
-void align_chain_pair(ChainPairAlignResult& result,
-    CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy,
-    int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts,
-    const std::vector<std::string>& sequence,
-    int outfmt_opt);
-
 void parse_file_into_cache(const std::string& fname,
     const ChainParseOptions& parse_opts,
     std::vector<ParsedChain>& all_chains,
@@ -651,15 +642,6 @@ bool handle_byresi_pair(AlignCommonInput& common_inputs,
     const std::string& chain1_seq,
     const std::string& chain2_seq,
     std::vector<std::string>& sequence);
-
-// ---- Forward declaration of save_pair_result (defined later in this file) ----
-void save_pair_result(const ChainPairAlignResult& result,
-    AllChainPairsResult& pairwise,
-    int chain1_idx,
-    int chain2_idx,
-    int chain1_num,
-    int chain2_num,
-    double norm_len);
 
 ChainPairAlignOptions mmalign_pair_options(const AlignCommonInput& common_inputs,
     int mol_type, double norm_len, bool fast_opt, int i_opt_val, int u_opt_val,
@@ -1611,51 +1593,6 @@ bool is_monomer(int chain_num)
     return chain_num == 1;
 }
 
-// ---- Single chain-pair structure alignment dispatcher (cp / se / TMalign_main) ----
-void align_chain_pair(ChainPairAlignResult& chain_align_res,
-    CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy,
-    int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts,
-    const std::vector<std::string>& sequence,
-    int outfmt_opt)
-{
-    if (align_opts.cp_opt) CPalign_main(
-        xa, ya, seqx, seqy, secx, secy,
-        chain_align_res,
-        xlen, ylen, sequence, align_opts);
-    else if (align_opts.se_opt)
-    {
-        chain_align_res.invmap.assign(ylen + 1, 0);
-        chain_align_res.u0[0][0]=chain_align_res.u0[1][1]=chain_align_res.u0[2][2]=1;
-        chain_align_res.u0[0][1]=         chain_align_res.u0[0][2]=
-        chain_align_res.u0[1][0]=         chain_align_res.u0[1][2]=
-        chain_align_res.u0[2][0]=         chain_align_res.u0[2][1]=
-        chain_align_res.t0[0]   =chain_align_res.t0[1]   =chain_align_res.t0[2]   =0;
-        se_main(xa, ya, seqx, seqy,
-            chain_align_res,
-            xlen, ylen, sequence, align_opts, outfmt_opt);
-        if (outfmt_opt >= 2)
-        {
-            chain_align_res.Liden=chain_align_res.L_ali=0;
-            int r1;
-            int r2;
-            for (r2=0; r2<ylen; r2++)
-            {
-                r1 = chain_align_res.invmap[r2];
-                if (r1 < 0) continue;
-                chain_align_res.L_ali += 1;
-                chain_align_res.Liden += (seqx[r1] == seqy[r2]);
-            }
-        }
-    }
-    else TMalign_main(
-        xa, ya, seqx, seqy, secx, secy,
-        chain_align_res,
-        xlen, ylen, sequence, align_opts);
-}
-
 // ---- Output one chain-pair alignment result (version / CP / results / do-block) ----
 void output_pair_alignment(const AlignCommonInput& common_inputs,
     const std::string& xname, const std::string& yname,
@@ -1718,32 +1655,6 @@ void output_soi_dist_block(std::ostream& os, int ylen,
             <<dist_list[r2]<<'\n';
     }
     os << "###############\t###############\t#########\n";
-}
-
-// ---- Store one chain-pair alignment result into the all-against-all matrix ----
-void save_pair_result(const ChainPairAlignResult& chain_align_res,
-    AllChainPairsResult& pairwise,
-    int chain1_idx,
-    int chain2_idx,
-    int chain1_num,
-    int chain2_num,
-    double norm_len)
-{
-    int pair_idx = chain1_idx * chain2_num + chain2_idx;
-    for (int rot_row = 0; rot_row < 3; rot_row++)
-    {
-        for (int rot_col = 0; rot_col < 3; rot_col++)
-        {
-            pairwise.rotations[pair_idx][rot_row * 3 + rot_col] = chain_align_res.u0[rot_row][rot_col];
-        }
-    }
-    for (int rot_col = 0; rot_col < 3; rot_col++)
-    {
-        pairwise.rotations[pair_idx][9 + rot_col] = chain_align_res.t0[rot_col];
-    }
-    pairwise.aligned_seq1[chain1_idx][chain2_idx] = chain_align_res.seqxA;
-    pairwise.aligned_seq2[chain1_idx][chain2_idx] = chain_align_res.seqyA;
-    pairwise.tm_matrix[chain1_idx][chain2_idx] = chain_align_res.TM4 * norm_len;
 }
 
 // ---- Compute the best monomer chain pair by a serial scan over the TM-score matrix ----
