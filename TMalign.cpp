@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
     int chain_i, chain_j;              // chain index
     int r;                             // residue index
     int xlen, ylen;                    // chain length
-    int xchainnum, ychainnum;          // number of chains in a PDB file
+    int xchainnum=0, ychainnum=0;      // number of chains in a PDB file
     char *seqx, *seqy;                 // for the protein sequence
     char *secx, *secy;                 // for the secondary structure
     double **xa, **ya;                 // for input vectors xa[0...xlen-1][0..2] and
