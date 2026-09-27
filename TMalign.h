@@ -3872,6 +3872,25 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     return 0; // zero for no exception
 }
 
+inline void strip_gaps_from_pair_alignment(const std::string& seqxA_cp, const std::string& seqyA_cp,
+    std::string& seqxA, std::string& seqyA)
+{
+    int r=0;
+    seqxA=seqxA_cp;
+    seqyA=seqyA_cp;
+    for (int i=0;i<seqxA_cp.size();i++)
+    {
+        if (seqxA_cp[i]!='-')
+        {
+            seqxA[r]=seqxA_cp[i];
+            seqyA[r]=seqyA_cp[i];
+            r++;
+        }
+    }
+    seqxA=seqxA.substr(0,r);
+    seqyA=seqyA.substr(0,r);
+}
+
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -3972,20 +3991,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     n_ali = cp_trial_res.n_ali;
     n_ali8 = cp_trial_res.n_ali8;
 
-    r=0;
-    seqxA=seqxA_cp;
-    seqyA=seqyA_cp;
-    for (i=0;i<seqxA_cp.size();i++)
-    {
-        if (seqxA_cp[i]!='-')
-        {
-            seqxA[r]=seqxA_cp[i];
-            seqyA[r]=seqyA_cp[i];
-            r++;
-        }
-    }
-    seqxA=seqxA.substr(0,r);
-    seqyA=seqyA.substr(0,r);
+    strip_gaps_from_pair_alignment(seqxA_cp, seqyA_cp, seqxA, seqyA);
 
     for (r=0;r<xlen-1;r++)
     {
