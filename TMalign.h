@@ -3926,6 +3926,22 @@ inline void apply_cp_marker_to_alignment(const std::string& seqxA_cp, const std:
     seqyA=seqyA_cp.substr(0,i)+'-'+seqyA_cp.substr(i);
 }
 
+inline void build_cp_doubled_template(const CoordArray& xa, const std::string& seqx, const std::string& secx,
+    const int xlen, CoordArray& xa_cp, std::string& seqx_cp, std::string& secx_cp)
+{
+    xa_cp.resize(xlen*2);
+    seqx_cp.resize(xlen*2 + 1);
+    secx_cp.resize(xlen*2 + 1);
+    for (int r=0;r<xlen;r++)
+    {
+        xa_cp[r+xlen][0]=xa_cp[r][0]=xa[r][0];
+        xa_cp[r+xlen][1]=xa_cp[r][1]=xa[r][1];
+        xa_cp[r+xlen][2]=xa_cp[r][2]=xa[r][2];
+        seqx_cp[r+xlen]=seqx_cp[r]=seqx[r];
+        secx_cp[r+xlen]=secx_cp[r]=secx[r];
+    }
+}
+
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -3985,17 +4001,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     int    cp_point=0;
     int    cp_aln_best=0;
 
-    xa_cp.resize(xlen*2);
-    seqx_cp.resize(xlen*2 + 1);
-    secx_cp.resize(xlen*2 + 1);
-    for (r=0;r<xlen;r++)
-    {
-        xa_cp[r+xlen][0]=xa_cp[r][0]=xa[r][0];
-        xa_cp[r+xlen][1]=xa_cp[r][1]=xa[r][1];
-        xa_cp[r+xlen][2]=xa_cp[r][2]=xa[r][2];
-        seqx_cp[r+xlen]=seqx_cp[r]=seqx[r];
-        secx_cp[r+xlen]=secx_cp[r]=secx[r];
-    }
+    build_cp_doubled_template(xa, seqx, secx, xlen, xa_cp, seqx_cp, secx_cp);
 
     ChainPairAlignResult cp_trial_res = chain_align_res;
     TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
