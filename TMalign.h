@@ -3942,6 +3942,22 @@ inline void build_cp_doubled_template(const CoordArray& xa, const std::string& s
     }
 }
 
+inline void shift_cp_template_by_point(CoordArray& xa_cp, std::string& seqx_cp, std::string& secx_cp,
+    const int xlen, const int cp_point)
+{
+    if (cp_point!=0)
+    {
+        for (int r=0;r<xlen;r++)
+        {
+            xa_cp[r][0]=xa_cp[r+cp_point][0];
+            xa_cp[r][1]=xa_cp[r+cp_point][1];
+            xa_cp[r][2]=xa_cp[r+cp_point][2];
+            seqx_cp[r]=seqx_cp[r+cp_point];
+            secx_cp[r]=secx_cp[r+cp_point];
+        }
+    }
+}
+
 inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
@@ -4051,17 +4067,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     seqxA.clear();
     seqyA.clear();
     rmsd0=Liden=n_ali=n_ali8=0;
-    if (cp_point!=0)
-    {
-        for (r=0;r<xlen;r++)
-        {
-            xa_cp[r][0]=xa_cp[r+cp_point][0];
-            xa_cp[r][1]=xa_cp[r+cp_point][1];
-            xa_cp[r][2]=xa_cp[r+cp_point][2];
-            seqx_cp[r]=seqx_cp[r+cp_point];
-            secx_cp[r]=secx_cp[r+cp_point];
-        }
-    }
+    shift_cp_template_by_point(xa_cp, seqx_cp, secx_cp, xlen, cp_point);
     seqx_cp[xlen]=0;
     secx_cp[xlen]=0;
 
