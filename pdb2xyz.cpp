@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
         PDB_lines.clear();
         resi_vec.clear();
         mol_vec.clear();
+        chainID_list.clear();
     } // i
     chain_list.clear();
     vector<string>().swap(chain2parse);
