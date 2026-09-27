@@ -55,78 +55,78 @@ struct BiounitasymOptions
 /**********************/
 //    get argument
 /**********************/
-void parse_arguments(int argc, char* argv[], BiounitasymOptions& opts)
+void parse_arguments(int argc, char* argv[], BiounitasymOptions& biounitasym_opts)
 {
     for (int i = 1; i < argc; i++)
     {
         if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
-            opts.atom_opt=argv[i + 1]; i++;
+            biounitasym_opts.atom_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-mol" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -mol");
-            opts.mol_opt=argv[i + 1]; i++;
+            biounitasym_opts.mol_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
-            opts.dir_opt=argv[i + 1]; i++;
+            biounitasym_opts.dir_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
-            opts.suffix_opt=argv[i + 1]; i++;
+            biounitasym_opts.suffix_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
+            biounitasym_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
-            opts.het_opt=safe_stoi(argv[i + 1]); i++;
+            biounitasym_opts.het_opt=safe_stoi(argv[i + 1]); i++;
         }
-        else opts.xname=argv[i];
+        else biounitasym_opts.xname=argv[i];
     }
 }
 
-void postprocess_arguments(BiounitasymOptions& opts)
+void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
 {
-    if(opts.xname.size()==0||opts.xname=="-h") print_help();
+    if(biounitasym_opts.xname.size()==0||biounitasym_opts.xname=="-h") print_help();
 
-    if (opts.suffix_opt.size() && opts.dir_opt.size()==0)
+    if (biounitasym_opts.suffix_opt.size() && biounitasym_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
-    if (opts.atom_opt.size()!=4)
+    if (biounitasym_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (opts.mol_opt=="prot") opts.mol_opt="protein";
-    else if (opts.mol_opt=="DNA") opts.mol_opt="RNA";
-    if (opts.mol_opt!="auto" && opts.mol_opt!="protein" && opts.mol_opt!="RNA")
+    if (biounitasym_opts.mol_opt=="prot") biounitasym_opts.mol_opt="protein";
+    else if (biounitasym_opts.mol_opt=="DNA") biounitasym_opts.mol_opt="RNA";
+    if (biounitasym_opts.mol_opt!="auto" && biounitasym_opts.mol_opt!="protein" && biounitasym_opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be one of the"
             "following:\nauto, prot (the same as 'protein'), and "
             "RNA (the same as 'DNA').");
 
-    opts.normalize_atom_name=(opts.atom_opt=="auto" || opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (opts.mol_opt=="protein" && opts.atom_opt=="auto")
-        opts.atom_opt=" CA ";
-    else if (opts.mol_opt=="RNA" && opts.atom_opt=="auto")
-        opts.atom_opt=" C3'";
+    biounitasym_opts.normalize_atom_name=(biounitasym_opts.atom_opt=="auto" || biounitasym_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (biounitasym_opts.mol_opt=="protein" && biounitasym_opts.atom_opt=="auto")
+        biounitasym_opts.atom_opt=" CA ";
+    else if (biounitasym_opts.mol_opt=="RNA" && biounitasym_opts.atom_opt=="auto")
+        biounitasym_opts.atom_opt=" C3'";
 }
 
 // parse file list
-void build_file_list(const BiounitasymOptions& opts, std::vector<std::string>& chain_list)
+void build_file_list(const BiounitasymOptions& biounitasym_opts, std::vector<std::string>& chain_list)
 {
-    if (opts.dir_opt.size()==0)
-        chain_list.push_back(opts.xname);
+    if (biounitasym_opts.dir_opt.size()==0)
+        chain_list.push_back(biounitasym_opts.xname);
     else
     {
-        std::ifstream fp(opts.xname);
+        std::ifstream fp(biounitasym_opts.xname);
         if (! fp.is_open())
-            PrintErrorAndQuit("Can not open file: " + opts.xname + "\n");
+            PrintErrorAndQuit("Can not open file: " + biounitasym_opts.xname + "\n");
         std::string line;
         while (fp.good())
         {
             std::getline(fp, line);
             if (! line.size()) continue;
-            chain_list.push_back(opts.dir_opt+Trim(line)+opts.suffix_opt);
+            chain_list.push_back(biounitasym_opts.dir_opt+Trim(line)+biounitasym_opts.suffix_opt);
         }
         fp.close();
     }
@@ -205,15 +205,15 @@ void report_biounit_verdict(const std::string& filename, const std::vector<doubl
             <<clashcount<<std::endl;
 }
 
-void report_multimodel_clash(const std::string& filename, const BiounitasymOptions& opts)
+void report_multimodel_clash(const std::string& filename, const BiounitasymOptions& biounitasym_opts)
 {
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
     std::vector<std::string> chainID_list; // list of chainID1
 
     int chainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
-        opts.ter_opt, opts.infmt_opt, opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
-        opts.chain2parse, opts.model2parse);
+        biounitasym_opts.ter_opt, biounitasym_opts.infmt_opt, biounitasym_opts.atom_opt, biounitasym_opts.normalize_atom_name, biounitasym_opts.split_opt, biounitasym_opts.het_opt,
+        biounitasym_opts.chain2parse, biounitasym_opts.model2parse);
     if (!chainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename
@@ -235,16 +235,16 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    BiounitasymOptions opts;
-    parse_arguments(argc, argv, opts);
-    postprocess_arguments(opts);
+    BiounitasymOptions biounitasym_opts;
+    parse_arguments(argc, argv, biounitasym_opts);
+    postprocess_arguments(biounitasym_opts);
 
     std::vector<std::string> chain_list;
-    build_file_list(opts, chain_list);
+    build_file_list(biounitasym_opts, chain_list);
 
     // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
-        report_multimodel_clash(chain_list[i], opts);
+        report_multimodel_clash(chain_list[i], biounitasym_opts);
 
     return 0;
 }

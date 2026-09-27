@@ -58,98 +58,98 @@ struct Pdb2xyzOptions
 /**********************/
 //    get argument
 /**********************/
-void parse_arguments(int argc, char* argv[], Pdb2xyzOptions& opts)
+void parse_arguments(int argc, char* argv[], Pdb2xyzOptions& pdb2xyz_opts)
 {
     for(int i = 1; i < argc; i++)
     {
         if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            opts.ter_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2xyz_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
-            opts.split_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2xyz_opts.split_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
-            opts.atom_opt=argv[i + 1]; i++;
+            pdb2xyz_opts.atom_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
-            opts.dir_opt=argv[i + 1]; i++;
+            pdb2xyz_opts.dir_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
-            opts.suffix_opt=argv[i + 1]; i++;
+            pdb2xyz_opts.suffix_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2xyz_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
-            opts.het_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2xyz_opts.het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (std::string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
-            split(argv[i+1],opts.chain2parse,',');
+            split(argv[i+1],pdb2xyz_opts.chain2parse,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model");
-            split(argv[i+1],opts.model2parse,',');
+            split(argv[i+1],pdb2xyz_opts.model2parse,',');
             i++;
         }
-        else opts.xname=argv[i];
+        else pdb2xyz_opts.xname=argv[i];
     }
 }
 
-void postprocess_arguments(Pdb2xyzOptions& opts)
+void postprocess_arguments(Pdb2xyzOptions& pdb2xyz_opts)
 {
-    if(opts.xname.size()==0||opts.xname=="-h") print_help();
+    if(pdb2xyz_opts.xname.size()==0||pdb2xyz_opts.xname=="-h") print_help();
 
-    if (opts.suffix_opt.size() && opts.dir_opt.size()==0)
+    if (pdb2xyz_opts.suffix_opt.size() && pdb2xyz_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
 
-    opts.normalize_atom_name=(opts.atom_opt=="auto" || opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (opts.atom_opt.size()!=4)
+    pdb2xyz_opts.normalize_atom_name=(pdb2xyz_opts.atom_opt=="auto" || pdb2xyz_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (pdb2xyz_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (opts.split_opt==1 && opts.ter_opt!=0)
+    if (pdb2xyz_opts.split_opt==1 && pdb2xyz_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (opts.split_opt==2 && opts.ter_opt!=0 && opts.ter_opt!=1)
+    else if (pdb2xyz_opts.split_opt==2 && pdb2xyz_opts.ter_opt!=0 && pdb2xyz_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
 }
 
 // parse file list
-void build_file_list(const Pdb2xyzOptions& opts, std::vector<std::string>& chain_list)
+void build_file_list(const Pdb2xyzOptions& pdb2xyz_opts, std::vector<std::string>& chain_list)
 {
-    if (opts.dir_opt.size()==0)
-        chain_list.push_back(opts.xname);
+    if (pdb2xyz_opts.dir_opt.size()==0)
+        chain_list.push_back(pdb2xyz_opts.xname);
     else
     {
-        std::ifstream fp(opts.xname);
+        std::ifstream fp(pdb2xyz_opts.xname);
         if (! fp.is_open())
-            PrintErrorAndQuit("Can not open file: " + opts.xname + "\n");
+            PrintErrorAndQuit("Can not open file: " + pdb2xyz_opts.xname + "\n");
         std::string line;
         while (fp.good())
         {
             std::getline(fp, line);
             if (! line.size()) continue;
-            chain_list.push_back(opts.dir_opt+Trim(line)+opts.suffix_opt);
+            chain_list.push_back(pdb2xyz_opts.dir_opt+Trim(line)+pdb2xyz_opts.suffix_opt);
         }
         fp.close();
     }
 }
 
-void output_xyz_chain(const std::string& filename, const Pdb2xyzOptions& opts,
+void output_xyz_chain(const std::string& filename, const Pdb2xyzOptions& pdb2xyz_opts,
     const std::vector<std::string>& chain_lines, const std::string& chain_id)
 {
-    std::cout<<chain_lines.size()<<'\n'<<filename.substr(opts.dir_opt.size(),
-        filename.size()-opts.dir_opt.size()-opts.suffix_opt.size())
+    std::cout<<chain_lines.size()<<'\n'<<filename.substr(pdb2xyz_opts.dir_opt.size(),
+        filename.size()-pdb2xyz_opts.dir_opt.size()-pdb2xyz_opts.suffix_opt.size())
         <<chain_id;
     for (std::size_t l=0;l<chain_lines.size();l++)
     {
@@ -161,15 +161,15 @@ void output_xyz_chain(const std::string& filename, const Pdb2xyzOptions& opts,
     std::cout<<std::endl;
 }
 
-void convert_file_to_xyz(const std::string& filename, const Pdb2xyzOptions& opts)
+void convert_file_to_xyz(const std::string& filename, const Pdb2xyzOptions& pdb2xyz_opts)
 {
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
     std::vector<std::string> chainID_list; // list of chainID1
 
     int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
-        opts.ter_opt, opts.infmt_opt, opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
-        opts.chain2parse, opts.model2parse);
+        pdb2xyz_opts.ter_opt, pdb2xyz_opts.infmt_opt, pdb2xyz_opts.atom_opt, pdb2xyz_opts.normalize_atom_name, pdb2xyz_opts.split_opt, pdb2xyz_opts.het_opt,
+        pdb2xyz_opts.chain2parse, pdb2xyz_opts.model2parse);
     if (!xchainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename
@@ -184,7 +184,7 @@ void convert_file_to_xyz(const std::string& filename, const Pdb2xyzOptions& opts
                 <<". Chain length 0."<<std::endl;
             continue;
         }
-        output_xyz_chain(filename, opts, PDB_lines[chain_i], chainID_list[chain_i]);
+        output_xyz_chain(filename, pdb2xyz_opts, PDB_lines[chain_i], chainID_list[chain_i]);
     } // chain_i
 }
 
@@ -192,16 +192,16 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    Pdb2xyzOptions opts;
-    parse_arguments(argc, argv, opts);
-    postprocess_arguments(opts);
+    Pdb2xyzOptions pdb2xyz_opts;
+    parse_arguments(argc, argv, pdb2xyz_opts);
+    postprocess_arguments(pdb2xyz_opts);
 
     std::vector<std::string> chain_list;
-    build_file_list(opts, chain_list);
+    build_file_list(pdb2xyz_opts, chain_list);
 
     // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
-        convert_file_to_xyz(chain_list[i], opts);
+        convert_file_to_xyz(chain_list[i], pdb2xyz_opts);
 
     return 0;
 }

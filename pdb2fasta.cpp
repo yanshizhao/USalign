@@ -66,131 +66,131 @@ struct Pdb2fastaOptions
 /**********************/
 //    get argument
 /**********************/
-void parse_arguments(int argc, char* argv[], Pdb2fastaOptions& opts)
+void parse_arguments(int argc, char* argv[], Pdb2fastaOptions& pdb2fasta_opts)
 {
     for(int i = 1; i < argc; i++)
     {
         if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
         {
-            opts.ter_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2fasta_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
-            opts.split_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2fasta_opts.split_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
         {
-            opts.atom_opt=argv[i + 1]; i++;
+            pdb2fasta_opts.atom_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-mol" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -mol");
-            opts.mol_opt=argv[i + 1]; i++;
+            pdb2fasta_opts.mol_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
         {
-            opts.dir_opt=argv[i + 1]; i++;
+            pdb2fasta_opts.dir_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
         {
-            opts.suffix_opt=argv[i + 1]; i++;
+            pdb2fasta_opts.suffix_opt=argv[i + 1]; i++;
         }
         else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
         {
-            opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2fasta_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
         {
-            opts.het_opt=safe_stoi(argv[i + 1]); i++;
+            pdb2fasta_opts.het_opt=safe_stoi(argv[i + 1]); i++;
         }
         else if (std::string(argv[i]) == "-chain" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -chain");
-            split(argv[i+1],opts.chain2parse,',');
+            split(argv[i+1],pdb2fasta_opts.chain2parse,',');
             i++;
         }
         else if (std::string(argv[i]) == "-model" )
         {
             if (i>=(argc-1))
                 PrintErrorAndQuit("ERROR! Missing value for -model");
-            split(argv[i+1],opts.model2parse,',');
+            split(argv[i+1],pdb2fasta_opts.model2parse,',');
             i++;
         }
-        else opts.xname=argv[i];
+        else pdb2fasta_opts.xname=argv[i];
     }
 }
 
-void postprocess_arguments(Pdb2fastaOptions& opts)
+void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
 {
-    if(opts.xname.size()==0||opts.xname=="-h") print_help();
+    if(pdb2fasta_opts.xname.size()==0||pdb2fasta_opts.xname=="-h") print_help();
 
-    if (opts.suffix_opt.size() && opts.dir_opt.size()==0)
+    if (pdb2fasta_opts.suffix_opt.size() && pdb2fasta_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
-    if (opts.atom_opt.size()!=4)
+    if (pdb2fasta_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (opts.split_opt==1 && opts.ter_opt!=0)
+    if (pdb2fasta_opts.split_opt==1 && pdb2fasta_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (opts.split_opt==2 && opts.ter_opt!=0 && opts.ter_opt!=1)
+    else if (pdb2fasta_opts.split_opt==2 && pdb2fasta_opts.ter_opt!=0 && pdb2fasta_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (opts.split_opt<0 || opts.split_opt>2)
+    if (pdb2fasta_opts.split_opt<0 || pdb2fasta_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
-    if (opts.mol_opt=="prot") opts.mol_opt="protein";
-    else if (opts.mol_opt=="DNA") opts.mol_opt="RNA";
-    if (opts.mol_opt!="auto" && opts.mol_opt!="protein" && opts.mol_opt!="RNA")
+    if (pdb2fasta_opts.mol_opt=="prot") pdb2fasta_opts.mol_opt="protein";
+    else if (pdb2fasta_opts.mol_opt=="DNA") pdb2fasta_opts.mol_opt="RNA";
+    if (pdb2fasta_opts.mol_opt!="auto" && pdb2fasta_opts.mol_opt!="protein" && pdb2fasta_opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be one of the"
             "following:\nauto, prot (the same as 'protein'), and "
             "RNA (the same as 'DNA').");
 
-    opts.normalize_atom_name=(opts.atom_opt=="auto" || opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (opts.mol_opt=="protein" && opts.atom_opt=="auto")
-        opts.atom_opt=" CA ";
-    else if (opts.mol_opt=="RNA" && opts.atom_opt=="auto")
-        opts.atom_opt=" C3'";
+    pdb2fasta_opts.normalize_atom_name=(pdb2fasta_opts.atom_opt=="auto" || pdb2fasta_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (pdb2fasta_opts.mol_opt=="protein" && pdb2fasta_opts.atom_opt=="auto")
+        pdb2fasta_opts.atom_opt=" CA ";
+    else if (pdb2fasta_opts.mol_opt=="RNA" && pdb2fasta_opts.atom_opt=="auto")
+        pdb2fasta_opts.atom_opt=" C3'";
 }
 
 // parse file list
-void build_file_list(const Pdb2fastaOptions& opts, std::vector<std::string>& chain_list)
+void build_file_list(const Pdb2fastaOptions& pdb2fasta_opts, std::vector<std::string>& chain_list)
 {
-    if (opts.dir_opt.size()==0)
-        chain_list.push_back(opts.xname);
+    if (pdb2fasta_opts.dir_opt.size()==0)
+        chain_list.push_back(pdb2fasta_opts.xname);
     else
     {
-        std::ifstream fp(opts.xname);
+        std::ifstream fp(pdb2fasta_opts.xname);
         if (! fp.is_open())
-            PrintErrorAndQuit("Can not open file: " + opts.xname + "\n");
+            PrintErrorAndQuit("Can not open file: " + pdb2fasta_opts.xname + "\n");
         std::string line;
         while (fp.good())
         {
             std::getline(fp, line);
             if (! line.size()) continue;
-            chain_list.push_back(opts.dir_opt+Trim(line)+opts.suffix_opt);
+            chain_list.push_back(pdb2fasta_opts.dir_opt+Trim(line)+pdb2fasta_opts.suffix_opt);
         }
         fp.close();
     }
 }
 
-void output_fasta_chain(const std::string& filename, const Pdb2fastaOptions& opts,
+void output_fasta_chain(const std::string& filename, const Pdb2fastaOptions& pdb2fasta_opts,
     const std::vector<std::string>& chain_lines, const std::string& chain_id)
 {
     std::string sequence;                  // amino acid sequence
     for (std::size_t l=0;l<chain_lines.size();l++)
         sequence+=AAmap(chain_lines[l].substr(17,3));
-    std::cout<<'>'<<filename.substr(opts.dir_opt.size(),
-        filename.size()-opts.dir_opt.size()-opts.suffix_opt.size())
+    std::cout<<'>'<<filename.substr(pdb2fasta_opts.dir_opt.size(),
+        filename.size()-pdb2fasta_opts.dir_opt.size()-pdb2fasta_opts.suffix_opt.size())
         <<chain_id<<'\t'<<chain_lines.size()<<'\n'<<sequence<<std::endl;
 }
 
-void convert_file_to_fasta(const std::string& filename, const Pdb2fastaOptions& opts,
+void convert_file_to_fasta(const std::string& filename, const Pdb2fastaOptions& pdb2fasta_opts,
     std::vector<std::string>& chainID_list)
 {
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
 
     int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
-        opts.ter_opt, opts.infmt_opt, opts.atom_opt, opts.normalize_atom_name, opts.split_opt, opts.het_opt,
-        opts.chain2parse, opts.model2parse);
+        pdb2fasta_opts.ter_opt, pdb2fasta_opts.infmt_opt, pdb2fasta_opts.atom_opt, pdb2fasta_opts.normalize_atom_name, pdb2fasta_opts.split_opt, pdb2fasta_opts.het_opt,
+        pdb2fasta_opts.chain2parse, pdb2fasta_opts.model2parse);
     if (!xchainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename
@@ -205,7 +205,7 @@ void convert_file_to_fasta(const std::string& filename, const Pdb2fastaOptions& 
                 <<". Chain length 0."<<std::endl;
             continue;
         }
-        output_fasta_chain(filename, opts, PDB_lines[chain_i], chainID_list[chain_i]);
+        output_fasta_chain(filename, pdb2fasta_opts, PDB_lines[chain_i], chainID_list[chain_i]);
     } // chain_i
 }
 
@@ -213,17 +213,17 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    Pdb2fastaOptions opts;
-    parse_arguments(argc, argv, opts);
-    postprocess_arguments(opts);
+    Pdb2fastaOptions pdb2fasta_opts;
+    parse_arguments(argc, argv, pdb2fasta_opts);
+    postprocess_arguments(pdb2fasta_opts);
 
     std::vector<std::string> chain_list;
-    build_file_list(opts, chain_list);
+    build_file_list(pdb2fasta_opts, chain_list);
 
     std::vector<std::string> chainID_list; // list of chainID1
     // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
-        convert_file_to_fasta(chain_list[i], opts, chainID_list);
+        convert_file_to_fasta(chain_list[i], pdb2fasta_opts, chainID_list);
 
     return 0;
 }
