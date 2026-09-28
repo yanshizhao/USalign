@@ -274,22 +274,8 @@ void parse_arguments(int argc, char* argv[], QTMclustOptions& qtmclust_opts,
 
 }
 
-int main(int argc, char *argv[])
+void postprocess_arguments(QTMclustOptions& qtmclust_opts)
 {
-    if (argc < 2) print_help();
-
-
-    std::clock_t t1, t2;
-    t1 = std::clock();
-
-    /**********************/
-    //    get argument   
-    /**********************/
-    QTMclustOptions qtmclust_opts;
-    std::vector<std::string> chain_list;
-    std::map<std::string, std::map<std::string,bool> > init_cluster;
-
-    parse_arguments(argc, argv, qtmclust_opts, init_cluster);
     if(qtmclust_opts.xname.size()==0) print_help(qtmclust_opts.h_opt);
 
     if (qtmclust_opts.suffix_opt.size() && qtmclust_opts.dir_opt.size()==0)
@@ -318,11 +304,35 @@ int main(int argc, char *argv[])
     if (qtmclust_opts.i_opt) read_user_alignment(qtmclust_opts.sequence, qtmclust_opts.fname_lign, qtmclust_opts.i_opt);
 
     if (qtmclust_opts.byresi_opt) qtmclust_opts.i_opt=3;
+}
 
+void build_file_lists(const QTMclustOptions& qtmclust_opts, std::vector<std::string>& chain_list)
+{
     // parse file list
     if (qtmclust_opts.dir_opt.size()==0) chain_list.push_back(qtmclust_opts.xname);
     else file2chainlist(chain_list, qtmclust_opts.xname, qtmclust_opts.dir_opt, qtmclust_opts.suffix_opt);
 
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2) print_help();
+
+
+    std::clock_t t1, t2;
+    t1 = std::clock();
+
+    /**********************/
+    //    get argument   
+    /**********************/
+    QTMclustOptions qtmclust_opts;
+    std::vector<std::string> chain_list;
+    std::map<std::string, std::map<std::string,bool> > init_cluster;
+
+    parse_arguments(argc, argv, qtmclust_opts, init_cluster);
+    postprocess_arguments(qtmclust_opts);
+
+    build_file_lists(qtmclust_opts, chain_list);
     // declare previously global variables
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
