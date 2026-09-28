@@ -1922,31 +1922,26 @@ static inline void fill_hing_res(
         cur_hing_res.tmalign_res.invmap[j] = invmap[j];
 }
 
-static inline void update_global_res(
-        double& TM1, double& TM2, double& TM3,
-        double& TM4, double& TM5, double& rmsd0,
-        std::string& seqM, std::string& seqxA, std::string& seqyA,
-        int& n_ali, int& n_ali8,
-        std::vector<int>& invmap,
+static inline void update_global_res(ChainPairAlignResult& chain_align_res,
         const CurHingeResult& cur_hing_res,
-        const Vec3& t0, const RotMat& u0,
         DoubleMatrix& tu_vec)
 {
-    TM1 = cur_hing_res.tmalign_res.TM1;
-    TM2 = cur_hing_res.tmalign_res.TM2;
-    TM3 = cur_hing_res.tmalign_res.TM3;
-    TM4 = cur_hing_res.tmalign_res.TM4;
-    TM5 = cur_hing_res.tmalign_res.TM5;
-    rmsd0 = cur_hing_res.tmalign_res.rmsd0;
-    seqM  = cur_hing_res.tmalign_res.seqM;
-    seqxA = cur_hing_res.tmalign_res.seqxA;
-    seqyA = cur_hing_res.tmalign_res.seqyA;
-    n_ali  = cur_hing_res.tmalign_res.n_ali;
-    n_ali8 = cur_hing_res.tmalign_res.n_ali8;
+    const ChainPairAlignResult& cur_res = cur_hing_res.tmalign_res;
+    chain_align_res.TM1 = cur_res.TM1;
+    chain_align_res.TM2 = cur_res.TM2;
+    chain_align_res.TM3 = cur_res.TM3;
+    chain_align_res.TM4 = cur_res.TM4;
+    chain_align_res.TM5 = cur_res.TM5;
+    chain_align_res.rmsd0 = cur_res.rmsd0;
+    chain_align_res.seqM  = cur_res.seqM;
+    chain_align_res.seqxA = cur_res.seqxA;
+    chain_align_res.seqyA = cur_res.seqyA;
+    chain_align_res.n_ali  = cur_res.n_ali;
+    chain_align_res.n_ali8 = cur_res.n_ali8;
     std::vector<double> tu_tmp(12, 0);
-    t_u2tu(t0, u0, tu_tmp);
+    t_u2tu(chain_align_res.t0, chain_align_res.u0, tu_tmp);
     tu_vec.push_back(tu_tmp);
-    invmap = cur_hing_res.tmalign_res.invmap;
+    chain_align_res.invmap = cur_res.invmap;
 }
 
 inline void search_hinge_regions(
@@ -2028,9 +2023,7 @@ inline void search_hinge_regions(
 
         if (new_ali>=5)
         {
-            update_global_res(chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5, chain_align_res.rmsd0,
-                chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, chain_align_res.n_ali, chain_align_res.n_ali8,
-                chain_align_res.invmap, cur_hing_res, chain_align_res.t0, chain_align_res.u0, tu_vec);
+            update_global_res(chain_align_res, cur_hing_res, tu_vec);
         }
 
         if (new_ali<5) break;
