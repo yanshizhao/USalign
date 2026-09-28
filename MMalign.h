@@ -1658,11 +1658,7 @@ inline void MMalign_final(
     int& n_ali8 = chain_align_res.n_ali8;
     double Lnorm_ass=params.len_aa+params.len_na;
 
-    u0[0][0]=u0[1][1]=u0[2][2]=1;
-    u0[0][1]=         u0[0][2]=
-    u0[1][0]=         u0[1][2]=
-    u0[2][0]=         u0[2][1]=
-    t0[0]   =t0[1]   =t0[2]   =0;
+    init_identity_t_u(t0, u0);
     std::vector<int> invmap(ylen+1);
 
     ChainPairAlignOptions final_align_opts;

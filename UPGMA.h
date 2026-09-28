@@ -23,8 +23,8 @@ struct UPGMA_Edge {
 struct UPGMA_Tree {
     std::vector<UPGMA_Node>              nodes;             // all nodes, last one is root
     std::vector<UPGMA_Edge>              edges;             // all merge edges
-    std::vector<std::vector<double>>          distance_matrix;   // working distance matrix (shrunk during tree build)
-    std::vector<std::string>                  cluster_names;     // current cluster names (updated during merge)
+    std::vector<std::vector<double>>          distance_matrix;   // working distance matrix
+    std::vector<std::string>                  cluster_names;     // current cluster names
 };
 
 std::vector<std::string> clean_chain_names(const std::vector<std::string>& names);

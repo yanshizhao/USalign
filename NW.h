@@ -39,9 +39,7 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
     int len1, int len2, double d02, double gap_open,
     std::vector<int>& j2i, const int hinge);
 
-// ---------------------------------------------------------------------------
-// NWDP_TM (score-matrix version)
-// ---------------------------------------------------------------------------
+
 inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i)
 {
@@ -81,12 +79,7 @@ inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     }
 }
 
-// ---------------------------------------------------------------------------
-// NWDP_TM (coordinate version with rotation)  –  hot path, used in DP_iter
-// ---------------------------------------------------------------------------
-/* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
- * Output: j2i[1:len2] ∈ {1:len1} ∪ {-1}
- * path[, ] ∈ {1=diagonal, 2=up,   3=left} */
+
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     const CoordArray& x, const CoordArray& y,
     int len1, int len2, const Vec3& t, const RotMat& u,
@@ -133,11 +126,7 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     }
 }
 
-// ---------------------------------------------------------------------------
-// NWDP_TM (secondary-structure version)
-// ---------------------------------------------------------------------------
-/* Input: secondary structure strings secx, secy, and gap_open
- * Output: j2i[1:len2] ∈ {1:len1} ∪ {-1} */
+
 inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     const std::string& secx, const std::string& secy,
     const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
@@ -177,9 +166,7 @@ inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     }
 }
 
-// ---------------------------------------------------------------------------
-// NWDP_SE  –  superposition-engine DP with optional hinge (flexible alignment)
-// ---------------------------------------------------------------------------
+
 inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
     CoordArray& x, CoordArray& y,
     int len1, int len2, double d02, double gap_open,
@@ -190,7 +177,6 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
     double dij;
 
     if (hinge == 0) {
-        // ---- ordinary DP (same as coordinate version, but no rotation) ----
         for (i = 0; i <= len1; i++) { val[i][0] = 0; path[i][0] = 0; }
         for (j = 0; j <= len2; j++) { val[0][j] = 0; path[0][j] = 0; j2i[j] = -1; }
 
@@ -224,8 +210,6 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
         }
         return;
     }
-
-    // ---- hinge > 0 : masked DP with pre-set alignment anchors ----
 
     for (i = 0; i <= len1; i++)
         for (j = 0; j <= len2; j++)

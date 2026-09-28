@@ -900,8 +900,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
         std::cout << "There is no alignment between the two structures! "
              << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
-        t0 = {0, 0, 0};                            // zero translation
-        u0 = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};  // identity rotation
+        init_identity_t_u(t0, u0);
         return 1;
     }
 
@@ -1139,11 +1138,7 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
     chain_align_res.invmap.assign(ylen + 1, 0);
     if (align_opts.se_opt)
     {
-        chain_align_res.u0[0][0]=chain_align_res.u0[1][1]=chain_align_res.u0[2][2]=1;
-        chain_align_res.u0[0][1]=         chain_align_res.u0[0][2]=
-        chain_align_res.u0[1][0]=         chain_align_res.u0[1][2]=
-        chain_align_res.u0[2][0]=         chain_align_res.u0[2][1]=
-        chain_align_res.t0[0]   =chain_align_res.t0[1]   =chain_align_res.t0[2]   =0;
+        init_identity_t_u(chain_align_res.t0, chain_align_res.u0);
         soi_se_main(xa, ya, seqx, seqy, chain_align_res,
             xlen, ylen, align_opts, outfmt_opt, dist_list, secx_bond, secy_bond, mm_opt);
         if (outfmt_opt >= 2)

@@ -699,11 +699,6 @@ std::vector<int> assign2_init(chain2_num);
         seqxA_init, seqyA_init, assign1_init,  assign2_init,  TMave_init);
     double max_total_score_cross=max_total_score;
 
-        //max_total_score_cross, max_iter, xa_vec, ya_vec, seqx_vec, seqy_vec,
-        //secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
-        //xa, ya, nullptr, nullptr, nullptr, nullptr, len_aa, len_na, chain1_num, chain2_num,
-        //TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init, sequence_init,
-        //d0_scale, true);
     if (len_aa+len_na<10000)
     {
         MMalign_dimer(max_total_score_cross, complex1, complex2,

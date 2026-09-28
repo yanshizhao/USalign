@@ -86,6 +86,15 @@ struct ChainPairAlignResult
     std::vector<int> invmap;
 };
 
+inline void init_identity_t_u(Vec3& t0, RotMat& u0)
+{
+    u0[0][0]=u0[1][1]=u0[2][2]=1;
+    u0[0][1]=         u0[0][2]=
+    u0[1][0]=         u0[1][2]=
+    u0[2][0]=         u0[2][1]=
+    t0[0]   =t0[1]   =t0[2]   =0;
+}
+
 struct MstaIterationState
 {
     std::vector<std::string> msa;
@@ -202,35 +211,35 @@ struct AlignCommonInput
     ControlOptions control_options;
 };
 
-// ---- MMalign 每次调用的 per-call 差异参数（dir 与链列表随调用分支变化）----
+
 struct MMalignParams
 {
-    std::string dir1_opt;              // 归一化后的 dir1（main 计算）
-    std::string dir2_opt;              // 归一化后的 dir2（main 计算）
+    std::string dir1_opt;              // 归一化后的 dir1
+    std::string dir2_opt;              // 归一化后的 dir2
     std::vector<std::string> chain1_list;  // 本次调用结构1 的链文件列表
     std::vector<std::string> chain2_list;  // 本次调用结构2 的链文件列表
 };
 
-// ---- mm1 全链对打分结果（stage B）、链分配结果（stage C） ----
+
 struct AllChainPairsResult
 {
-    DoubleMatrix tm_matrix;                 // TM-score matrix of chain pairs (was TMave_mat)
-    RotArray rotations;                     // rotation of each chain pair (was ut_mat)
-    std::vector<std::vector<std::string> > aligned_seq1;   // chain-pair residue alignment 1 (was seqxA_mat)
-    std::vector<std::vector<std::string> > aligned_seq2;   // chain-pair residue alignment 2 (was seqyA_mat)
-    std::vector<std::vector<std::string> > aligned_consensus;  // consensus sequence (was seqM_mat)
-    double best_pair_tm;                 // best monomer chain-pair TM (was maxTMmono)
+    DoubleMatrix tm_matrix;                 // TM-score matrix of chain pairs
+    RotArray rotations;                     // rotation of each chain pair
+    std::vector<std::vector<std::string> > aligned_seq1;   // chain-pair residue alignment 1 
+    std::vector<std::vector<std::string> > aligned_seq2;   // chain-pair residue alignment 2 
+    std::vector<std::vector<std::string> > aligned_consensus;  // consensus sequence
+    double best_pair_tm;                 // best monomer chain-pair TM 
     int best_pair_chain1_idx;                     // was maxTMmono_i
     int best_pair_chain2_idx;                     // was maxTMmono_j
 };
 
 struct ChainAssignResult
 {
-    std::vector<int> chain2_of_chain1;   // index in structure 2 for each chain of structure 1 (was assign1_list)
-    std::vector<int> chain1_of_chain2;   // index in structure 1 for each chain of structure 2 (was assign2_list)
+    std::vector<int> chain2_of_chain1;   // index in structure 2 for each chain of structure 1
+    std::vector<int> chain1_of_chain2;   // index in structure 1 for each chain of structure 2
 };
 
-// ---- mm1 最终输出（MMalign_final）的逐调用命名/长度/选项 ----
+
 struct MMalignFinalParams
 {
     std::string xname;
@@ -257,22 +266,22 @@ struct MMalignFinalParams
     int    mirror_opt;
 };
 
-// ---- 单条链对结构比对的引擎选项（per-pair，跨模式共享）----
+
 struct ChainPairAlignOptions
 {
     int    i_opt;              // 比对模式：0=自动 1=策略+用户比对 2=仅用户比对 3=-I
-    int    a_opt;              // 是否产出 TM3（平均长度归一）
+    int    a_opt;              // 是否产出 TM3
     int    u_opt;              // 0/1/2：1=按用户 Lnorm 出 TM4；2=额外用 Lnorm 覆盖搜索 d0
-    bool   d_opt;              // 是否产出 TM5（缩放 d0）
+    bool   d_opt;              // 是否产出 TM5
     bool   fast_opt;           // 快速模式
     bool   se_opt;             // 走 se_main 而非 TMalign_main
-    bool   cp_opt;             // 走 CPalign_main（仅 mm0/sn 置位）
+    bool   cp_opt;             // 走 CPalign_main
     double Lnorm;              // 归一化长度
     double d0_scale;           // d0 缩放
     double TMcut;              // 早退阈值
     int    parallel_threads;   // 引擎内并行度
     int    ss_opt;             // 1=跳过基于二级结构的初始策略
-    int    mol_type;           // 两链分子类型之和（-1/0/1，逐对覆盖）
+    int    mol_type;           // 两链分子类型之和
 };
 
 struct OutputOptions

@@ -2354,26 +2354,22 @@ struct LocalDistTables
     std::vector<std::vector<double> > chain2_dist_table;   // Local distance table for chain 2 (ya)
 };
 
+inline void build_dist_table(const CoordArray& coords, const int max_residue_gap, DoubleMatrix& dist_table)
+{
+    int resid_num = (int)coords.size();
+    dist_table.assign(resid_num, std::vector<double>(max_residue_gap, 0.0));
+    for (int i = 0; i < resid_num; i++)
+    {
+        for (int j = i; j < std::min(resid_num, i + max_residue_gap); j++)
+            dist_table[i][j - i] = std::sqrt(dist(coords[i], coords[j]));
+    }
+}
+
 inline void build_local_dist_tables(const CoordArray& xa, const CoordArray& ya, const USBCATParams& usb_cat_para, LocalDistTables& dist_tables)
 {
-    int resid_num1 = (int)xa.size();
-    int resid_num2 = (int)ya.size();
-
     dist_tables.max_residue_gap = usb_cat_para.max_gap + 2 * usb_cat_para.fragLen + 1;
-    dist_tables.chain1_dist_table.assign(resid_num1, std::vector<double>(dist_tables.max_residue_gap, 0.0));
-    dist_tables.chain2_dist_table.assign(resid_num2, std::vector<double>(dist_tables.max_residue_gap, 0.0));
-
-    for (int i = 0; i < resid_num1; i++)
-    {
-        for (int j = i; j < std::min(resid_num1, i + dist_tables.max_residue_gap); j++)
-            dist_tables.chain1_dist_table[i][j - i] = std::sqrt(dist(xa[i], xa[j]));
-    }
-    
-    for (int i = 0; i < resid_num2; i++)
-    {
-        for (int j = i; j < std::min(resid_num2, i + dist_tables.max_residue_gap); j++)
-            dist_tables.chain2_dist_table[i][j - i] = std::sqrt(dist(ya[i], ya[j]));
-    }
+    build_dist_table(xa, dist_tables.max_residue_gap, dist_tables.chain1_dist_table);
+    build_dist_table(ya, dist_tables.max_residue_gap, dist_tables.chain2_dist_table);
 }
 
 
