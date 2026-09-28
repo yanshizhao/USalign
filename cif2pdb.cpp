@@ -87,14 +87,24 @@ void split(const std::string &line, std::vector<std::string> &line_vec,
     }
 }
 
+void write_mmcif_chain_remark(std::ostream& os, const std::vector<std::string>& chain_lines,
+    const std::string& chain_id)
+{
+    os<<"REMARK cif2pdb "<<chain_lines[0][21]<<" "<<chain_id<<std::endl;
+}
+
+void write_mmcif_chain_lines(std::ostream& os, const std::vector<std::string>& chain_lines)
+{
+    for (size_t r=0;r<chain_lines.size();r++) os<<chain_lines[r];
+    os<<"TER"<<std::endl;
+}
+
 void write_mmcif_to_pdb(const std::string filename,
     const std::vector<std::vector<std::string> >&PDB_lines,
     const std::vector<std::string> &chainID_list, const int split_opt)
 {
     size_t c;
-    size_t r;
-    
-    std::ofstream fout;
+
     if (split_opt)
     {
         for (c=0;c<PDB_lines.size();c++)
@@ -102,16 +112,15 @@ void write_mmcif_to_pdb(const std::string filename,
             if (PDB_lines[c].size()==0) continue;
             if (filename=="-")
             {
-                std::cout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
-                for (r=0;r<PDB_lines[c].size();r++) std::cout<<PDB_lines[c][r];
-                std::cout<<"TER"<<std::endl;
-                continue;    
+                write_mmcif_chain_remark(std::cout, PDB_lines[c], chainID_list[c]);
+                write_mmcif_chain_lines(std::cout, PDB_lines[c]);
+                continue;
             }
             std::cout<<     filename+Trim(chainID_list[c])+".pdb"<<std::endl;
+            std::ofstream fout;
             fout.open((filename+Trim(chainID_list[c])+".pdb").c_str());
-            fout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
-            for (r=0;r<PDB_lines[c].size();r++) fout<<PDB_lines[c][r];
-            fout<<"TER"<<std::endl;
+            write_mmcif_chain_remark(fout, PDB_lines[c], chainID_list[c]);
+            write_mmcif_chain_lines(fout, PDB_lines[c]);
             fout.close();
         }
     }
@@ -120,33 +129,57 @@ void write_mmcif_to_pdb(const std::string filename,
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            std::cout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
+            write_mmcif_chain_remark(std::cout, PDB_lines[c], chainID_list[c]);
         }
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            for (r=0;r<PDB_lines[c].size();r++) std::cout<<PDB_lines[c][r];
-            std::cout<<"TER"<<std::endl;
+            write_mmcif_chain_lines(std::cout, PDB_lines[c]);
         }
         std::cout<<"END"<<std::endl;
     }
     else
     {
+        std::ofstream fout;
         fout.open(filename.c_str());
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            fout<<"REMARK cif2pdb "<<PDB_lines[c][0][21]<<" "<<chainID_list[c]<<std::endl;
+            write_mmcif_chain_remark(fout, PDB_lines[c], chainID_list[c]);
         }
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
-            for (r=0;r<PDB_lines[c].size();r++) fout<<PDB_lines[c][r];
-            fout<<"TER"<<std::endl;
+            write_mmcif_chain_lines(fout, PDB_lines[c]);
         }
         fout<<"END"<<std::endl;
         fout.close();
     }
+}
+
+bool mmcif_accept_chain_id(const std::string& chainID, const std::string& chainID_string,
+    std::vector<bool>& chainID_taken)
+{
+    for (size_t i=0;i<chainID_string.size();i++)
+    {
+        if (chainID_string[i]!=chainID[0]) continue;
+        if (chainID_taken[i]) return false;
+        chainID_taken[i]=true;
+        return true;
+    }
+    return true;
+}
+
+std::string mmcif_pick_free_chain_id(const std::string& chainID_string,
+    std::vector<bool>& chainID_taken)
+{
+    for (size_t i=0;i<chainID_taken.size();i++)
+    {
+        if (chainID_taken[i]) continue;
+        chainID_taken[i]=true;
+        return std::string(1,chainID_string[i]);
+    }
+    return "";
 }
 
 size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_lines,
@@ -155,9 +188,8 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
     size_t changed_chains=0;
     size_t c;
     size_t r;
-    size_t i;
     std::string chainID;
-    
+
     std::string chainID_string="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     std::vector<bool> chainID_taken(chainID_string.size(),false);
     std::vector<bool> chainID_accept(chainID_list.size(),false);
@@ -168,14 +200,7 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
         if (PDB_lines[c].size()==0) continue;
         chainID=PDB_lines[c][0][21];
         if (chainID!=chainID_list[c]) continue;
-        chainID_accept[c]=true;
-        for (i=0;i<chainID_string.size();i++)
-        {
-            if (chainID_string[i]!=chainID[0]) continue;
-            if (chainID_taken[i]) chainID_accept[c]=false;
-            else chainID_taken[i]=true;
-            break;
-        }
+        chainID_accept[c]=mmcif_accept_chain_id(chainID, chainID_string, chainID_taken);
     }
 
     // accept all remaining non-conflicting chain ID
@@ -183,28 +208,14 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
     {
         if (PDB_lines[c].size()==0 || chainID_accept[c]) continue;
         chainID=PDB_lines[c][0][21];
-        chainID_accept[c]=true;
-        for (i=0;i<chainID_string.size();i++)
-        {
-            if (chainID_string[i]!=chainID[0]) continue;
-            if (chainID_taken[i]) chainID_accept[c]=false;
-            else chainID_taken[i]=true;
-            break;
-        }
+        chainID_accept[c]=mmcif_accept_chain_id(chainID, chainID_string, chainID_taken);
     }
 
     // resolve remaining chain ID
     for (c=0;c<PDB_lines.size();c++)
     {
         if (PDB_lines[c].size()==0 || chainID_accept[c]) continue;
-        chainID="";
-        for (i=0;i<chainID_taken.size();i++)
-        {
-            if (chainID_taken[i]) continue;
-            chainID=chainID_string[i];
-            chainID_taken[i]=true;
-            break;
-        }
+        chainID=mmcif_pick_free_chain_id(chainID_string, chainID_taken);
         if (chainID=="")
         {
             std::cerr<<"WARNING! Cannot parse "<<chainID_list[c]<<" with "
@@ -221,9 +232,163 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
     }
     if (changed_chains)
         std::cerr<<"WARNING! Changed "<<changed_chains<<" chain ID(s)"<<std::endl;
-    
+
     // clean up
     return changed_chains;
+}
+
+struct MmcifParseState
+{
+    std::stringstream i8_stream;
+    std::map<std::string,int> _atom_site;
+    std::map<std::string,std::string> alt_id_dict; // resi -> alt_id
+    std::vector<std::string> line_vec;
+    std::string group_PDB;
+    std::string alt_id;
+    std::string asym_id;
+    std::string prev_asym_id;
+    std::string resn;       // residue name
+    std::string resi;
+    std::string atom;
+    std::string model_index; // the same as model_idx but type is string
+    std::string resi_chain;
+    size_t a;
+};
+
+void mmcif_read_atom_fields(MmcifParseState& st, const std::string& line, const bool mse_opt)
+{
+    st.line_vec.clear();
+    split(line,st.line_vec);
+    st.atom     =st.line_vec[st._atom_site["label_atom_id"]];
+    st.resn     =st.line_vec[st._atom_site["label_comp_id"]];
+    st.group_PDB=st.line_vec[st._atom_site["group_PDB"]];
+    if (st.group_PDB=="ATOM") st.group_PDB="ATOM  ";
+    if (mse_opt && st.resn=="MSE")
+    {
+        st.group_PDB="ATOM  ";
+        if (st.atom=="SE") st.atom="SD";
+    }
+    if (st.atom[0]=='"') st.atom=st.atom.substr(1);
+    if (st.atom.size() && st.atom[st.atom.size()-1]=='"')
+        st.atom=st.atom.substr(0,st.atom.size()-1);
+}
+
+bool mmcif_pass_residue_filter(MmcifParseState& st, const bool dna_opt, const bool rna_opt,
+    const bool protein_opt, const bool hoh_opt, const bool lig_opt)
+{
+    if (st.group_PDB=="HETATM")
+    {
+        if (!lig_opt) return false;
+        if (!hoh_opt && st.resn=="HOH") return false;
+        if (st.asym_id!=st.prev_asym_id && st.prev_asym_id.size())
+            st.asym_id=st.prev_asym_id; // no separate chain for ligand
+    }
+    else if (st.group_PDB!="ATOM  ") return false;
+
+    if (st.resn.size()==1)
+    {
+        if (!rna_opt && st.group_PDB=="ATOM  ") return false;
+        st.resn="  "+st.resn;
+    }
+    else if (st.resn.size()==2)
+    {
+        if (!dna_opt && st.resn[0]=='D' && st.group_PDB=="ATOM  ") return false;
+        st.resn=" " +st.resn;
+    }
+    else if (st.resn.size()==3 && !protein_opt && st.group_PDB=="ATOM  ") return false;
+    else if (st.resn.size()>=4) st.resn=st.resn.substr(0,3);
+
+    if      (st.atom.size()==0) return false;
+    else if (st.atom.size()==1) st.atom=" "+st.atom+"  ";
+    else if (st.atom.size()==2) st.atom=" "+st.atom+" "; // wrong for sidechain H
+    else if (st.atom.size()==3) st.atom=" "+st.atom;
+    else if (st.atom.size()>=5) st.atom=st.atom.substr(0,4);
+    return true;
+}
+
+bool mmcif_read_chain_fields(MmcifParseState& st, const std::string& line,
+    const std::string& chain_opt)
+{
+    if (st._atom_site.count("auth_seq_id"))
+         st.resi=st.line_vec[st._atom_site["auth_seq_id"]];
+    else st.resi=st.line_vec[st._atom_site["label_seq_id"]];
+    if (st._atom_site.count("pdbx_PDB_ins_code") &&
+        st.line_vec[st._atom_site["pdbx_PDB_ins_code"]]!="?")
+        st.resi+=st.line_vec[st._atom_site["pdbx_PDB_ins_code"]][0];
+    else st.resi+=" ";
+    if (st.resi.size()>5)
+    {
+        std::cerr<<"WARNING! Cannot parse line due to long residue index\n"<<line<<std::endl;
+        return false;
+    }
+
+    if (st._atom_site.count("auth_asym_id"))
+         st.asym_id=st.line_vec[st._atom_site["auth_asym_id"]];
+    else st.asym_id=st.line_vec[st._atom_site["label_asym_id"]];
+    if (st.asym_id==".") st.asym_id=" ";
+    if (chain_opt.size() && st.asym_id!=chain_opt &&
+        !(st.asym_id==" " && (chain_opt=="_" || chain_opt=="."))) return false;
+    return true;
+}
+
+int mmcif_switch_model_if_needed(MmcifParseState& st,
+    const std::vector<std::vector<std::string> >&PDB_lines)
+{
+    if (st._atom_site.count("pdbx_PDB_model_num") &&
+        st.model_index!=st.line_vec[st._atom_site["pdbx_PDB_model_num"]])
+    {
+        if (PDB_lines.size()) return 0;
+        st.model_index=st.line_vec[st._atom_site["pdbx_PDB_model_num"]];
+        std::map<std::string, std::string>().swap(st.alt_id_dict);
+    }
+    return 1;
+}
+
+bool mmcif_pass_alt_id_filter(MmcifParseState& st)
+{
+    if (st._atom_site.count("label_alt_id")) // in 39.4 % of entries
+    {
+        st.alt_id=st.line_vec[st._atom_site["label_alt_id"]];
+        if (st.alt_id==".") st.alt_id=" ";
+        else
+        {
+            st.resi_chain=st.asym_id+st.resi;
+            if (st.alt_id_dict.count(st.resi_chain)==0)
+                st.alt_id_dict[st.resi_chain]=st.alt_id;
+            else if (st.alt_id_dict.count(st.resi_chain) &&
+                   st.alt_id!=st.alt_id_dict[st.resi_chain]) return false;
+        }
+    }
+    return true;
+}
+
+void mmcif_append_pdb_line(MmcifParseState& st,
+    std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list)
+{
+    if (st.prev_asym_id!=st.asym_id)
+    {
+        PDB_lines.push_back(std::vector<std::string>());
+        chainID_list.push_back(st.asym_id);
+        st.prev_asym_id=st.asym_id;
+    }
+
+    st.a++;
+    st.a%=100000;
+    st.i8_stream<<st.group_PDB
+        <<std::setw(5)<<st.a<<" "<<st.atom<<st.alt_id<<st.resn<<" "<<st.asym_id[st.asym_id.size()-1]
+        <<std::setw(5)<<st.resi<<"   "
+        <<std::setw(8)<<st.line_vec[st._atom_site["Cartn_x"]].substr(0,8)
+        <<std::setw(8)<<st.line_vec[st._atom_site["Cartn_y"]].substr(0,8)
+        <<std::setw(8)<<st.line_vec[st._atom_site["Cartn_z"]].substr(0,8);
+    if (st._atom_site.count("B_iso_or_equiv"))
+    {
+        st.i8_stream<<"  1.00"<<std::setw(6)<<st.line_vec[st._atom_site["B_iso_or_equiv"]].substr(0,6);
+        if (st._atom_site.count("type_symbol"))
+            st.i8_stream<<std::setw(12)<<st.line_vec[st._atom_site["type_symbol"]].substr(0,12);
+    }
+    st.i8_stream<<std::endl;
+    PDB_lines.back().push_back(st.i8_stream.str());
+    st.i8_stream.str(std::string());
 }
 
 size_t get_all_mmcif_lines(const std::string filename, const std::string chain_opt,
@@ -231,10 +396,8 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
     const bool dna_opt, const bool rna_opt, const bool protein_opt,
     const bool hoh_opt,  const bool lig_opt, const bool mse_opt)
 {
-    size_t a=0; // atom index
     std::string line;
-    std::vector<std::string> tmp_str_vec;
-    
+
     int compress_type=0; // uncompressed file
     std::ifstream fin;
 #ifndef NO_PSTREAM
@@ -271,22 +434,13 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 #endif
 
     bool loop_ = false; // not reading following content
-    std::map<std::string,int> _atom_site;
     int atom_site_pos;
-    std::vector<std::string> line_vec;
-    std::string group_PDB;
-    std::string alt_id=" ";  // alternative location indicator
-    std::string asym_id="."; // this is similar to chainID, except that
+    MmcifParseState st;
+    st.alt_id=" ";  // alternative location indicator
+    st.asym_id="."; // this is similar to chainID, except that
                         // chainID is char while asym_id is a string
                        // with possibly multiple char
-    std::string prev_asym_id="";
-    std::string resn="";       // residue name
-    std::string resi="";
-    std::string atom="";
-    std::string model_index=""; // the same as model_idx but type is string
-    std::stringstream i8_stream;
-    std::map<std::string, std::string> alt_id_dict; // resi -> alt_id
-    std::string resi_chain;
+    st.a=0; // atom index
     while (
 #ifndef NO_PSTREAM
         (compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good())
@@ -326,12 +480,12 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
                 }
                 if (line.size()) break;
             }
-            if (line.compare(0,11,"_atom_site.")) continue; 
-           
+            if (line.compare(0,11,"_atom_site.")) continue;
+
             loop_=true;
-            _atom_site.clear();
+            st._atom_site.clear();
             atom_site_pos=0;
-            _atom_site[Trim(line.substr(11))]=atom_site_pos;
+            st._atom_site[Trim(line.substr(11))]=atom_site_pos;
 
             while(1)
             {
@@ -342,19 +496,19 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
                 else                    std::getline(fin, line);
                 if (line.size()==0) continue;
                 if (line.compare(0,11,"_atom_site.")) break;
-                _atom_site[Trim(line.substr(11))]=++atom_site_pos;
+                st._atom_site[Trim(line.substr(11))]=++atom_site_pos;
             }
 
-            if (_atom_site.count("group_PDB")*
-                _atom_site.count("label_atom_id")*
-                _atom_site.count("label_comp_id")*
-               (_atom_site.count("auth_asym_id")+
-                _atom_site.count("label_asym_id"))*
-               (_atom_site.count("auth_seq_id")+
-                _atom_site.count("label_seq_id"))*
-                _atom_site.count("Cartn_x")*
-                _atom_site.count("Cartn_y")*
-                _atom_site.count("Cartn_z")==0)
+            if (st._atom_site.count("group_PDB")*
+                st._atom_site.count("label_atom_id")*
+                st._atom_site.count("label_comp_id")*
+               (st._atom_site.count("auth_asym_id")+
+                st._atom_site.count("label_asym_id"))*
+               (st._atom_site.count("auth_seq_id")+
+                st._atom_site.count("label_seq_id"))*
+                st._atom_site.count("Cartn_x")*
+                st._atom_site.count("Cartn_y")*
+                st._atom_site.count("Cartn_z")==0)
             {
                 loop_ = false;
                 std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
@@ -362,114 +516,13 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
             }
         }
 
-        line_vec.clear();
-        split(line,line_vec);
-        atom     =line_vec[_atom_site["label_atom_id"]];
-        resn     =line_vec[_atom_site["label_comp_id"]];
-        group_PDB=line_vec[_atom_site["group_PDB"]];
-        if (group_PDB=="ATOM") group_PDB="ATOM  ";
-        if (mse_opt && resn=="MSE")
-        {
-            group_PDB="ATOM  ";
-            if (atom=="SE") atom="SD";
-        }
-        if (group_PDB=="HETATM")
-        {
-            if (!lig_opt) continue; 
-            if (!hoh_opt && resn=="HOH") continue;
-            if (asym_id!=prev_asym_id && prev_asym_id.size()) 
-                asym_id=prev_asym_id; // no separate chain for ligand
-        }
-        else if (group_PDB!="ATOM  ") continue;
-
-        if (resn.size()==1)
-        {
-            if (!rna_opt && group_PDB=="ATOM  ") continue;
-            resn="  "+resn;
-        }
-        else if (resn.size()==2)
-        {
-            if (!dna_opt && resn[0]=='D' && group_PDB=="ATOM  ") continue;
-            resn=" " +resn;
-        }
-        else if (resn.size()==3 && !protein_opt && group_PDB=="ATOM  ") continue;
-        else if (resn.size()>=4) resn=resn.substr(0,3);
-
-        if (atom[0]=='"') atom=atom.substr(1);
-        if (atom.size() && atom[atom.size()-1]=='"')
-            atom=atom.substr(0,atom.size()-1);
-        if      (atom.size()==0) continue;
-        else if (atom.size()==1) atom=" "+atom+"  ";
-        else if (atom.size()==2) atom=" "+atom+" "; // wrong for sidechain H
-        else if (atom.size()==3) atom=" "+atom;
-        else if (atom.size()>=5) atom=atom.substr(0,4);
-        
-        if (_atom_site.count("auth_seq_id"))
-             resi=line_vec[_atom_site["auth_seq_id"]];
-        else resi=line_vec[_atom_site["label_seq_id"]];
-        if (_atom_site.count("pdbx_PDB_ins_code") && 
-            line_vec[_atom_site["pdbx_PDB_ins_code"]]!="?")
-            resi+=line_vec[_atom_site["pdbx_PDB_ins_code"]][0];
-        else resi+=" ";
-        if (resi.size()>5)
-        {
-            std::cerr<<"WARNING! Cannot parse line due to long residue index\n"<<line<<std::endl;
+        mmcif_read_atom_fields(st, line, mse_opt);
+        if (!mmcif_pass_residue_filter(st, dna_opt, rna_opt, protein_opt, hoh_opt, lig_opt))
             continue;
-        }
-
-        if (_atom_site.count("auth_asym_id"))
-             asym_id=line_vec[_atom_site["auth_asym_id"]];
-        else asym_id=line_vec[_atom_site["label_asym_id"]];
-        if (asym_id==".") asym_id=" ";
-        if (chain_opt.size() && asym_id!=chain_opt &&
-            !(asym_id==" " && (chain_opt=="_" || chain_opt=="."))) continue;
-            
-        if (_atom_site.count("pdbx_PDB_model_num") && 
-            model_index!=line_vec[_atom_site["pdbx_PDB_model_num"]])
-        {
-            if (PDB_lines.size()) break;
-            model_index=line_vec[_atom_site["pdbx_PDB_model_num"]];
-            std::map<std::string, std::string>().swap(alt_id_dict);
-        }
-
-        if (_atom_site.count("label_alt_id")) // in 39.4 % of entries
-        {
-            alt_id=line_vec[_atom_site["label_alt_id"]];
-            if (alt_id==".") alt_id=" ";
-            else
-            {
-                resi_chain=asym_id+resi;
-                if (alt_id_dict.count(resi_chain)==0)
-                    alt_id_dict[resi_chain]=alt_id;
-                else if (alt_id_dict.count(resi_chain) &&
-                       alt_id!=alt_id_dict[resi_chain]) continue;
-            }
-        }
-
-        if (prev_asym_id!=asym_id)
-        {
-            PDB_lines.push_back(tmp_str_vec);
-            chainID_list.push_back(asym_id);
-            prev_asym_id=asym_id;
-        }
-
-        a++;
-        a%=100000;
-        i8_stream<<group_PDB
-            <<std::setw(5)<<a<<" "<<atom<<alt_id<<resn<<" "<<asym_id[asym_id.size()-1]
-            <<std::setw(5)<<resi<<"   "
-            <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
-            <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
-            <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
-        if (_atom_site.count("B_iso_or_equiv"))
-        {
-            i8_stream<<"  1.00"<<std::setw(6)<<line_vec[_atom_site["B_iso_or_equiv"]].substr(0,6);
-            if (_atom_site.count("type_symbol"))
-                i8_stream<<std::setw(12)<<line_vec[_atom_site["type_symbol"]].substr(0,12);
-        }
-        i8_stream<<std::endl;
-        PDB_lines.back().push_back(i8_stream.str());
-        i8_stream.str(std::string());
+        if (!mmcif_read_chain_fields(st, line, chain_opt)) continue;
+        if (!mmcif_switch_model_if_needed(st, PDB_lines)) break;
+        if (!mmcif_pass_alt_id_filter(st)) continue;
+        mmcif_append_pdb_line(st, PDB_lines, chainID_list);
     }
 
     if (compress_type>=0)
