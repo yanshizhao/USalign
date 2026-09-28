@@ -863,7 +863,6 @@ inline void build_pymol_hinge_map(FlexalignPymolState& pymol_state,
 }
 
 inline void read_pymol_pdb_atom_line(FlexalignPymolReadState& read_state,
-    const std::vector<std::string>& resi_vec1,
     const DoubleMatrix& tu_vec, const int mirror_opt)
 {
     std::stringstream& buf = read_state.buf;
@@ -891,7 +890,7 @@ inline void read_pymol_pdb_atom_line(FlexalignPymolReadState& read_state,
 }
 
 inline void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
-    const std::string& xname, const std::vector<std::string>& resi_vec1,
+    const std::string& xname,
     const DoubleMatrix& tu_vec, const int mirror_opt)
 {
     std::stringstream& buf = read_state.buf;
@@ -1011,11 +1010,11 @@ inline void read_pymol_structure(FlexalignPymolState& pymol_state,
         if (line.compare(0, 6, "ATOM  ") == 0 ||
             line.compare(0, 6, "HETATM") == 0) // PDB format
         {
-            read_pymol_pdb_atom_line(read_state, resi_vec1, tu_vec, mirror_opt);
+            read_pymol_pdb_atom_line(read_state, tu_vec, mirror_opt);
         }
         else if (line.compare(0, 5, "loop_") == 0) // PDBx/mmCIF
         {
-            read_pymol_mmcif_loop(read_state, xname, resi_vec1, tu_vec, mirror_opt);
+            read_pymol_mmcif_loop(read_state, xname, tu_vec, mirror_opt);
         }
         else if (line.size())
         {
@@ -1788,7 +1787,6 @@ inline void score_split_substruct(
 
 inline void fill_sub_struct_align_result(
         const SubstructAlignRes sub_align_res[NUM_SPLIT_VARIANTS],
-        const int ylen,
         DoubleMatrix& tu_vec,
         ChainPairAlignResult& chain_align_res)
 {
@@ -1830,7 +1828,6 @@ inline void fill_sub_struct_align_result(
 inline void refine_via_split_alignment(
         CoordArray& xa,
         CoordArray& ya,
-        CoordArray& xt,
         DoubleMatrix& tu_vec,
         const std::string &seqx,
         const std::string &seqy,
@@ -1838,7 +1835,6 @@ inline void refine_via_split_alignment(
         const std::string &secy,
         const int xlen,
         const int ylen,
-        const int hinge_opt,
         const std::vector<std::string> &sequence,
         const ChainPairAlignOptions& align_opts,
         ChainPairAlignResult& chain_align_res)
@@ -1853,7 +1849,7 @@ inline void refine_via_split_alignment(
     score_split_substruct(sub_struct[1], xa, ya, seqx, seqy, chain_align_res.do_vec,
         xlen, ylen, sequence, align_opts,
         chain_align_res.t0, chain_align_res.u0, sub_align_res[1]);
-    fill_sub_struct_align_result(sub_align_res, ylen, tu_vec, chain_align_res);
+    fill_sub_struct_align_result(sub_align_res, tu_vec, chain_align_res);
 }
 
 static inline void extract_unalign_subcoords(
@@ -2115,8 +2111,8 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
         xa, ya, xt, seqx, seqy,
         xlen, ylen, parsed_input.sequence, align_opts, 1, flexalign_res);
     if (round2) refine_via_split_alignment(
-        xa, ya, xt, flexalign_res.tu_vec, seqx, seqy, secx, secy,
-        xlen, ylen, hinge_opt, parsed_input.sequence, align_opts,
+        xa, ya, flexalign_res.tu_vec, seqx, seqy, secx, secy,
+        xlen, ylen, parsed_input.sequence, align_opts,
         flexalign_res);
     search_hinge_regions(
         xa, ya, xt, flexalign_res.tu_vec, seqx, seqy, secx, secy,
@@ -2146,10 +2142,10 @@ struct USBCAT_AFP
     double score;
 };
 
-// Parse a single chain from an already-loaded PDB_lines vector.
-// Returns false when the chain is too short (< 3 residues) or empty.
-// On failure out.len == 0 and the caller should continue.
-// mirror_opt: apply to chain1 only (pass 0 for chain2).
+
+
+
+
 inline bool parse_chain(
     const std::string& filename,
     const std::vector<std::vector<std::string>>& PDB_lines,
@@ -2159,14 +2155,7 @@ inline bool parse_chain(
     const std::string& mol_opt,
     int mirror_opt,
     int read_resi,
-    int ter_opt,
-    int infmt_opt,
     const std::string& atom_opt,
-    bool normalize_atom_name,
-    int split_opt,
-    int het_opt,
-    const std::vector<std::string>& chain2parse,
-    const std::vector<std::string>& model2parse,
     ParsedChain& out)
 {
     out.filename = filename;
@@ -2367,23 +2356,29 @@ struct LocalDistTables
     std::vector<std::vector<double> > chain2_dist_table;   // Local distance table for chain 2 (ya)
 };
 
-inline void build_local_dist_tables(const CoordArray& xa, const CoordArray& ya,
-                                    const USBCATParams& usb_cat_para, LocalDistTables& dist_tables)
+inline void build_local_dist_tables(const CoordArray& xa, const CoordArray& ya, const USBCATParams& usb_cat_para, LocalDistTables& dist_tables)
 {
     int resid_num1 = (int)xa.size();
     int resid_num2 = (int)ya.size();
+
     dist_tables.max_residue_gap = usb_cat_para.max_gap + 2 * usb_cat_para.fragLen + 1;
     dist_tables.chain1_dist_table.assign(resid_num1, std::vector<double>(dist_tables.max_residue_gap, 0.0));
     dist_tables.chain2_dist_table.assign(resid_num2, std::vector<double>(dist_tables.max_residue_gap, 0.0));
+
     for (int i = 0; i < resid_num1; i++)
+    {
         for (int j = i; j < std::min(resid_num1, i + dist_tables.max_residue_gap); j++)
             dist_tables.chain1_dist_table[i][j - i] = std::sqrt(dist(xa[i], xa[j]));
+    }
+    
     for (int i = 0; i < resid_num2; i++)
+    {
         for (int j = i; j < std::min(resid_num2, i + dist_tables.max_residue_gap); j++)
             dist_tables.chain2_dist_table[i][j - i] = std::sqrt(dist(ya[i], ya[j]));
+    }
 }
 
-// O(1) distance query: is_chain1=true queries chain 1; handles a>b automatically
+
 inline double dtable_dist(const LocalDistTables& t, bool is_chain1, int a, int b)
 {
     const std::vector<std::vector<double> >& tbl = is_chain1 ? t.chain1_dist_table : t.chain2_dist_table;
@@ -2391,7 +2386,7 @@ inline double dtable_dist(const LocalDistTables& t, bool is_chain1, int a, int b
     return tbl[a][b - a];
 }
 
-// Compute sum-of-squared-distance between two AFPs (fragLen × fragLen comparison)
+
 inline double cal_apf_drmsd_sq(const USBCAT_AFP& prv, const USBCAT_AFP& cur,
                              const LocalDistTables& tables, const USBCATParams& usb_cat_para)
 {
@@ -2408,18 +2403,17 @@ inline double cal_apf_drmsd_sq(const USBCAT_AFP& prv, const USBCAT_AFP& cur,
     return rms_sq;
 }
 
-// Soft twist penalty: scaled by the normalized distance beyond (disCut - disSmooth)
+
 inline double cal_twist_penalty(double drmsd, const USBCATParams& usb_cat_para)
 {
     return usb_cat_para.twist_pen * std::sqrt((drmsd - usb_cat_para.disCut + usb_cat_para.disSmooth) / usb_cat_para.disSmooth);
 }
 
-// Sentinel dRMSD value for a hard twist edge: drmsd_sq has reached afp_dis_cut (equivalent to drmsd >= disCut);
-// only marks "must count as hinge / must cut block" and is not used in numeric calculations
+
+
 static const double INF_DRMSD = 1e9;
 
-// Result of evaluating a single adjacent AFP edge (shared by update_dp_state and build_candidate_blocks_list,
-// ensuring the DP hinge count and backtrack cut threshold share the same source)
+
 struct AfpEdgeInfo
 {
     double drmsd;      // Normalized dRMSD (INF_DRMSD for hard twist edges)
@@ -2427,8 +2421,7 @@ struct AfpEdgeInfo
     double penalty;    // DP penalty: 0 / soft twist penalty / twist_pen
 };
 
-// Edge evaluation: dRMSD >= disCut counts as 1 hinge and penalizes twist_pen;
-// continuous soft penalty in (disCut-disSmooth, disCut] (not counting as hinge); rigid continuation otherwise
+
 inline AfpEdgeInfo eval_cur_afp_edge(const USBCAT_AFP& prv, const USBCAT_AFP& cur,
                               const LocalDistTables& tables,
                               const USBCATParams& usb_cat_para)
@@ -2452,8 +2445,8 @@ inline AfpEdgeInfo eval_cur_afp_edge(const USBCAT_AFP& prv, const USBCAT_AFP& cu
     return cur_edge;
 }
 
-// Compute the gap penalty (with overlap and max-penalty clamp) between two AFPs.
-// gap > 0 means empty residues; gap < 0 means overlap.
+
+
 inline double get_gap_max_penalty(const USBCAT_AFP& prev_afp, const USBCAT_AFP& cur_afp,
                                  const USBCATParams& usb_cat_para)
 {
@@ -2473,7 +2466,7 @@ inline double get_gap_max_penalty(const USBCAT_AFP& prev_afp, const USBCAT_AFP& 
     return gp;
 }
 
-// True Kabsch RMSD inside a block (originally the calc_block_rmsd lambda)
+
 inline double calc_block_rmsd(const std::vector<USBCAT_AFP>& afp_list,
                               const CoordArray& xa, const CoordArray& ya)
 {
@@ -2519,10 +2512,7 @@ inline bool region_meta_drmsd_desc(const RegionMeta& a, const RegionMeta& b)
 
 struct RegionBoundsAllChain
 {
-    // Hinge cut points: chain1 = domain boundaries of chain 1 (xa), chain2 = domain boundaries of chain 2 (ya)
-    // size: chain1_bounds.size() == chain2_bounds.size()
     std::vector<int> chain1_bounds, chain2_bounds;
-    // Per-domain metadata (dRMSD, lengths, etc.); explicitly resized, fixed size = chain1_bounds.size() - 1
     std::vector<RegionMeta> region_meta;
 };
 
@@ -2531,7 +2521,7 @@ struct RegionBoundPool
     std::vector<RegionBoundsAllChain> region_bounds;
 };
 
-// Sort comparators (originally the sort lambdas)
+
 inline bool afp_less_by_i(const USBCAT_AFP& a, const USBCAT_AFP& b)
 { 
     return a.i < b.i; 
@@ -2572,7 +2562,7 @@ inline double afp_score(double resScore, int len, double rmsd, double badRmsd)
     return resScore * len * (1.0 - t * t);
 }
 
-// Maximum number of residues a diagonal alignment starting at (i, j) can cover
+
 inline int cur_diag_resid_num(int i, int j, int xlen, int ylen, int fragLen)
 {
     return std::min(i, j)
@@ -2580,7 +2570,7 @@ inline int cur_diag_resid_num(int i, int j, int xlen, int ylen, int fragLen)
          + fragLen;
 }
 
-// Step 1: AFP extraction
+
 inline std::vector<USBCAT_AFP> extract_initial_afps(
     const CoordArray& xa,
     const CoordArray& ya,
@@ -2597,28 +2587,23 @@ inline std::vector<USBCAT_AFP> extract_initial_afps(
         std::vector<USBCAT_AFP> initial_afps;
         int step = sparse_val + 1;
 
-        // --- FIXED: Dynamically allocate arrays based on usb_cat_para.fragLen
+        
         CoordArray r1(usb_cat_para.fragLen), r2(usb_cat_para.fragLen);
 
         for (int i = 0; i <= xlen - usb_cat_para.fragLen; i += step)
         {
             for (int j = 0; j <= ylen - usb_cat_para.fragLen; j += step)
             {
-                
-                //Number of residues covered by this node
                 int cur_resid_num = cur_diag_resid_num(i, j, xlen, ylen, usb_cat_para.fragLen);
                 if (cur_resid_num < min_resid_num)
                     continue;
 
-                //Distance between the first and last residue within the current AFP fragment
                 double dist1 = tables.chain1_dist_table[i][usb_cat_para.fragLen - 1];
                 double dist2 = tables.chain2_dist_table[j][usb_cat_para.fragLen - 1];
 
-                //Approximate measure of conformational similarity between two fragments
                 if (std::fabs(dist1 - dist2) > 2.0 * cur_rmsdCut)
                     continue;
 
-                // k loop dynamically bounds to usb_cat_para.fragLen instead of fixed 8
                 for (int k = 0; k < usb_cat_para.fragLen; k++)
                 {
                     r1[k][0] = xa[i + k][0];
@@ -2632,7 +2617,7 @@ inline std::vector<USBCAT_AFP> extract_initial_afps(
                 double rms_sum_sq;
                 Vec3 t_tmp;
                 RotMat u_tmp;
-                // Kabsch function already appropriately takes usb_cat_para.fragLen as size parameter
+            
                 Kabsch(r1, r2, usb_cat_para.fragLen, 0, rms_sum_sq, t_tmp, u_tmp);
                 double rmsd_tmp = std::sqrt(rms_sum_sq / usb_cat_para.fragLen);
 
@@ -2667,7 +2652,6 @@ inline std::vector<USBCAT_AFP> merge_cur_afps_group(
     int afp_num = cur_group.size();
     std::vector<bool> merged_status(afp_num, false);
 
-    // Pre-allocate merge buffers
     int max_merge_len = std::min(xlen, ylen);
     CoordArray r1_merge(max_merge_len), r2_merge(max_merge_len);
 
@@ -2714,7 +2698,6 @@ inline std::vector<USBCAT_AFP> merge_cur_afps_group(
     return merged_afps;
 }
 
-// Step 2: Bucket by diagonal and merge within each bucket
 inline std::vector<USBCAT_AFP> merge_afps_group(
     const std::vector<USBCAT_AFP>& initial_afps,
     const CoordArray& xa,
@@ -2725,7 +2708,6 @@ inline std::vector<USBCAT_AFP> merge_afps_group(
     const double cur_rmsdCut,
     const double cur_badRmsd)
 {
-    // Diagonal index range: [-ylen, xlen]; offset by ylen to map to [0, xlen+ylen]
     int max_diagonal_idx = xlen + ylen + 1;
     std::vector<std::vector<USBCAT_AFP>> afps_groups(max_diagonal_idx);
     for (size_t k = 0; k < initial_afps.size(); k++)
@@ -2856,7 +2838,6 @@ struct DpState
     int    hinge_num;  // hinges consumed along the best chain
 };
 
-// Pick the optimal predecessor among valid candidates for the current node, for backtracking
 inline void update_dp_state(int afp_idx,
                             const std::vector<int>& candidate_prevs,
                             const std::vector<USBCAT_AFP>& merged_afps,
@@ -2877,7 +2858,6 @@ inline void update_dp_state(int afp_idx,
         hinge_num += cur_edge.hinge_inc;
 
         if (hinge_num > usb_cat_para.max_hinge_num) continue;
-        //Append current AFP to prev's optimal chain, the total score of this chain
         double cur_score = dp[prev_afp].score + curr_afp_score + cur_edge.penalty + gp;
         if (cur_score > dp[afp_idx].score)
         {
@@ -2901,11 +2881,9 @@ inline std::vector<int> find_best_path(
         return std::vector<int>();
 
     std::vector<DpState> dp(n_afps);
-    //Initialize DP table
+
     for (int afp_idx = 0; afp_idx < n_afps; afp_idx++)
         dp[afp_idx] = {merged_afps[afp_idx].score, -1, 0};
-
-    //For each AFP, find the optimal chain among its candidate predecessors
     std::vector<int> candidate_prevs;
     for (int afp_idx = 0; afp_idx < n_afps; afp_idx++)
     {
@@ -2916,13 +2894,11 @@ inline std::vector<int> find_best_path(
                         usb_cat_para, dp);
     }
 
-    //Find the tail node of the highest-scoring chain among every AFP's optimal chain
     int best_end_idx = 0;
     for (int afp_idx = 1; afp_idx < n_afps; afp_idx++)
         if (dp[afp_idx].score > dp[best_end_idx].score)
             best_end_idx = afp_idx;
 
-    //Backtrack the entire optimal path starting from the highest-scoring chain's tail node
     std::vector<int> best_afp_path;
     for (int cur_idx = best_end_idx; cur_idx != -1; cur_idx = dp[cur_idx].prev)
         best_afp_path.push_back(cur_idx);
@@ -2991,15 +2967,14 @@ inline void split_candidate_blocks(
     const USBCATParams& usb_cat_para,
     const double cur_local_badRmsd)
 {
-    //Upper bound on number of blocks: max_hinge_num+1 (N blocks intrinsically consume N-1 cut points)
     const size_t max_blocks = (size_t)(usb_cat_para.max_hinge_num + 1);
-    bool can_split_more = candidate_blocks.size() < max_blocks; //First round: splitted is always true, equivalent to only checking block count
+    bool can_split_more = candidate_blocks.size() < max_blocks; 
     while (can_split_more)
     {
-        bool splitted = false; //Whether a split occurred in this round
+        bool splitted = false; 
         double max_rmsd = 0.0;
         int target_b = -1;
-        //Find the candidate block that satisfies the split condition
+    
         for (size_t block_idx = 0; block_idx < candidate_blocks.size(); block_idx++)
         {
             if (candidate_blocks[block_idx].afps.size() > 2)
@@ -3013,10 +2988,9 @@ inline void split_candidate_blocks(
             }
         }
         
-        //Find the AFP pair with the largest drmsd in the block to be split
         if (max_rmsd >= cur_local_badRmsd && target_b != -1)
         {
-            AFPBlock& target_blk = candidate_blocks[target_b]; //Reference to the block to split
+            AFPBlock& target_blk = candidate_blocks[target_b]; 
             double max_drmsd = 0;
             int cut_afp_idx = 0;
             for (size_t idx = 1; idx < target_blk.afps.size(); idx++)
@@ -3028,7 +3002,6 @@ inline void split_candidate_blocks(
                 }
             }
             
-            //Cut block at the max strain edge: move [cut_afp_idx, end) to a new block inserted after this block, keep the prefix in this block, block count+1
             if (cut_afp_idx > 0)
             {
                 AFPBlock right_blk;
@@ -3194,7 +3167,6 @@ inline void build_domains_bounds(
         return;
     }
 
-    //Hinge cut points between regions, sorted ascending by residue position
     std::vector<int> chain1_bounds, chain2_bounds;
     chain1_bounds.push_back(0);
     chain2_bounds.push_back(0);
@@ -3232,12 +3204,10 @@ inline void generate_bounds(const CoordArray& xa, const CoordArray& ya,
                             const double cur_local_badRmsd, const int sparse_val,
                             RegionBoundsAllChain& bounds)
 {
-    // Step 1: Extract initial AFPs in batches
     std::vector<USBCAT_AFP> initial_afps =
         extract_initial_afps(xa, ya, tables, usb_cat_para, xlen, ylen, min_resid_num,
                              cur_rmsdCut, cur_badRmsd, sparse_val);
 
-    // Step 2: Merge diagonal AFPs
     std::vector<USBCAT_AFP> merged_afps =
         merge_afps_group(initial_afps, xa, ya, usb_cat_para, xlen, ylen,
                             cur_rmsdCut, cur_badRmsd);
@@ -3247,16 +3217,13 @@ inline void generate_bounds(const CoordArray& xa, const CoordArray& ya,
         return;
     }
 
-    // Step 3a: (row i) -> AFP lookup tables for predecessor queries
     std::vector<int> afp_aft_index;
     std::vector<int> afp_bef_index;
     build_prev_lookup_tables(merged_afps, afp_aft_index, afp_bef_index, xlen, ylen);
 
-    // Step 3b: chaining DP + backtrack -> best AFP path
     std::vector<int> best_afp_path = find_best_path(merged_afps, afp_aft_index, afp_bef_index,
                                             tables, usb_cat_para, xlen, ylen);
 
-    // Step 4: split the path into candidate blocks at twist edges
     std::vector<AFPBlock> candidate_blocks =
         build_candidate_blocks_list(best_afp_path, merged_afps, tables, usb_cat_para);
     if (candidate_blocks.empty())
@@ -3265,7 +3232,6 @@ inline void generate_bounds(const CoordArray& xa, const CoordArray& ya,
         return;
     }
 
-    // Step 5: Iterative split / merge / singleton removal -> domain bounds
     build_domains_bounds(candidate_blocks, xa, ya, tables, usb_cat_para, xlen, ylen,
                          cur_local_badRmsd, bounds);
 }
@@ -3277,7 +3243,6 @@ struct RegionPdbData
     std::string seqx, secx, seqy, secy;
 };
 
-// Temporal concatenation result
 struct GlobalAlignResult
 {
     std::string seqM, seqxA, seqyA;
@@ -3322,7 +3287,6 @@ inline void get_cur_region_pdb_data(
     }
 }
 
-// Sum of squared inter-residue distance differences between two chains within a region (rms_sq) and the pair count (count)
 inline void calc_region_rms_sq(
     const LocalDistTables& tables,
     const int region_x_start,
@@ -3345,7 +3309,6 @@ inline void calc_region_rms_sq(
     }
 }
 
-// Compute the dRMSD of each region, fill bounds.region_meta (index-overwrite style; requires bounds.region_meta to be resized to region_num)
 inline void fill_region_meta(
     const std::vector<int>& chain1_bounds,
     const std::vector<int>& chain2_bounds,
@@ -3479,7 +3442,6 @@ inline void run_region_align(
     }
 }
 
-// Temporal concatenation: reassemble per-block results into a global alignment in spatial order
 inline void build_global_align_result(
     std::vector<RegionAlignResult>& region_align_res,
     const std::vector<int>& chain1_bounds,
@@ -3707,7 +3669,7 @@ inline void recompute_global_metrics(
     flexalign_res.d0u = cur_d0u;
     if (!flexalign_res.tu_vec.empty())
         tu2t_u(flexalign_res.tu_vec[0], flexalign_res.t0, flexalign_res.u0);
-    // Consistent with the semantics of the original best update site
+
     flexalign_res.TM_ali = flexalign_res.TM1;
     flexalign_res.rmsd_ali = flexalign_res.rmsd0;
     flexalign_res.L_ali = flexalign_res.n_ali;
@@ -3794,7 +3756,6 @@ void flexalign_usbcat_main(
     LocalDistTables dist_tables;
     build_local_dist_tables(xa, ya, usb_cat_para, dist_tables);
 
-    //Minimum number of residues required to reach est_global_max_TM score
     double min_resid_num = best_global_max_TM * std::min(xlen, ylen);
 
     RegionBoundsAllChain bounds_default;
@@ -3814,14 +3775,12 @@ void flexalign_usbcat_main(
         mol_type, xlen, ylen, flexalign_res.d0_out,
         global_best_align, best_global_max_TM);
 
-    // Safety check
     if (best_global_max_TM < 0)
     {
         flexalign_res.hingeNum = 0;
         return;
     }
 
-    // Output best values back to the reference parameters
     flexalign_res = global_best_align;
     flexalign_res.hingeNum = flexalign_res.tu_vec.size();
 }

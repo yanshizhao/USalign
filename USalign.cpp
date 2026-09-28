@@ -710,7 +710,6 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
             std::vector<std::string> pair_sequence(2, "");
             chain1_len=parsed.complex1.lengths[chain1_idx];
 
-            // chain too short (<3 residues) to align: set the entire row to -1
             if (chain1_len<3)
             {
                 mark_chain_invalid(pairwise, chain1_idx, chain2_num);
@@ -734,14 +733,12 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                     mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                     continue;
                 }
-                // Chainmap local constraint: mark chain pairs that violate the constraint as invalid
                 if (!is_chain_pair_allowed(parsed.chain_pair_map, chain1_idx, chain2_idx))
                 {
                     mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                     continue;
                 }
 
-                // chain of structure 2 too short (<3 residues) to align: set to -1
                 chain2_len=parsed.complex2.lengths[chain2_idx];
                 if (chain2_len<3)
                 {
@@ -786,7 +783,6 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
     }
 }
 
-// ---- The three-step dock alignment on a trimmed receptor chain (mm2) ----
 void mmdock_align_trimmed(ChainPairAlignResult& chain_align_res,
     CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy,
@@ -4703,8 +4699,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
             ParsedChain chain1_data;
             if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
                     chain_i, user_opts.mol_opt, user_opts.mirror_opt, read_resi,
-                    user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-                    user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1, chain1_data))
+                    user_opts.atom_opt, chain1_data))
                 continue;
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
@@ -4729,8 +4724,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                     ParsedChain chain2_data;
                     if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,
                             chain_j, user_opts.mol_opt, 0, read_resi,
-                            user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-                            user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2, chain2_data))
+                            user_opts.atom_opt, chain2_data))
                         continue;
 
                     if (user_opts.byresi_opt)

@@ -533,7 +533,6 @@ int main(int argc, char *argv[])
             double TM1;
             double TM2;
             double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt
-            double d0_0;
             double TM_0;
             double d0A;
             double d0B;

@@ -2750,7 +2750,7 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
 inline double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, const CoordArray& x, const CoordArray& y, int ylen, std::vector<int>& invmap,
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
-    double d0_search, double score_d8, Vec3& t, RotMat& u,
+    double score_d8, Vec3& t, RotMat& u,
     const int mol_type)
 {
     D0_MIN = 0.5; Lnorm = ylen;
@@ -2781,7 +2781,7 @@ inline double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, 
 
     RMSD=sqrt(RMSD/(1.0*n_al));
     int temp_simplify_step=1, temp_score_sum_method=0;
-    d0_search=d0_input; double rms=0.0;
+    double rms=0.0;
     tmscore=TMscore8_search_standard(r1,r2,xtm,ytm,xt,n_al,t,u,
         temp_simplify_step,temp_score_sum_method,rms,d0_input,score_d8,d0);
     tmscore=tmscore*n_al/(1.0*Lnorm);
@@ -3367,7 +3367,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
-            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
@@ -3444,7 +3444,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
             ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
-            d0_search, score_d8, t, u, mol_type);
+            score_d8, t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
         d0 = prevd0;

@@ -2248,7 +2248,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
-            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
+            invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
@@ -2501,7 +2501,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
             double prevd0 = d0;
             TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
                 ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
-                d0_search, score_d8, t, u, mol_type);
+                score_d8, t, u, mol_type);
             D0_MIN = prevD0_MIN;
             Lnorm = prevLnorm;
             d0 = prevd0;
