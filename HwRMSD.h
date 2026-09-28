@@ -66,6 +66,40 @@ void parse_alignment_into_invmap(const std::string seqxA_tmp,
 }
 
 
+void hwrmsd_align_once(CoordArray& xa, CoordArray& ya, CoordArray& xt,
+    CoordArray& r1, CoordArray& r2,
+    const std::string& seqx, const std::string& seqy,
+    ChainPairAlignResult& iter_res,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& align_opts,
+    const int xlen, const int ylen, int& L_ali, Vec3& t, RotMat& u)
+{
+    parse_alignment_into_invmap(iter_res.seqxA, iter_res.seqyA, xlen, ylen, iter_res.invmap);
+    Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, iter_res.invmap, L_ali, t, u);
+    se_main(xt, ya, seqx.c_str(), seqy.c_str(), iter_res, xlen, ylen, sequence, align_opts, 1);
+}
+
+void hwrmsd_pad_alignment_seqs(std::string& seqxA_tmp, std::string& seqyA_tmp,
+    const std::string& seqx, const std::string& seqy, const int xlen, const int ylen)
+{
+    if (xlen>=ylen) seqxA_tmp = seqx;
+    if (xlen<=ylen) seqyA_tmp = seqy;
+    if (xlen<ylen)
+    {
+        seqxA_tmp.clear();
+        for (int i1=0;i1<static_cast<int>((ylen-xlen)/2);i1++) seqxA_tmp+='-';
+        seqxA_tmp += seqx;
+        for (int i1=seqxA_tmp.size();i1<ylen;i1++) seqxA_tmp+='-';
+    }
+    if (xlen>ylen)
+    {
+        seqyA_tmp.clear();
+        for (int i1=0;i1<static_cast<int>((xlen-ylen)/2);i1++) seqyA_tmp+='-';
+        seqyA_tmp += seqy;
+        for (int i1=seqyA_tmp.size();i1<xlen;i1++) seqyA_tmp+='-';
+    }
+}
+
 struct HwRMSDParams
 {
     std::vector<std::string> sequence;
@@ -142,7 +176,6 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
 
     int i;
     int j;
-    int i1;
     double& TM1_tmp = iter_res.TM1;
     double& TM2_tmp = iter_res.TM2;
     double& TM3_tmp = iter_res.TM3;
@@ -195,13 +228,8 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
         if (iter==1 && !i_opt && seq_opt==3) NWalign_main(secx.c_str(), secy.c_str(), xlen,
             ylen, seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp, 1, glocal);
 
-        parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp);
-
-        Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
-            L_ali, t, u);
-
-        se_main(xt, ya, seqx.c_str(), seqy.c_str(), iter_res,
-            xlen, ylen, sequence, align_opts, 1);
+        hwrmsd_align_once(xa, ya, xt, r1, r2, seqx, seqy, iter_res, sequence, align_opts,
+            xlen, ylen, L_ali, t, u);
         d0A = iter_res.d0A;
         d0B = iter_res.d0B;
         d0u = iter_res.d0u;
@@ -209,30 +237,9 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
 
         if (n_ali8_tmp==0)
         {
-            if (xlen>=ylen) seqxA_tmp = seqx;
-            if (xlen<=ylen) seqyA_tmp = seqy;
-            if (xlen<ylen)
-            {
-                seqxA_tmp.clear();
-                for (i1=0;i1<static_cast<int>((ylen-xlen)/2);i1++) seqxA_tmp+='-';
-                seqxA_tmp += seqx;
-                for (i1=seqxA_tmp.size();i1<ylen;i1++) seqxA_tmp+='-';
-            }
-            if (xlen>ylen)
-            {
-                seqyA_tmp.clear();
-                for (i1=0;i1<static_cast<int>((xlen-ylen)/2);i1++) seqyA_tmp+='-';
-                seqyA_tmp += seqy;
-                for (i1=seqyA_tmp.size();i1<xlen;i1++) seqyA_tmp+='-';
-            }
-        
-            parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp);
-
-            Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
-                L_ali, t, u);
-
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), iter_res,
-                xlen, ylen, sequence, align_opts, 1);
+            hwrmsd_pad_alignment_seqs(seqxA_tmp, seqyA_tmp, seqx, seqy, xlen, ylen);
+            hwrmsd_align_once(xa, ya, xt, r1, r2, seqx, seqy, iter_res, sequence, align_opts,
+                xlen, ylen, L_ali, t, u);
         }
 
         if (TM1_tmp>TM1 && TM2_tmp>TM2)
