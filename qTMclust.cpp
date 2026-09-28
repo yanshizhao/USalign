@@ -532,8 +532,6 @@ int main(int argc, char *argv[])
             double& TM1 = chain_align_res.TM1;
             double& TM2 = chain_align_res.TM2;
             double& TM3 = chain_align_res.TM3;
-            double& TM4 = chain_align_res.TM4;
-            double& TM5 = chain_align_res.TM5;
             std::vector<int> invmap(ylen+1);
 
             // entry function for structure alignment

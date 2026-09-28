@@ -369,28 +369,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
     chain_align_res.invmap.assign(ylen+1, 0);
-    Vec3& t0 = chain_align_res.t0;
-    RotMat& u0 = chain_align_res.u0;
-    double& TM1 = chain_align_res.TM1;
-    double& TM2 = chain_align_res.TM2;
-    double& TM3 = chain_align_res.TM3;
-    double& TM4 = chain_align_res.TM4;
-    double& TM5 = chain_align_res.TM5;
-    double& TM_0 = chain_align_res.TM_0;
-    double& d0A = chain_align_res.d0A;
-    double& d0B = chain_align_res.d0B;
-    double& d0u = chain_align_res.d0u;
-    double& d0a = chain_align_res.d0a;
-    double& d0_out = chain_align_res.d0_out;
-    std::string& seqM = chain_align_res.seqM;
-    std::string& seqxA = chain_align_res.seqxA;
-    std::string& seqyA = chain_align_res.seqyA;
-    double& rmsd0 = chain_align_res.rmsd0;
-    int& L_ali = chain_align_res.L_ali;
     double& Liden = chain_align_res.Liden;
-    double& TM_ali = chain_align_res.TM_ali;
-    double& rmsd_ali = chain_align_res.rmsd_ali;
-    int& n_ali = chain_align_res.n_ali;
     int& n_ali8 = chain_align_res.n_ali8;
     std::vector<int>& invmap = chain_align_res.invmap;
 
