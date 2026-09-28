@@ -136,7 +136,6 @@ void read_init_cluster(const std::string&filename,
         for (size_t i=0;i<line_vec.size();i++) line_vec[i].clear(); line_vec.clear();
     }
     fin.close();
-    std::vector<std::string>().swap(line_vec);
 }
 
 int main(int argc, char *argv[])

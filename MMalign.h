@@ -1015,7 +1015,6 @@ inline void output_dock(const std::vector<std::string>&chain_list, const int ter
         name.clear();
         PDB_lines.clear();
     } // i
-    std::vector<std::vector<std::string> >().swap(PDB_lines);
     line.clear();
 }
 

@@ -90,7 +90,6 @@ void addChainID(const std::string &infile,const std::string &outfile,
         fout.close();
     }
     buf.str(std::string());
-    std::vector<std::string>().swap(lines);
     return;
 }
 

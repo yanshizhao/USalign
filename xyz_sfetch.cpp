@@ -140,6 +140,5 @@ int main(int argc, char *argv[])
      * or program termination forces cout.flush() */
     filename.clear();
     list_opt.clear();
-    std::vector<std::string>().swap(chain_list);
     return 0;
 }

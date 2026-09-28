@@ -225,9 +225,6 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
     
     // clean up
     chainID.clear();
-    std::string().swap(chainID_string);
-    std::vector<bool>().swap(chainID_taken);
-    std::vector<bool>().swap(chainID_accept);
     return changed_chains;
 }
 
@@ -571,8 +568,6 @@ int main(int argc, char *argv[])
     write_mmcif_to_pdb(yname, PDB_lines, chainID_list, split_opt);
     
     // clean up
-    std::vector<std::vector<std::string> >().swap(PDB_lines);
-    std::vector<std::string>().swap(chainID_list);
     chain_opt.clear();
     return 0;
 }

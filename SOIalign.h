@@ -36,7 +36,6 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
             xk[i*closeK_opt+k][0]=xa[j][0]; xk[i*closeK_opt+k][1]=xa[j][1]; xk[i*closeK_opt+k][2]=xa[j][2];
         }
     }
-    std::vector<std::pair<double,int> >().swap(close_idx_vec);
 }
 
 // check if pairing i to j conform to sequantiality within the SSE
