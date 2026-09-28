@@ -748,6 +748,35 @@ bool run_tmalign_refine_stage(QTMclustRun& run)
     return found_clust;
 }
 
+void report_clusters(const std::vector<size_t>& clust_repr_vec,
+    const std::vector<size_t>& clust_mem_vec, const std::vector<std::string>& chainID_list,
+    const std::string& fname_clust)
+{
+    size_t chain_j;
+    size_t chain_i;
+    // print out cluster
+    std::stringstream txt;
+    for (size_t j=0;j<clust_repr_vec.size();j++)
+    {
+        chain_j=clust_repr_vec[j]; // cluster representative
+        txt<<chainID_list[chain_j];
+        for (chain_i=0;chain_i<clust_mem_vec.size();chain_i++)
+        {
+            if (chain_i!=chain_j && clust_mem_vec[chain_i]==j)
+                txt<<'\t'<<chainID_list[chain_i];
+        }
+        txt<<'\n';
+    }
+    if (fname_clust.size() && fname_clust!="-")
+    {
+        std::ofstream fp(fname_clust.c_str());
+        fp<<txt.str();
+        fp.close();
+    }
+    else std::cout<<txt.str()<<std::endl;
+}
+
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -824,7 +853,6 @@ int main(int argc, char *argv[])
     std::map<size_t,size_t> clust_repr_map;
 
     // perform alignment
-    size_t chain_j;
     const double fast_lb=50.;  // proteins shorter than fast_lb never use -fast
     const double fast_ub=1000.;// proteins longer than fast_ub always use -fast
     size_t sizePROT;           // number of representatives for current chain
@@ -891,29 +919,9 @@ int main(int argc, char *argv[])
     seq_vec.clear();
     sec_vec.clear();
 
-    // print out cluster
-    std::stringstream txt;
-    for (size_t j=0;j<clust_repr_vec.size();j++)
-    {
-        chain_j=clust_repr_vec[j]; // cluster representative
-        txt<<chainID_list[chain_j];
-        for (chain_i=0;chain_i<clust_mem_vec.size();chain_i++)
-        {
-            if (chain_i!=chain_j && clust_mem_vec[chain_i]==j)
-                txt<<'\t'<<chainID_list[chain_i];
-        }
-        txt<<'\n';
-    }
-    if (qtmclust_opts.fname_clust.size() && qtmclust_opts.fname_clust!="-")
-    {
-        std::ofstream fp(qtmclust_opts.fname_clust.c_str());
-        fp<<txt.str();
-        fp.close();
-    }
-    else std::cout<<txt.str()<<std::endl;
+    report_clusters(clust_repr_vec, clust_mem_vec, chainID_list, qtmclust_opts.fname_clust);
 
     // clean up
-    txt.str(std::string());
     clust_repr_vec.clear();
     clust_mem_vec.clear();
     chainID_list.clear();
