@@ -2031,28 +2031,22 @@ inline void search_hinge_regions(
 }
 
 inline void denoise_segments(
-        CoordArray& xa, CoordArray& ya, CoordArray& xt, std::vector<int>& invmap,
-        DoubleMatrix& tu_vec, Vec3& t0, RotMat& u0,
-        const int xlen, const int ylen,
-        std::string& seqM, std::string& seqxA, std::string& seqyA,
-        double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-        double& rmsd0, double& Liden,
-        double& d0A, double& d0B, double& d0a, double& d0u,
-        const double d0_scale, const double Lnorm_ass,
-        const int a_opt, const bool u_opt, const bool d_opt,
-        const int n_ali8)
+        CoordArray& xa, CoordArray& ya, CoordArray& xt,
+        DoubleMatrix& tu_vec, const int xlen, const int ylen,
+        const ChainPairAlignOptions& align_opts,
+        ChainPairAlignResult& chain_align_res)
 {
     std::vector<char> seqM_char(ylen,' ');
     std::vector<double> di_vec(ylen,-1);
-    reassign_segments_by_distance(xa, ya, xt, invmap, tu_vec, t0, u0,
-        xlen, ylen, seqM, seqyA, seqM_char, di_vec);
-    smooth_segment_assignment(seqM, seqM_char, seqyA, tu_vec.size());
-    recompute_flexalign_scores(seqM, seqxA, seqyA, seqM_char, di_vec, invmap,
-        tu_vec, xa, ya, xt, t0, u0, xlen, ylen,
-        TM1, TM2, TM3, TM4, TM5, rmsd0, Liden,
-        d0A, d0B, d0a, d0u, d0_scale, Lnorm_ass,
-        a_opt, u_opt, d_opt, n_ali8);
-    remove_unused_segments(seqM, tu_vec);
+    reassign_segments_by_distance(xa, ya, xt, chain_align_res.invmap, tu_vec, chain_align_res.t0, chain_align_res.u0,
+        xlen, ylen, chain_align_res.seqM, chain_align_res.seqyA, seqM_char, di_vec);
+    smooth_segment_assignment(chain_align_res.seqM, seqM_char, chain_align_res.seqyA, tu_vec.size());
+    recompute_flexalign_scores(chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, seqM_char, di_vec, chain_align_res.invmap,
+        tu_vec, xa, ya, xt, chain_align_res.t0, chain_align_res.u0, xlen, ylen,
+        chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5, chain_align_res.rmsd0, chain_align_res.Liden,
+        chain_align_res.d0A, chain_align_res.d0B, chain_align_res.d0a, chain_align_res.d0u, align_opts.d0_scale, align_opts.Lnorm,
+        align_opts.a_opt, align_opts.u_opt, align_opts.d_opt, chain_align_res.n_ali8);
+    remove_unused_segments(chain_align_res.seqM, tu_vec);
 }
 
 inline int flexalign_main(CoordArray& xa, CoordArray& ya,
@@ -2116,11 +2110,8 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     }
     // re-derive alignment based on tu_vec
     denoise_segments(
-        xa, ya, xt, flexalign_res.invmap, flexalign_res.tu_vec, flexalign_res.t0, flexalign_res.u0,
-        xlen, ylen, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
-        flexalign_res.TM1, flexalign_res.TM2, flexalign_res.TM3, flexalign_res.TM4, flexalign_res.TM5, flexalign_res.rmsd0, flexalign_res.Liden,
-        flexalign_res.d0A, flexalign_res.d0B, flexalign_res.d0a, flexalign_res.d0u, user_opts.d0_scale, user_opts.Lnorm_ass,
-        user_opts.a_opt, user_opts.u_opt, user_opts.d_opt, flexalign_res.n_ali8);
+        xa, ya, xt, flexalign_res.tu_vec,
+        xlen, ylen, align_opts, flexalign_res);
 
     return flexalign_res.tu_vec.size();
 }
