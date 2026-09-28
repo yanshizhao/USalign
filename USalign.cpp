@@ -413,20 +413,12 @@ void parse_file_into_cache(const std::string& fname,
 // TMalign, RNAalign, CPalign, TMscore
 int run_batch_parallel(
     const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
-    const std::vector<std::string>& chain2parse1, const std::vector<std::string>& chain2parse2,
-    const std::vector<std::string>& model2parse1, const std::vector<std::string>& model2parse2,
     const std::vector<std::string>& sequence,
     const std::string& dir_opt, const std::string& dir1_opt,
     const std::string& dir2_opt, const std::string& dirpair_opt,
-    const std::string& fname_matrix, const std::string& fname_super,
-    const std::string& atom_opt, const std::string& mol_opt,
-    double Lnorm_ass, double d0_scale, double TMcut,
-    int outfmt_opt, int ter_opt, int split_opt, int o_opt,
-    int i_opt, int a_opt, int infmt1_opt, int infmt2_opt, int read_resi,
-    bool fast_opt, bool cp_opt, bool se_opt, bool do_opt,
-    bool u_opt, bool d_opt, bool m_opt,
-    bool normalize_atom_name, int het_opt, int mirror_opt,
-    int parallel_threads = 1)
+    const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
+    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts,
+    bool do_opt, int parallel_threads = 1)
 {
     int i, j, chain_i;
 
@@ -434,26 +426,6 @@ int run_batch_parallel(
     std::vector<ParsedChain> all_chains;
     std::map<std::string, std::vector<int>> file_to_idx;
     std::vector<PairTask> tasks;
-
-    ChainParseOptions parse_opts1;
-    parse_opts1.infmt_opt = infmt1_opt;
-    parse_opts1.chain2parse = chain2parse1;
-    parse_opts1.model2parse = model2parse1;
-    parse_opts1.mirror_opt = (mirror_opt != 0);
-    parse_opts1.mol_opt = mol_opt;
-    parse_opts1.ter_opt = ter_opt;
-    parse_opts1.atom_opt = atom_opt;
-    parse_opts1.normalize_atom_name = normalize_atom_name;
-    parse_opts1.split_opt = split_opt;
-    parse_opts1.het_opt = het_opt;
-    parse_opts1.read_resi = read_resi;
-    parse_opts1.keep_pdb_lines = (do_opt || cp_opt);
-
-    ChainParseOptions parse_opts2 = parse_opts1;
-    parse_opts2.infmt_opt = infmt2_opt;
-    parse_opts2.chain2parse = chain2parse2;
-    parse_opts2.model2parse = model2parse2;
-    parse_opts2.mirror_opt = false;
 
     auto cache_key = [](const std::string& fname, bool struct1) {
         return (struct1 ? std::string("1:") : std::string("2:")) + fname;
@@ -488,26 +460,17 @@ int run_batch_parallel(
         auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
         auto& c2 = all_chains[task.chain2_idx];
         CoordArray xa_c = c1.chain_coords; CoordArray ya_c = c2.chain_coords;
-        bool force_fast = (std::min(c1.chain_len, c2.chain_len) > 1500) ? true : fast_opt;
+        bool force_fast = (std::min(c1.chain_len, c2.chain_len) > 1500) ? true : align_opts.fast_opt;
         ChainPairAlignResult chain_align_res = { 0};
         chain_align_res.d0_out = 5.0;
-        ChainPairAlignOptions align_opts;
-        align_opts.i_opt = i_opt;
-        align_opts.a_opt = a_opt;
-        align_opts.u_opt = u_opt;
-        align_opts.d_opt = d_opt;
-        align_opts.fast_opt = force_fast;
-        align_opts.se_opt = se_opt;
-        align_opts.cp_opt = cp_opt;
-        align_opts.Lnorm = Lnorm_ass;
-        align_opts.d0_scale = d0_scale;
-        align_opts.TMcut = TMcut;
-        align_opts.parallel_threads = 1;
-        align_opts.ss_opt = 0;
-        align_opts.mol_type = c1.cur_complex_mol_list + c2.cur_complex_mol_list;
+        ChainPairAlignOptions pair_align_opts = align_opts;
+        pair_align_opts.fast_opt = force_fast;
+        pair_align_opts.parallel_threads = 1;
+        pair_align_opts.ss_opt = 0;
+        pair_align_opts.mol_type = c1.cur_complex_mol_list + c2.cur_complex_mol_list;
         align_chain_pair(chain_align_res, xa_c, ya_c, c1.chain_seq, c2.chain_seq,
             c1.chain_sec, c2.chain_sec, c1.chain_len, c2.chain_len,
-            align_opts, sequence, outfmt_opt);
+            pair_align_opts, sequence, out_opts.outfmt_opt);
 
         std::stringstream ss;
         std::string xname_out = c1.filename.substr(
@@ -515,33 +478,18 @@ int run_batch_parallel(
         std::string yname_out = c2.filename.substr(
             dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
 
-        if (outfmt_opt == 0) print_version(ss);
+        if (out_opts.outfmt_opt == 0) print_version(ss);
 
         int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
-        if (cp_opt) output_cp(xname_out, yname_out,
-            chain_align_res.seqxA, outfmt_opt, left_num, right_num,
+        if (align_opts.cp_opt) output_cp(xname_out, yname_out,
+            chain_align_res.seqxA, out_opts.outfmt_opt, left_num, right_num,
             left_aln_num, right_aln_num, ss);
 
-        OutputOptions out_opts;
-        out_opts.fname_matrix = (m_opt?fname_matrix:"");
-        out_opts.fname_super = fname_super;
-        out_opts.Lnorm_ass = Lnorm_ass;
-        out_opts.d0_scale = d0_scale;
-        out_opts.outfmt_opt = outfmt_opt;
-        out_opts.ter_opt = ter_opt;
-        out_opts.mm_opt = 0;
-        out_opts.split_opt = split_opt;
-        out_opts.o_opt = o_opt;
-        out_opts.i_opt = i_opt;
-        out_opts.a_opt = a_opt;
-        out_opts.mirror_opt = mirror_opt;
-        out_opts.u_opt = u_opt;
-        out_opts.d_opt = d_opt;
         output_results(
             ChainPairDesc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len},
             chain_align_res, out_opts, c1.resi_vec, c2.resi_vec, ss);
 
-        if (do_opt || (cp_opt && outfmt_opt <= 0))
+        if (do_opt || (align_opts.cp_opt && out_opts.outfmt_opt <= 0))
             output_do_block(ss, chain_align_res.seqxA, chain_align_res.seqyA,
                 c1.pdb_lines, c2.pdb_lines, chain_align_res.do_vec, right_num);
 
@@ -1015,21 +963,38 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 #ifdef _OPENMP
     // === Parallel batch mode ===
     if (ctrl_opts.parallel_threads > 1 && (parsed_input.chain1_list.size() > 1 || parsed_input.chain2_list.size() > 1)) {
+        ChainParseOptions parse_opts1;
+        parse_opts1.infmt_opt = user_opts.infmt1_opt;
+        parse_opts1.chain2parse = user_opts.chain2parse1;
+        parse_opts1.model2parse = user_opts.model2parse1;
+        parse_opts1.mirror_opt = (user_opts.mirror_opt != 0);
+        parse_opts1.mol_opt = user_opts.mol_opt;
+        parse_opts1.ter_opt = user_opts.ter_opt;
+        parse_opts1.atom_opt = user_opts.atom_opt;
+        parse_opts1.normalize_atom_name = parsed_input.normalize_atom_name;
+        parse_opts1.split_opt = user_opts.split_opt;
+        parse_opts1.het_opt = user_opts.het_opt;
+        parse_opts1.read_resi = tm_params.read_resi;
+        parse_opts1.keep_pdb_lines = ctrl_opts.cp_opt;
+
+        ChainParseOptions parse_opts2 = parse_opts1;
+        parse_opts2.infmt_opt = user_opts.infmt2_opt;
+        parse_opts2.chain2parse = user_opts.chain2parse2;
+        parse_opts2.model2parse = user_opts.model2parse2;
+        parse_opts2.mirror_opt = false;
+
+        ChainPairAlignOptions align_opts = {0};
+        fill_chain_pair_align_options(align_opts, user_opts, ctrl_opts);
+
+        OutputOptions out_opts;
+        fill_output_options_from_user_options(out_opts, user_opts);
+
         return run_batch_parallel(
             parsed_input.chain1_list, parsed_input.chain2_list,
-            user_opts.chain2parse1, user_opts.chain2parse2,
-            user_opts.model2parse1, user_opts.model2parse2,
             parsed_input.sequence,
             user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt,
-            user_opts.fname_matrix, user_opts.fname_super, user_opts.atom_opt, user_opts.mol_opt,
-            user_opts.Lnorm_ass, user_opts.d0_scale, user_opts.TMcut,
-            user_opts.outfmt_opt, user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt,
-            user_opts.i_opt, user_opts.a_opt, user_opts.infmt1_opt, user_opts.infmt2_opt,
-            tm_params.read_resi,
-            user_opts.fast_opt, ctrl_opts.cp_opt, ctrl_opts.se_opt, false,
-            user_opts.u_opt, user_opts.d_opt, user_opts.m_opt,
-            parsed_input.normalize_atom_name, user_opts.het_opt, user_opts.mirror_opt,
-            ctrl_opts.parallel_threads);
+            parse_opts1, parse_opts2, align_opts, out_opts,
+            false, ctrl_opts.parallel_threads);
     }
 #endif  // _OPENMP
 
