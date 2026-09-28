@@ -93,7 +93,6 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     chain_align_res.d0_out = d0_out;
     chain_align_res.invmap.assign(ylen+1, 0);
     std::vector<int>& invmap_tmp = chain_align_res.invmap;
-    std::vector<double>& do_vec = chain_align_res.do_vec;
 
     int i;
     int j;
