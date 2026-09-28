@@ -137,6 +137,142 @@ void read_init_cluster(const std::string&filename,
     }
     fin.close();
 }
+struct QTMclustOptions
+{
+    std::string xname = "";
+    std::string fname_clust = ""; // file name for output cluster result
+    std::string fname_lign  = ""; // file name for user alignment
+    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
+    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
+    std::string suffix_opt="";    // set -suffix to empty
+    std::string dir_opt   ="";    // set -dir to empty
+    std::vector<std::string> sequence; // get value from alignment file
+    std::vector<std::string> chain2parse;
+    std::vector<std::string> model2parse;
+    double TMcut       = 0.5;
+    double Lnorm_ass = 0;
+    double d0_scale = 0;
+    int    i_opt = 0;     // 3 for -I, stick to user given alignment
+    int    a_opt = 0;     // flag for -a, do not normalized by average length
+    int    s_opt = 2;     // flag for -s, normalized by longer length
+    int    infmt_opt =-1;    // PDB or PDBx/mmCIF format
+    int    ter_opt   =3;     // TER, END, or different chainID
+    int    split_opt =0;     // do not split chain
+    int    het_opt   =0;     // do not read HETATM residues
+    int    byresi_opt=0;     // set -byresi to 0
+    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
+    bool   u_opt = false; // flag for -u, normalized by user specified length
+    bool   d_opt = false; // flag for -d, user specified d0
+    bool   h_opt = false; // print full help message
+};
+
+void parse_arguments(int argc, char* argv[], QTMclustOptions& qtmclust_opts,
+    std::map<std::string, std::map<std::string,bool> >& init_cluster)
+{
+    for(int i = 1; i < argc; i++)
+    {
+        if ( (std::string(argv[i]) == "-u"||std::string(argv[i]) == "-L") && i < (argc-1) )
+        {
+            PrintErrorAndQuit("Sorry! -u has not been implemented yet");
+            qtmclust_opts.Lnorm_ass = safe_stod(argv[i + 1]); qtmclust_opts.u_opt = true; i++;
+        }
+        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
+        {
+            PrintErrorAndQuit("Sorry! -d has not been implemented yet");
+            qtmclust_opts.d0_scale = safe_stod(argv[i + 1]); qtmclust_opts.d_opt = true; i++;
+        }
+        else if (std::string(argv[i]) == "-I" && i < (argc-1) )
+        {
+            qtmclust_opts.fname_lign = argv[i + 1];      qtmclust_opts.i_opt = 3; i++;
+        }
+        else if ( std::string(argv[i]) == "-o" && i < (argc-1) )
+        {
+            qtmclust_opts.fname_clust = argv[i + 1]; i++;
+        }
+        else if ( std::string(argv[i]) == "-a" && i < (argc-1))
+        {
+            PrintErrorAndQuit("Sorry! -a is not used for clustering");
+        }
+        else if ( std::string(argv[i]) == "-s" && i < (argc-1) )
+        {
+            qtmclust_opts.s_opt=safe_stoi(argv[i + 1]); i++;
+            if (qtmclust_opts.s_opt<1 || qtmclust_opts.s_opt>6)
+                PrintErrorAndQuit("-s must be within 1 to 6");
+        }
+        else if ( std::string(argv[i]) == "-h" )
+        {
+            qtmclust_opts.h_opt = true;
+        }
+        else if (std::string(argv[i]) == "-fast")
+        {
+            qtmclust_opts.fast_opt = true;
+        }
+        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
+        {
+            qtmclust_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
+        {
+            qtmclust_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
+        {
+            qtmclust_opts.split_opt=safe_stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
+        {
+            qtmclust_opts.atom_opt=argv[i + 1]; i++;
+        }
+        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
+        {
+            qtmclust_opts.mol_opt=argv[i + 1]; i++;
+        }
+        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
+        {
+            qtmclust_opts.dir_opt=argv[i + 1]; i++;
+        }
+        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
+        {
+            qtmclust_opts.suffix_opt=argv[i + 1]; i++;
+        }
+        else if ( std::string(argv[i]) == "-TMcut" && i < (argc-1) )
+        {
+            qtmclust_opts.TMcut=safe_stod(argv[i + 1]); i++;
+            if (qtmclust_opts.TMcut>1 or qtmclust_opts.TMcut<0.45)
+                PrintErrorAndQuit("TMcut must be in the range of [0.45,1)");
+        }
+        else if ( std::string(argv[i]) == "-byresi" && i < (argc-1) )
+        {
+            PrintErrorAndQuit("Sorry! -byresi has not been implemented yet");
+            qtmclust_opts.byresi_opt=safe_stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
+        {
+            qtmclust_opts.het_opt=safe_stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-init" && i < (argc-1) )
+        {
+            read_init_cluster(argv[i+1],init_cluster); i++;
+        }
+        else if (std::string(argv[i]) == "-chain" )
+        {
+            if (i>=(argc-1)) 
+                PrintErrorAndQuit("ERROR! Missing value for -chain");
+            split(argv[i+1],qtmclust_opts.chain2parse,',');
+            i++;
+        }
+        else if (std::string(argv[i]) == "-model" )
+        {
+            if (i>=(argc-1)) 
+                PrintErrorAndQuit("ERROR! Missing value for -model");
+            split(argv[i+1],qtmclust_opts.model2parse,',');
+            i++;
+        }
+        else if (qtmclust_opts.xname.size() == 0) qtmclust_opts.xname=argv[i];
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
+    }
+
+}
 
 int main(int argc, char *argv[])
 {
@@ -149,171 +285,43 @@ int main(int argc, char *argv[])
     /**********************/
     //    get argument   
     /**********************/
-    std::string xname       = "";
-    double TMcut       = 0.5;
-    std::string fname_clust = ""; // file name for output cluster result
-    std::string fname_lign  = ""; // file name for user alignment
-    std::vector<std::string> sequence; // get value from alignment file
-    double Lnorm_ass;
-    double d0_scale;
-
-    bool h_opt = false; // print full help message
-    int  i_opt = 0;     // 3 for -I, stick to user given alignment
-    int  a_opt = 0;     // flag for -a, do not normalized by average length
-    int  s_opt = 2;     // flag for -s, normalized by longer length
-    bool u_opt = false; // flag for -u, normalized by user specified length
-    bool d_opt = false; // flag for -d, user specified d0
-
-    int    infmt_opt =-1;    // PDB or PDBx/mmCIF format
-    int    ter_opt   =3;     // TER, END, or different chainID
-    int    split_opt =0;     // do not split chain
-    bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
-    int    het_opt   =0;     // do not read HETATM residues
-    std::string atom_opt  ="auto";// use C alpha atom for protein and C3' for RNA
-    std::string mol_opt   ="auto";// auto-detect the molecule type as protein/RNA
-    std::string suffix_opt="";    // set -suffix to empty
-    std::string dir_opt   ="";    // set -dir to empty
-    int    byresi_opt=0;     // set -byresi to 0
+    QTMclustOptions qtmclust_opts;
     std::vector<std::string> chain_list;
-    std::vector<std::string> chain2parse;
-    std::vector<std::string> model2parse;
     std::map<std::string, std::map<std::string,bool> > init_cluster;
 
-    for(int i = 1; i < argc; i++)
-    {
-        if ( (std::string(argv[i]) == "-u"||std::string(argv[i]) == "-L") && i < (argc-1) )
-        {
-            PrintErrorAndQuit("Sorry! -u has not been implemented yet");
-            Lnorm_ass = safe_stod(argv[i + 1]); u_opt = true; i++;
-        }
-        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
-        {
-            PrintErrorAndQuit("Sorry! -d has not been implemented yet");
-            d0_scale = safe_stod(argv[i + 1]); d_opt = true; i++;
-        }
-        else if (std::string(argv[i]) == "-I" && i < (argc-1) )
-        {
-            fname_lign = argv[i + 1];      i_opt = 3; i++;
-        }
-        else if ( std::string(argv[i]) == "-o" && i < (argc-1) )
-        {
-            fname_clust = argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-a" && i < (argc-1))
-        {
-            PrintErrorAndQuit("Sorry! -a is not used for clustering");
-        }
-        else if ( std::string(argv[i]) == "-s" && i < (argc-1) )
-        {
-            s_opt=safe_stoi(argv[i + 1]); i++;
-            if (s_opt<1 || s_opt>6)
-                PrintErrorAndQuit("-s must be within 1 to 6");
-        }
-        else if ( std::string(argv[i]) == "-h" )
-        {
-            h_opt = true;
-        }
-        else if (std::string(argv[i]) == "-fast")
-        {
-            fast_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
-        {
-            infmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
-        {
-            ter_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            split_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
-        {
-            mol_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
-        {
-            dir_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-TMcut" && i < (argc-1) )
-        {
-            TMcut=safe_stod(argv[i + 1]); i++;
-            if (TMcut>1 or TMcut<0.45)
-                PrintErrorAndQuit("TMcut must be in the range of [0.45,1)");
-        }
-        else if ( std::string(argv[i]) == "-byresi" && i < (argc-1) )
-        {
-            PrintErrorAndQuit("Sorry! -byresi has not been implemented yet");
-            byresi_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            het_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-init" && i < (argc-1) )
-        {
-            read_init_cluster(argv[i+1],init_cluster); i++;
-        }
-        else if (std::string(argv[i]) == "-chain" )
-        {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -chain");
-            split(argv[i+1],chain2parse,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model" )
-        {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -model");
-            split(argv[i+1],model2parse,',');
-            i++;
-        }
-        else if (xname.size() == 0) xname=argv[i];
-        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
-    }
+    parse_arguments(argc, argv, qtmclust_opts, init_cluster);
+    if(qtmclust_opts.xname.size()==0) print_help(qtmclust_opts.h_opt);
 
-    if(xname.size()==0) print_help(h_opt);
-
-    if (suffix_opt.size() && dir_opt.size()==0)
+    if (qtmclust_opts.suffix_opt.size() && qtmclust_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if (atom_opt.size()!=4)
+    if (qtmclust_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (mol_opt!="auto" && mol_opt!="protein" && mol_opt!="RNA")
+    if (qtmclust_opts.mol_opt!="auto" && qtmclust_opts.mol_opt!="protein" && qtmclust_opts.mol_opt!="RNA")
         PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (mol_opt=="protein" && atom_opt=="auto")
-        atom_opt=" CA ";
-    else if (mol_opt=="RNA" && atom_opt=="auto")
-        atom_opt=" C3'";
+    else if (qtmclust_opts.mol_opt=="protein" && qtmclust_opts.atom_opt=="auto")
+        qtmclust_opts.atom_opt=" CA ";
+    else if (qtmclust_opts.mol_opt=="RNA" && qtmclust_opts.atom_opt=="auto")
+        qtmclust_opts.atom_opt=" C3'";
 
-    if (u_opt && Lnorm_ass<=0)
+    if (qtmclust_opts.u_opt && qtmclust_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
-    if (d_opt && d0_scale<=0)
+    if (qtmclust_opts.d_opt && qtmclust_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (split_opt==1 && ter_opt!=0)
+    if (qtmclust_opts.split_opt==1 && qtmclust_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (split_opt==2 && ter_opt!=0 && ter_opt!=1)
+    else if (qtmclust_opts.split_opt==2 && qtmclust_opts.ter_opt!=0 && qtmclust_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (split_opt<0 || split_opt>2)
+    if (qtmclust_opts.split_opt<0 || qtmclust_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 
     // read initial alignment file from 'align.txt'
-    if (i_opt) read_user_alignment(sequence, fname_lign, i_opt);
+    if (qtmclust_opts.i_opt) read_user_alignment(qtmclust_opts.sequence, qtmclust_opts.fname_lign, qtmclust_opts.i_opt);
 
-    if (byresi_opt) i_opt=3;
+    if (qtmclust_opts.byresi_opt) qtmclust_opts.i_opt=3;
 
     // parse file list
-    if (dir_opt.size()==0) chain_list.push_back(xname);
-    else file2chainlist(chain_list, xname, dir_opt, suffix_opt);
+    if (qtmclust_opts.dir_opt.size()==0) chain_list.push_back(qtmclust_opts.xname);
+    else file2chainlist(chain_list, qtmclust_opts.xname, qtmclust_opts.dir_opt, qtmclust_opts.suffix_opt);
 
     // declare previously global variables
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
@@ -336,20 +344,20 @@ int main(int argc, char *argv[])
     std::vector<float> coord_template(3,0);
     std::vector<std::vector<float> >chain_coord_buf;
     size_t newchainnum;
-    double ub_HwRMSD=0.90*TMcut+0.10;
-    double lb_HwRMSD=0.5*TMcut;
-    double ub_TMfast=0.90*TMcut+0.10;
-    double lb_TMfast=0.9*TMcut;
-    if      (s_opt==2 || s_opt==4 || s_opt==5) a_opt=-2; // normalized by longer length, i.e. smaller TM
-    else if (s_opt==1 || s_opt==5) a_opt=-1; // normalized by shorter length, i.e. larger TM
-    else if (s_opt==3) a_opt= 1; // normalized by average length
+    double ub_HwRMSD=0.90*qtmclust_opts.TMcut+0.10;
+    double lb_HwRMSD=0.5*qtmclust_opts.TMcut;
+    double ub_TMfast=0.90*qtmclust_opts.TMcut+0.10;
+    double lb_TMfast=0.9*qtmclust_opts.TMcut;
+    if      (qtmclust_opts.s_opt==2 || qtmclust_opts.s_opt==4 || qtmclust_opts.s_opt==5) qtmclust_opts.a_opt=-2; // normalized by longer length, i.e. smaller TM
+    else if (qtmclust_opts.s_opt==1 || qtmclust_opts.s_opt==5) qtmclust_opts.a_opt=-1; // normalized by shorter length, i.e. larger TM
+    else if (qtmclust_opts.s_opt==3) qtmclust_opts.a_opt= 1; // normalized by average length
 
 #ifdef TMalign_HwRMSD_h
     /* These parameters controls HwRMSD filter. iter_opt typically should be
      * >=3. Many alignments converge within iter_opt=5. Occassionally
      * some alignments require iter_opt=10. Higher iter_opt takes more time,
      * even though HwRMSD iter_opt 10 still takes far less time than TMalign
-     * -fast -TMcut 0.5.
+     * -fast -qtmclust_opts.TMcut 0.5.
      * After HwRMSD filter, at least min_repr_num and at most max_repr_num
      * are used for subsequent TMalign. The actual number of representatives
      * are decided by xlen */
@@ -361,25 +369,25 @@ int main(int argc, char *argv[])
 
     for (size_t i=0;i<chain_list.size();i++)
     {
-        xname=chain_list[i];
-        newchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec, infmt_opt,
-            PdbParseOptions{ter_opt, atom_opt, false, split_opt, het_opt, chain2parse, model2parse});
+        qtmclust_opts.xname=chain_list[i];
+        newchainnum=get_PDB_lines(qtmclust_opts.xname, PDB_lines, chainID_list, mol_vec, qtmclust_opts.infmt_opt,
+            PdbParseOptions{qtmclust_opts.ter_opt, qtmclust_opts.atom_opt, false, qtmclust_opts.split_opt, qtmclust_opts.het_opt, qtmclust_opts.chain2parse, qtmclust_opts.model2parse});
         if (!newchainnum)
         {
-            std::cerr<<"Warning! Cannot parse file: "<<xname
+            std::cerr<<"Warning! Cannot parse file: "<<qtmclust_opts.xname
                 <<". Chain number 0."<<std::endl;
             continue;
         }
-        chain_name=xname.substr(dir_opt.size(),
-            xname.size()-dir_opt.size()-suffix_opt.size());
+        chain_name=qtmclust_opts.xname.substr(qtmclust_opts.dir_opt.size(),
+            qtmclust_opts.xname.size()-qtmclust_opts.dir_opt.size()-qtmclust_opts.suffix_opt.size());
         for (size_t j=0;j<newchainnum;j++)
         {
             chainID_list[j+xchainnum]=chain_name+chainID_list[j+xchainnum];
             xlen=PDB_lines[j].size();
-            std::cout<<"Parsing "<<xname<<'\t'<<chainID_list[j+xchainnum]
+            std::cout<<"Parsing "<<qtmclust_opts.xname<<'\t'<<chainID_list[j+xchainnum]
                 <<" ("<<xlen<<" residues)."<<std::endl;
-            if (mol_opt=="RNA") mol_vec[j+xchainnum]=1;
-            else if (mol_opt=="protein") mol_vec[j+xchainnum]=-1;
+            if (qtmclust_opts.mol_opt=="RNA") mol_vec[j+xchainnum]=1;
+            else if (qtmclust_opts.mol_opt=="protein") mol_vec[j+xchainnum]=-1;
 
             xa.clear();
             xa.reserve(xlen);
@@ -387,11 +395,11 @@ int main(int argc, char *argv[])
             chain_sec_buf.assign(xlen+1,0);
 
             std::string raw_sequence;
-            read_PDB(PDB_lines[j], xa, raw_sequence, resi_vec, byresi_opt);
+            read_PDB(PDB_lines[j], xa, raw_sequence, resi_vec, qtmclust_opts.byresi_opt);
             chain_seq_buf.assign(raw_sequence.begin(), raw_sequence.end());
 
             if (mol_vec[j]<=0) make_sec(xa, xlen, chain_sec_buf);
-            else make_sec(&chain_seq_buf[0],xa,xlen,chain_sec_buf,atom_opt);
+            else make_sec(&chain_seq_buf[0],xa,xlen,chain_sec_buf,qtmclust_opts.atom_opt);
 
             chain_coord_buf.assign(xlen,coord_template);
             for (int r=0;r<xlen;r++)
@@ -427,7 +435,7 @@ int main(int argc, char *argv[])
     std::stable_sort(chainLen_list.begin(),chainLen_list.end(),
         std::greater<std::pair<int,int> >());
     std::cout<<"Clustering "<<chainLen_list.size()
-        <<" chains with TM-score cutoff >="<<TMcut<<'\n'
+        <<" chains with TM-score cutoff >="<<qtmclust_opts.TMcut<<'\n'
         <<"Longest chain "<<chainID_list[chainLen_list[0].second]<<'\t'
         <<chainLen_list[0].first<<" residues.\n"
         <<"Shortest chain "<<chainID_list[chainLen_list.back().second]<<'\t'
@@ -479,11 +487,11 @@ int main(int argc, char *argv[])
             chain_j=clust_repr_vec[j-1];
             ylen=xyz_vec[chain_j].size();
             if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
-            else if (s_opt==2 && xlen<TMcut*ylen)       continue;
-            else if (s_opt==3 && xlen<(2*TMcut-1)*ylen) continue;
-            else if (s_opt==4 && xlen*(2/TMcut-1)<ylen) continue;
-            else if (s_opt==5 && xlen<TMcut*TMcut*ylen) continue;
-            else if (s_opt==6 && xlen*xlen<(2*TMcut*TMcut-1)*ylen*ylen) continue;
+            else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
+            else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
+            else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
+            else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
+            else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
             index_vec.push_back(chain_j);
         }
         sizePROT=index_vec.size();
@@ -507,14 +515,14 @@ int main(int argc, char *argv[])
                 continue;
             ylen=xyz_vec[chain_j].size();
             if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
-            else if (s_opt==2 && xlen<TMcut*ylen)       continue;
-            else if (s_opt==3 && xlen<(2*TMcut-1)*ylen) continue;
-            else if (s_opt==4 && xlen*(2/TMcut-1)<ylen) continue;
-            else if (s_opt==5 && xlen<TMcut*TMcut*ylen) continue;
-            else if (s_opt==6 && xlen*xlen<(2*TMcut*TMcut-1)*ylen*ylen) continue;
+            else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
+            else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
+            else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
+            else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
+            else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
 
-            if (s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast, 
-                TMcut, s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
+            if (qtmclust_opts.s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast, 
+                qtmclust_opts.TMcut, qtmclust_opts.s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
             
             
             ya.clear();
@@ -541,28 +549,28 @@ int main(int argc, char *argv[])
             std::string secx_str(&sec_vec[chain_i][0], xlen);
             std::string secy_str(&sec_vec[chain_j][0], ylen);
             HwRMSDParams hwrmsd_params;
-            hwrmsd_params.sequence = sequence;
-            hwrmsd_params.Lnorm_ass = Lnorm_ass;
-            hwrmsd_params.d0_scale = d0_scale;
-            hwrmsd_params.i_opt = i_opt;
-            hwrmsd_params.a_opt = a_opt;
+            hwrmsd_params.sequence = qtmclust_opts.sequence;
+            hwrmsd_params.Lnorm_ass = qtmclust_opts.Lnorm_ass;
+            hwrmsd_params.d0_scale = qtmclust_opts.d0_scale;
+            hwrmsd_params.i_opt = qtmclust_opts.i_opt;
+            hwrmsd_params.a_opt = qtmclust_opts.a_opt;
             hwrmsd_params.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
             hwrmsd_params.glocal = glocal;
             hwrmsd_params.iter_opt = iter_opt;
-            hwrmsd_params.u_opt = u_opt;
-            hwrmsd_params.d_opt = d_opt;
+            hwrmsd_params.u_opt = qtmclust_opts.u_opt;
+            hwrmsd_params.d_opt = qtmclust_opts.d_opt;
             HwRMSD_main(
                 xa, ya, seqx_str, seqy_str, secx_str, secy_str,
                 chain_align_res, invmap, hwrmsd_params);
             }
 
             TM=TM3; // average length
-            if      (s_opt==1) TM=TM2; // shorter length
-            else if (s_opt==2) TM=TM1; // longer length
-            else if (s_opt==3) TM=(TM1+TM2)/2;     // average TM
-            else if (s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
-            else if (s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
-            else if (s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
+            if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
+            else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
+            else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
+            else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
+            else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
+            else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
 
             Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
             if (TM>=lb_HwRMSD || Lave<=fast_lb)
@@ -597,7 +605,7 @@ int main(int argc, char *argv[])
             chain_j=HwRMSDscore_list[j].second;
             ylen=xyz_vec[chain_j].size();
             Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
-            if (Lave>fast_lb && TM<TMcut*0.5 && 
+            if (Lave>fast_lb && TM<qtmclust_opts.TMcut*0.5 && 
                 index_vec.size()>=cur_repr_num_cutoff) break;
             index_vec.push_back(chain_j);
             std::cout<<"#"<<chain_j<<"\t"<<chainID_list[chain_j]<<"\t"
@@ -614,13 +622,13 @@ int main(int argc, char *argv[])
             chain_j=index_vec[j];
             ylen=xyz_vec[chain_j].size();
             if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
-            else if (s_opt==2 && xlen<TMcut*ylen)       continue;
-            else if (s_opt==3 && xlen<(2*TMcut-1)*ylen) continue;
-            else if (s_opt==4 && xlen*(2/TMcut-1)<ylen) continue;
-            else if (s_opt==5 && xlen<TMcut*TMcut*ylen) continue;
-            else if (s_opt==6 && xlen*xlen<(2*TMcut*TMcut-1)*ylen*ylen) continue;
-            if (s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast,
-                TMcut, s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
+            else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
+            else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
+            else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
+            else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
+            else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
+            if (qtmclust_opts.s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast,
+                qtmclust_opts.TMcut, qtmclust_opts.s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
 
             ya.clear();
             ya.reserve(ylen);
@@ -632,7 +640,7 @@ int main(int argc, char *argv[])
             }
 
             Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
-            bool overwrite_fast_opt=(fast_opt==true || Lave>=fast_ub);
+            bool overwrite_fast_opt=(qtmclust_opts.fast_opt==true || Lave>=fast_ub);
             
             // declare variable specific to this pair of TMalign
             ChainPairAlignResult chain_align_res = {};
@@ -642,16 +650,16 @@ int main(int argc, char *argv[])
             double& TM3 = chain_align_res.TM3;
 
             ChainPairAlignOptions align_opts;
-            align_opts.i_opt = i_opt;
-            align_opts.a_opt = a_opt;
-            align_opts.u_opt = u_opt;
-            align_opts.d_opt = d_opt;
+            align_opts.i_opt = qtmclust_opts.i_opt;
+            align_opts.a_opt = qtmclust_opts.a_opt;
+            align_opts.u_opt = qtmclust_opts.u_opt;
+            align_opts.d_opt = qtmclust_opts.d_opt;
             align_opts.fast_opt = overwrite_fast_opt;
             align_opts.se_opt = false;
             align_opts.cp_opt = false;
-            align_opts.Lnorm = Lnorm_ass;
-            align_opts.d0_scale = d0_scale;
-            align_opts.TMcut = TMcut;
+            align_opts.Lnorm = qtmclust_opts.Lnorm_ass;
+            align_opts.d0_scale = qtmclust_opts.d0_scale;
+            align_opts.TMcut = qtmclust_opts.TMcut;
             align_opts.parallel_threads = 1;
             align_opts.ss_opt = 0;
             align_opts.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
@@ -661,7 +669,7 @@ int main(int argc, char *argv[])
                 xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
                 &sec_vec[chain_i][0], &sec_vec[chain_j][0],
                 chain_align_res,
-                xlen, ylen, sequence, align_opts);
+                xlen, ylen, qtmclust_opts.sequence, align_opts);
 
             std::cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
                 <<setiosflags(std::ios::fixed)<<std::setprecision(4)
@@ -673,21 +681,21 @@ int main(int argc, char *argv[])
             chain_align_res.do_vec.clear();
 
             double TM=TM3; // average length
-            if      (s_opt==1) TM=TM2; // shorter length
-            else if (s_opt==2) TM=TM1; // longer length
-            else if (s_opt==3) TM=(TM1+TM2)/2;     // average TM
-            else if (s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
-            else if (s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
-            else if (s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
+            if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
+            else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
+            else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
+            else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
+            else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
+            else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
 
             if (TM<lb_TMfast || 
-               (TM<TMcut && (fast_opt || overwrite_fast_opt==false)))
+               (TM<qtmclust_opts.TMcut && (qtmclust_opts.fast_opt || overwrite_fast_opt==false)))
             {
                 continue;
             }
 
             if (TM>=ub_TMfast || 
-               (TM>=TMcut && (fast_opt || overwrite_fast_opt==false)))
+               (TM>=qtmclust_opts.TMcut && (qtmclust_opts.fast_opt || overwrite_fast_opt==false)))
             {
                 clust_mem_vec[chain_i]=clust_repr_map[chain_j];
                 found_clust=true;
@@ -701,21 +709,21 @@ int main(int argc, char *argv[])
                     xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
                     &sec_vec[chain_i][0], &sec_vec[chain_j][0],
                     chain_align_res,
-                    xlen, ylen, sequence, align_opts);
+                    xlen, ylen, qtmclust_opts.sequence, align_opts);
                 chain_align_res.seqM.clear();
                 chain_align_res.seqxA.clear();
                 chain_align_res.seqyA.clear();
                 chain_align_res.do_vec.clear();
 
                 TM=TM3;                // average length
-                if      (s_opt==1) TM=TM2; // shorter length
-                else if (s_opt==2) TM=TM1; // longer length
-                else if (s_opt==3) TM=(TM1+TM2)/2;     // average TM
-                else if (s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
-                else if (s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
-                else if (s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
+                if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
+                else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
+                else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
+                else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
+                else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
+                else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
                 std::cout<<"*\t"<<chainID_list[chain_j]<<'\t'<<TM2<<'\t'<<TM1<<std::endl;
-                if (TM>=TMcut)
+                if (TM>=qtmclust_opts.TMcut)
                 {
                     clust_mem_vec[chain_i]=clust_repr_map[chain_j];
                     found_clust=true;
@@ -758,9 +766,9 @@ int main(int argc, char *argv[])
         }
         txt<<'\n';
     }
-    if (fname_clust.size() && fname_clust!="-")
+    if (qtmclust_opts.fname_clust.size() && qtmclust_opts.fname_clust!="-")
     {
-        std::ofstream fp(fname_clust.c_str());
+        std::ofstream fp(qtmclust_opts.fname_clust.c_str());
         fp<<txt.str();
         fp.close();
     }
@@ -772,8 +780,8 @@ int main(int argc, char *argv[])
     clust_mem_vec.clear();
     chainID_list.clear();
     clust_repr_map.clear();
-    std::vector<std::string>().swap(chain2parse);
-    std::vector<std::string>().swap(model2parse);
+    std::vector<std::string>().swap(qtmclust_opts.chain2parse);
+    std::vector<std::string>().swap(qtmclust_opts.model2parse);
     std::map<std::string, std::map<std::string,bool> >().swap(init_cluster);
 
     t2 = std::clock();
