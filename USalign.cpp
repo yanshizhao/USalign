@@ -430,7 +430,7 @@ int run_batch_parallel(
     bool normalize_atom_name, int het_opt, int mirror_opt,
     int parallel_threads = 1)
 {
-    int i, j, chain_i, chain_j;
+    int i, j, chain_i;
 
 // ---- Phase 1: pre-parse all unique files, build task list ----
     std::vector<ParsedChain> all_chains;
@@ -701,8 +701,6 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
 {
     int chain1_idx;
     int chain2_idx;
-    int rot_row;
-    int rot_col;
     int pair_idx;
     int chain1_len;
     int chain2_len;
@@ -714,7 +712,7 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
     CoordArray chain2_coords;
 
     // ---- Outer loop: iterate over each chain of structure 1 (OpenMP parallel, private work variables per thread) ----
-#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, chain2_idx, pair_idx, rot_row, rot_col)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) private(chain1_coords, chain2_coords, chain1_sec, chain2_sec, chain1_seq, chain2_seq, chain1_len, chain2_len, chain2_idx, pair_idx)
     for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
             int norm_len;
@@ -1817,8 +1815,6 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
     int chain2_len;
     int chain1_idx;
     int chain2_idx;
-    int rot_row;
-    int rot_col;
     int pair_idx;
     for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
@@ -3875,7 +3871,6 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
     const int cur_complex_mol_list = ctx.mol_type_sum;
     MstaIterBuffers& buffers = ctx.buffers;
     int& i = buffers.member_chain_idx;
-    int& j = buffers.partner_chain_idx;
     int& xlen = buffers.member_len;
     int& ylen = buffers.partner_len;
     CoordArray& xa = buffers.member_coords;
@@ -4005,12 +4000,7 @@ void msta_rebuild_pair_matrices(MstaIterationState& msta_iter_state, MstaIterPar
     MstaIterBuffers& buffers = ctx.buffers;
     int& i = buffers.member_chain_idx;
     int& j = buffers.partner_chain_idx;
-    int& xlen = buffers.member_len;
     int& ylen = buffers.partner_len;
-    CoordArray& xa = buffers.member_coords;
-    CoordArray& ya = buffers.partner_coords;
-    std::string& secx = buffers.member_sec;
-    std::string& secy = buffers.partner_sec;
     int& r = buffers.residue_idx;
     int& tm_idx = buffers.tm_order_idx;
 
@@ -4067,8 +4057,6 @@ bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& 
     CoordArray& ya = buffers.partner_coords;
     std::string& secx = buffers.member_sec;
     std::string& secy = buffers.partner_sec;
-    int& r = buffers.residue_idx;
-    int& tm_idx = buffers.tm_order_idx;
 
         // recover statistics such as TM-score
         msta_iter_state.compare_num=0;
@@ -4320,8 +4308,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
     CoordArray xa;                     // structure of single chain
     CoordArray ya;
-    std::string secx;                   // for the secondary structure
-    std::string secy;
 
     // parse chain list
     ComplexData complex;
@@ -5364,7 +5350,6 @@ int main(int argc, char *argv[])
     /**********************/
     AlignCommonInput common_inputs;
     UserOptions&     user_opts = common_inputs.user_options;
-    ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
 
     parse_arguments(argc, argv, common_inputs);

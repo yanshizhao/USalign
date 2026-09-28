@@ -284,7 +284,6 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
     path.assign(xlen+1, std::vector<char>(ylen+1));
     val.assign(xlen+1, std::vector<double>(ylen+1));
     std::vector<int> invmap0(ylen+1);
-    int i;
     int j;
     if (hinge==0) for (j=0;j<=ylen;j++) invmap0[j]=-1;
     else for (j=0;j<ylen;j++) invmap0[j]=invmap[j];

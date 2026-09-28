@@ -238,8 +238,6 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 {
     size_t a=0; // atom index
     std::string line;
-    bool select_atom=false;
-    size_t model_idx=0;
     std::vector<std::string> tmp_str_vec;
     
     int compress_type=0; // uncompressed file

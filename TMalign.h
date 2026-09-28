@@ -310,7 +310,6 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
     }
 
     score_max=-1;
-    int n_cut;
     int L_frag;
     int iL_max;
 
@@ -379,7 +378,6 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     }
 
     score_max = -1;
-    int n_cut;
     int L_frag;
     int iL_max;
 
