@@ -395,6 +395,359 @@ void read_all_chains(const std::vector<std::string>& chain_list, const QTMclustO
     std::vector<std::vector<std::string> >().swap(PDB_lines);
 }
 
+struct QTMclustRun
+{
+    const QTMclustOptions& qtmclust_opts;
+    std::vector<int>& mol_vec;
+    std::vector<std::string>& chainID_list;
+    CharMatrix& seq_vec;
+    std::vector<std::string>& sec_vec;
+    std::vector<std::vector<std::vector<float> > >& xyz_vec;
+    const std::vector<size_t>& clust_repr_vec;
+    std::vector<size_t>& clust_mem_vec;
+    std::map<size_t,size_t>& clust_repr_map;
+    std::vector<size_t>& index_vec;
+    std::map<std::string, std::map<std::string,bool> >& init_cluster;
+    CoordArray& xa;
+    size_t chain_i;
+    int xlen;
+    double TMcut;
+    double fast_lb;
+    double fast_ub;
+    double lb_HwRMSD;
+    double lb_TMfast;
+    double ub_HwRMSD;
+    double ub_TMfast;
+    int glocal;
+    int iter_opt;
+    int min_repr_num;
+    int max_repr_num;
+};
+
+void fill_chain_candidates(QTMclustRun& run)
+{
+    const QTMclustOptions& qtmclust_opts = run.qtmclust_opts;
+    const std::vector<int>& mol_vec = run.mol_vec;
+    const std::vector<std::vector<std::vector<float> > >& xyz_vec = run.xyz_vec;
+    const std::vector<size_t>& clust_repr_vec = run.clust_repr_vec;
+    std::vector<size_t>& index_vec = run.index_vec;
+    const size_t chain_i = run.chain_i;
+    const int xlen = run.xlen;
+    size_t chain_j;
+    int ylen;
+
+    // j-1 is index of old cluster. here, we starts from the latest
+    // cluster because proteins with similar length are more likely
+    // to be similar. we cannot use j as index because size_t j cannot
+    // be negative at the end of this loop
+    for (size_t j=clust_repr_vec.size();j>0;j--)
+    {
+        chain_j=clust_repr_vec[j-1];
+        ylen=xyz_vec[chain_j].size();
+        if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
+        else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
+        else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
+        else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
+        else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
+        else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
+        index_vec.push_back(chain_j);
+    }
+}
+
+#ifdef TMalign_HwRMSD_h
+void run_hwrmsd_prefilter_stage(QTMclustRun& run)
+{
+    const QTMclustOptions& qtmclust_opts = run.qtmclust_opts;
+    std::vector<int>& mol_vec = run.mol_vec;
+    std::vector<std::string>& chainID_list = run.chainID_list;
+    CharMatrix& seq_vec = run.seq_vec;
+    std::vector<std::string>& sec_vec = run.sec_vec;
+    std::vector<std::vector<std::vector<float> > >& xyz_vec = run.xyz_vec;
+    std::vector<size_t>& index_vec = run.index_vec;
+    std::map<std::string, std::map<std::string,bool> >& init_cluster = run.init_cluster;
+    CoordArray& xa = run.xa;
+    const size_t chain_i = run.chain_i;
+    const int xlen = run.xlen;
+    const double TMcut = run.TMcut;
+    const double fast_lb = run.fast_lb;
+    const double fast_ub = run.fast_ub;
+    double lb_HwRMSD = run.lb_HwRMSD;
+    double lb_TMfast = run.lb_TMfast;
+    const double ub_HwRMSD = run.ub_HwRMSD;
+    const int glocal = run.glocal;
+    const int iter_opt = run.iter_opt;
+    const int min_repr_num = run.min_repr_num;
+    const int max_repr_num = run.max_repr_num;
+    size_t chain_j;
+    int ylen;
+    double Lave;               // average protein length for chain_i and chain_j
+    CoordArray ya;
+    size_t sizePROT = index_vec.size();
+
+    std::string key=chainID_list[chain_i];
+    std::vector<std::pair<double,size_t> > HwRMSDscore_list;
+    double TM;
+    size_t init_count=0;
+    for (size_t j=0;j<sizePROT;j++)
+    {
+        chain_j=index_vec[j];
+        std::string value=chainID_list[chain_j];
+        if (init_cluster.count(key) && init_count>=2 &&
+            HwRMSDscore_list.size()>=init_cluster[key].size() && !init_cluster[key].count(value))
+            continue;
+        ylen=xyz_vec[chain_j].size();
+        if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
+        else if (qtmclust_opts.s_opt==2 && xlen<TMcut*ylen)       continue;
+        else if (qtmclust_opts.s_opt==3 && xlen<(2*TMcut-1)*ylen) continue;
+        else if (qtmclust_opts.s_opt==4 && xlen*(2/TMcut-1)<ylen) continue;
+        else if (qtmclust_opts.s_opt==5 && xlen<TMcut*TMcut*ylen) continue;
+        else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*TMcut*TMcut-1)*ylen*ylen) continue;
+
+        if (qtmclust_opts.s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast,
+            TMcut, qtmclust_opts.s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
+
+        ya.clear();
+        ya.resize(ylen);
+        for (int r=0;r<ylen;r++)
+        {
+            ya[r][0]=xyz_vec[chain_j][r][0];
+            ya[r][1]=xyz_vec[chain_j][r][1];
+            ya[r][2]=xyz_vec[chain_j][r][2];
+        }
+
+        // declare variable specific to this pair of HwRMSD
+        ChainPairAlignResult chain_align_res = {};
+        chain_align_res.d0_out = 5.0;
+        double& TM1 = chain_align_res.TM1;
+        double& TM2 = chain_align_res.TM2;
+        double& TM3 = chain_align_res.TM3;
+        std::vector<int> invmap(ylen+1);
+
+        // entry function for structure alignment
+        {
+        std::string seqx_str(&seq_vec[chain_i][0], xlen);
+        std::string seqy_str(&seq_vec[chain_j][0], ylen);
+        std::string secx_str(&sec_vec[chain_i][0], xlen);
+        std::string secy_str(&sec_vec[chain_j][0], ylen);
+        HwRMSDParams hwrmsd_params;
+        hwrmsd_params.sequence = qtmclust_opts.sequence;
+        hwrmsd_params.Lnorm_ass = qtmclust_opts.Lnorm_ass;
+        hwrmsd_params.d0_scale = qtmclust_opts.d0_scale;
+        hwrmsd_params.i_opt = qtmclust_opts.i_opt;
+        hwrmsd_params.a_opt = qtmclust_opts.a_opt;
+        hwrmsd_params.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
+        hwrmsd_params.glocal = glocal;
+        hwrmsd_params.iter_opt = iter_opt;
+        hwrmsd_params.u_opt = qtmclust_opts.u_opt;
+        hwrmsd_params.d_opt = qtmclust_opts.d_opt;
+        HwRMSD_main(
+            xa, ya, seqx_str, seqy_str, secx_str, secy_str,
+            chain_align_res, invmap, hwrmsd_params);
+        }
+
+        TM=TM3; // average length
+        if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
+        else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
+        else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
+        else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
+        else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
+        else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
+
+        Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
+        if (TM>=lb_HwRMSD || Lave<=fast_lb)
+        {
+            if (init_cluster.count(key) && init_cluster[key].count(value))
+            {
+                HwRMSDscore_list.push_back(std::make_pair(TM+1,index_vec[j]));
+                init_count++;
+                if (init_count==init_cluster[key].size()) break;
+            }
+            else
+                HwRMSDscore_list.push_back(std::make_pair(TM,index_vec[j]));
+        }
+
+        // if a good hit is guaranteed to be found, stop the loop
+        if (TM>=ub_HwRMSD) break;
+    }
+
+    std::stable_sort(HwRMSDscore_list.begin(),HwRMSDscore_list.end(),
+        std::greater<std::pair<double,size_t> >());
+
+    int cur_repr_num_cutoff=min_repr_num;
+    if (xlen<=fast_lb) cur_repr_num_cutoff=max_repr_num;
+    else if (xlen>fast_lb && xlen<fast_ub) cur_repr_num_cutoff+=
+        (fast_ub-xlen)/(fast_ub-fast_lb)*(max_repr_num-min_repr_num);
+    //if (init_count>=2) cur_repr_num_cutoff=init_count;
+
+    index_vec.clear();
+    for (size_t j=0;j<HwRMSDscore_list.size();j++)
+    {
+        TM=HwRMSDscore_list[j].first;
+        chain_j=HwRMSDscore_list[j].second;
+        ylen=xyz_vec[chain_j].size();
+        Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
+        if (Lave>fast_lb && TM<TMcut*0.5 &&
+            index_vec.size()>=cur_repr_num_cutoff) break;
+        index_vec.push_back(chain_j);
+        std::cout<<"#"<<chain_j<<"\t"<<chainID_list[chain_j]<<"\t"
+            <<setiosflags(std::ios::fixed)<<std::setprecision(4)<<TM<<std::endl;
+    }
+    std::cout<<index_vec.size()<<" out of "
+        <<HwRMSDscore_list.size()<<" entries"<<std::endl;
+    HwRMSDscore_list.clear();
+}
+#endif
+
+void fill_qtmclust_align_options(ChainPairAlignOptions& align_opts,
+    const QTMclustOptions& qtmclust_opts, const bool fast_opt, const int mol_type)
+{
+    align_opts.i_opt = qtmclust_opts.i_opt;
+    align_opts.a_opt = qtmclust_opts.a_opt;
+    align_opts.u_opt = qtmclust_opts.u_opt;
+    align_opts.d_opt = qtmclust_opts.d_opt;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = qtmclust_opts.Lnorm_ass;
+    align_opts.d0_scale = qtmclust_opts.d0_scale;
+    align_opts.TMcut = qtmclust_opts.TMcut;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = mol_type;
+}
+
+bool run_tmalign_refine_stage(QTMclustRun& run)
+{
+    const QTMclustOptions& qtmclust_opts = run.qtmclust_opts;
+    std::vector<int>& mol_vec = run.mol_vec;
+    std::vector<std::string>& chainID_list = run.chainID_list;
+    CharMatrix& seq_vec = run.seq_vec;
+    std::vector<std::string>& sec_vec = run.sec_vec;
+    std::vector<std::vector<std::vector<float> > >& xyz_vec = run.xyz_vec;
+    std::vector<size_t>& clust_mem_vec = run.clust_mem_vec;
+    std::map<size_t,size_t>& clust_repr_map = run.clust_repr_map;
+    std::vector<size_t>& index_vec = run.index_vec;
+    CoordArray& xa = run.xa;
+    const size_t chain_i = run.chain_i;
+    const int xlen = run.xlen;
+    const double TMcut = run.TMcut;
+    const double fast_ub = run.fast_ub;
+    double lb_HwRMSD = run.lb_HwRMSD;
+    double lb_TMfast = run.lb_TMfast;
+    const double ub_TMfast = run.ub_TMfast;
+    size_t chain_j;
+    int ylen;
+    double Lave;
+    CoordArray ya;
+    bool found_clust = false;
+
+    for (size_t j=0;j<index_vec.size();j++)
+    {
+        chain_j=index_vec[j];
+        ylen=xyz_vec[chain_j].size();
+        if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
+        else if (qtmclust_opts.s_opt==2 && xlen<TMcut*ylen)       continue;
+        else if (qtmclust_opts.s_opt==3 && xlen<(2*TMcut-1)*ylen) continue;
+        else if (qtmclust_opts.s_opt==4 && xlen*(2/TMcut-1)<ylen) continue;
+        else if (qtmclust_opts.s_opt==5 && xlen<TMcut*TMcut*ylen) continue;
+        else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*TMcut*TMcut-1)*ylen*ylen) continue;
+        if (qtmclust_opts.s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast,
+            TMcut, qtmclust_opts.s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
+
+        ya.clear();
+        ya.resize(ylen);
+        for (int r=0;r<ylen;r++)
+        {
+            ya[r][0]=xyz_vec[chain_j][r][0];
+            ya[r][1]=xyz_vec[chain_j][r][1];
+            ya[r][2]=xyz_vec[chain_j][r][2];
+        }
+
+        Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
+        bool overwrite_fast_opt=(qtmclust_opts.fast_opt==true || Lave>=fast_ub);
+
+        // declare variable specific to this pair of TMalign
+        ChainPairAlignResult chain_align_res = {};
+        chain_align_res.d0_out = 5.0;
+        double& TM1 = chain_align_res.TM1;
+        double& TM2 = chain_align_res.TM2;
+        double& TM3 = chain_align_res.TM3;
+
+        ChainPairAlignOptions align_opts;
+        fill_qtmclust_align_options(align_opts, qtmclust_opts, overwrite_fast_opt,
+            mol_vec[chain_i]+mol_vec[chain_j]);
+
+        // entry function for structure alignment
+        int status=TMalign_main(
+            xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
+            &sec_vec[chain_i][0], &sec_vec[chain_j][0],
+            chain_align_res,
+            xlen, ylen, qtmclust_opts.sequence, align_opts);
+
+        std::cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
+            <<setiosflags(std::ios::fixed)<<std::setprecision(4)
+            <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<std::endl;
+
+        chain_align_res.seqM.clear();
+        chain_align_res.seqxA.clear();
+        chain_align_res.seqyA.clear();
+        chain_align_res.do_vec.clear();
+
+        double TM=TM3; // average length
+        if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
+        else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
+        else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
+        else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
+        else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
+        else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
+
+        if (TM<lb_TMfast ||
+           (TM<TMcut && (qtmclust_opts.fast_opt || overwrite_fast_opt==false)))
+        {
+            continue;
+        }
+
+        if (TM>=ub_TMfast ||
+           (TM>=TMcut && (qtmclust_opts.fast_opt || overwrite_fast_opt==false)))
+        {
+            clust_mem_vec[chain_i]=clust_repr_map[chain_j];
+            found_clust=true;
+            break;
+        }
+
+        if (TM<lb_TMfast && overwrite_fast_opt==false)
+        {
+            align_opts.fast_opt = false;
+            TMalign_main(
+                xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
+                &sec_vec[chain_i][0], &sec_vec[chain_j][0],
+                chain_align_res,
+                xlen, ylen, qtmclust_opts.sequence, align_opts);
+            chain_align_res.seqM.clear();
+            chain_align_res.seqxA.clear();
+            chain_align_res.seqyA.clear();
+            chain_align_res.do_vec.clear();
+
+            TM=TM3;                // average length
+            if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
+            else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
+            else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
+            else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
+            else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
+            else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
+            std::cout<<"*\t"<<chainID_list[chain_j]<<'\t'<<TM2<<'\t'<<TM1<<std::endl;
+            if (TM>=TMcut)
+            {
+                clust_mem_vec[chain_i]=clust_repr_map[chain_j];
+                found_clust=true;
+                break;
+            }
+        }
+    }
+    index_vec.clear();
+    return found_clust;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -417,7 +770,7 @@ int main(int argc, char *argv[])
     // declare previously global variables
     std::vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
     std::vector<std::string> chainID_list;      // list of chainID
-    int    xlen,ylen;           // chain length
+    int    xlen;                // chain length
     CoordArray xa;
     CoordArray ya;           // xyz coordinate
     std::vector<std::pair<int,size_t> >chainLen_list; // vector of (length,index) pair
@@ -440,7 +793,7 @@ int main(int argc, char *argv[])
      * >=3. Many alignments converge within iter_opt=5. Occassionally
      * some alignments require iter_opt=10. Higher iter_opt takes more time,
      * even though HwRMSD iter_opt 10 still takes far less time than TMalign
-     * -fast -qtmclust_opts.TMcut 0.5.
+     * -fast -TMcut 0.5.
      * After HwRMSD filter, at least min_repr_num and at most max_repr_num
      * are used for subsequent TMalign. The actual number of representatives
      * are decided by xlen */
@@ -474,7 +827,6 @@ int main(int argc, char *argv[])
     size_t chain_j;
     const double fast_lb=50.;  // proteins shorter than fast_lb never use -fast
     const double fast_ub=1000.;// proteins longer than fast_ub always use -fast
-    double Lave;               // average protein length for chain_i and chain_j
     size_t sizePROT;           // number of representatives for current chain
     std::vector<size_t> index_vec;  // index of cluster representatives for the chain
     bool found_clust;          // whether current chain hit previous cluster
@@ -499,260 +851,25 @@ int main(int argc, char *argv[])
             xa[r][2]=xyz_vec[chain_i][r][2];
         }
 
-        // j-1 is index of old cluster. here, we starts from the latest
-        // cluster because proteins with similar length are more likely
-        // to be similar. we cannot use j as index because size_t j cannot
-        // be negative at the end of this loop
-        for (size_t j=clust_repr_vec.size();j>0;j--)
-        {
-            chain_j=clust_repr_vec[j-1];
-            ylen=xyz_vec[chain_j].size();
-            if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
-            else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
-            else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
-            else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
-            else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
-            else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
-            index_vec.push_back(chain_j);
-        }
+        QTMclustRun run = {qtmclust_opts, mol_vec, chainID_list, seq_vec, sec_vec, xyz_vec,
+            clust_repr_vec, clust_mem_vec, clust_repr_map, index_vec, init_cluster, xa,
+            chain_i, xlen, qtmclust_opts.TMcut, fast_lb, fast_ub,
+            lb_HwRMSD, lb_TMfast, ub_HwRMSD, ub_TMfast,
+            glocal, iter_opt, min_repr_num, max_repr_num};
+
+        fill_chain_candidates(run);
         sizePROT=index_vec.size();
 
-        std::string key=chainID_list[chain_i];
         std::cout<<'>'<<chainID_list[chain_i]<<'\t'<<xlen<<'\t'
             <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)
             <<100.*i/Nstruct<<"%(#"<<i<<")\t"
             <<"#repr="<<sizePROT<<"/"<<clust_repr_vec.size()<<std::endl;
 
 #ifdef TMalign_HwRMSD_h
-        std::vector<std::pair<double,size_t> > HwRMSDscore_list;
-        double TM;
-        size_t init_count=0;
-        for (size_t j=0;j<sizePROT;j++)
-        {
-            chain_j=index_vec[j];
-            std::string value=chainID_list[chain_j];
-            if (init_cluster.count(key) && init_count>=2 && 
-                HwRMSDscore_list.size()>=init_cluster[key].size() && !init_cluster[key].count(value))
-                continue;
-            ylen=xyz_vec[chain_j].size();
-            if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
-            else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
-            else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
-            else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
-            else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
-            else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
-
-            if (qtmclust_opts.s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast, 
-                qtmclust_opts.TMcut, qtmclust_opts.s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
-            
-            
-            ya.clear();
-            ya.resize(ylen);
-            for (int r=0;r<ylen;r++)
-            {
-                ya[r][0]=xyz_vec[chain_j][r][0];
-                ya[r][1]=xyz_vec[chain_j][r][1];
-                ya[r][2]=xyz_vec[chain_j][r][2];
-            }
-
-            // declare variable specific to this pair of HwRMSD
-            ChainPairAlignResult chain_align_res = {};
-            chain_align_res.d0_out = 5.0;
-            double& TM1 = chain_align_res.TM1;
-            double& TM2 = chain_align_res.TM2;
-            double& TM3 = chain_align_res.TM3;
-            std::vector<int> invmap(ylen+1);
-
-            // entry function for structure alignment
-            {
-            std::string seqx_str(&seq_vec[chain_i][0], xlen);
-            std::string seqy_str(&seq_vec[chain_j][0], ylen);
-            std::string secx_str(&sec_vec[chain_i][0], xlen);
-            std::string secy_str(&sec_vec[chain_j][0], ylen);
-            HwRMSDParams hwrmsd_params;
-            hwrmsd_params.sequence = qtmclust_opts.sequence;
-            hwrmsd_params.Lnorm_ass = qtmclust_opts.Lnorm_ass;
-            hwrmsd_params.d0_scale = qtmclust_opts.d0_scale;
-            hwrmsd_params.i_opt = qtmclust_opts.i_opt;
-            hwrmsd_params.a_opt = qtmclust_opts.a_opt;
-            hwrmsd_params.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
-            hwrmsd_params.glocal = glocal;
-            hwrmsd_params.iter_opt = iter_opt;
-            hwrmsd_params.u_opt = qtmclust_opts.u_opt;
-            hwrmsd_params.d_opt = qtmclust_opts.d_opt;
-            HwRMSD_main(
-                xa, ya, seqx_str, seqy_str, secx_str, secy_str,
-                chain_align_res, invmap, hwrmsd_params);
-            }
-
-            TM=TM3; // average length
-            if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
-            else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
-            else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
-            else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
-            else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
-            else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
-
-            Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
-            if (TM>=lb_HwRMSD || Lave<=fast_lb)
-            {
-                if (init_cluster.count(key) && init_cluster[key].count(value))
-                {
-                    HwRMSDscore_list.push_back(std::make_pair(TM+1,index_vec[j]));
-                    init_count++;
-                    if (init_count==init_cluster[key].size()) break;
-                }
-                else
-                    HwRMSDscore_list.push_back(std::make_pair(TM,index_vec[j]));
-            }
-
-            // if a good hit is guaranteed to be found, stop the loop
-            if (TM>=ub_HwRMSD) break;
-        }
-
-        std::stable_sort(HwRMSDscore_list.begin(),HwRMSDscore_list.end(),
-            std::greater<std::pair<double,size_t> >());
-
-        int cur_repr_num_cutoff=min_repr_num;
-        if (xlen<=fast_lb) cur_repr_num_cutoff=max_repr_num;
-        else if (xlen>fast_lb && xlen<fast_ub) cur_repr_num_cutoff+=
-            (fast_ub-xlen)/(fast_ub-fast_lb)*(max_repr_num-min_repr_num);
-        //if (init_count>=2) cur_repr_num_cutoff=init_count;
-
-        index_vec.clear();
-        for (size_t j=0;j<HwRMSDscore_list.size();j++)
-        {
-            TM=HwRMSDscore_list[j].first;
-            chain_j=HwRMSDscore_list[j].second;
-            ylen=xyz_vec[chain_j].size();
-            Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
-            if (Lave>fast_lb && TM<qtmclust_opts.TMcut*0.5 && 
-                index_vec.size()>=cur_repr_num_cutoff) break;
-            index_vec.push_back(chain_j);
-            std::cout<<"#"<<chain_j<<"\t"<<chainID_list[chain_j]<<"\t"
-                <<setiosflags(std::ios::fixed)<<std::setprecision(4)<<TM<<std::endl;
-        }
-        std::cout<<index_vec.size()<<" out of "
-            <<HwRMSDscore_list.size()<<" entries"<<std::endl;
-        HwRMSDscore_list.clear();
+        run_hwrmsd_prefilter_stage(run);
 #endif
 
-        found_clust=false;
-        for (size_t j=0;j<index_vec.size();j++)
-        {
-            chain_j=index_vec[j];
-            ylen=xyz_vec[chain_j].size();
-            if (mol_vec[chain_i]*mol_vec[chain_j]<0)    continue;
-            else if (qtmclust_opts.s_opt==2 && xlen<qtmclust_opts.TMcut*ylen)       continue;
-            else if (qtmclust_opts.s_opt==3 && xlen<(2*qtmclust_opts.TMcut-1)*ylen) continue;
-            else if (qtmclust_opts.s_opt==4 && xlen*(2/qtmclust_opts.TMcut-1)<ylen) continue;
-            else if (qtmclust_opts.s_opt==5 && xlen<qtmclust_opts.TMcut*qtmclust_opts.TMcut*ylen) continue;
-            else if (qtmclust_opts.s_opt==6 && xlen*xlen<(2*qtmclust_opts.TMcut*qtmclust_opts.TMcut-1)*ylen*ylen) continue;
-            if (qtmclust_opts.s_opt<=1) filter_lower_bound(lb_HwRMSD, lb_TMfast,
-                qtmclust_opts.TMcut, qtmclust_opts.s_opt, mol_vec[chain_i]+mol_vec[chain_j]);
-
-            ya.clear();
-            ya.reserve(ylen);
-            for (int r=0;r<ylen;r++)
-            {
-                ya[r][0]=xyz_vec[chain_j][r][0];
-                ya[r][1]=xyz_vec[chain_j][r][1];
-                ya[r][2]=xyz_vec[chain_j][r][2];
-            }
-
-            Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
-            bool overwrite_fast_opt=(qtmclust_opts.fast_opt==true || Lave>=fast_ub);
-            
-            // declare variable specific to this pair of TMalign
-            ChainPairAlignResult chain_align_res = {};
-            chain_align_res.d0_out = 5.0;
-            double& TM1 = chain_align_res.TM1;
-            double& TM2 = chain_align_res.TM2;
-            double& TM3 = chain_align_res.TM3;
-
-            ChainPairAlignOptions align_opts;
-            align_opts.i_opt = qtmclust_opts.i_opt;
-            align_opts.a_opt = qtmclust_opts.a_opt;
-            align_opts.u_opt = qtmclust_opts.u_opt;
-            align_opts.d_opt = qtmclust_opts.d_opt;
-            align_opts.fast_opt = overwrite_fast_opt;
-            align_opts.se_opt = false;
-            align_opts.cp_opt = false;
-            align_opts.Lnorm = qtmclust_opts.Lnorm_ass;
-            align_opts.d0_scale = qtmclust_opts.d0_scale;
-            align_opts.TMcut = qtmclust_opts.TMcut;
-            align_opts.parallel_threads = 1;
-            align_opts.ss_opt = 0;
-            align_opts.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
-
-            // entry function for structure alignment
-            int status=TMalign_main(
-                xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
-                &sec_vec[chain_i][0], &sec_vec[chain_j][0],
-                chain_align_res,
-                xlen, ylen, qtmclust_opts.sequence, align_opts);
-
-            std::cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
-                <<setiosflags(std::ios::fixed)<<std::setprecision(4)
-                <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<std::endl;
-
-            chain_align_res.seqM.clear();
-            chain_align_res.seqxA.clear();
-            chain_align_res.seqyA.clear();
-            chain_align_res.do_vec.clear();
-
-            double TM=TM3; // average length
-            if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
-            else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
-            else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
-            else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
-            else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
-            else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
-
-            if (TM<lb_TMfast || 
-               (TM<qtmclust_opts.TMcut && (qtmclust_opts.fast_opt || overwrite_fast_opt==false)))
-            {
-                continue;
-            }
-
-            if (TM>=ub_TMfast || 
-               (TM>=qtmclust_opts.TMcut && (qtmclust_opts.fast_opt || overwrite_fast_opt==false)))
-            {
-                clust_mem_vec[chain_i]=clust_repr_map[chain_j];
-                found_clust=true;
-                break;
-            }
-
-            if (TM<lb_TMfast && overwrite_fast_opt==false)
-            {
-                align_opts.fast_opt = false;
-                TMalign_main(
-                    xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
-                    &sec_vec[chain_i][0], &sec_vec[chain_j][0],
-                    chain_align_res,
-                    xlen, ylen, qtmclust_opts.sequence, align_opts);
-                chain_align_res.seqM.clear();
-                chain_align_res.seqxA.clear();
-                chain_align_res.seqyA.clear();
-                chain_align_res.do_vec.clear();
-
-                TM=TM3;                // average length
-                if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
-                else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
-                else if (qtmclust_opts.s_opt==3) TM=(TM1+TM2)/2;     // average TM
-                else if (qtmclust_opts.s_opt==4) TM=2/(1/TM1+1/TM2); // harmonic average
-                else if (qtmclust_opts.s_opt==5) TM=sqrt(TM1*TM2);   // geometric average
-                else if (qtmclust_opts.s_opt==6) TM=sqrt((TM1*TM1+TM2*TM2)/2); // root mean square
-                std::cout<<"*\t"<<chainID_list[chain_j]<<'\t'<<TM2<<'\t'<<TM1<<std::endl;
-                if (TM>=qtmclust_opts.TMcut)
-                {
-                    clust_mem_vec[chain_i]=clust_repr_map[chain_j];
-                    found_clust=true;
-                    break;
-                }
-            }
-        }
-        index_vec.clear();
+        found_clust = run_tmalign_refine_stage(run);
 
         if (!found_clust) // new cluster
         {
