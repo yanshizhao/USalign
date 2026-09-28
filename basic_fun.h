@@ -862,30 +862,18 @@ inline int detect_format(std::stringstream& buf, int infmt_opt)
 // ============================================================
 size_t get_PDB_lines(const std::string filename,
     std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list,
-    std::vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
-    const std::string atom_opt, const bool normalize_atom_name, const int split_opt,
-    const int het_opt, const std::vector<std::string>&chain2parse,
-    const std::vector<std::string>&model2parse)
+    std::vector<int> &mol_vec, const int infmt_opt, const PdbParseOptions& parse_opts)
 {
     std::stringstream buf = read_file_to_memory(filename);
 
     // If buf is in a fatal error state, return early
     // (read_file_to_memory already printed a warning if applicable)
     if (buf.bad()) {
-        if (!split_opt) chainID_list.push_back("");
+        if (!parse_opts.split_opt) chainID_list.push_back("");
         return 0;
     }
 
     int fmt = detect_format(buf, infmt_opt);
-
-    PdbParseOptions parse_opts;
-    parse_opts.ter_opt = ter_opt;
-    parse_opts.atom_opt = atom_opt;
-    parse_opts.normalize_atom_name = normalize_atom_name;
-    parse_opts.split_opt = split_opt;
-    parse_opts.het_opt = het_opt;
-    parse_opts.chain2parse = chain2parse;
-    parse_opts.model2parse = model2parse;
 
     size_t result = 0;
          if (fmt == FORMAT_PDB)
@@ -899,7 +887,7 @@ size_t get_PDB_lines(const std::string filename,
     else
         std::cerr << "Warning! Unknown file format (" << fmt << ")" << std::endl;
 
-    if (!split_opt) chainID_list.push_back("");
+    if (!parse_opts.split_opt) chainID_list.push_back("");
     return result;
 }
 

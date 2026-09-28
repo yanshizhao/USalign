@@ -167,9 +167,8 @@ void convert_file_to_xyz(const std::string& filename, const Pdb2xyzOptions& pdb2
     std::vector<int> mol_vec;              // molecule type of chain
     std::vector<std::string> chainID_list; // list of chainID1
 
-    int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
-        pdb2xyz_opts.ter_opt, pdb2xyz_opts.infmt_opt, pdb2xyz_opts.atom_opt, pdb2xyz_opts.normalize_atom_name, pdb2xyz_opts.split_opt, pdb2xyz_opts.het_opt,
-        pdb2xyz_opts.chain2parse, pdb2xyz_opts.model2parse);
+    int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec, pdb2xyz_opts.infmt_opt,
+        PdbParseOptions{pdb2xyz_opts.ter_opt, pdb2xyz_opts.atom_opt, pdb2xyz_opts.normalize_atom_name, pdb2xyz_opts.split_opt, pdb2xyz_opts.het_opt, pdb2xyz_opts.chain2parse, pdb2xyz_opts.model2parse});
     if (!xchainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename

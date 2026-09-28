@@ -290,9 +290,8 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
         std::string xname=chain1_list[i];
         if (nwalign_opts.infmt1_opt>=4) xchainnum=get_FASTA_lines(xname, PDB_lines1,
                 chainID_list1, mol_vec1, nwalign_opts.ter_opt, nwalign_opts.split_opt);
-        else xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
-            nwalign_opts.ter_opt, nwalign_opts.infmt1_opt, nwalign_opts.atom_opt, nwalign_opts.normalize_atom_name, nwalign_opts.split_opt, nwalign_opts.het_opt,
-            nwalign_opts.chain2parse1, nwalign_opts.model2parse1);
+        else xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1, nwalign_opts.infmt1_opt,
+            PdbParseOptions{nwalign_opts.ter_opt, nwalign_opts.atom_opt, nwalign_opts.normalize_atom_name, nwalign_opts.split_opt, nwalign_opts.het_opt, nwalign_opts.chain2parse1, nwalign_opts.model2parse1});
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -323,10 +322,8 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
                     if (nwalign_opts.infmt2_opt>=4)
                          ychainnum=get_FASTA_lines(yname, PDB_lines2,
                             chainID_list2, mol_vec2, nwalign_opts.ter_opt, nwalign_opts.split_opt);
-                    else ychainnum=get_PDB_lines(yname, PDB_lines2,
-                            chainID_list2, mol_vec2, nwalign_opts.ter_opt, nwalign_opts.infmt2_opt,
-                            nwalign_opts.atom_opt, nwalign_opts.normalize_atom_name, nwalign_opts.split_opt, nwalign_opts.het_opt,
-                            nwalign_opts.chain2parse2, nwalign_opts.model2parse2);
+                    else ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2, mol_vec2, nwalign_opts.infmt2_opt,
+                        PdbParseOptions{nwalign_opts.ter_opt, nwalign_opts.atom_opt, nwalign_opts.normalize_atom_name, nwalign_opts.split_opt, nwalign_opts.het_opt, nwalign_opts.chain2parse2, nwalign_opts.model2parse2});
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname

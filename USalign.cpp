@@ -359,10 +359,8 @@ void parse_file_into_cache(const std::string& fname,
     std::vector<std::vector<std::string>> PDB_lines;
     std::vector<int> mol_vec;
     std::vector<std::string> chainID_list;
-    int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec,
-        parse_opts.ter_opt, parse_opts.infmt_opt, parse_opts.atom_opt,
-        parse_opts.normalize_atom_name, parse_opts.split_opt, parse_opts.het_opt,
-        parse_opts.chain2parse, parse_opts.model2parse);
+    int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec, parse_opts.infmt_opt,
+        PdbParseOptions{parse_opts.ter_opt, parse_opts.atom_opt, parse_opts.normalize_atom_name, parse_opts.split_opt, parse_opts.het_opt, parse_opts.chain2parse, parse_opts.model2parse});
     if (nchain == 0)
     {
         std::cerr << "Warning! Cannot parse file: " << fname
@@ -1042,10 +1040,8 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
-        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
-            user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt,
-            parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt,
-            user_opts.chain2parse1, user_opts.model2parse1);
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
+            PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1});
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -1086,10 +1082,8 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                 if (PDB_lines2.size()==0)
                 {
                     user_opts.yname=parsed_input.chain2_list[j];
-                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
-                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt,
-                        parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt,
-                        user_opts.chain2parse2, user_opts.model2parse2);
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
+                        PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2});
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
@@ -1236,9 +1230,8 @@ bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
         std::vector<std::vector<std::string> > chain_atom_lines;   // atom lines of every chain in the current PDB file
         std::vector<std::string> chain_id_list;               // chain ID list of the current PDB file
         std::vector<int> chain_mol_types;                // molecule type of each chain in the current PDB file (>0 = RNA, <=0 = protein)
-        size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types,
-            ter_opt, infmt_opt, "auto", normalize_atom_name, split_opt, het_opt,
-            chain2parse, model2parse);
+        size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types, infmt_opt,
+            PdbParseOptions{ter_opt, "auto", normalize_atom_name, split_opt, het_opt, chain2parse, model2parse});
         if (chain_num == 0)
         {
             std::cerr << std::endl;
@@ -4516,9 +4509,8 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
-        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
-            user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, 
-            user_opts.chain2parse1, user_opts.model2parse1);
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
+            PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1});
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -4540,9 +4532,8 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                 if (PDB_lines2.size()==0)
                 {
                     user_opts.yname=parsed_input.chain2_list[j];
-                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
-                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, 
-                        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
+                        PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2});
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
@@ -4675,9 +4666,8 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
-        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1,
-            mol_vec1, user_opts.ter_opt, user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-            user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1);
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
+            PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1});
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -4700,9 +4690,8 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                 if (PDB_lines2.size() == 0)
                 {
                     user_opts.yname = parsed_input.chain2_list[j];
-                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2,
-                        mol_vec2, user_opts.ter_opt, user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-                        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
+                        PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2});
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;

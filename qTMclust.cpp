@@ -362,9 +362,8 @@ int main(int argc, char *argv[])
     for (size_t i=0;i<chain_list.size();i++)
     {
         xname=chain_list[i];
-        newchainnum=get_PDB_lines(xname, PDB_lines, chainID_list,
-            mol_vec, ter_opt, infmt_opt, atom_opt, false, split_opt, het_opt,
-            chain2parse, model2parse);
+        newchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec, infmt_opt,
+            PdbParseOptions{ter_opt, atom_opt, false, split_opt, het_opt, chain2parse, model2parse});
         if (!newchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname

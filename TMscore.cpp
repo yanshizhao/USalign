@@ -427,10 +427,8 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
     {
         // parse chain 1
         std::string xname=chain1_list[i];
-        xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
-            tmscore_opts.ter_opt, tmscore_opts.infmt1_opt, tmscore_opts.atom_opt, tmscore_opts.normalize_atom_name,
-            tmscore_opts.split_opt, tmscore_opts.het_opt,
-            tmscore_opts.chain2parse1, tmscore_opts.model2parse1);
+        xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1, tmscore_opts.infmt1_opt,
+            PdbParseOptions{tmscore_opts.ter_opt, tmscore_opts.atom_opt, tmscore_opts.normalize_atom_name, tmscore_opts.split_opt, tmscore_opts.het_opt, tmscore_opts.chain2parse1, tmscore_opts.model2parse1});
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -463,10 +461,8 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
                 if (PDB_lines2.size()==0)
                 {
                     yname=chain2_list[j];
-                    ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2,
-                        mol_vec2, tmscore_opts.ter_opt, tmscore_opts.infmt2_opt, tmscore_opts.atom_opt,
-                        tmscore_opts.normalize_atom_name, tmscore_opts.split_opt, tmscore_opts.het_opt,
-                        tmscore_opts.chain2parse2, tmscore_opts.model2parse2);
+                    ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2, mol_vec2, tmscore_opts.infmt2_opt,
+                        PdbParseOptions{tmscore_opts.ter_opt, tmscore_opts.atom_opt, tmscore_opts.normalize_atom_name, tmscore_opts.split_opt, tmscore_opts.het_opt, tmscore_opts.chain2parse2, tmscore_opts.model2parse2});
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname

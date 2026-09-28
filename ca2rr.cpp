@@ -171,9 +171,8 @@ int main(int argc, char *argv[])
     long   N1,N2,N12;
 
     /* loop over file names */
-    xchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec,
-        ter_opt, infmt_opt, atom_opt, false, split_opt, het_opt,
-        chain2parse, model2parse);
+    xchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec, infmt_opt,
+        PdbParseOptions{ter_opt, atom_opt, false, split_opt, het_opt, chain2parse, model2parse});
     if (!xchainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<xname

@@ -193,9 +193,8 @@ void convert_file_to_ss(const std::string& filename, const Pdb2ssOptions& pdb2ss
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
 
-    int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
-        pdb2ss_opts.ter_opt, pdb2ss_opts.infmt_opt, pdb2ss_opts.atom_opt, pdb2ss_opts.normalize_atom_name, pdb2ss_opts.split_opt, pdb2ss_opts.het_opt,
-        pdb2ss_opts.chain2parse, pdb2ss_opts.model2parse);
+    int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec, pdb2ss_opts.infmt_opt,
+        PdbParseOptions{pdb2ss_opts.ter_opt, pdb2ss_opts.atom_opt, pdb2ss_opts.normalize_atom_name, pdb2ss_opts.split_opt, pdb2ss_opts.het_opt, pdb2ss_opts.chain2parse, pdb2ss_opts.model2parse});
     if (!xchainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename

@@ -211,9 +211,8 @@ void report_multimodel_clash(const std::string& filename, const BiounitasymOptio
     std::vector<int> mol_vec;              // molecule type of chain
     std::vector<std::string> chainID_list; // list of chainID1
 
-    int chainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec,
-        biounitasym_opts.ter_opt, biounitasym_opts.infmt_opt, biounitasym_opts.atom_opt, biounitasym_opts.normalize_atom_name, biounitasym_opts.split_opt, biounitasym_opts.het_opt,
-        biounitasym_opts.chain2parse, biounitasym_opts.model2parse);
+    int chainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec, biounitasym_opts.infmt_opt,
+        PdbParseOptions{biounitasym_opts.ter_opt, biounitasym_opts.atom_opt, biounitasym_opts.normalize_atom_name, biounitasym_opts.split_opt, biounitasym_opts.het_opt, biounitasym_opts.chain2parse, biounitasym_opts.model2parse});
     if (!chainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename
