@@ -351,43 +351,16 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
-    Vec3& t0 = chain_align_res.t0;
-    RotMat& u0 = chain_align_res.u0;
-    double& TM1 = chain_align_res.TM1;
-    double& TM2 = chain_align_res.TM2;
-    double& TM3 = chain_align_res.TM3;
-    double& TM4 = chain_align_res.TM4;
-    double& TM5 = chain_align_res.TM5;
-    double& d0_0 = chain_align_res.d0_0;
-    double& TM_0 = chain_align_res.TM_0;
-    double& d0A = chain_align_res.d0A;
-    double& d0u = chain_align_res.d0u;
-    double& d0a = chain_align_res.d0a;
-    double& d0_out = chain_align_res.d0_out;
-    std::string& seqM = chain_align_res.seqM;
-    std::string& seqxA = chain_align_res.seqxA;
-    std::string& seqyA = chain_align_res.seqyA;
-    double& rmsd0 = chain_align_res.rmsd0;
-    int& L_ali = chain_align_res.L_ali;
-    double& Liden = chain_align_res.Liden;
-    double& TM_ali = chain_align_res.TM_ali;
-    double& rmsd_ali = chain_align_res.rmsd_ali;
-    int& n_ali = chain_align_res.n_ali;
-    int& n_ali8 = chain_align_res.n_ali8;
 
     int L_lt_d=0;
     double GDT_list[5]={0,0,0,0,0}; // 0.5, 1, 2, 4, 8
     double maxsub=0;
-    TM1=TM2=TM3=TM4=TM5=0;
 
     // entry function for structure alignment
     TMscore_main(
         chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
-        t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0u, d0a, d0_out,
-        seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
-        xlen, ylen, sequence, tmscore_opts.Lnorm_ass, tmscore_opts.d0_scale,
+        chain_align_res,
+        sequence, tmscore_opts.Lnorm_ass, tmscore_opts.d0_scale,
         tmscore_opts.a_opt, tmscore_opts.u_opt, tmscore_opts.d_opt, tmscore_opts.fast_opt,
         chain1.cur_complex_mol_list+chain2.cur_complex_mol_list,
         GDT_list,maxsub,tmscore_opts.TMcut);

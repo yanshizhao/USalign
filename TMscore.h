@@ -641,20 +641,39 @@ void output_TMscore_results(
 }
 
 int TMscore_main(CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy, Vec3& t0, RotMat& u0,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0,
-    double &d0A, double &d0u, double &d0a, double &d0_out,
-    std::string &seqM, std::string &seqxA, std::string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden,
-    double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
-    const int xlen, const int ylen,
+    const std::string& seqx, const std::string& seqy,
+    ChainPairAlignResult& chain_align_res,
     const std::vector<std::string> sequence, const double Lnorm_ass,
     const double d0_scale, const int a_opt,
     const bool u_opt, const bool d_opt, const bool fast_opt,
     const int mol_type, double GDT_list[5], double &maxsub,
     const double TMcut)
 {
+    const int xlen = xa.size();
+    const int ylen = ya.size();
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali = chain_align_res.n_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
     double D0_MIN;        //for d0
     double Lnorm;         //normalization length
     double score_d8,d0,d0_search,dcu0;//for TMscore search
