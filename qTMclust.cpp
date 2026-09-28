@@ -314,38 +314,17 @@ void build_file_lists(const QTMclustOptions& qtmclust_opts, std::vector<std::str
 
 }
 
-int main(int argc, char *argv[])
+void read_all_chains(const std::vector<std::string>& chain_list, const QTMclustOptions& qtmclust_opts,
+    std::vector<int>& mol_vec, std::vector<std::string>& chainID_list,
+    std::vector<std::pair<int,size_t> >& chainLen_list,
+    CharMatrix& seq_vec, std::vector<std::string>& sec_vec,
+    std::vector<std::vector<std::vector<float> > >& xyz_vec)
 {
-    if (argc < 2) print_help();
-
-
-    std::clock_t t1, t2;
-    t1 = std::clock();
-
-    /**********************/
-    //    get argument   
-    /**********************/
-    QTMclustOptions qtmclust_opts;
-    std::vector<std::string> chain_list;
-    std::map<std::string, std::map<std::string,bool> > init_cluster;
-
-    parse_arguments(argc, argv, qtmclust_opts, init_cluster);
-    postprocess_arguments(qtmclust_opts);
-
-    build_file_lists(qtmclust_opts, chain_list);
-    // declare previously global variables
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
-    std::vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
-    std::vector<std::string> chainID_list;      // list of chainID
     size_t xchainnum=0;         // number of chains in a PDB file
-    int    xlen,ylen;           // chain length
+    int    xlen;
     CoordArray xa;
-    CoordArray ya;           // xyz coordinate
     std::vector<std::string> resi_vec;    // residue index for chain, dummy variable
-    std::vector<std::pair<int,size_t> >chainLen_list; // vector of (length,index) pair
-    CharMatrix seq_vec;
-    std::vector<std::string> sec_vec;
-    std::vector<std::vector<std::vector<float> > >xyz_vec;
 
     // parse files
     std::string chain_name;
@@ -354,47 +333,24 @@ int main(int argc, char *argv[])
     std::vector<float> coord_template(3,0);
     std::vector<std::vector<float> >chain_coord_buf;
     size_t newchainnum;
-    double ub_HwRMSD=0.90*qtmclust_opts.TMcut+0.10;
-    double lb_HwRMSD=0.5*qtmclust_opts.TMcut;
-    double ub_TMfast=0.90*qtmclust_opts.TMcut+0.10;
-    double lb_TMfast=0.9*qtmclust_opts.TMcut;
-    if      (qtmclust_opts.s_opt==2 || qtmclust_opts.s_opt==4 || qtmclust_opts.s_opt==5) qtmclust_opts.a_opt=-2; // normalized by longer length, i.e. smaller TM
-    else if (qtmclust_opts.s_opt==1 || qtmclust_opts.s_opt==5) qtmclust_opts.a_opt=-1; // normalized by shorter length, i.e. larger TM
-    else if (qtmclust_opts.s_opt==3) qtmclust_opts.a_opt= 1; // normalized by average length
-
-#ifdef TMalign_HwRMSD_h
-    /* These parameters controls HwRMSD filter. iter_opt typically should be
-     * >=3. Many alignments converge within iter_opt=5. Occassionally
-     * some alignments require iter_opt=10. Higher iter_opt takes more time,
-     * even though HwRMSD iter_opt 10 still takes far less time than TMalign
-     * -fast -qtmclust_opts.TMcut 0.5.
-     * After HwRMSD filter, at least min_repr_num and at most max_repr_num
-     * are used for subsequent TMalign. The actual number of representatives
-     * are decided by xlen */
-    const int glocal    =0; // global alignment
-    const int iter_opt  =10;
-    const int min_repr_num=10;
-    const int max_repr_num=50;
-#endif
-
     for (size_t i=0;i<chain_list.size();i++)
     {
-        qtmclust_opts.xname=chain_list[i];
-        newchainnum=get_PDB_lines(qtmclust_opts.xname, PDB_lines, chainID_list, mol_vec, qtmclust_opts.infmt_opt,
+        std::string xname=chain_list[i];
+        newchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec, qtmclust_opts.infmt_opt,
             PdbParseOptions{qtmclust_opts.ter_opt, qtmclust_opts.atom_opt, false, qtmclust_opts.split_opt, qtmclust_opts.het_opt, qtmclust_opts.chain2parse, qtmclust_opts.model2parse});
         if (!newchainnum)
         {
-            std::cerr<<"Warning! Cannot parse file: "<<qtmclust_opts.xname
+            std::cerr<<"Warning! Cannot parse file: "<<xname
                 <<". Chain number 0."<<std::endl;
             continue;
         }
-        chain_name=qtmclust_opts.xname.substr(qtmclust_opts.dir_opt.size(),
-            qtmclust_opts.xname.size()-qtmclust_opts.dir_opt.size()-qtmclust_opts.suffix_opt.size());
+        chain_name=xname.substr(qtmclust_opts.dir_opt.size(),
+            xname.size()-qtmclust_opts.dir_opt.size()-qtmclust_opts.suffix_opt.size());
         for (size_t j=0;j<newchainnum;j++)
         {
             chainID_list[j+xchainnum]=chain_name+chainID_list[j+xchainnum];
             xlen=PDB_lines[j].size();
-            std::cout<<"Parsing "<<qtmclust_opts.xname<<'\t'<<chainID_list[j+xchainnum]
+            std::cout<<"Parsing "<<xname<<'\t'<<chainID_list[j+xchainnum]
                 <<" ("<<xlen<<" residues)."<<std::endl;
             if (qtmclust_opts.mol_opt=="RNA") mol_vec[j+xchainnum]=1;
             else if (qtmclust_opts.mol_opt=="protein") mol_vec[j+xchainnum]=-1;
@@ -435,10 +391,65 @@ int main(int argc, char *argv[])
         xchainnum+=newchainnum;
     }
     coord_template.clear();
-    chain_list.clear();
-
     // swap completely destroy the vector and free up the memory capacity
     std::vector<std::vector<std::string> >().swap(PDB_lines);
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2) print_help();
+
+
+    std::clock_t t1, t2;
+    t1 = std::clock();
+
+    /**********************/
+    //    get argument   
+    /**********************/
+    QTMclustOptions qtmclust_opts;
+    std::vector<std::string> chain_list;
+    std::map<std::string, std::map<std::string,bool> > init_cluster;
+
+    parse_arguments(argc, argv, qtmclust_opts, init_cluster);
+    postprocess_arguments(qtmclust_opts);
+
+    build_file_lists(qtmclust_opts, chain_list);
+    // declare previously global variables
+    std::vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
+    std::vector<std::string> chainID_list;      // list of chainID
+    int    xlen,ylen;           // chain length
+    CoordArray xa;
+    CoordArray ya;           // xyz coordinate
+    std::vector<std::pair<int,size_t> >chainLen_list; // vector of (length,index) pair
+    CharMatrix seq_vec;
+    std::vector<std::string> sec_vec;
+    std::vector<std::vector<std::vector<float> > >xyz_vec;
+
+    read_all_chains(chain_list, qtmclust_opts, mol_vec, chainID_list, chainLen_list,
+        seq_vec, sec_vec, xyz_vec);
+    double ub_HwRMSD=0.90*qtmclust_opts.TMcut+0.10;
+    double lb_HwRMSD=0.5*qtmclust_opts.TMcut;
+    double ub_TMfast=0.90*qtmclust_opts.TMcut+0.10;
+    double lb_TMfast=0.9*qtmclust_opts.TMcut;
+    if      (qtmclust_opts.s_opt==2 || qtmclust_opts.s_opt==4 || qtmclust_opts.s_opt==5) qtmclust_opts.a_opt=-2; // normalized by longer length, i.e. smaller TM
+    else if (qtmclust_opts.s_opt==1 || qtmclust_opts.s_opt==5) qtmclust_opts.a_opt=-1; // normalized by shorter length, i.e. larger TM
+    else if (qtmclust_opts.s_opt==3) qtmclust_opts.a_opt= 1; // normalized by average length
+
+#ifdef TMalign_HwRMSD_h
+    /* These parameters controls HwRMSD filter. iter_opt typically should be
+     * >=3. Many alignments converge within iter_opt=5. Occassionally
+     * some alignments require iter_opt=10. Higher iter_opt takes more time,
+     * even though HwRMSD iter_opt 10 still takes far less time than TMalign
+     * -fast -qtmclust_opts.TMcut 0.5.
+     * After HwRMSD filter, at least min_repr_num and at most max_repr_num
+     * are used for subsequent TMalign. The actual number of representatives
+     * are decided by xlen */
+    const int glocal    =0; // global alignment
+    const int iter_opt  =10;
+    const int min_repr_num=10;
+    const int max_repr_num=50;
+#endif
+
     size_t Nstruct=chainLen_list.size();
 
     // sort by chain length
