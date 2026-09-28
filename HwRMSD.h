@@ -66,19 +66,65 @@ void parse_alignment_into_invmap(const std::string seqxA_tmp,
 }
 
 
-int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy, Vec3& t0, RotMat& u0,
-    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &TM_0, double &d0A, double &d0B, double &d0u,
-    double &d0a, double &d0_out, std::string &seqM, std::string &seqxA, std::string &seqyA,
-    double &rmsd0, int &L_ali, double &Liden, double &TM_ali,
-    double &rmsd_ali, int &n_ali, int &n_ali8, const int xlen, const int ylen,
-    const std::vector<std::string>&sequence, const double Lnorm_ass,
-    const double d0_scale, const int i_opt,
-    const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
-    std::vector<int>& invmap, const int glocal=0, const int iter_opt=10,
-    const int seq_opt=3, const double early_opt=0.01)
+struct HwRMSDParams
 {
+    std::vector<std::string> sequence;
+    double Lnorm_ass = 0;
+    double d0_scale = 0;
+    double early_opt = 0.01;
+    int    i_opt = 0;
+    int    a_opt = 0;
+    int    mol_type = 0;
+    int    glocal = 0;
+    int    iter_opt = 10;
+    int    seq_opt = 3;
+    bool   u_opt = false;
+    bool   d_opt = false;
+};
+
+int HwRMSD_main(CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy,
+    ChainPairAlignResult& chain_align_res, std::vector<int>& invmap,
+    const HwRMSDParams& hwrmsd_params)
+{
+    const int xlen = xa.size();
+    const int ylen = ya.size();
+    const std::vector<std::string>& sequence = hwrmsd_params.sequence;
+    const double Lnorm_ass = hwrmsd_params.Lnorm_ass;
+    const double d0_scale = hwrmsd_params.d0_scale;
+    const double early_opt = hwrmsd_params.early_opt;
+    const int i_opt = hwrmsd_params.i_opt;
+    const int a_opt = hwrmsd_params.a_opt;
+    const int mol_type = hwrmsd_params.mol_type;
+    const int glocal = hwrmsd_params.glocal;
+    const int iter_opt = hwrmsd_params.iter_opt;
+    const int seq_opt = hwrmsd_params.seq_opt;
+    const bool u_opt = hwrmsd_params.u_opt;
+    const bool d_opt = hwrmsd_params.d_opt;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali = chain_align_res.n_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
     /***********************/
     // allocate memory    
     /***********************/
@@ -89,29 +135,29 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     xt.resize(xlen);
     r1.resize(minlen);
     r2.resize(minlen);
-    ChainPairAlignResult chain_align_res = {};
-    chain_align_res.d0_out = d0_out;
-    chain_align_res.invmap.assign(ylen+1, 0);
-    std::vector<int>& invmap_tmp = chain_align_res.invmap;
+    ChainPairAlignResult iter_res = {};
+    iter_res.d0_out = d0_out;
+    iter_res.invmap.assign(ylen+1, 0);
+    std::vector<int>& invmap_tmp = iter_res.invmap;
 
     int i;
     int j;
     int i1;
-    double& TM1_tmp = chain_align_res.TM1;
-    double& TM2_tmp = chain_align_res.TM2;
-    double& TM3_tmp = chain_align_res.TM3;
-    double& TM4_tmp = chain_align_res.TM4;
-    double& TM5_tmp = chain_align_res.TM5;
-    double& TM_ali_tmp = chain_align_res.TM_ali;
-    std::string& seqxA_tmp = chain_align_res.seqxA;
-    std::string& seqyA_tmp = chain_align_res.seqyA;
-    std::string& seqM_tmp = chain_align_res.seqM;
-    double& rmsd0_tmp = chain_align_res.rmsd0;
-    int& L_ali_tmp = chain_align_res.L_ali;
-    int& n_ali_tmp = chain_align_res.n_ali;
-    int& n_ali8_tmp = chain_align_res.n_ali8;
-    double& Liden_tmp = chain_align_res.Liden;
-    double& rmsd_ali_tmp = chain_align_res.rmsd_ali;
+    double& TM1_tmp = iter_res.TM1;
+    double& TM2_tmp = iter_res.TM2;
+    double& TM3_tmp = iter_res.TM3;
+    double& TM4_tmp = iter_res.TM4;
+    double& TM5_tmp = iter_res.TM5;
+    double& TM_ali_tmp = iter_res.TM_ali;
+    std::string& seqxA_tmp = iter_res.seqxA;
+    std::string& seqyA_tmp = iter_res.seqyA;
+    std::string& seqM_tmp = iter_res.seqM;
+    double& rmsd0_tmp = iter_res.rmsd0;
+    int& L_ali_tmp = iter_res.L_ali;
+    int& n_ali_tmp = iter_res.n_ali;
+    int& n_ali8_tmp = iter_res.n_ali8;
+    double& Liden_tmp = iter_res.Liden;
+    double& rmsd_ali_tmp = iter_res.rmsd_ali;
     double max_TM=0;
     double cur_TM=0;
 
@@ -154,12 +200,12 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
         Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
             L_ali, t, u);
 
-        se_main(xt, ya, seqx.c_str(), seqy.c_str(), chain_align_res,
+        se_main(xt, ya, seqx.c_str(), seqy.c_str(), iter_res,
             xlen, ylen, sequence, align_opts, 1);
-        d0A = chain_align_res.d0A;
-        d0B = chain_align_res.d0B;
-        d0u = chain_align_res.d0u;
-        d0a = chain_align_res.d0a;
+        d0A = iter_res.d0A;
+        d0B = iter_res.d0B;
+        d0u = iter_res.d0u;
+        d0a = iter_res.d0a;
 
         if (n_ali8_tmp==0)
         {
@@ -185,7 +231,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
             Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
                 L_ali, t, u);
 
-            se_main(xt, ya, seqx.c_str(), seqy.c_str(), chain_align_res,
+            se_main(xt, ya, seqx.c_str(), seqy.c_str(), iter_res,
                 xlen, ylen, sequence, align_opts, 1);
         }
 

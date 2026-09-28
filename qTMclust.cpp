@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
         }
 
         xa.clear();
-        xa.reserve(xlen);
+        xa.resize(xlen);
         for (int r=0;r<xlen;r++)
         {
             xa[r][0]=xyz_vec[chain_i][r][0];
@@ -518,7 +518,7 @@ int main(int argc, char *argv[])
             
             
             ya.clear();
-            ya.reserve(ylen);
+            ya.resize(ylen);
             for (int r=0;r<ylen;r++)
             {
                 ya[r][0]=xyz_vec[chain_j][r][0];
@@ -527,23 +527,13 @@ int main(int argc, char *argv[])
             }
 
             // declare variable specific to this pair of HwRMSD
-            Vec3 t0; RotMat u0;
-            double TM1;
-            double TM2;
-            double TM3, TM4, TM5;     // for s_opt, u_opt, d_opt
-            double TM_0;
-            double d0A;
-            double d0B;
-            double d0u;
-            double d0a;
-            double d0_out=5.0;
-            std::string seqM, seqxA, seqyA;// for output alignment
-            double rmsd0 = 0.0;
-            int L_ali;                // Aligned length in standard_TMscore
-            double Liden=0;
-            double TM_ali, rmsd_ali;  // TMscore and rmsd in standard_TMscore
-            int n_ali=0;
-            int n_ali8=0;
+            ChainPairAlignResult chain_align_res = {};
+            chain_align_res.d0_out = 5.0;
+            double& TM1 = chain_align_res.TM1;
+            double& TM2 = chain_align_res.TM2;
+            double& TM3 = chain_align_res.TM3;
+            double& TM4 = chain_align_res.TM4;
+            double& TM5 = chain_align_res.TM5;
             std::vector<int> invmap(ylen+1);
 
             // entry function for structure alignment
@@ -552,17 +542,20 @@ int main(int argc, char *argv[])
             std::string seqy_str(&seq_vec[chain_j][0], ylen);
             std::string secx_str(&sec_vec[chain_i][0], xlen);
             std::string secy_str(&sec_vec[chain_j][0], ylen);
+            HwRMSDParams hwrmsd_params;
+            hwrmsd_params.sequence = sequence;
+            hwrmsd_params.Lnorm_ass = Lnorm_ass;
+            hwrmsd_params.d0_scale = d0_scale;
+            hwrmsd_params.i_opt = i_opt;
+            hwrmsd_params.a_opt = a_opt;
+            hwrmsd_params.mol_type = mol_vec[chain_i]+mol_vec[chain_j];
+            hwrmsd_params.glocal = glocal;
+            hwrmsd_params.iter_opt = iter_opt;
+            hwrmsd_params.u_opt = u_opt;
+            hwrmsd_params.d_opt = d_opt;
             HwRMSD_main(
-                xa, ya, seqx_str, seqy_str, secx_str, secy_str, t0, u0,
-                TM1, TM2, TM3, TM4, TM5,
-                TM_0, d0A, d0B, d0u,
-                d0a, d0_out, seqM, seqxA, seqyA,
-                rmsd0, L_ali, Liden, TM_ali,
-                rmsd_ali, n_ali, n_ali8, xlen, ylen,
-                sequence, Lnorm_ass,
-                d0_scale, i_opt,
-                a_opt, u_opt, d_opt, mol_vec[chain_i]+mol_vec[chain_j],
-                invmap, glocal, iter_opt);
+                xa, ya, seqx_str, seqy_str, secx_str, secy_str,
+                chain_align_res, invmap, hwrmsd_params);
             }
 
             TM=TM3; // average length
@@ -585,12 +578,6 @@ int main(int argc, char *argv[])
                 else
                     HwRMSDscore_list.push_back(std::make_pair(TM,index_vec[j]));
             }
-
-            // clean up after each HwRMSD
-            seqM.clear();
-            seqxA.clear();
-            seqyA.clear();
-
 
             // if a good hit is guaranteed to be found, stop the loop
             if (TM>=ub_HwRMSD) break;

@@ -394,17 +394,23 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     int& n_ali8 = chain_align_res.n_ali8;
     std::vector<int>& invmap = chain_align_res.invmap;
 
+    HwRMSDParams hwrmsd_params;
+    hwrmsd_params.sequence = hwrmsd_opts.sequence;
+    hwrmsd_params.Lnorm_ass = hwrmsd_opts.Lnorm_ass;
+    hwrmsd_params.d0_scale = hwrmsd_opts.d0_scale;
+    hwrmsd_params.early_opt = hwrmsd_opts.early_opt;
+    hwrmsd_params.i_opt = hwrmsd_opts.i_opt;
+    hwrmsd_params.a_opt = hwrmsd_opts.a_opt;
+    hwrmsd_params.mol_type = chain1.cur_complex_mol_list+chain2.cur_complex_mol_list;
+    hwrmsd_params.glocal = hwrmsd_opts.glocal;
+    hwrmsd_params.iter_opt = hwrmsd_opts.iter_opt;
+    hwrmsd_params.seq_opt = hwrmsd_opts.seq_opt;
+    hwrmsd_params.u_opt = hwrmsd_opts.u_opt;
+    hwrmsd_params.d_opt = hwrmsd_opts.d_opt;
+
     // entry function for structure alignment
     HwRMSD_main(chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
-        chain1.chain_sec, chain2.chain_sec, t0, u0,
-        TM1, TM2, TM3, TM4, TM5, TM_0,
-        d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
-        rmsd0, L_ali, Liden, TM_ali,
-        rmsd_ali, n_ali, n_ali8, xlen, ylen, hwrmsd_opts.sequence,
-        hwrmsd_opts.Lnorm_ass, hwrmsd_opts.d0_scale, hwrmsd_opts.i_opt, hwrmsd_opts.a_opt,
-        hwrmsd_opts.u_opt, hwrmsd_opts.d_opt,
-        chain1.cur_complex_mol_list+chain2.cur_complex_mol_list,
-        invmap, hwrmsd_opts.glocal, hwrmsd_opts.iter_opt, hwrmsd_opts.seq_opt, hwrmsd_opts.early_opt);
+        chain1.chain_sec, chain2.chain_sec, chain_align_res, invmap, hwrmsd_params);
 
     if (hwrmsd_opts.outfmt_opt>=2)
         get_seqID(invmap, chain1.chain_seq, chain2.chain_seq, ylen, Liden, n_ali8);
