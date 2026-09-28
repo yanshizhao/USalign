@@ -227,7 +227,6 @@ inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
 
     // ---- hinge > 0 : masked DP with pre-set alignment anchors ----
     int L = (len2 > len1) ? len2 : len1;
-    int int_min = L * (gap_open - 1);
 
     for (i = 0; i <= len1; i++)
         for (j = 0; j <= len2; j++)

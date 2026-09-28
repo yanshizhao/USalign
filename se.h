@@ -272,7 +272,6 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
 
     std::vector<int> m1;
     std::vector<int> m2;
-    double d;
     if (outfmt_opt<2)
     {
         m1.resize(xlen); //alignd index in x

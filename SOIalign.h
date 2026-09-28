@@ -200,10 +200,6 @@ inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     double tmscore_old=0;
     tmscore_max=-1;
 
-
-
-
-    double d02=d0*d0;
     for (iteration=0; iteration<iteration_max; iteration++)
     {
         if (iteration==0 && init_invmap)
@@ -574,7 +570,6 @@ inline void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
     double rmsd;
     simplify_step=1;
     score_sum_method=0;
-    double Lnorm_0=ylen;
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;

@@ -722,8 +722,6 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     double TM;
     double TMmax=-1;
 
-    double ddcc=0.4;
-    if (Lnorm <= 40) ddcc=0.1;   //Lnorm was setted in parameter_set4search
     double local_d0_search = d0_search;
 
     //************************************************//
@@ -873,7 +871,6 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         GDT_list, maxsub);
     TM_0 = TM1;
 
-    double Lnorm_d0;
     if (a_opt>0)
     {
         //normalized by average length of structures A, B
@@ -909,7 +906,6 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         d0_out=d0_scale;
         d0_0=d0_scale;
         //Lnorm_0=ylen;
-        Lnorm_d0=Lnorm_0;
         local_d0_search = d0_search;
         TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
             simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,

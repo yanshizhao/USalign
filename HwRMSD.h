@@ -98,8 +98,6 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
     int i;
     int j;
     int i1;
-    int i2;
-    int L;
     double& TM1_tmp = chain_align_res.TM1;
     double& TM2_tmp = chain_align_res.TM2;
     double& TM3_tmp = chain_align_res.TM3;

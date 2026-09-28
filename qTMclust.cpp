@@ -153,7 +153,6 @@ int main(int argc, char *argv[])
     std::string xname       = "";
     double TMcut       = 0.5;
     std::string fname_clust = ""; // file name for output cluster result
-    std::string fname_init  = "";
     std::string fname_lign  = ""; // file name for user alignment
     std::vector<std::string> sequence; // get value from alignment file
     double Lnorm_ass;

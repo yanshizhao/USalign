@@ -466,8 +466,6 @@ inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vect
     int ut_idx;
     double TMscore=0; // pseudo TM-score
     double TMsum  =0;
-    double TMnow  =0;
-    double TMmax  =0;
     double dd=0;
 
     size_t  total_pair=chain1_num*chain2_num; // total pair
@@ -2554,7 +2552,6 @@ inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const
     double& rmsd0 = chain_align_res.rmsd0;
     const bool fast_opt = align_opts.fast_opt;
     const int i_opt = align_opts.i_opt;
-    double TM;
     int i;
 
     //********************************************************************//
@@ -2565,7 +2562,7 @@ inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+    detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
