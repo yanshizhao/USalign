@@ -640,85 +640,45 @@ void output_TMscore_results(
             resi_vec1, resi_vec2, chainID1, chainID2);
 }
 
-int TMscore_main(CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy,
-    ChainPairAlignResult& chain_align_res,
-    const std::vector<std::string> sequence, const double Lnorm_ass,
-    const double d0_scale, const int a_opt,
-    const bool u_opt, const bool d_opt, const bool fast_opt,
-    const int mol_type, double GDT_list[5], double &maxsub,
-    const double TMcut)
+struct TMscoreWorkspace
+{
+    RotMat u;                     //Kabsch translation vector and rotation matrix
+    Vec3 t;
+    CoordArray xtm;               // for TMscore search engine
+    CoordArray ytm;
+    CoordArray xt;                //for saving the superposed version of r_1 or xtm
+    CoordArray r1;                // for Kabsch rotation
+    CoordArray r2;
+    std::vector<int> invmap;
+    std::vector<int> invmap0;
+    std::vector<int> m1;          //alignd index in x
+    std::vector<int> m2;          //alignd index in y
+    double D0_MIN;                //for d0
+    double Lnorm;                 //normalization length
+    double score_d8;              //for TMscore search
+    double d0;
+    double d0_search;
+    double dcu0;
+    double local_d0_search;
+    double TM;
+    double TMmax;
+    double rmsd;
+    int simplify_step;
+    int score_sum_method;
+};
+
+int tmscore_initial_alignment(TMscoreWorkspace& ws, const std::vector<std::string>& sequence,
+    CoordArray& xa, CoordArray& ya, ChainPairAlignResult& chain_align_res,
+    const int mol_type, const int a_opt, const double TMcut)
 {
     const int xlen = xa.size();
     const int ylen = ya.size();
-    Vec3& t0 = chain_align_res.t0;
-    RotMat& u0 = chain_align_res.u0;
-    double& TM1 = chain_align_res.TM1;
-    double& TM2 = chain_align_res.TM2;
-    double& TM3 = chain_align_res.TM3;
-    double& TM4 = chain_align_res.TM4;
-    double& TM5 = chain_align_res.TM5;
-    double& d0_0 = chain_align_res.d0_0;
-    double& TM_0 = chain_align_res.TM_0;
-    double& d0A = chain_align_res.d0A;
-    double& d0u = chain_align_res.d0u;
-    double& d0a = chain_align_res.d0a;
-    double& d0_out = chain_align_res.d0_out;
-    std::string& seqM = chain_align_res.seqM;
-    std::string& seqxA = chain_align_res.seqxA;
-    std::string& seqyA = chain_align_res.seqyA;
-    double& rmsd0 = chain_align_res.rmsd0;
-    int& L_ali = chain_align_res.L_ali;
-    double& Liden = chain_align_res.Liden;
-    double& TM_ali = chain_align_res.TM_ali;
-    double& rmsd_ali = chain_align_res.rmsd_ali;
-    int& n_ali = chain_align_res.n_ali;
-    int& n_ali8 = chain_align_res.n_ali8;
-    double D0_MIN;        //for d0
-    double Lnorm;         //normalization length
-    double score_d8,d0,d0_search,dcu0;//for TMscore search
-    Vec3 t; RotMat u; //Kabsch translation vector and rotation matrix
-    DoubleMatrix score;      // Input score table for dynamic programming
-    CharMatrix path;         // for dynamic programming
-    DoubleMatrix val;         // for dynamic programming
-    CoordArray xtm, ytm;     // for TMscore search engine
-    CoordArray xt;            //for saving the superposed version of r_1 or xtm
-    CoordArray r1, r2;        // for Kabsch rotation
-
-    /***********************/
-    // allocate memory
-    /***********************/
-    int minlen = std::min(xlen, ylen);
-    score.assign(xlen+1, std::vector<double>(ylen+1));
-    path.assign(xlen+1, std::vector<char>(ylen+1));
-    val.assign(xlen+1, std::vector<double>(ylen+1));
-    xtm.resize(minlen);
-    ytm.resize(minlen);
-    xt.resize(xlen);
-    r1.resize(minlen);
-    r2.resize(minlen);
-
-    /***********************/
-    //    parameter set   
-    /***********************/
-    parameter_set4search(xlen, ylen, D0_MIN, Lnorm, 
-        score_d8, d0, d0_search, dcu0);
-    int simplify_step    = 40; //for simplified search engine
-    int score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
-
-    int i;
-    std::vector<int> invmap0(ylen+1, -1);
-    std::vector<int> invmap(ylen+1);
-    double TM;
-    double TMmax=-1;
-
-    double local_d0_search = d0_search;
 
     //************************************************//
     //    Stick to the initial alignment              //
     //************************************************//
     for (int j = 0; j < ylen; j++)// Set aligned position to be "-1"
-        invmap[j] = -1;
+        ws.invmap[j] = -1;
 
     int i1 = -1;// in C version, index starts from zero, not from one
     int i2 = -1;
@@ -732,26 +692,26 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
         {
             i2++;
             if (i2 >= ylen || i1 >= xlen) kk1 = L;
-            else if (sequence[0][kk1] != '-') invmap[i2] = i1;
+            else if (sequence[0][kk1] != '-') ws.invmap[i2] = i1;
         }
     }
 
     //--------------- 2. Align proteins from original alignment
-    double prevD0_MIN = D0_MIN;// stored for later use
-    int prevLnorm = Lnorm;
-    double prevd0 = d0;
-    TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya, ylen,
-        invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, score_d8,
-        t, u, mol_type);
-    D0_MIN = prevD0_MIN;
-    Lnorm = prevLnorm;
-    d0 = prevd0;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, ylen,
-        invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
-    if (TM > TMmax)
+    double prevD0_MIN = ws.D0_MIN;// stored for later use
+    int prevLnorm = ws.Lnorm;
+    double prevd0 = ws.d0;
+    chain_align_res.TM_ali = standard_TMscore(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, xa, ya, ylen,
+        ws.invmap, chain_align_res.L_ali, chain_align_res.rmsd_ali, ws.D0_MIN, ws.Lnorm, ws.d0,
+        ws.score_d8, ws.t, ws.u, mol_type);
+    ws.D0_MIN = prevD0_MIN;
+    ws.Lnorm = prevLnorm;
+    ws.d0 = prevd0;
+    ws.TM = detailed_search_standard(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, xa, ya, ylen,
+        ws.invmap, ws.t, ws.u, 40, 8, ws.local_d0_search, true, ws.Lnorm, ws.score_d8, ws.d0);
+    if (ws.TM > ws.TMmax)
     {
-        TMmax = TM;
-        for (i = 0; i<ylen; i++) invmap0[i] = invmap[i];
+        ws.TMmax = ws.TM;
+        for (int i = 0; i<ylen; i++) ws.invmap0[i] = ws.invmap[i];
     }
 
     //*******************************************************************//
@@ -759,9 +719,9 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     //*******************************************************************//
     //check if the initial alignment is generated appropriately
     bool flag=false;
-    for(i=0; i<ylen; i++)
+    for(int i=0; i<ylen; i++)
     {
-        if(invmap0[i]>=0)
+        if(ws.invmap0[i]>=0)
         {
             flag=true;
             break;
@@ -778,195 +738,262 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa, ya, t0, u0, invmap0, mol_type);
+            xa, ya, chain_align_res.t0, chain_align_res.u0, ws.invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
-            TM1=TM2=TM3=TM4=TM5=TMtmp;
+            chain_align_res.TM1=chain_align_res.TM2=chain_align_res.TM3=chain_align_res.TM4=chain_align_res.TM5=TMtmp;
             return 7;
         }
     }
+
+    return 0;
+}
+
+void tmscore_detailed_search(TMscoreWorkspace& ws, CoordArray& xa, CoordArray& ya,
+    ChainPairAlignResult& chain_align_res, const bool fast_opt,
+    double GDT_list[5], double &maxsub)
+{
+    const int xlen = xa.size();
+    const int ylen = ya.size();
 
     //********************************************************************//
     //    Detailed TMscore search engine --> prepare for final TMscore    //
     //********************************************************************//
     //run detailed TMscore search engine for the best alignment, and
     //extract the best rotation matrix (t, u) for the best alignment
-    simplify_step=1;
-    if (fast_opt) simplify_step=40;
-    score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, ylen,
-        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
-        false, Lnorm, score_d8, d0,
+    ws.simplify_step=1;
+    if (fast_opt) ws.simplify_step=40;
+    ws.score_sum_method=8;
+    ws.TM = detailed_search_standard(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, xa, ya, ylen,
+        ws.invmap0, ws.t, ws.u, ws.simplify_step, ws.score_sum_method, ws.local_d0_search,
+        false, ws.Lnorm, ws.score_d8, ws.d0,
         GDT_list, maxsub);
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    double d;
-    std::vector<int> m1(xlen); //alignd index in x
-    std::vector<int> m2(ylen); //alignd index in y
-    do_rotation(xa, xt, xlen, t, u);
+    do_rotation(xa, ws.xt, xlen, ws.t, ws.u);
     k=0;
     for(int j=0; j<ylen; j++)
     {
-        i=invmap0[j];
+        int i=ws.invmap0[j];
         if(i>=0)//aligned
         {
-            n_ali++;
-            d=sqrt(dist(xt[i], ya[j]));
-            m1[k]=i;
-            m2[k]=j;
+            chain_align_res.n_ali++;
+            ws.m1[k]=i;
+            ws.m2[k]=j;
 
-            xtm[k][0]=xa[i][0];
-            xtm[k][1]=xa[i][1];
-            xtm[k][2]=xa[i][2];
+            ws.xtm[k][0]=xa[i][0];
+            ws.xtm[k][1]=xa[i][1];
+            ws.xtm[k][2]=xa[i][2];
 
-            ytm[k][0]=ya[j][0];
-            ytm[k][1]=ya[j][1];
-            ytm[k][2]=ya[j][2];
+            ws.ytm[k][0]=ya[j][0];
+            ws.ytm[k][1]=ya[j][1];
+            ws.ytm[k][2]=ya[j][2];
 
-            r1[k][0] = xt[i][0];
-            r1[k][1] = xt[i][1];
-            r1[k][2] = xt[i][2];
-            r2[k][0] = ya[j][0];
-            r2[k][1] = ya[j][1];
-            r2[k][2] = ya[j][2];
+            ws.r1[k][0] = ws.xt[i][0];
+            ws.r1[k][1] = ws.xt[i][1];
+            ws.r1[k][2] = ws.xt[i][2];
+            ws.r2[k][0] = ya[j][0];
+            ws.r2[k][1] = ya[j][1];
+            ws.r2[k][2] = ya[j][2];
 
             k++;
         }
     }
-    n_ali8=k;
+    chain_align_res.n_ali8=k;
 
-    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
-    rmsd0 = sqrt(rmsd0 / n_ali8);
+    Kabsch(ws.r1, ws.r2, chain_align_res.n_ali8, 0, chain_align_res.rmsd0, ws.t, ws.u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    chain_align_res.rmsd0 = sqrt(chain_align_res.rmsd0 / chain_align_res.n_ali8);
+}
 
-
+void tmscore_final_scores(TMscoreWorkspace& ws, ChainPairAlignResult& chain_align_res,
+    const double Lnorm_ass, const double d0_scale, const int xlen, const int ylen,
+    const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
+    double GDT_list[5], double &maxsub)
+{
     //****************************************//
     //              Final TMscore             //
     //    Please set parameters for output    //
     //****************************************//
     double rmsd;
-    simplify_step=1;
-    score_sum_method=0;
+    ws.simplify_step=1;
+    ws.score_sum_method=0;
     double Lnorm_0=ylen;
 
 
     //normalized by length of structure A
-    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-    d0A=d0;
-    d0_0=d0A;
-    local_d0_search = d0_search;
-    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
-        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0,
+    parameter_set4final(Lnorm_0, ws.D0_MIN, ws.Lnorm, ws.d0, ws.d0_search, mol_type);
+    chain_align_res.d0A=ws.d0;
+    chain_align_res.d0_0=chain_align_res.d0A;
+    ws.local_d0_search = ws.d0_search;
+    chain_align_res.TM1 = TMscore8_search(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0, ws.simplify_step,
+        ws.score_sum_method, rmsd, ws.local_d0_search, ws.Lnorm, ws.score_d8, ws.d0,
         GDT_list, maxsub);
-    TM_0 = TM1;
+    chain_align_res.TM_0 = chain_align_res.TM1;
 
     if (a_opt>0)
     {
         //normalized by average length of structures A, B
         Lnorm_0=(xlen+ylen)*0.5;
-        parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
-        d0a=d0;
-        d0_0=d0a;
-        local_d0_search = d0_search;
+        parameter_set4final(Lnorm_0, ws.D0_MIN, ws.Lnorm, ws.d0, ws.d0_search, mol_type);
+        chain_align_res.d0a=ws.d0;
+        chain_align_res.d0_0=chain_align_res.d0a;
+        ws.local_d0_search = ws.d0_search;
 
-        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM3;
+        chain_align_res.TM3 = TMscore8_search(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
+            ws.simplify_step, ws.score_sum_method, rmsd, ws.local_d0_search, ws.Lnorm,
+            ws.score_d8, ws.d0);
+        chain_align_res.TM_0=chain_align_res.TM3;
     }
     if (u_opt)
     {
         //normalized by user assigned length
-        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
-            d0, d0_search, mol_type);
-        d0u=d0;
-        d0_0=d0u;
+        parameter_set4final(Lnorm_ass, ws.D0_MIN, ws.Lnorm,
+            ws.d0, ws.d0_search, mol_type);
+        chain_align_res.d0u=ws.d0;
+        chain_align_res.d0_0=chain_align_res.d0u;
         Lnorm_0=Lnorm_ass;
-        local_d0_search = d0_search;
-        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM4;
+        ws.local_d0_search = ws.d0_search;
+        chain_align_res.TM4 = TMscore8_search(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
+            ws.simplify_step, ws.score_sum_method, rmsd, ws.local_d0_search, ws.Lnorm,
+            ws.score_d8, ws.d0);
+        chain_align_res.TM_0=chain_align_res.TM4;
     }
     if (d_opt)
     {
         //scaled by user assigned d0
-        parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
-        d0_out=d0_scale;
-        d0_0=d0_scale;
+        parameter_set4scale(ylen, d0_scale, ws.Lnorm, ws.d0, ws.d0_search);
+        chain_align_res.d0_out=d0_scale;
+        chain_align_res.d0_0=d0_scale;
         //Lnorm_0=ylen;
-        local_d0_search = d0_search;
-        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
-            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
-            score_d8, d0);
-        TM_0=TM5;
+        ws.local_d0_search = ws.d0_search;
+        chain_align_res.TM5 = TMscore8_search(ws.r1, ws.r2, ws.xtm, ws.ytm, ws.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
+            ws.simplify_step, ws.score_sum_method, rmsd, ws.local_d0_search, ws.Lnorm,
+            ws.score_d8, ws.d0);
+        chain_align_res.TM_0=chain_align_res.TM5;
     }
+}
+
+void tmscore_derive_alignment(TMscoreWorkspace& ws, CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy, ChainPairAlignResult& chain_align_res)
+{
+    const int xlen = xa.size();
+    const int ylen = ya.size();
 
     // derive alignment from superposition
     int ali_len=xlen+ylen; //maximum length of alignment
-    seqxA.assign(ali_len,'-');
-    seqM.assign( ali_len,' ');
-    seqyA.assign(ali_len,'-');
+    chain_align_res.seqxA.assign(ali_len,'-');
+    chain_align_res.seqM.assign( ali_len,' ');
+    chain_align_res.seqyA.assign(ali_len,'-');
 
-    do_rotation(xa, xt, xlen, t0, u0);
+    do_rotation(xa, ws.xt, xlen, chain_align_res.t0, chain_align_res.u0);
 
     int kk=0;
     int i_old=0;
     int j_old=0;
-    d=0;
-    for(int k=0; k<n_ali8; k++)
+    double d=0;
+    for(int k=0; k<chain_align_res.n_ali8; k++)
     {
-        for(int i=i_old; i<m1[k]; i++)
+        for(int i=i_old; i<ws.m1[k]; i++)
         {
             //align x to gap
-            seqxA[kk]=seqx[i];
-            seqyA[kk]='-';
-            seqM[kk]=' ';                    
+            chain_align_res.seqxA[kk]=seqx[i];
+            chain_align_res.seqyA[kk]='-';
+            chain_align_res.seqM[kk]=' ';                    
             kk++;
         }
 
-        for(int j=j_old; j<m2[k]; j++)
+        for(int j=j_old; j<ws.m2[k]; j++)
         {
             //align y to gap
-            seqxA[kk]='-';
-            seqyA[kk]=seqy[j];
-            seqM[kk]=' ';
+            chain_align_res.seqxA[kk]='-';
+            chain_align_res.seqyA[kk]=seqy[j];
+            chain_align_res.seqM[kk]=' ';
             kk++;
         }
 
-        seqxA[kk]=seqx[m1[k]];
-        seqyA[kk]=seqy[m2[k]];
-        Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(xt[m1[k]], ya[m2[k]]));
+        chain_align_res.seqxA[kk]=seqx[ws.m1[k]];
+        chain_align_res.seqyA[kk]=seqy[ws.m2[k]];
+        chain_align_res.Liden+=(chain_align_res.seqxA[kk]==chain_align_res.seqyA[kk]);
+        d=sqrt(dist(ws.xt[ws.m1[k]], ya[ws.m2[k]]));
         //if(d<d0_out) seqM[kk]=':';
         //else         seqM[kk]='.';
-        if(d<5) seqM[kk]=':';
-        kk++;  
-        i_old=m1[k]+1;
-        j_old=m2[k]+1;
+        if(d<5) chain_align_res.seqM[kk]=':';
+        kk++;
+        i_old=ws.m1[k]+1;
+        j_old=ws.m2[k]+1;
     }
 
     //tail
     for(int i=i_old; i<xlen; i++)
     {
         //align x to gap
-        seqxA[kk]=seqx[i];
-        seqyA[kk]='-';
-        seqM[kk]=' ';
+        chain_align_res.seqxA[kk]=seqx[i];
+        chain_align_res.seqyA[kk]='-';
+        chain_align_res.seqM[kk]=' ';
         kk++;
-    }    
+    }
     for(int j=j_old; j<ylen; j++)
     {
         //align y to gap
-        seqxA[kk]='-';
-        seqyA[kk]=seqy[j];
-        seqM[kk]=' ';
+        chain_align_res.seqxA[kk]='-';
+        chain_align_res.seqyA[kk]=seqy[j];
+        chain_align_res.seqM[kk]=' ';
         kk++;
     }
-    seqxA=seqxA.substr(0,kk);
-    seqyA=seqyA.substr(0,kk);
-    seqM =seqM.substr(0,kk);
+    chain_align_res.seqxA=chain_align_res.seqxA.substr(0,kk);
+    chain_align_res.seqyA=chain_align_res.seqyA.substr(0,kk);
+    chain_align_res.seqM =chain_align_res.seqM.substr(0,kk);
+}
+
+int TMscore_main(CoordArray& xa, CoordArray& ya,
+    const std::string& seqx, const std::string& seqy,
+    ChainPairAlignResult& chain_align_res,
+    const std::vector<std::string> sequence, const double Lnorm_ass,
+    const double d0_scale, const int a_opt,
+    const bool u_opt, const bool d_opt, const bool fast_opt,
+    const int mol_type, double GDT_list[5], double &maxsub,
+    const double TMcut)
+{
+    const int xlen = xa.size();
+    const int ylen = ya.size();
+
+    /***********************/
+    // allocate memory
+    /***********************/
+    TMscoreWorkspace ws;
+    int minlen = std::min(xlen, ylen);
+    ws.xtm.resize(minlen);
+    ws.ytm.resize(minlen);
+    ws.xt.resize(xlen);
+    ws.r1.resize(minlen);
+    ws.r2.resize(minlen);
+    ws.invmap.resize(ylen+1);
+    ws.invmap0.assign(ylen+1, -1);
+    ws.m1.resize(xlen);
+    ws.m2.resize(ylen);
+
+    /***********************/
+    //    parameter set   
+    /***********************/
+    parameter_set4search(xlen, ylen, ws.D0_MIN, ws.Lnorm,
+        ws.score_d8, ws.d0, ws.d0_search, ws.dcu0);
+    ws.simplify_step    = 40; //for simplified search engine
+    ws.score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
+    ws.TMmax = -1;
+    ws.local_d0_search = ws.d0_search;
+
+    int rc = tmscore_initial_alignment(ws, sequence, xa, ya, chain_align_res,
+        mol_type, a_opt, TMcut);
+    if (rc) return rc;
+
+    tmscore_detailed_search(ws, xa, ya, chain_align_res, fast_opt, GDT_list, maxsub);
+
+    tmscore_final_scores(ws, chain_align_res, Lnorm_ass, d0_scale, xlen, ylen,
+        a_opt, u_opt, d_opt, mol_type, GDT_list, maxsub);
+
+    tmscore_derive_alignment(ws, xa, ya, seqx, seqy, chain_align_res);
 
     return 0; // zero for no exception
 }
