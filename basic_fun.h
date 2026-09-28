@@ -1265,9 +1265,7 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
 // guaranteeing byte-identical output with the original printf.
 // ============================================================
 
-// ---- argument conversion helpers ----
-
-// std::string → const char*
+// std::string to  const char*
 inline const char* to_cstr(const std::string& s) { return s.c_str(); }
 
 // const char* — identity pass-through
@@ -1282,7 +1280,7 @@ inline T to_cstr(const T& val) { return val; }
 
 // ---- fcout ----
 
-// Primary template: snprintf → std::ostream
+// Primary template: snprintf to std::ostream
 template<typename... Args>
 void fcout(std::ostream& os, const char* fmt, const Args&... args) {
     int size = std::snprintf(nullptr, 0, fmt, to_cstr(args)...);
@@ -1308,7 +1306,7 @@ inline void fcout(const char* fmt) {
 
 // ---- strfmt: printf-style formatting to std::string ----
 // Replaces: char buf[N]; sprintf(buf, ...); ss << string(buf);
-//         → ss << strfmt("format", ...);
+//         ss << strfmt("format", ...);
 
 template<typename... Args>
 inline std::string strfmt(const char* fmt, const Args&... args) {

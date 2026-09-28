@@ -584,7 +584,6 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
                 ss.str("");
             }
         }
-        std::vector<std::string>().swap(chainID_vec);
     }
     std::string chainID1="";
     std::string chainID2="";
@@ -649,8 +648,6 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
         }
         
     }
-    chainID1.clear();
-    chainID2.clear();
     return sequence[0].size();
 }
 

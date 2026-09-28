@@ -914,7 +914,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
 
 
-inline void soi_se_prepare_alignment(CoordArray& xa, CoordArray& ya,
+inline void soi_build_score_and_seed_invmap(CoordArray& xa, CoordArray& ya,
     int xlen, int ylen, const ChainPairAlignOptions& align_opts,
     ChainPairAlignResult& chain_align_res, IntPairArray& secx_bond, IntPairArray& secy_bond,
     const int mm_opt, DoubleMatrix& score)
@@ -1115,7 +1115,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     DoubleMatrix score;
-    soi_se_prepare_alignment(xa, ya, xlen, ylen, align_opts, chain_align_res,
+    soi_build_score_and_seed_invmap(xa, ya, xlen, ylen, align_opts, chain_align_res,
         secx_bond, secy_bond, mm_opt, score);
     if (soi_se_score_alignment(xa, ya, xlen, ylen, align_opts, outfmt_opt,
         score, chain_align_res, dist_list)) return 0;

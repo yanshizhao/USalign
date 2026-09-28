@@ -1606,10 +1606,10 @@ inline void score_with_cur_transform(
     ChainPairAlignResult& chain_align_res)
 {
     do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
-    ChainPairAlignOptions opt = align_opts;
-    opt.fast_opt = false;
-    opt.ss_opt = 0;
-    se_main(xt, ya, seqx, seqy, chain_align_res, xlen, ylen, sequence, opt, 0, hinge);
+    ChainPairAlignOptions score_opts = align_opts;
+    score_opts.fast_opt = false;
+    score_opts.ss_opt = 0;
+    se_main(xt, ya, seqx, seqy, chain_align_res, xlen, ylen, sequence, score_opts, 0, hinge);
 }
 
 #define NUM_SPLIT_VARIANTS 2
@@ -2033,8 +2033,6 @@ inline void search_hinge_regions(
                 chain_align_res.invmap, cur_hing_res, chain_align_res.t0, chain_align_res.u0, tu_vec);
         }
 
-        r1toi.clear();
-        r2toj.clear();
         if (new_ali<5) break;
     }
 }
@@ -2156,35 +2154,35 @@ inline bool parse_chain(
     int mirror_opt,
     int read_resi,
     const std::string& atom_opt,
-    ParsedChain& out)
+    ParsedChain& chain)
 {
-    out.filename = filename;
+    chain.filename = filename;
     int len = PDB_lines[chain_idx].size();
-    if (!len)     { out.chain_len = 0; std::cerr<<"Warning! Cannot parse file: "<<filename<<". Chain length 0."<<std::endl; return false; }
-    if (len < 3)  { out.chain_len = len; std::cerr<<"Sequence is too short <3!: "<<filename<<std::endl; return false; }
+    if (!len)     { chain.chain_len = 0; std::cerr<<"Warning! Cannot parse file: "<<filename<<". Chain length 0."<<std::endl; return false; }
+    if (len < 3)  { chain.chain_len = len; std::cerr<<"Sequence is too short <3!: "<<filename<<std::endl; return false; }
 
-    out.cur_complex_mol_list = mol_vec[chain_idx];
-    if (mol_opt == "RNA")     out.cur_complex_mol_list = 1;
-    else if (mol_opt == "protein") out.cur_complex_mol_list = -1;
+    chain.cur_complex_mol_list = mol_vec[chain_idx];
+    if (mol_opt == "RNA")     chain.cur_complex_mol_list = 1;
+    else if (mol_opt == "protein") chain.cur_complex_mol_list = -1;
 
-    out.chain_id = chainID_list[chain_idx];
-    out.chain_coords.clear();
-    out.chain_coords.reserve(len);
-    out.chain_seq.clear();
-    out.chain_sec.resize(len + 1, '\0');
+    chain.chain_id = chainID_list[chain_idx];
+    chain.chain_coords.clear();
+    chain.chain_coords.reserve(len);
+    chain.chain_seq.clear();
+    chain.chain_sec.resize(len + 1, '\0');
 
-    out.chain_len = read_PDB(PDB_lines[chain_idx], out.chain_coords, out.chain_seq,
-                       out.resi_vec, read_resi);
+    chain.chain_len = read_PDB(PDB_lines[chain_idx], chain.chain_coords, chain.chain_seq,
+                       chain.resi_vec, read_resi);
 
     if (mirror_opt) {
-        for (int r = 0; r < out.chain_len; r++)
-            out.chain_coords[r][2] = -out.chain_coords[r][2];
+        for (int r = 0; r < chain.chain_len; r++)
+            chain.chain_coords[r][2] = -chain.chain_coords[r][2];
     }
 
-    if (out.cur_complex_mol_list > 0)
-        make_sec(out.chain_seq, out.chain_coords, out.chain_len, out.chain_sec, atom_opt);
+    if (chain.cur_complex_mol_list > 0)
+        make_sec(chain.chain_seq, chain.chain_coords, chain.chain_len, chain.chain_sec, atom_opt);
     else
-        make_sec(out.chain_coords, out.chain_len, out.chain_sec);
+        make_sec(chain.chain_coords, chain.chain_len, chain.chain_sec);
 
     return true;
 }

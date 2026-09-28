@@ -657,21 +657,21 @@ ChainPairAlignOptions mmalign_pair_options(const AlignCommonInput& common_inputs
     int parallel_threads)
 {
     const UserOptions& user_opts = common_inputs.user_options;
-    ChainPairAlignOptions opts;
-    opts.i_opt = i_opt_val;
-    opts.a_opt = user_opts.a_opt;
-    opts.u_opt = u_opt_val;
-    opts.d_opt = user_opts.d_opt;
-    opts.fast_opt = fast_opt;
-    opts.se_opt = common_inputs.control_options.se_opt;
-    opts.cp_opt = false;
-    opts.Lnorm = norm_len;
-    opts.d0_scale = user_opts.d0_scale;
-    opts.TMcut = user_opts.TMcut;
-    opts.parallel_threads = parallel_threads;
-    opts.ss_opt = 0;
-    opts.mol_type = mol_type;
-    return opts;
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = i_opt_val;
+    align_opts.a_opt = user_opts.a_opt;
+    align_opts.u_opt = u_opt_val;
+    align_opts.d_opt = user_opts.d_opt;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = common_inputs.control_options.se_opt;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = norm_len;
+    align_opts.d0_scale = user_opts.d0_scale;
+    align_opts.TMcut = user_opts.TMcut;
+    align_opts.parallel_threads = parallel_threads;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = mol_type;
+    return align_opts;
 }
 
 // ===========================================================================
@@ -2848,8 +2848,8 @@ int MMalign(AlignCommonInput& common_inputs)
     return 0;
 }
 
-// alignment individual chains to a complex.
-// ---- Assign chains by the TM-score matrix and emit the dock output (mm2) ----
+
+
 void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     const ComplexData& complex1, const ComplexData& complex2,
     DoubleMatrix& TMave_mat,
@@ -4511,7 +4511,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                                // ya[0...ylen-1][0..2], in general,
                                // ya is regarded as native structure
                                // --> superpose xa onto ya
-    SoiAlignContext soi;
+    SoiAlignContext soi_state;
     std::vector<std::string> resi_vec1;  // residue index for chain1
     std::vector<std::string> resi_vec2;  // residue index for chain2
 
@@ -4533,7 +4533,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
         {
             xlen=parse_chain_for_soi(PDB_lines1[chain_i], user_opts.xname,
                 mol_vec1[chain_i], user_opts, soi_params, user_opts.mirror_opt,
-                xa, seqx, secx, resi_vec1, soi.k_nearest1, soi.chain1_bonds);
+                xa, seqx, secx, resi_vec1, soi_state.k_nearest1, soi_state.chain1_bonds);
             if (xlen<3) continue;
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
@@ -4557,7 +4557,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                 {
                     ylen=parse_chain_for_soi(PDB_lines2[chain_j], user_opts.yname,
                         mol_vec2[chain_j], user_opts, soi_params, false,
-                        ya, seqy, secy, resi_vec2, soi.k_nearest2, soi.chain2_bonds);
+                        ya, seqy, secy, resi_vec2, soi_state.k_nearest2, soi_state.chain2_bonds);
                     if (ylen<3) continue;
 
                     ChainPairAlignResult chain_align_res = { 0};
@@ -4565,12 +4565,12 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                     ChainPairAlignOptions soi_align_opts = soi_params.align;
                     soi_align_opts.fast_opt = (getmin(xlen,ylen)>1500)?true:user_opts.fast_opt;
                     soi_align_opts.mol_type = mol_vec1[chain_i]+mol_vec2[chain_j];
-                    soi.pair_distances.assign(ylen+1, 0.0);
+                    soi_state.pair_distances.assign(ylen+1, 0.0);
 
                     // entry function for structure alignment
-                    soi_align_pair(chain_align_res, xa, ya, soi.k_nearest1, soi.k_nearest2, soi_params.closeK_opt,
+                    soi_align_pair(chain_align_res, xa, ya, soi_state.k_nearest1, soi_state.k_nearest2, soi_params.closeK_opt,
                         seqx, seqy, secx, secy, xlen, ylen, soi_align_opts,
-                        parsed_input.sequence, soi.pair_distances, soi.chain1_bonds, soi.chain2_bonds,
+                        parsed_input.sequence, soi_state.pair_distances, soi_state.chain1_bonds, soi_state.chain2_bonds,
                         soi_params.mm_opt, user_opts.outfmt_opt);
 
                     // print chain_align_res
@@ -4578,7 +4578,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         xlen, ylen, chain_align_res,
                         PDB_lines1[chain_i], PDB_lines2[chain_j],
                         chainID_list1[chain_i], chainID_list2[chain_j],
-                        resi_vec1, resi_vec2, &soi.pair_distances);
+                        resi_vec1, resi_vec2, &soi_state.pair_distances);
 
                     // Done! Free memory
                     chain_align_res.seqM.clear();

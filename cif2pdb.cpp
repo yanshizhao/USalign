@@ -147,7 +147,6 @@ void write_mmcif_to_pdb(const std::string filename,
         fout<<"END"<<std::endl;
         fout.close();
     }
-    return;
 }
 
 size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_lines,
@@ -224,7 +223,6 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
         std::cerr<<"WARNING! Changed "<<changed_chains<<" chain ID(s)"<<std::endl;
     
     // clean up
-    chainID.clear();
     return changed_chains;
 }
 
@@ -276,7 +274,7 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
     std::map<std::string,int> _atom_site;
     int atom_site_pos;
     std::vector<std::string> line_vec;
-    std::string group_PDB="ATOM  ";
+    std::string group_PDB;
     std::string alt_id=" ";  // alternative location indicator
     std::string asym_id="."; // this is similar to chainID, except that
                         // chainID is char while asym_id is a string
@@ -383,9 +381,6 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
                 asym_id=prev_asym_id; // no separate chain for ligand
         }
         else if (group_PDB!="ATOM  ") continue;
-            
-        //alt_id=".";
-            //alt_id=line_vec[_atom_site["label_alt_id"]];
 
         if (resn.size()==1)
         {
@@ -476,14 +471,6 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
         PDB_lines.back().push_back(i8_stream.str());
         i8_stream.str(std::string());
     }
-    group_PDB.clear();
-    _atom_site.clear();
-    line_vec.clear();
-    alt_id.clear();
-    asym_id.clear();
-    resn.clear();
-    std::map<std::string, std::string>().swap(alt_id_dict);
-    resi_chain.clear();
 
     if (compress_type>=0)
     {
@@ -493,7 +480,6 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 #endif
         fin.close();
     }
-    line.clear();
     chainID_list.push_back("");
     return PDB_lines.size();
 }
