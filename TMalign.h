@@ -2530,13 +2530,18 @@ void output_rotation_matrix(const std::string& fname_matrix,
 }
 
 //output the final results
-void output_results(const std::string xname, const std::string yname,
-    const std::string chainID1, const std::string chainID2,
-    const int xlen, const int ylen, const ChainPairAlignResult& chain_align_res,
+void output_results(const ChainPairDesc& chain_pair,
+    const ChainPairAlignResult& chain_align_res,
     const OutputOptions& out_opts,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     std::ostream& os = std::cout)
 {
+    const std::string& xname = chain_pair.name1;
+    const std::string& yname = chain_pair.name2;
+    const std::string& chainID1 = chain_pair.chain_id1;
+    const std::string& chainID2 = chain_pair.chain_id2;
+    const int& xlen = chain_pair.len1;
+    const int& ylen = chain_pair.len2;
     const Vec3& t = chain_align_res.t0;
     const RotMat& u = chain_align_res.u0;
     const double& TM1 = chain_align_res.TM1;

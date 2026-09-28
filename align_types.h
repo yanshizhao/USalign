@@ -55,6 +55,16 @@ struct SoiAlignContext
     std::vector<double> pair_distances;
 };
 
+struct ChainPairDesc
+{
+    std::string name1;
+    std::string name2;
+    std::string chain_id1;
+    std::string chain_id2;
+    int len1;
+    int len2;
+};
+
 // ---- 单条链对的结构比对结果（mm0-4 的每对链共用）----
 struct ChainPairAlignResult
 {

@@ -537,11 +537,9 @@ int run_batch_parallel(
         out_opts.mirror_opt = mirror_opt;
         out_opts.u_opt = u_opt;
         out_opts.d_opt = d_opt;
-        output_results(xname_out, yname_out,
-            c1.chain_id, c2.chain_id,
-            c1.chain_len, c2.chain_len, chain_align_res,
-            out_opts,
-            c1.resi_vec, c2.resi_vec, ss);
+        output_results(
+            ChainPairDesc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len},
+            chain_align_res, out_opts, c1.resi_vec, c2.resi_vec, ss);
 
         if (do_opt || (cp_opt && outfmt_opt <= 0))
             output_do_block(ss, chain_align_res.seqxA, chain_align_res.seqyA,
@@ -1623,12 +1621,8 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     OutputOptions out_opts;
     fill_output_options_from_user_options(out_opts, user_opts);
     output_results(
-        user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()),
-        user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()),
-        chain_id1, chain_id2,
-        xlen, ylen, chain_align_res,
-        out_opts,
-        resi_vec1, resi_vec2);
+        ChainPairDesc{user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()), user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()), chain_id1, chain_id2, xlen, ylen},
+        chain_align_res, out_opts, resi_vec1, resi_vec2);
     if (dist_arg) output_soi_dist_block(std::cout, ylen,
         chain_align_res.invmap, *dist_arg, pdb_lines1, pdb_lines2);
     else if (ctrl_opts.do_opt || (ctrl_opts.cp_opt && user_opts.outfmt_opt <= 0))
@@ -1751,11 +1745,8 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
     out_opts.Lnorm_ass = 0;
     out_opts.mm_opt = true;
     output_results(
-        common_inputs.user_options.xname.substr(mm_params.dir1_opt.size()),
-        common_inputs.user_options.yname.substr(mm_params.dir2_opt.size()),
-        complex1.chain_ids[0], complex2.chain_ids[0],
-        chain1_len, chain2_len, chain_align_res,
-        out_opts, complex1.resi, complex2.resi);
+        ChainPairDesc{common_inputs.user_options.xname.substr(mm_params.dir1_opt.size()), common_inputs.user_options.yname.substr(mm_params.dir2_opt.size()), complex1.chain_ids[0], complex2.chain_ids[0], chain1_len, chain2_len},
+        chain_align_res, out_opts, complex1.resi, complex2.resi);
     return 0;
 }
 
@@ -2932,11 +2923,8 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         out_opts.fname_super = "";
         out_opts.o_opt = 0;
         if (user_opts.outfmt_opt<2) output_results(
-            user_opts.xname.c_str(), user_opts.yname.c_str(),
-            complex1.chain_ids[i], complex2.chain_ids[j],
-            xlen, ylen, chain_align_res,
-            out_opts,
-            complex1.resi, complex2.resi);
+            ChainPairDesc{user_opts.xname.c_str(), user_opts.yname.c_str(), complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
+            chain_align_res, out_opts, complex1.resi, complex2.resi);
         
         // clean up
         chain_align_res.seqM.clear();
@@ -3160,11 +3148,8 @@ int MMdock(AlignCommonInput& common_inputs)
         out_opts.outfmt_opt = (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3);
         out_opts.mm_opt = true;
         output_results(
-            user_opts.xname.substr(user_opts.dir1_opt.size()),
-            user_opts.yname.substr(user_opts.dir2_opt.size()),
-            complex1.chain_ids[0], complex2.chain_ids[0],
-            xlen, ylen, chain_align_res,
-            out_opts, complex1.resi, complex2.resi);
+            ChainPairDesc{user_opts.xname.substr(user_opts.dir1_opt.size()), user_opts.yname.substr(user_opts.dir2_opt.size()), complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen},
+            chain_align_res, out_opts, complex1.resi, complex2.resi);
         if (user_opts.outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
             user_opts.xname.substr(user_opts.dir1_opt.size()), complex1.chain_ids[0],
             user_opts.yname.substr(user_opts.dir2_opt.size()), complex2.chain_ids[0],
@@ -3578,10 +3563,8 @@ static void run_mTMalign_pairwise_parallel(
                 out_opts.u_opt = false;
                 out_opts.d_opt = d_opt;
                 output_results(
-                    chain_list[chain_i], chain_list[chain_j], chainID_list[chain_i], chainID_list[chain_j],
-                    xlen, ylen, chain_align_res,
-                    out_opts, resi_vec, resi_vec,
-                    ss);
+                    ChainPairDesc{chain_list[chain_i], chain_list[chain_j], chainID_list[chain_i], chainID_list[chain_j], xlen, ylen},
+                    chain_align_res, out_opts, resi_vec, resi_vec, ss);
                 full_out[chain_i * chain_num + chain_j] = ss.str();
             }
         }
@@ -3784,10 +3767,8 @@ void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaI
             out_opts.u_opt = u_opt;
             out_opts.d_opt = user_opts.d_opt;
             if (user_opts.outfmt_opt<0) output_results(
-                msta_iter_state.xname_vec[i].c_str(), msta_iter_state.xname_vec[j].c_str(), "", "",
-                xlen, ylen, chain_align_res,
-                out_opts,
-                resi_vec, resi_vec);
+                ChainPairDesc{msta_iter_state.xname_vec[i].c_str(), msta_iter_state.xname_vec[j].c_str(), "", "", xlen, ylen},
+                chain_align_res, out_opts, resi_vec, resi_vec);
          
             xt.resize(xlen);
             do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
@@ -4233,9 +4214,8 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 out_opts.u_opt = false;
                 out_opts.d_opt = user_opts.d_opt;
                 if (ctrl_opts.full_opt) output_results(
-                    parsed_input.chain1_list[i],parsed_input.chain1_list[j], chainID_list[i], chainID_list[j],
-                    xlen, ylen, chain_align_res,
-                    out_opts, resi_vec, resi_vec);
+                    ChainPairDesc{parsed_input.chain1_list[i], parsed_input.chain1_list[j], chainID_list[i], chainID_list[j], xlen, ylen},
+                    chain_align_res, out_opts, resi_vec, resi_vec);
 
                 // clean up
                 chain_align_res.seqM.clear();

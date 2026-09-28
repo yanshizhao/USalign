@@ -1580,10 +1580,9 @@ inline void mmalign_output_per_chain_alignments(
                 out_opts.fname_super = "";
                 out_opts.o_opt = 0;
                 out_opts.mirror_opt = 0;
-                output_results(params.xname, params.yname,
-                    complex1.chain_ids[i], complex2.chain_ids[j],
-                    xlen, ylen, print_align_res,
-                    out_opts, complex1.resi, complex2.resi);
+                output_results(
+                    ChainPairDesc{params.xname, params.yname, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
+                    print_align_res, out_opts, complex1.resi, complex2.resi);
             }
 
             // clean up
@@ -1723,9 +1722,9 @@ inline void MMalign_final(
     fill_output_options_from_mmalign_final_params(out_opts, params);
     out_opts.Lnorm_ass = Lnorm_ass;
     out_opts.mm_opt = true;
-    output_results(params.xname, params.yname, chainID1, chainID2,
-        xlen, ylen, print_align_res,
-        out_opts, complex1.resi, complex2.resi);
+    output_results(
+        ChainPairDesc{params.xname, params.yname, chainID1, chainID2, xlen, ylen},
+        print_align_res, out_opts, complex1.resi, complex2.resi);
 
     // clean up
     seqM.clear();

@@ -426,13 +426,8 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     out_opts.u_opt = hwrmsd_opts.u_opt;
     out_opts.d_opt = hwrmsd_opts.d_opt;
     output_results(
-        chain1.filename.substr(hwrmsd_opts.dir1_opt.size()+hwrmsd_opts.dir_opt.size()),
-        chain2.filename.substr(hwrmsd_opts.dir2_opt.size()+hwrmsd_opts.dir_opt.size()),
-        chain1.chain_id,
-        chain2.chain_id,
-        xlen, ylen, chain_align_res,
-        out_opts,
-        chain1.resi_vec, chain2.resi_vec);
+        ChainPairDesc{chain1.filename.substr(hwrmsd_opts.dir1_opt.size()+hwrmsd_opts.dir_opt.size()), chain2.filename.substr(hwrmsd_opts.dir2_opt.size()+hwrmsd_opts.dir_opt.size()), chain1.chain_id, chain2.chain_id, xlen, ylen},
+        chain_align_res, out_opts, chain1.resi_vec, chain2.resi_vec);
 }
 
 void align_all_chain_pairs(std::vector<std::string>& chain1_list,
