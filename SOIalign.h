@@ -247,7 +247,7 @@ inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt,
     DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
     Vec3& t, RotMat& u, std::vector<int>& invmap,
-    double local_d0_search, double d0, double score_d8,
+    double d0, double score_d8,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     int i;
@@ -482,7 +482,7 @@ inline void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
     if (closeK_opt>=3)
     {
         get_SOI_initial_assign(xk, yk, closeK_opt, score, path, val,
-            xlen, ylen, t, u, invmap, local_d0_search, d0, score_d8,
+            xlen, ylen, t, u, invmap, d0, score_d8,
             secx_bond, secy_bond, mm_opt);
         for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
 
@@ -563,7 +563,7 @@ inline void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
     

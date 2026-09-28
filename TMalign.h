@@ -421,10 +421,10 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 // output:  the best rotaion matrix t, u that results in highest TMscore
 
 inline double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen,
+    CoordArray& xt, const CoordArray& x, const CoordArray& y, int ylen,
     std::vector<int>& invmap0, Vec3& t, RotMat& u, int simplify_step,
     int score_sum_method, double local_d0_search, double Lnorm,
-    double score_d8, double d0, int parallel_threads = 1)
+    double score_d8, double d0)
 {
     int i,j,k;
     double tmscore, rmsd;
@@ -447,7 +447,7 @@ inline double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 
 inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
+    int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0)
 {
@@ -473,7 +473,7 @@ inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
 
 //compute the score quickly in three iterations
 double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
+    const CoordArray& x, const CoordArray& y, int ylen, std::vector<int>& invmap,
     double d0, double d0_search, Vec3& t, RotMat& u)
 {
     double rms,tmscore,tmscore1,tmscore2;
@@ -581,7 +581,7 @@ inline double get_initial(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coord
             if(i>=0 && i<xlen) y2x[j]=i; else y2x[j]=-1;
         }
         tmscore=get_score_fast(r1, r2, xtm, ytm,
-            x, y, xlen, ylen, y2x, d0,d0_search, t, u);
+            x, y, ylen, y2x, d0,d0_search, t, u);
         if(tmscore>=tmscore_max) { tmscore_max=tmscore; k_best=k; }
     }
     k=k_best;
@@ -659,7 +659,7 @@ void make_sec(const CoordArray& x, int len, std::string& sec)
 
 // a c d b: a paired to b, c paired to d
 // find base pairing stacks in RNA
-void sec_str(int len,const std::string& seq, const std::vector<std::vector<bool> >&bp,
+void sec_str(int len, const std::vector<std::vector<bool> >&bp,
     int a, int b,int &c, int &d)
 {
     int i;
@@ -732,7 +732,7 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
             if (!bp[i][j]) continue;
             if (i>0 && j+1<len && bp[i-1][j+1]) continue;
             if (!bp[i+1][j-1]) continue;
-            sec_str(len,seq, bp, i,j,ii,jj);
+            sec_str(len, bp, i,j,ii,jj);
             if (jj<i || j<ii)
             {
                 ii=i;
@@ -855,7 +855,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
                 double gap_open = 0.0;
                 NWDP_TM(path, val, x, y, xlen, ylen,
                     t, u, d02, gap_open, invmap);
-                GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
+                GL = get_score_fast(r1, r2, xtm, ytm, x, y, ylen,
                     invmap, d0, d0_search, t, u);
                 if (GL > GLmax)
                 {
@@ -1059,7 +1059,7 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
             }
 
             //evaluate the map quickly in three iterations
-            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, ylen, y2x_,
                 d0, d0_search, t, u);
 
             if(tmscore>=tmscore_max)
@@ -1107,7 +1107,7 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
         
             //evaluate the map quickly in three iterations
             tmscore=get_score_fast(r1, r2, xtm, ytm,
-                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
+                x, y, ylen, y2x_, d0,d0_search, t, u);
             if(tmscore>=tmscore_max)
             {
                 tmscore_max=tmscore;
@@ -1163,7 +1163,7 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
             }
 
             //evaluate the map quickly in three iterations
-            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen, y2x_,
+            tmscore=get_score_fast(r1, r2, xtm, ytm, x, y, ylen, y2x_,
                 d0, d0_search, t, u);
 
             if(tmscore>=tmscore_max)
@@ -1201,7 +1201,7 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
         
             //evaluate the map quickly in three iterations
             tmscore=get_score_fast(r1, r2, xtm, ytm,
-                x, y, xlen, ylen, y2x_, d0,d0_search, t, u);
+                x, y, ylen, y2x_, d0,d0_search, t, u);
             if(tmscore>=tmscore_max)
             {
                 tmscore_max=tmscore;
@@ -1223,7 +1223,7 @@ inline double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArra
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap0,
     int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
+    double Lnorm, double d0, double score_d8)
 {
     double gap_open[2]={-0.6, 0};
     double rmsd;
@@ -2643,10 +2643,10 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
     const double TM3, const double TM4, const double TM5,
-    const double rmsd, const double d0_out, const std::string& seqM,
+    const double rmsd, const std::string& seqM,
     const std::string& seqxA, const std::string& seqyA, const double Liden,
     const int n_ali8, const int L_ali, const double TM_ali,
-    const double rmsd_ali, const double TM_0, const double d0_0,
+    const double rmsd_ali,
     const double d0A, const double d0B, const double Lnorm_ass,
     const double d0_scale, const double d0a, const double d0u,
     const std::string& fname_matrix, const int outfmt_opt, const int ter_opt,
@@ -2738,8 +2738,8 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
 {
     output_mTMalign_results(xname, yname, chainID1, chainID2, xlen, ylen,
         chain_align_res.t0, chain_align_res.u0, chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5,
-        chain_align_res.rmsd0, chain_align_res.d0_out, chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, chain_align_res.Liden,
-        chain_align_res.n_ali8, chain_align_res.L_ali, chain_align_res.TM_ali, chain_align_res.rmsd_ali, chain_align_res.TM_0, chain_align_res.d0_0,
+        chain_align_res.rmsd0, chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, chain_align_res.Liden,
+        chain_align_res.n_ali8, chain_align_res.L_ali, chain_align_res.TM_ali, chain_align_res.rmsd_ali,
         chain_align_res.d0A, chain_align_res.d0B, Lnorm_ass, d0_scale, chain_align_res.d0a, chain_align_res.d0u,
         fname_matrix, outfmt_opt, ter_opt, mm_opt, split_opt, o_opt,
         fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
@@ -2748,7 +2748,7 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
 
 
 inline double standard_TMscore(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CoordArray& xt, const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& invmap,
+    CoordArray& xt, const CoordArray& x, const CoordArray& y, int ylen, std::vector<int>& invmap,
     int& L_ali, double& RMSD, double D0_MIN, double Lnorm, double d0,
     double d0_search, double score_d8, Vec3& t, RotMat& u,
     const int mol_type)
@@ -2834,7 +2834,7 @@ inline double approx_TM(const int xlen, const int ylen, const int a_opt,
 }
 
 bool output_cp(const std::string&xname, const std::string&yname,
-    const std::string &seqxA, const std::string &seqyA, const int outfmt_opt,
+    const std::string &seqxA, const int outfmt_opt,
     int &left_num, int &right_num, int &left_aln_num, int &right_aln_num,
     std::ostream& os = std::cout)
 {
@@ -2895,7 +2895,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0, int parallel_threads = 1, const int ss_opt = 0)
+    Vec3& t0, RotMat& u0, const int ss_opt = 0)
 {
     int i;
     double TM;
@@ -2903,14 +2903,14 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     // ---- Strategy 1: gapless threading ----
     get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
         d0_search, fast_opt, t, u);
-    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
+    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap0,
         t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
         score_d8, d0);
     if (TM>TMmax) TMmax = TM;
     if (TMcut>0) copy_t_u(t, u, t0, u0);
     TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
         t, u, invmap, 0, 2, (fast_opt)?2:30, local_d0_search,
-        D0_MIN, Lnorm, d0, score_d8);
+        Lnorm, d0, score_d8);
 
     if (TM>TMmax) 
         { 
@@ -2931,7 +2931,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     // ---- Strategy 2: secondary structure ----
     if (ss_opt != 1) {
         get_initial_ss(path, val, secx, secy, xlen, ylen, invmap);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM > TMmax) {
@@ -2942,7 +2942,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
         if (TM > TMmax * 0.2) {
             TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
                 t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-                D0_MIN, Lnorm, d0, score_d8);
+                Lnorm, d0, score_d8);
             if (TM > TMmax) {
                 TMmax = TM;
                 for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
@@ -2965,7 +2965,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
         if (get_initial5(r1, r2, xtm, ytm, path, val, xa_c, ya_c, xlen, ylen,
             invmap, d0, d0_search, fast_opt, D0_MIN))
         {
-            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
                 invmap, t, u, simplify_step, score_sum_method, local_d0_search,
                 Lnorm, score_d8, d0);
             if (TM > TMmax) {
@@ -2976,7 +2976,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
             if (TM > TMmax * ddcc) {
                 TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
                     t, u, invmap, 0, 2, 2, local_d0_search,
-                    D0_MIN, Lnorm, d0, score_d8);
+                    Lnorm, d0, score_d8);
                 if (TM > TMmax) {
                     TMmax = TM;
                     for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
@@ -2999,7 +2999,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     if (ss_opt != 1) {
         get_initial_ssplus(r1, r2, score, path, val, secx, secy,
             xa_c, ya_c, xlen, ylen, invmap0, invmap, D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM > TMmax) {
@@ -3010,7 +3010,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
         if (TM > TMmax * ddcc) {
             TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
                 t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-                D0_MIN, Lnorm, d0, score_d8);
+                Lnorm, d0, score_d8);
             if (TM > TMmax) {
                 TMmax = TM;
                 for (i = 0; i < ylen; i++)
@@ -3031,7 +3031,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     // ---- Strategy 5: fragment gapless threading ----
     get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
         invmap, d0, d0_search, dcu0, fast_opt, t, u);
-    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap,
         t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
         score_d8, d0);
     if (TM > TMmax) {
@@ -3042,7 +3042,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     if (TM > TMmax * ddcc) {
         TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
             t, u, invmap, 1, 2, 2, local_d0_search,
-            D0_MIN, Lnorm, d0, score_d8);
+            Lnorm, d0, score_d8);
         if (TM > TMmax) {
             TMmax = TM;
             for (i = 0; i < ylen; i++) invmap0[i] = invmap[i];
@@ -3080,7 +3080,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     double TMcut,
     std::vector<int>& invmap0, std::vector<int>& invmap,
     Vec3& t, RotMat& u, double& TMmax,
-    DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val,
+    CharMatrix& path, DoubleMatrix& val,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
@@ -3093,14 +3093,14 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     // ================================================================
     get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
         d0_search, fast_opt, t, u);
-    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
+    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap0,
         t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
         score_d8, d0);
     if (TM > TMmax) TMmax = TM;
     if (TMcut > 0) copy_t_u(t, u, t0, u0);
     TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
         t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-        D0_MIN, Lnorm, d0, score_d8);
+        Lnorm, d0, score_d8);
     if (TM > TMmax) {
         TMmax = TM;
         for (int i = 0; i < ylen; i++) invmap0[i] = invmap[i];
@@ -3140,13 +3140,13 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
             // Strategy 2: secondary structure
             get_initial_ss(path_l, val_l, secx, secy, xlen, ylen, inv_l);
             local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                xa_c, ya_c, xlen, ylen, inv_l, t_l, u_l,
+                xa_c, ya_c, ylen, inv_l, t_l, u_l,
                 simplify_step, score_sum_method, local_d0_search,
                 Lnorm, score_d8, d0);
             double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
                 path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
                 inv_l, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-                D0_MIN, Lnorm, d0, score_d8);
+                Lnorm, d0, score_d8);
             if (dp > local_best) local_best = dp;
         } else if (sid == 2) {
             // Strategy 3: local superposition
@@ -3155,13 +3155,13 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
                 fast_opt, D0_MIN))
             {
                 local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                    xa_c, ya_c, xlen, ylen, inv_l, t_l, u_l,
+                    xa_c, ya_c, ylen, inv_l, t_l, u_l,
                     simplify_step, score_sum_method, local_d0_search,
                     Lnorm, score_d8, d0);
                 double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
                     path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
                     inv_l, 0, 2, 2, local_d0_search,
-                    D0_MIN, Lnorm, d0, score_d8);
+                    Lnorm, d0, score_d8);
                 if (dp > local_best) local_best = dp;
             }
         }
@@ -3201,13 +3201,13 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
                     inv_input, inv_l, D0_MIN, d0);
             }
             local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                xa_c, ya_c, xlen, ylen, inv_l, t_l, u_l,
+                xa_c, ya_c, ylen, inv_l, t_l, u_l,
                 simplify_step, score_sum_method, local_d0_search,
                 Lnorm, score_d8, d0);
             double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
                 path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
                 inv_l, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-                D0_MIN, Lnorm, d0, score_d8);
+                Lnorm, d0, score_d8);
             if (dp > local_best) local_best = dp;
         } else if (sid == 4) {
             // Strategy 5: fragment gapless threading
@@ -3215,13 +3215,13 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
                 xlen, ylen, inv_l, d0, d0_search, dcu0, fast_opt,
                 t_l, u_l);
             local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                xa_c, ya_c, xlen, ylen, inv_l, t_l, u_l,
+                xa_c, ya_c, ylen, inv_l, t_l, u_l,
                 simplify_step, score_sum_method, local_d0_search,
-                Lnorm, score_d8, d0, parallel_threads);
+                Lnorm, score_d8, d0);
             double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
                 path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
                 inv_l, 1, 2, 2, local_d0_search,
-                D0_MIN, Lnorm, d0, score_d8);
+                Lnorm, d0, score_d8);
             if (dp > local_best) local_best = dp;
         }
 
@@ -3366,13 +3366,13 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         double prevD0_MIN = D0_MIN;// stored for later use
         int prevLnorm = Lnorm;
         double prevd0 = d0;
-        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
             invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
         d0 = prevd0;
-        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
             invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
         if (TM > TMmax)
         {
@@ -3394,7 +3394,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
 	            simplify_step, score_sum_method, local_d0_search,
 	            fast_opt, a_opt, mol_type, TMcut,
 	            invmap0, invmap, t, u, TMmax,
-	            score, path, val, xtm, ytm, xt, r1, r2,
+	            path, val, xtm, ytm, xt, r1, r2,
 	            TM1, TM2, TM3, TM4, TM5, t0, u0,
 	            parallel_threads);
 	        if (ret) { return ret; }
@@ -3409,7 +3409,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
 	            invmap0, invmap, t, u, TMmax,
 	            score, path, val, xtm, ytm, xt, r1, r2,
 	            TM1, TM2, TM3, TM4, TM5, t0, u0,
-	            parallel_threads, ss_opt);
+	            ss_opt);
 	        if (ret) { return ret; }
 	    }
 	}
@@ -3443,14 +3443,14 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         int prevLnorm = Lnorm;
         double prevd0 = d0;
         TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-            xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
+            ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
             d0_search, score_d8, t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
         d0 = prevd0;
 
         TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-            xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
+            ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
             score_d8, d0);
         if (TM > TMmax)
         {
@@ -3460,7 +3460,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
         // Different from get_initial, get_initial_ss and get_initial_ssplus
         TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
             xlen, ylen, t, u, invmap, 0, 2, (fast_opt)?2:30,
-            local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+            local_d0_search, Lnorm, d0, score_d8);
         if (TM>TMmax)
         {
             TMmax = TM;
@@ -3505,7 +3505,7 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+    detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 

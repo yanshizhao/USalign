@@ -6,7 +6,7 @@
 
 double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     CoordArray& xa, CoordArray& ya, int xlen, int ylen, std::vector<int>& invmap,
-    int& L_ali, Vec3& t, RotMat& u, const int mol_type)
+    int& L_ali, Vec3& t, RotMat& u)
 {
     L_ali = 0;
     int i;
@@ -69,7 +69,7 @@ void parse_alignment_into_invmap(const std::string seqxA_tmp,
 int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
-    double &d0_0, double &TM_0, double &d0A, double &d0B, double &d0u,
+    double &TM_0, double &d0A, double &d0B, double &d0u,
     double &d0a, double &d0_out, std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden, double &TM_ali,
     double &rmsd_ali, int &n_ali, int &n_ali8, const int xlen, const int ylen,
@@ -153,7 +153,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
         parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp);
 
         Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
-            L_ali, t, u, mol_type);
+            L_ali, t, u);
 
         se_main(xt, ya, seqx.c_str(), seqy.c_str(), chain_align_res,
             xlen, ylen, sequence, align_opts, 1);
@@ -184,7 +184,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
             parse_alignment_into_invmap(seqxA_tmp, seqyA_tmp, xlen, ylen, invmap_tmp);
 
             Kabsch_Superpose(r1, r2, xt, xa, ya, xlen, ylen, invmap_tmp,
-                L_ali, t, u, mol_type);
+                L_ali, t, u);
 
             se_main(xt, ya, seqx.c_str(), seqy.c_str(), chain_align_res,
                 xlen, ylen, sequence, align_opts, 1);

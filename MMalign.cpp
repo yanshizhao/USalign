@@ -307,11 +307,11 @@ void parse_complexes(const MMalignOptions& mmalign_opts, const std::vector<std::
     const std::vector<std::string>& chain2_list, ComplexData& complex1, ComplexData& complex2)
 {
     parse_chain_list(chain1_list, complex1, mmalign_opts.ter_opt, mmalign_opts.split_opt, mmalign_opts.mol_opt,
-        mmalign_opts.infmt1_opt, mmalign_opts.atom_opt, false, mmalign_opts.mirror_opt, mmalign_opts.het_opt, mmalign_opts.o_opt,
+        mmalign_opts.infmt1_opt, mmalign_opts.atom_opt, false, mmalign_opts.mirror_opt, mmalign_opts.het_opt,
         mmalign_opts.chain2parse1, mmalign_opts.model2parse1);
     if (complex1.coords.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 1");
     parse_chain_list(chain2_list, complex2, mmalign_opts.ter_opt, mmalign_opts.split_opt, mmalign_opts.mol_opt,
-        mmalign_opts.infmt2_opt, mmalign_opts.atom_opt, false, 0, mmalign_opts.het_opt, mmalign_opts.o_opt,
+        mmalign_opts.infmt2_opt, mmalign_opts.atom_opt, false, 0, mmalign_opts.het_opt,
         mmalign_opts.chain2parse2, mmalign_opts.model2parse2);
     if (complex2.coords.size()==0) PrintErrorAndQuit("ERROR! 0 chain in complex 2");
 }

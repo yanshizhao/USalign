@@ -558,7 +558,7 @@ int main(int argc, char *argv[])
             HwRMSD_main(
                 xa, ya, seqx_str, seqy_str, secx_str, secy_str, t0, u0,
                 TM1, TM2, TM3, TM4, TM5,
-                d0_0, TM_0, d0A, d0B, d0u,
+                TM_0, d0A, d0B, d0u,
                 d0a, d0_out, seqM, seqxA, seqyA,
                 rmsd0, L_ali, Liden, TM_ali,
                 rmsd_ali, n_ali, n_ali8, xlen, ylen,

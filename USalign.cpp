@@ -146,7 +146,7 @@ void print_extra_help()
     <<std::endl;
 }
 
-void print_help(bool h_opt=false)
+void print_help()
 {
     print_version();
     std::cout <<
@@ -521,7 +521,7 @@ int run_batch_parallel(
 
         int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
         if (cp_opt) output_cp(xname_out, yname_out,
-            chain_align_res.seqxA, chain_align_res.seqyA, outfmt_opt, left_num, right_num,
+            chain_align_res.seqxA, outfmt_opt, left_num, right_num,
             left_aln_num, right_aln_num, ss);
 
         OutputOptions out_opts;
@@ -559,7 +559,6 @@ int run_batch_parallel(
     return 0;
 }
 
-// ---- Count the number of paired chains in the assignment (free function, pure external data operation) ----
 int count_assign_pair(const ChainAssignResult& assign_result)
 {
     int pair_num = 0;
@@ -573,7 +572,6 @@ int count_assign_pair(const ChainAssignResult& assign_result)
     return pair_num;
 }
 
-// ---- Parsed products (filled by parse_structures / read_chainmap, read-only afterwards) ----
 struct MMalignParsed
 {
     ComplexData complex1;             // parsed data of complex 1
@@ -623,19 +621,14 @@ struct MMalignContext
           iteration_score(0.0) {}
 };
 
-// ---- Forward declaration of mark_pair_invalid (defined later in this file) ----
 void mark_pair_invalid(AllChainPairsResult& pairwise,
     int chain1_idx,
-    int chain2_idx,
-    int chain1_num);
+    int chain2_idx);
 
-// ---- Forward declaration of mark_chain_invalid (defined later in this file) ----
 void mark_chain_invalid(AllChainPairsResult& pairwise,
     int chain1_idx,
-    int chain1_num,
     int chain2_num);
 
-// ---- Forward declarations of init_pair_rotation / handle_byresi_pair (defined later in this file) ----
 void init_pair_rotation(RotArray& rotations,
     int pair_idx);
 
@@ -652,12 +645,10 @@ bool handle_byresi_pair(AlignCommonInput& common_inputs,
     const std::string& chain2_seq,
     std::vector<std::string>& sequence);
 
-// ---- Forward declaration of save_pair_result (defined later in this file) ----
 void save_pair_result(const ChainPairAlignResult& result,
     AllChainPairsResult& pairwise,
     int chain1_idx,
     int chain2_idx,
-    int chain1_num,
     int chain2_num,
     double norm_len);
 
@@ -722,7 +713,7 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
             // chain too short (<3 residues) to align: set the entire row to -1
             if (chain1_len<3)
             {
-                mark_chain_invalid(pairwise, chain1_idx, chain1_num, chain2_num);
+                mark_chain_invalid(pairwise, chain1_idx, chain2_num);
                 continue;
             }
             // extract data of chain chain1_idx of structure 1 (coords/sequence/secondary structure) into working buffers
@@ -733,23 +724,20 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                 parsed.complex1.secs[chain1_idx],
                 chain1_len, chain1_coords, chain1_seq,chain1_sec);
 
-            // ---- Inner loop: iterate over each chain of structure 2 ----
             for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
             {
                 pair_idx=chain1_idx*chain2_num+chain2_idx;
-                // initialize this chain pair's rotation matrix (identity + zero translation)
                 init_pair_rotation(pairwise.rotations, pair_idx);
 
-                // protein/RNA cross-type chain pair cannot be aligned: set to -1
                 if (parsed.complex1.mol_types[chain1_idx]*parsed.complex2.mol_types[chain2_idx]<0)
                 {
-                    mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+                    mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                     continue;
                 }
                 // Chainmap local constraint: mark chain pairs that violate the constraint as invalid
                 if (!is_chain_pair_allowed(parsed.chain_pair_map, chain1_idx, chain2_idx))
                 {
-                    mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+                    mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                     continue;
                 }
 
@@ -757,23 +745,20 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                 chain2_len=parsed.complex2.lengths[chain2_idx];
                 if (chain2_len<3)
                 {
-                    mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+                    mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                     continue;
                 }
-                // extract data of chain chain2_idx of structure 2 (coords/sequence/secondary structure) into working buffers
                 chain2_sec.resize(chain2_len+1);
                 chain2_coords.resize(chain2_len);
                 copy_chain_data(parsed.complex2.coords[chain2_idx],parsed.complex2.seqs[chain2_idx],parsed.complex2.secs[chain2_idx],
                     chain2_len,chain2_coords,chain2_seq,chain2_sec);
 
-                // select normalization length (protein_norm_len for protein pairs, na_norm_len for RNA pairs)
                 norm_len=parsed.protein_norm_len;
                 if (parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx] > 0)
                 {
                     norm_len = parsed.na_norm_len;
                 }
 
-                // byresi (-TMscore) mode: extract alignment by residue index; skip this chain pair if the alignment is abnormal
                 if (handle_byresi_pair(common_inputs, parsed, pairwise,
                     chain1_idx, chain2_idx, pair_idx,
                     chain1_len, chain2_len, chain1_num,
@@ -782,7 +767,6 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                     continue;
                 }
 
-                // entry function for structure alignment (reuses the common template align_chain_pair)
                 ChainPairAlignResult chain_align_res = { 0};
                 chain_align_res.d0_out = 5.0;
                 int mol_types = parsed.complex1.mol_types[chain1_idx] + parsed.complex2.mol_types[chain2_idx];
@@ -794,9 +778,8 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                         i_opt, 1, common_inputs.control_options.parallel_threads),
                     pair_sequence, 1);
 
-                // save chain_align_res (reuses the common function save_pair_result)
                 save_pair_result(chain_align_res, pairwise,
-                    chain1_idx, chain2_idx, chain1_num, chain2_num, norm_len);
+                    chain1_idx, chain2_idx, chain2_num, norm_len);
 
 
             }   
@@ -869,7 +852,6 @@ inline void run_mmdock_parallel(
     const CharMatrix& secx_vec, const CharMatrix& secy_vec,
     const std::vector<int>& xlen_vec, const std::vector<int>& ylen_vec,
     const std::vector<int>& mol_vec1, const std::vector<int>& mol_vec2,
-    std::vector<std::string>& resi_vec1, std::vector<std::string>& resi_vec2,
     DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string>>& seqxA_mat,
     std::vector<std::vector<std::string>>& seqyA_mat,
@@ -971,7 +953,6 @@ struct TMalignParams
 
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs);
 void output_pair_alignment(const AlignCommonInput& common_inputs,
-    const std::string& xname, const std::string& yname,
     int xlen, int ylen,
     const ChainPairAlignResult& result,
     const std::vector<std::string>& pdb_lines1,
@@ -1160,7 +1141,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 
                     // print chain_align_res
                     output_pair_alignment(common_inputs,
-                        user_opts.xname, user_opts.yname,
                         xlen, ylen, chain_align_res,
                         PDB_lines1[chain_i], PDB_lines2[chain_j],
                         chainID_list1[chain_i], chainID_list2[chain_j],
@@ -1347,11 +1327,11 @@ bool parse_structures(AlignCommonInput& common_inputs, const MMalignParams& mm_p
     parse_chain_list(mm_params.chain1_list, parsed.complex1,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt,
         user_opts.infmt1_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.mirror_opt,
-        user_opts.het_opt, user_opts.o_opt, user_opts.chain2parse1, user_opts.model2parse1);
+        user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1);
     parse_chain_list(mm_params.chain2_list, parsed.complex2,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt,
         user_opts.infmt2_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, 0,
-        user_opts.het_opt, user_opts.o_opt, user_opts.chain2parse2, user_opts.model2parse2);
+        user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
 
     if (parsed.complex1.coords.size() == 0 || parsed.complex2.coords.size() == 0)
     {
@@ -1633,7 +1613,6 @@ void align_chain_pair(ChainPairAlignResult& chain_align_res,
 
 // ---- Output one chain-pair alignment result (version / CP / results / do-block) ----
 void output_pair_alignment(const AlignCommonInput& common_inputs,
-    const std::string& xname, const std::string& yname,
     int xlen, int ylen,
     const ChainPairAlignResult& chain_align_res,
     const std::vector<std::string>& pdb_lines1,
@@ -1654,7 +1633,7 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     if (ctrl_opts.cp_opt) output_cp(
         user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size()),
         user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size()),
-        chain_align_res.seqxA, chain_align_res.seqyA, user_opts.outfmt_opt,
+        chain_align_res.seqxA, user_opts.outfmt_opt,
         left_num, right_num, left_aln_num, right_aln_num);
     OutputOptions out_opts;
     fill_output_options_from_user_options(out_opts, user_opts);
@@ -1700,7 +1679,6 @@ void save_pair_result(const ChainPairAlignResult& chain_align_res,
     AllChainPairsResult& pairwise,
     int chain1_idx,
     int chain2_idx,
-    int chain1_num,
     int chain2_num,
     double norm_len)
 {
@@ -1802,7 +1780,6 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
     AllChainPairsResult& pairwise,
     int chain1_num,
     int chain2_num,
-    int i_opt,
     bool fast_opt)
 {
     std::string chain1_seq;
@@ -1821,7 +1798,7 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
         chain1_len = parsed.complex1.lengths[chain1_idx];
         if (chain1_len < 3)
         {
-            mark_chain_invalid(pairwise, chain1_idx, chain1_num, chain2_num);
+            mark_chain_invalid(pairwise, chain1_idx, chain2_num);
             continue;
         }
         chain1_sec.resize(chain1_len + 1);
@@ -1836,19 +1813,19 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
 
             if (parsed.complex1.mol_types[chain1_idx] * parsed.complex2.mol_types[chain2_idx] < 0)
             {
-                mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+                mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                 continue;
             }
             if (!is_chain_pair_allowed(parsed.chain_pair_map, chain1_idx, chain2_idx))
             {
-                mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+                mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                 continue;
             }
 
             chain2_len = parsed.complex2.lengths[chain2_idx];
             if (chain2_len < 3)
             {
-                mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+                mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
                 continue;
             }
             chain2_sec.resize(chain2_len + 1);
@@ -1883,7 +1860,7 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
 
             // save chain_align_res
             save_pair_result(chain_align_res, pairwise,
-                chain1_idx, chain2_idx, chain1_num, chain2_num, norm_len);
+                chain1_idx, chain2_idx, chain2_num, norm_len);
         }
     }
 }
@@ -1907,8 +1884,7 @@ void init_pair_rotation(RotArray& rotations,
 // ---- Mark a single chain pair as non-alignable (TM score set to -1 + symmetric position) ----
 void mark_pair_invalid(AllChainPairsResult& pairwise,
     int chain1_idx,
-    int chain2_idx,
-    int chain1_num)
+    int chain2_idx)
 {
     pairwise.tm_matrix[chain1_idx][chain2_idx] = -1;
 }
@@ -1916,12 +1892,11 @@ void mark_pair_invalid(AllChainPairsResult& pairwise,
 // ---- Chain of structure 1 too short to align: set the whole TM-score row of that chain to -1 (including symmetric positions) ----
 void mark_chain_invalid(AllChainPairsResult& pairwise,
     int chain1_idx,
-    int chain1_num,
     int chain2_num)
 {
     for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
     {
-        mark_pair_invalid(pairwise, chain1_idx, chain2_idx, chain1_num);
+        mark_pair_invalid(pairwise, chain1_idx, chain2_idx);
     }
 }
 
@@ -2006,7 +1981,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs,
 
     if (!parallel_done)
     {
-        run_mmalign_serial_pairwise(common_inputs, parsed, pairwise, chain1_num, chain2_num, i_opt, fast_opt);
+        run_mmalign_serial_pairwise(common_inputs, parsed, pairwise, chain1_num, chain2_num, fast_opt);
     }
 
     update_best_pair(pairwise, chain1_num, chain2_num);
@@ -2014,7 +1989,6 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs,
 
 // ---- Initial chain assignment ----
 void assign_initial_chains_greedily(const AllChainPairsResult& pairwise,
-    const MMalignParsed& parsed,
     ChainAssignResult& assign_result,
     int chain1_num,
     int chain2_num)
@@ -2179,7 +2153,6 @@ void optimize_chain_assign(const AllChainPairsResult& pairwise,
 // ---- Save the initial assignment snapshot (for fallback and cross-chain alignment) ----
 void save_initial_assign_result(AllChainPairsResult& pair_result,
     ChainAssignResult& assign_result,
-    const MMalignParsed& parsed,
     AllChainPairsResult& pair_result_origin,
     ChainAssignResult& assign_result_origin,
     std::vector<std::string>& sequence_origin,
@@ -2733,12 +2706,12 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
     align_all_chain_pairs(ctx.common_inputs, ctx.parsed, ctx.pair_result, struct1_chain_num, struct2_chain_num, ctx.fast_opt);
 
     // ---- Initial greedy assignment + assignment optimization (dimer/oligomer) + initial snapshot ----
-    assign_initial_chains_greedily(ctx.pair_result, ctx.parsed, ctx.assign_result, struct1_chain_num, struct2_chain_num);
+    assign_initial_chains_greedily(ctx.pair_result, ctx.assign_result, struct1_chain_num, struct2_chain_num);
 
     optimize_chain_assign(ctx.pair_result, ctx.parsed, ctx.assign_result,
         ctx.common_inputs.control_options.se_opt, ctx.aln_chain_num, ctx.is_oligomer);
 
-    save_initial_assign_result(ctx.pair_result, ctx.assign_result, ctx.parsed,
+    save_initial_assign_result(ctx.pair_result, ctx.assign_result,
         ctx.pair_result_origin, ctx.assign_result_origin, ctx.sequence_origin,
         ctx.origin_pair_num, struct1_chain_num, struct2_chain_num);
 
@@ -3039,7 +3012,7 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
             complex1.coords, complex2.coords, complex1.seqs, complex2.seqs,
             complex1.secs, complex2.secs, complex1.lengths, complex2.lengths,
             complex1.mol_types, complex2.mol_types,
-            complex1.resi, complex2.resi, TMave_mat,
+            TMave_mat,
             seqxA_mat, seqyA_mat,
             chain1_num, chain2_num, len_aa, len_na,
             user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
@@ -3152,12 +3125,12 @@ int MMdock(AlignCommonInput& common_inputs)
     // parse complex
     parse_chain_list(parsed_input.chain1_list, complex1,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.mirror_opt, user_opts.het_opt, user_opts.o_opt,
+        user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.mirror_opt, user_opts.het_opt,
         user_opts.chain2parse1, user_opts.model2parse1);
     if (complex1.coords.size()==0) PrintErrorAndQuit("ERROR! 0 individual chain");
     parse_chain_list(parsed_input.chain2_list, complex2,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt2_opt,
-        user_opts.atom_opt, parsed_input.normalize_atom_name, 0, user_opts.het_opt, user_opts.o_opt,
+        user_opts.atom_opt, parsed_input.normalize_atom_name, 0, user_opts.het_opt,
         user_opts.chain2parse2, user_opts.model2parse2);
     if (complex1.coords.size()>complex2.coords.size()) 
         PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
@@ -4313,7 +4286,7 @@ int mTMalign(AlignCommonInput& common_inputs)
     ComplexData complex;
     parse_chain_list(parsed_input.chain1_list, complex,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
-        user_opts.atom_opt, parsed_input.normalize_atom_name, false, user_opts.het_opt, user_opts.o_opt,
+        user_opts.atom_opt, parsed_input.normalize_atom_name, false, user_opts.het_opt,
         user_opts.chain2parse1, user_opts.model2parse1);
     int chain_num=complex.coords.size();
     if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
@@ -4612,7 +4585,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
 
                     // print chain_align_res
                     output_pair_alignment(common_inputs,
-                        user_opts.xname, user_opts.yname,
                         xlen, ylen, chain_align_res,
                         PDB_lines1[chain_i], PDB_lines2[chain_j],
                         chainID_list1[chain_i], chainID_list2[chain_j],
@@ -4874,7 +4846,7 @@ void check_input_presence(UserOptions& user_opts, ControlOptions& control)
         (user_opts.yname.size()==0 && user_opts.dir_opt.size()==0 && user_opts.dirpair_opt.size()==0);
     if (incomplete_inputs)
     {
-        if (control.h_opt) print_help(control.h_opt);
+        if (control.h_opt) print_help();
         if (control.v_opt)
         {
             print_version();

@@ -376,7 +376,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     double& TM3 = chain_align_res.TM3;
     double& TM4 = chain_align_res.TM4;
     double& TM5 = chain_align_res.TM5;
-    double& d0_0 = chain_align_res.d0_0;
     double& TM_0 = chain_align_res.TM_0;
     double& d0A = chain_align_res.d0A;
     double& d0B = chain_align_res.d0B;
@@ -398,7 +397,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     // entry function for structure alignment
     HwRMSD_main(chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
         chain1.chain_sec, chain2.chain_sec, t0, u0,
-        TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        TM1, TM2, TM3, TM4, TM5, TM_0,
         d0A, d0B, d0u, d0a, d0_out, seqM, seqxA, seqyA,
         rmsd0, L_ali, Liden, TM_ali,
         rmsd_ali, n_ali, n_ali8, xlen, ylen, hwrmsd_opts.sequence,

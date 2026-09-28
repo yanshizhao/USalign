@@ -361,7 +361,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     double& d0_0 = chain_align_res.d0_0;
     double& TM_0 = chain_align_res.TM_0;
     double& d0A = chain_align_res.d0A;
-    double& d0B = chain_align_res.d0B;
     double& d0u = chain_align_res.d0u;
     double& d0a = chain_align_res.d0a;
     double& d0_out = chain_align_res.d0_out;
@@ -385,7 +384,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     TMscore_main(
         chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
         t0, u0, TM1, TM2, TM3, TM4, TM5,
-        d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+        d0_0, TM_0, d0A, d0u, d0a, d0_out,
         seqM, seqxA, seqyA,
         rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
         xlen, ylen, sequence, tmscore_opts.Lnorm_ass, tmscore_opts.d0_scale,

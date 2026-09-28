@@ -341,8 +341,7 @@ void read_chain(const std::vector<std::string>& chain_lines, const std::string& 
         chain.resi_vec, se_opts.byresi_opt);
 }
 
-void output_do_block(const ParsedChain& chain1, const ParsedChain& chain2,
-    const std::vector<std::string>& pdb_lines1, const std::vector<std::string>& pdb_lines2,
+void output_do_block(const std::vector<std::string>& pdb_lines1, const std::vector<std::string>& pdb_lines2,
     const ChainPairAlignResult& chain_align_res)
 {
     std::cout<<"###############\t###############\t#########"<<std::endl;
@@ -431,7 +430,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         chain1.resi_vec, chain2.resi_vec);
 
     if (se_opts.do_opt)
-        output_do_block(chain1, chain2, pdb_lines1, pdb_lines2, chain_align_res);
+        output_do_block(pdb_lines1, pdb_lines2, chain_align_res);
 }
 
 void align_all_chain_pairs(std::vector<std::string>& chain1_list,

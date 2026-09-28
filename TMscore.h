@@ -485,7 +485,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
 
 double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt, const CoordArray& x, const CoordArray& y,
-    int xlen, int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
+    int ylen, std::vector<int>& invmap0, Vec3& t, RotMat& u,
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0,
     double GDT_list[5], double &maxsub)
@@ -533,9 +533,8 @@ void output_TMscore_results(
     const double TM3, const double TM4, const double TM5,
     const double rmsd, const double d0_out,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA, const double Liden,
-    const int n_ali8, const int L_ali,
-    const double TM_ali, const double rmsd_ali, const double TM_0,
-    const double d0_0, const double d0A, const double d0B,
+    const int n_ali8,
+    const double d0A, const double d0B,
     const double Lnorm_ass, const double d0_scale, 
     const double d0a, const double d0u, const std::string& fname_matrix,
     const int outfmt_opt, const int ter_opt, const std::string& fname_super,
@@ -657,9 +656,8 @@ void output_TMscore_results(const std::string xname, const std::string yname,
         chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5,
         chain_align_res.rmsd0, chain_align_res.d0_out,
         chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, chain_align_res.Liden,
-        chain_align_res.n_ali8, chain_align_res.L_ali,
-        chain_align_res.TM_ali, chain_align_res.rmsd_ali, chain_align_res.TM_0,
-        chain_align_res.d0_0, chain_align_res.d0A, chain_align_res.d0B,
+        chain_align_res.n_ali8,
+        chain_align_res.d0A, chain_align_res.d0B,
         Lnorm_ass, d0_scale,
         chain_align_res.d0a, chain_align_res.d0u, fname_matrix,
         outfmt_opt, ter_opt, fname_super,
@@ -673,7 +671,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy, Vec3& t0, RotMat& u0,
     double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
     double &d0_0, double &TM_0,
-    double &d0A, double &d0B, double &d0u, double &d0a, double &d0_out,
+    double &d0A, double &d0u, double &d0a, double &d0_out,
     std::string &seqM, std::string &seqxA, std::string &seqyA,
     double &rmsd0, int &L_ali, double &Liden,
     double &TM_ali, double &rmsd_ali, int &n_ali, int &n_ali8,
@@ -750,13 +748,13 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     double prevD0_MIN = D0_MIN;// stored for later use
     int prevLnorm = Lnorm;
     double prevd0 = d0;
-    TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+    TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa, ya, ylen,
         invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
         t, u, mol_type);
     D0_MIN = prevD0_MIN;
     Lnorm = prevLnorm;
     d0 = prevd0;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, ylen,
         invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
     if (TM > TMmax)
     {
@@ -805,7 +803,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, xlen, ylen,
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa, ya, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0,
         GDT_list, maxsub);

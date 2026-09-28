@@ -1024,7 +1024,7 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
     const int ter_opt, const int split_opt,
     const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
     const bool normalize_atom_name, const int mirror_opt, const int het_opt,
-    const int o_opt, const std::vector<std::string> &chain2parse,
+    const std::vector<std::string> &chain2parse,
     const std::vector<std::string> &model2parse)
 {
     DoubleCube& a_vec = complex.coords;
@@ -1144,9 +1144,9 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
 inline int copy_chain_pair_data(
     const ComplexData& complex1, const ComplexData& complex2,
     CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
-    int chain1_num, int chain2_num,
+    int chain1_num,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence)
+    std::vector<int>& assign1_list, std::vector<std::string>&sequence)
 {
     const DoubleCube&xa_vec = complex1.coords;
     const DoubleCube&ya_vec = complex2.coords;
@@ -1203,7 +1203,7 @@ inline double MMalign_search(
     const ComplexData& complex1, const ComplexData& complex2,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
-    std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
+    std::vector<int>& assign1_list, std::vector<std::string>&sequence,
     double d0_scale, bool fast_opt, const int i_opt=3, const int byresi_opt=0,
     const std::map<int,int>& chain_pair_map = std::map<int,int>())
 {
@@ -1242,8 +1242,8 @@ inline double MMalign_search(
     ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(complex1, complex2,
-        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
+        xa, ya, seqx, seqy, secx, secy, chain1_num,
+        seqxA_mat, seqyA_mat, assign1_list, sequence);
 
     // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
@@ -1628,8 +1628,8 @@ inline void MMalign_final(
     ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(complex1, complex2,
-        xa, ya, seqx, seqy, secx, secy, params.chain1_num, params.chain2_num,
-        pairs.aligned_seq1, pairs.aligned_seq2, assign.chain2_of_chain1, assign.chain1_of_chain2, sequence);
+        xa, ya, seqx, seqy, secx, secy, params.chain1_num,
+        pairs.aligned_seq1, pairs.aligned_seq2, assign.chain2_of_chain1, sequence);
     seqx.resize(xlen+1);
     seqy.resize(ylen+1);
 
@@ -1815,7 +1815,7 @@ inline void MMalign_iter(double & max_total_score, const int max_iter,
         total_score=MMalign_search(complex1, complex2,
             len_aa, len_na,
             chain1_num, chain2_num,
-            TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp, assign2_tmp,
+            TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp,
             sequence, d0_scale, fast_opt, 3, byresi_opt, chain_pair_map);
         
         if (chain_pair_map.size())
@@ -1928,7 +1928,7 @@ inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Coo
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, CharMatrix& mask, Vec3& t, RotMat& u, std::vector<int>& invmap0,
     int g1, int g2, int iteration_max, double local_d0_search,
-    double D0_MIN, double Lnorm, double d0, double score_d8)
+    double Lnorm, double d0, double score_d8)
 {
     double gap_open[2]={-0.6, 0};
     double rmsd;
@@ -2067,7 +2067,7 @@ inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm,
                 double gap_open = 0.0;
                 NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
                     t, u, d02, gap_open, invmap);
-                GL = get_score_fast(r1, r2, xtm, ytm, x, y, xlen, ylen,
+                GL = get_score_fast(r1, r2, xtm, ytm, x, y, ylen,
                     invmap, d0, d0_search, t, u);
                 if (GL > GLmax)
                 {
@@ -2247,13 +2247,13 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         double prevD0_MIN = D0_MIN;// stored for later use
         int prevLnorm = Lnorm;
         double prevd0 = d0;
-        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+        TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
             invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0, d0_search, score_d8,
             t, u, mol_type);
         D0_MIN = prevD0_MIN;
         Lnorm = prevLnorm;
         d0 = prevd0;
-        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+        TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
             invmap, t, u, 40, 8, local_d0_search, true, Lnorm, score_d8, d0);
         if (TM > TMmax)
         {
@@ -2270,7 +2270,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
     {
         get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
             d0_search, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap0,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap0,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax) TMmax = TM;
@@ -2278,7 +2278,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         //run dynamic programing iteratively to find the best alignment
         TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
              mask, t, u, invmap, 0, 2, (fast_opt)?2:30,
-             local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+             local_d0_search, Lnorm, d0, score_d8);
         if (TM>TMmax)
         {
             TMmax = TM;
@@ -2304,7 +2304,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         //    get initial alignment based on secondary structure
         /************************************************************/
         get_initial_ss_dimer(path, val, secx, secy, xlen, ylen, mask, invmap);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2317,7 +2317,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 0, 2,
-                (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+                (fast_opt)?2:30, local_d0_search, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
                 TMmax = TM;
@@ -2347,7 +2347,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         if (get_initial5_dimer( r1, r2, xtm, ytm, path, val, xa_c, ya_c,
             xlen, ylen, mask, invmap, d0, d0_search, fast_opt, D0_MIN))
         {
-            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+            TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
                 invmap, t, u, simplify_step, score_sum_method,
                 local_d0_search, Lnorm, score_d8, d0);
             if (TM>TMmax)
@@ -2360,7 +2360,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
             {
                 TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                     xlen, ylen, mask, t, u, invmap, 0, 2, 2,
-                    local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+                    local_d0_search, Lnorm, d0, score_d8);
                 if (TM>TMmax)
                 {
                     TMmax = TM;
@@ -2392,7 +2392,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         //=initial3 in original TM-align
         get_initial_ssplus_dimer(r1, r2, score, path, val, secx, secy, xa_c, ya_c,
             xlen, ylen, invmap0, invmap, D0_MIN, d0);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap,
              t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
              score_d8, d0);
         if (TM>TMmax)
@@ -2405,7 +2405,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 0, 2,
-                (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+                (fast_opt)?2:30, local_d0_search, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
                 TMmax = TM;
@@ -2434,7 +2434,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         //=initial4 in original TM-align
         get_initial_fgt(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen,
             invmap, d0, d0_search, dcu0, fast_opt, t, u);
-        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen, invmap,
+        TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap,
             t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
             score_d8, d0);
         if (TM>TMmax)
@@ -2447,7 +2447,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
         {
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 1, 2, 2,
-                local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+                local_d0_search, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
                 TMmax = TM;
@@ -2500,14 +2500,14 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
             int prevLnorm = Lnorm;
             double prevd0 = d0;
             TM_ali = standard_TMscore(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
+                ylen, invmap, L_ali, rmsd_ali, D0_MIN, Lnorm, d0,
                 d0_search, score_d8, t, u, mol_type);
             D0_MIN = prevD0_MIN;
             Lnorm = prevLnorm;
             d0 = prevd0;
 
             TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c,
-                xlen, ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
+                ylen, invmap, t, u, 40, 8, local_d0_search, true, Lnorm,
                 score_d8, d0);
             if (TM > TMmax)
             {
@@ -2517,7 +2517,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
             // Different from get_initial, get_initial_ss and get_initial_ssplus
             TM = DP_iter_dimer(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c,
                 xlen, ylen, mask, t, u, invmap, 0, 2,
-                (fast_opt)?2:30, local_d0_search, D0_MIN, Lnorm, d0, score_d8);
+                (fast_opt)?2:30, local_d0_search, Lnorm, d0, score_d8);
             if (TM>TMmax)
             {
                 TMmax = TM;
@@ -2562,7 +2562,7 @@ inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+    detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
@@ -2912,8 +2912,8 @@ inline void MMalign_dimer(double & total_score,
     ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(complex1, complex2,
-        xa, ya, seqx, seqy, secx, secy, chain1_num, chain2_num,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
+        xa, ya, seqx, seqy, secx, secy, chain1_num,
+        seqxA_mat, seqyA_mat, assign1_list, sequence);
 
     // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
