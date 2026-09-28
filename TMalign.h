@@ -283,17 +283,7 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
     double score_d8, double d0, int parallel_threads = 1)
 {
     int i;
-    int m;
     double score_max;
-    double score;
-    double rmsd;
-    const int kmax=Lali;
-    std::vector<int> k_ali(kmax);
-    int ka;
-    int k;
-    Vec3 t;
-    RotMat u;
-    double d;
 
     int n_it=20;
     int n_init_max=6;
@@ -320,7 +310,6 @@ inline double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
     }
 
     score_max=-1;
-    std::vector<int> i_ali(kmax);
     int n_cut;
     int L_frag;
     int iL_max;
@@ -363,17 +352,7 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     double &Rcomm, double local_d0_search, double score_d8, double d0, int parallel_threads = 1)
 {
     int i;
-    int m;
     double score_max;
-    double score;
-    double rmsd;
-    const int kmax = Lali;
-    std::vector<int> k_ali(kmax);
-    int ka;
-    int k;
-    Vec3 t;
-    RotMat u;
-    double d;
 
     int n_it = 20;
     int n_init_max = 6;
@@ -400,7 +379,6 @@ inline double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     }
 
     score_max = -1;
-    std::vector<int> i_ali(kmax);
     int n_cut;
     int L_frag;
     int iL_max;
@@ -1750,7 +1728,6 @@ inline void read_mTMalign_chain_pdb(const std::string& name, const std::string& 
         std::map<std::string,int> _atom_site;
         size_t atom_site_pos;
         std::vector<std::string> line_vec;
-        int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
 
         while (compress_type?fin_gz.good():fin.good())
         {
@@ -1759,7 +1736,6 @@ inline void read_mTMalign_chain_pdb(const std::string& name, const std::string& 
             if (line.compare(0, 6, "ATOM  ")==0 ||
                 line.compare(0, 6, "HETATM")==0) // PDB format
             {
-                infmt=0;
                 x[0]=safe_stod(line.substr(30,8).c_str());
                 x[1]=safe_stod(line.substr(38,8).c_str());
                 x[2]=safe_stod(line.substr(46,8).c_str());
@@ -1771,7 +1747,6 @@ inline void read_mTMalign_chain_pdb(const std::string& name, const std::string& 
             }
             else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
             {
-                infmt=3;
                 buf<<line<<'\n';
                 while(1)
                 {
@@ -2581,8 +2556,6 @@ void output_results(const std::string xname, const std::string yname,
     const int& L_ali = chain_align_res.L_ali;
     const double& TM_ali = chain_align_res.TM_ali;
     const double& rmsd_ali = chain_align_res.rmsd_ali;
-    const double& TM_0 = chain_align_res.TM_0;
-    const double& d0_0 = chain_align_res.d0_0;
     const double& d0A = chain_align_res.d0A;
     const double& d0B = chain_align_res.d0B;
     const double& d0a = chain_align_res.d0a;
@@ -3524,7 +3497,6 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     int &n_ali = chain_align_res.n_ali;
     int &n_ali8 = chain_align_res.n_ali8;
     double &rmsd0 = chain_align_res.rmsd0;
-    double TM;
     int i;
 
     //********************************************************************//
@@ -3535,7 +3507,7 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
-    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
+    detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, xlen, ylen,
         invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
         false, Lnorm, score_d8, d0);
 
@@ -3981,8 +3953,6 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
 {
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
-    double& TM1 = chain_align_res.TM1;
-    double& TM2 = chain_align_res.TM2;
     double& TM3 = chain_align_res.TM3;
     double& TM4 = chain_align_res.TM4;
     double& TM5 = chain_align_res.TM5;
