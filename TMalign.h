@@ -4102,7 +4102,5 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
         seqyA=seqyA_cp;
     }
 
-    seqxA_cp.clear();
-    seqyA_cp.clear();
     return cp_point;
 }

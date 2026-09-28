@@ -2971,8 +2971,6 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
             template_name+=complex2.chain_ids[j];
         }
         fcout("%s\t%s\t%.4f\n", query_name, template_name, TM);
-        query_name.clear();
-        template_name.clear();
     }
 
     if (user_opts.m_opt) output_dock_rotation_matrix(user_opts.fname_matrix,
@@ -3184,10 +3182,6 @@ int MMdock(AlignCommonInput& common_inputs)
             sqrt((chain_align_res.TM1*chain_align_res.TM1+chain_align_res.TM2*chain_align_res.TM2)/2));
 
         // clean up
-        chain_align_res.seqM.clear();
-        chain_align_res.seqxA.clear();
-        chain_align_res.seqyA.clear();
-        chain_align_res.do_vec.clear();
 
         return 0;
     }

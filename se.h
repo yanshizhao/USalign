@@ -304,8 +304,6 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
     se_score_alignment(xa, ya, xlen, ylen, align_opts, search, invmap0, chain_align_res, m1, m2, outfmt_opt, hinge);
     if (outfmt_opt>=2)
     {
-        if (hinge) seqM_char.clear();    
-
         return 0;
     }
 

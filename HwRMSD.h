@@ -245,11 +245,6 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya, const std::string& seqx, const s
         }
     }
 
-    seqxA_tmp.clear();
-    seqM_tmp.clear();
-    seqyA_tmp.clear();
-
-    do_vec.clear();
     return 0;
 }
 

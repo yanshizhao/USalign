@@ -651,8 +651,6 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
     }
     chainID1.clear();
     chainID2.clear();
-    chainID1_prev.clear();
-    chainID2_prev.clear();
     return sequence[0].size();
 }
 

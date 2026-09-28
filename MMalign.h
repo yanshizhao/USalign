@@ -376,7 +376,6 @@ inline double calculate_centroids(const DoubleCube&a_vec,
     d0MM=0;
     for (c=0; c<chain_num; c++) d0MM+=d0_vec[c];
     d0MM/=chain_num;
-    d0_vec.clear();
     return d0MM;
 }
 
@@ -950,7 +949,6 @@ inline size_t get_full_PDB_lines(const std::string filename,
 
     if (compress_type) fin_gz.close();
     else               fin.close();
-    line.clear();
     return PDB_lines.size();
 }
 

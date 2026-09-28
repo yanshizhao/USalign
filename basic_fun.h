@@ -1073,7 +1073,6 @@ void read_user_alignment(std::vector<std::string>&sequence, const std::string &f
         if (aligned_resNum<3)
             PrintErrorAndQuit("ERROR! Superposition is undefined for <3 aligned residues.");
     }
-    line.clear();
     return;
 }
 
