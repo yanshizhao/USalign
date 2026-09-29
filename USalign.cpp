@@ -1101,8 +1101,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                 if (parsed_input.chain2_list.size()>1)
                 {
                     user_opts.yname.clear();
-                    for (chain_j=0;chain_j<ychainnum;chain_j++)
-                        PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
                     chainID_list2.clear();
                     mol_vec2.clear();
@@ -1119,12 +1117,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     if (parsed_input.chain2_list.size()==1)
     {
         user_opts.yname.clear();
-        for (chain_j=0;chain_j<ychainnum;chain_j++)
-            PDB_lines2[chain_j].clear();
-        PDB_lines2.clear();
-        resi_vec2.clear();
-        chainID_list2.clear();
-        mol_vec2.clear();
     }
     return 0;
 }
@@ -4516,8 +4508,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                 if (parsed_input.chain2_list.size()>1)
                 {
                     user_opts.yname.clear();
-                    for (chain_j=0;chain_j<ychainnum;chain_j++)
-                        PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
                     chainID_list2.clear();
                     mol_vec2.clear();
@@ -4534,12 +4524,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     if (parsed_input.chain2_list.size()==1)
     {
         user_opts.yname.clear();
-        for (chain_j=0;chain_j<ychainnum;chain_j++)
-            PDB_lines2[chain_j].clear();
-        PDB_lines2.clear();
-        resi_vec2.clear();
-        chainID_list2.clear();
-        mol_vec2.clear();
     }
     return 0;
 }
@@ -4659,8 +4643,6 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                 if (parsed_input.chain2_list.size()>1)
                 {
                     user_opts.yname.clear();
-                    for (chain_j=0;chain_j<ychainnum;chain_j++)
-                        PDB_lines2[chain_j].clear();
                     PDB_lines2.clear();
                     chainID_list2.clear();
                     mol_vec2.clear();
@@ -4679,11 +4661,6 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     if (parsed_input.chain2_list.size()==1)
     {
         user_opts.yname.clear();
-        for (chain_j=0;chain_j<ychainnum;chain_j++)
-            PDB_lines2[chain_j].clear();
-        PDB_lines2.clear();
-        chainID_list2.clear();
-        mol_vec2.clear();
     }
     return 0;
 }
