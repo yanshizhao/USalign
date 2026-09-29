@@ -259,7 +259,7 @@ void parse_arguments(int argc, char* argv[], HwRMSDOptions& hwrmsd_opts)
     }
 }
 
-void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
+void check_input_presence(HwRMSDOptions& hwrmsd_opts)
 {
     if(hwrmsd_opts.xname.size()==0 || (hwrmsd_opts.yname.size()==0 && hwrmsd_opts.dir_opt.size()==0) ||
                           (hwrmsd_opts.yname.size()    && hwrmsd_opts.dir_opt.size()))
@@ -272,7 +272,10 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
         else if (hwrmsd_opts.yname.size() && hwrmsd_opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
+}
 
+void check_dir_conflicts(HwRMSDOptions& hwrmsd_opts)
+{
     if (hwrmsd_opts.suffix_opt.size() && hwrmsd_opts.dir_opt.size()+hwrmsd_opts.dir1_opt.size()+hwrmsd_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
     if ((hwrmsd_opts.dir_opt.size() || hwrmsd_opts.dir1_opt.size() || hwrmsd_opts.dir2_opt.size()))
@@ -282,7 +285,10 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
         else if (hwrmsd_opts.dir_opt.size() && (hwrmsd_opts.dir1_opt.size() || hwrmsd_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
+}
 
+void check_atom_and_mol_type(HwRMSDOptions& hwrmsd_opts)
+{
     hwrmsd_opts.normalize_atom_name=(hwrmsd_opts.atom_opt=="auto" || hwrmsd_opts.atom_opt=="PC4'"); // auto re-pad atom name
     if (hwrmsd_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
@@ -292,13 +298,20 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
         hwrmsd_opts.atom_opt=" CA ";
     else if (hwrmsd_opts.mol_opt=="RNA" && hwrmsd_opts.atom_opt=="auto")
         hwrmsd_opts.atom_opt=" C3'";
+}
 
+void check_numeric_conflicts(HwRMSDOptions& hwrmsd_opts)
+{
     if (hwrmsd_opts.u_opt && hwrmsd_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
     if (hwrmsd_opts.d_opt && hwrmsd_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
     if (hwrmsd_opts.outfmt_opt>=2 && (hwrmsd_opts.a_opt || hwrmsd_opts.u_opt || hwrmsd_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
+}
+
+void check_byresi_split_iter_seq(HwRMSDOptions& hwrmsd_opts)
+{
     if (hwrmsd_opts.byresi_opt!=0)
     {
         if (hwrmsd_opts.i_opt)
@@ -317,7 +330,10 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
     if (hwrmsd_opts.iter_opt<=0) PrintErrorAndQuit("-iter must be >0");
     if (hwrmsd_opts.seq_opt!=1 && hwrmsd_opts.seq_opt!=2 && hwrmsd_opts.seq_opt!=3)
         PrintErrorAndQuit("-seq must be 1, 2 or 3");
+}
 
+void apply_derived_options(HwRMSDOptions& hwrmsd_opts)
+{
     // read initial alignment file from 'align.txt'
     if (hwrmsd_opts.i_opt) read_user_alignment(hwrmsd_opts.sequence, hwrmsd_opts.fname_lign, hwrmsd_opts.i_opt);
 
@@ -325,6 +341,16 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
 
     if (hwrmsd_opts.m_opt && hwrmsd_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+}
+
+void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
+{
+    check_input_presence(hwrmsd_opts);
+    check_dir_conflicts(hwrmsd_opts);
+    check_atom_and_mol_type(hwrmsd_opts);
+    check_numeric_conflicts(hwrmsd_opts);
+    check_byresi_split_iter_seq(hwrmsd_opts);
+    apply_derived_options(hwrmsd_opts);
 }
 
 // parse file list

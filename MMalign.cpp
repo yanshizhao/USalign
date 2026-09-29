@@ -248,7 +248,7 @@ void parse_arguments(int argc, char* argv[], MMalignOptions& mmalign_opts)
     }
 }
 
-void postprocess_arguments(MMalignOptions& mmalign_opts)
+void check_input_presence(MMalignOptions& mmalign_opts)
 {
     if(mmalign_opts.yname.size()==0)
     {
@@ -262,11 +262,18 @@ void postprocess_arguments(MMalignOptions& mmalign_opts)
             PrintErrorAndQuit("Please provide input structures");
         PrintErrorAndQuit("Please provide the second input structure");
     }
+}
 
+void check_dir_conflicts(MMalignOptions& mmalign_opts)
+{
     if (mmalign_opts.suffix_opt.size() && mmalign_opts.dir1_opt.size()+mmalign_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir1 or -dir2 is set");
     if ((mmalign_opts.dir1_opt.size() || mmalign_opts.dir2_opt.size()) && (mmalign_opts.m_opt || mmalign_opts.o_opt))
         PrintErrorAndQuit("-m or -o cannot be set with -dir1 or -dir2");
+}
+
+void check_atom_and_mol_type(MMalignOptions& mmalign_opts)
+{
     if (mmalign_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
     if (mmalign_opts.mol_opt!="auto" && mmalign_opts.mol_opt!="protein" && mmalign_opts.mol_opt!="RNA")
@@ -275,20 +282,40 @@ void postprocess_arguments(MMalignOptions& mmalign_opts)
         mmalign_opts.atom_opt=" CA ";
     else if (mmalign_opts.mol_opt=="RNA" && mmalign_opts.atom_opt=="auto")
         mmalign_opts.atom_opt=" C3'";
+}
 
+void check_numeric_conflicts(MMalignOptions& mmalign_opts)
+{
     if (mmalign_opts.d_opt && mmalign_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
     if (mmalign_opts.outfmt_opt>=2 && (mmalign_opts.a_opt || mmalign_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -d");
+}
+
+void check_ter_split_conflicts(MMalignOptions& mmalign_opts)
+{
     if (mmalign_opts.ter_opt!=0 && mmalign_opts.ter_opt!=1)
         PrintErrorAndQuit("-ter should be 1 or 0");
     if (mmalign_opts.split_opt!=1 && mmalign_opts.split_opt!=2)
         PrintErrorAndQuit("-split should be 1 or 2");
     else if (mmalign_opts.split_opt==1 && mmalign_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
+}
 
+void check_matrix_file_name(MMalignOptions& mmalign_opts)
+{
     if (mmalign_opts.m_opt && mmalign_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+}
+
+void postprocess_arguments(MMalignOptions& mmalign_opts)
+{
+    check_input_presence(mmalign_opts);
+    check_dir_conflicts(mmalign_opts);
+    check_atom_and_mol_type(mmalign_opts);
+    check_numeric_conflicts(mmalign_opts);
+    check_ter_split_conflicts(mmalign_opts);
+    check_matrix_file_name(mmalign_opts);
 }
 
 // parse file list
