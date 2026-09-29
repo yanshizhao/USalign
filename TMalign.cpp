@@ -483,13 +483,22 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
     int xchainnum=0,ychainnum=0;// number of chains in a PDB file
     std::string yname;
 
+    const PdbParseOptions pdb_parse_opts1{
+        tmalign_opts.ter_opt, tmalign_opts.atom_opt, false,
+        tmalign_opts.split_opt, tmalign_opts.het_opt,
+        tmalign_opts.chain2parse1, tmalign_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        tmalign_opts.ter_opt, tmalign_opts.atom_opt, false,
+        tmalign_opts.split_opt, tmalign_opts.het_opt,
+        tmalign_opts.chain2parse2, tmalign_opts.model2parse2};
+
     // loop over file names
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
         std::string xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1, tmalign_opts.infmt1_opt,
-            PdbParseOptions{tmalign_opts.ter_opt, tmalign_opts.atom_opt, false, tmalign_opts.split_opt, tmalign_opts.het_opt, tmalign_opts.chain2parse1, tmalign_opts.model2parse1});
+            pdb_parse_opts1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -524,7 +533,7 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
                 {
                     yname=chain2_list[j];
                     ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2, mol_vec2, tmalign_opts.infmt2_opt,
-                        PdbParseOptions{tmalign_opts.ter_opt, tmalign_opts.atom_opt, false, tmalign_opts.split_opt, tmalign_opts.het_opt, tmalign_opts.chain2parse2, tmalign_opts.model2parse2});
+                        pdb_parse_opts2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname

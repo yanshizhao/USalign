@@ -188,8 +188,13 @@ void convert_file_to_fasta(const std::string& filename, const Pdb2fastaOptions& 
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
 
+    const PdbParseOptions pdb_parse_opts{
+        pdb2fasta_opts.ter_opt, pdb2fasta_opts.atom_opt, pdb2fasta_opts.normalize_atom_name,
+        pdb2fasta_opts.split_opt, pdb2fasta_opts.het_opt,
+        pdb2fasta_opts.chain2parse, pdb2fasta_opts.model2parse};
+
     int xchainnum=get_PDB_lines(filename, PDB_lines, chainID_list, mol_vec, pdb2fasta_opts.infmt_opt,
-        PdbParseOptions{pdb2fasta_opts.ter_opt, pdb2fasta_opts.atom_opt, pdb2fasta_opts.normalize_atom_name, pdb2fasta_opts.split_opt, pdb2fasta_opts.het_opt, pdb2fasta_opts.chain2parse, pdb2fasta_opts.model2parse});
+        pdb_parse_opts);
     if (!xchainnum)
     {
         std::cerr<<"Warning! Cannot parse file: "<<filename

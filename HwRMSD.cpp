@@ -427,13 +427,22 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
     int xchainnum=0, ychainnum=0;// number of chains in a PDB file
     std::string yname;
 
+    const PdbParseOptions pdb_parse_opts1{
+        hwrmsd_opts.ter_opt, hwrmsd_opts.atom_opt, hwrmsd_opts.normalize_atom_name,
+        hwrmsd_opts.split_opt, hwrmsd_opts.het_opt,
+        hwrmsd_opts.chain2parse1, hwrmsd_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        hwrmsd_opts.ter_opt, hwrmsd_opts.atom_opt, hwrmsd_opts.normalize_atom_name,
+        hwrmsd_opts.split_opt, hwrmsd_opts.het_opt,
+        hwrmsd_opts.chain2parse2, hwrmsd_opts.model2parse2};
+
     // loop over file names
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1
         std::string xname=chain1_list[i];
         xchainnum=get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1, hwrmsd_opts.infmt1_opt,
-            PdbParseOptions{hwrmsd_opts.ter_opt, hwrmsd_opts.atom_opt, hwrmsd_opts.normalize_atom_name, hwrmsd_opts.split_opt, hwrmsd_opts.het_opt, hwrmsd_opts.chain2parse1, hwrmsd_opts.model2parse1});
+            pdb_parse_opts1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
@@ -461,7 +470,7 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
                 {
                     yname=chain2_list[j];
                     ychainnum=get_PDB_lines(yname, PDB_lines2, chainID_list2, mol_vec2, hwrmsd_opts.infmt2_opt,
-                        PdbParseOptions{hwrmsd_opts.ter_opt, hwrmsd_opts.atom_opt, hwrmsd_opts.normalize_atom_name, hwrmsd_opts.split_opt, hwrmsd_opts.het_opt, hwrmsd_opts.chain2parse2, hwrmsd_opts.model2parse2});
+                        pdb_parse_opts2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<yname

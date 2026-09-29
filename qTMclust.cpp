@@ -333,11 +333,17 @@ void read_all_chains(const std::vector<std::string>& chain_list, const QTMclustO
     std::vector<float> coord_template(3,0);
     std::vector<std::vector<float> >chain_coord_buf;
     size_t newchainnum;
+
+    const PdbParseOptions pdb_parse_opts{
+        qtmclust_opts.ter_opt, qtmclust_opts.atom_opt, false,
+        qtmclust_opts.split_opt, qtmclust_opts.het_opt,
+        qtmclust_opts.chain2parse, qtmclust_opts.model2parse};
+
     for (size_t i=0;i<chain_list.size();i++)
     {
         std::string xname=chain_list[i];
         newchainnum=get_PDB_lines(xname, PDB_lines, chainID_list, mol_vec, qtmclust_opts.infmt_opt,
-            PdbParseOptions{qtmclust_opts.ter_opt, qtmclust_opts.atom_opt, false, qtmclust_opts.split_opt, qtmclust_opts.het_opt, qtmclust_opts.chain2parse, qtmclust_opts.model2parse});
+            pdb_parse_opts);
         if (!newchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<xname
