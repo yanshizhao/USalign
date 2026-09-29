@@ -3185,6 +3185,8 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
     // Phase 2b: Strategies 4-5 (parallel, 2 threads)
     //   Strategy 4 reads best_inv (best from Phase 1 + Phase 2a)
     // ================================================================
+    std::vector<int> best_inv_2b(ylen + 1);
+    for (int i = 0; i < ylen; i++) best_inv_2b[i] = best_inv[i];
     #pragma omp parallel for num_threads(std::min(parallel_threads, 2)) schedule(static,1)
     for (int sid = 3; sid < 5; sid++) {
         std::vector<int> inv_l(ylen + 1, -1);
@@ -3201,7 +3203,7 @@ inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
             {
                 DoubleMatrix score_l(xlen + 1, std::vector<double>(ylen + 1, 0));
                 std::vector<int> inv_input(ylen + 1, -1);
-                for (int i = 0; i < ylen; i++) inv_input[i] = best_inv[i];
+                for (int i = 0; i < ylen; i++) inv_input[i] = best_inv_2b[i];
                 get_initial_ssplus(r1_l, r2_l, score_l, path_l, val_l,
                     secx, secy, xa_c, ya_c, xlen, ylen,
                     inv_input, inv_l, D0_MIN, d0);
