@@ -258,7 +258,7 @@ void parse_arguments(int argc, char* argv[], TMscoreOptions& tmscore_opts)
     }
 }
 
-void postprocess_arguments(TMscoreOptions& tmscore_opts)
+void check_input_presence(TMscoreOptions& tmscore_opts)
 {
     if(tmscore_opts.xname.size()==0 || (tmscore_opts.yname.size()==0 && tmscore_opts.dir_opt.size()==0) ||
                           (tmscore_opts.yname.size()    && tmscore_opts.dir_opt.size()))
@@ -276,7 +276,10 @@ void postprocess_arguments(TMscoreOptions& tmscore_opts)
         else if (tmscore_opts.yname.size() && tmscore_opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
+}
 
+void check_dir_conflicts(TMscoreOptions& tmscore_opts)
+{
     if (tmscore_opts.suffix_opt.size() && tmscore_opts.dir_opt.size()+tmscore_opts.dir1_opt.size()+tmscore_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
     if ((tmscore_opts.dir_opt.size() || tmscore_opts.dir1_opt.size() || tmscore_opts.dir2_opt.size()))
@@ -286,7 +289,10 @@ void postprocess_arguments(TMscoreOptions& tmscore_opts)
         else if (tmscore_opts.dir_opt.size() && (tmscore_opts.dir1_opt.size() || tmscore_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
+}
 
+void check_atom_and_mol_type(TMscoreOptions& tmscore_opts)
+{
     tmscore_opts.normalize_atom_name=(tmscore_opts.atom_opt=="auto" || tmscore_opts.atom_opt=="PC4'"); // auto re-pad atom name
     if (tmscore_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
@@ -296,7 +302,10 @@ void postprocess_arguments(TMscoreOptions& tmscore_opts)
         tmscore_opts.atom_opt=" CA ";
     else if (tmscore_opts.mol_opt=="RNA" && tmscore_opts.atom_opt=="auto")
         tmscore_opts.atom_opt=" C3'";
+}
 
+void check_numeric_conflicts(TMscoreOptions& tmscore_opts)
+{
     if (tmscore_opts.u_opt && tmscore_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
     if (tmscore_opts.d_opt && tmscore_opts.d0_scale<=0)
@@ -305,15 +314,32 @@ void postprocess_arguments(TMscoreOptions& tmscore_opts)
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
     if (tmscore_opts.byresi_opt>=2 && tmscore_opts.byresi_opt<=3 && tmscore_opts.ter_opt>=2)
         PrintErrorAndQuit("-c should be used with -ter <=1");
+}
+
+void check_split_conflicts(TMscoreOptions& tmscore_opts)
+{
     if (tmscore_opts.split_opt==1 && tmscore_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
     else if (tmscore_opts.split_opt==2 && tmscore_opts.ter_opt!=0 && tmscore_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (tmscore_opts.split_opt<0 || tmscore_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
 
+void check_matrix_file_name(TMscoreOptions& tmscore_opts)
+{
     if (tmscore_opts.m_opt && tmscore_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+}
+
+void postprocess_arguments(TMscoreOptions& tmscore_opts)
+{
+    check_input_presence(tmscore_opts);
+    check_dir_conflicts(tmscore_opts);
+    check_atom_and_mol_type(tmscore_opts);
+    check_numeric_conflicts(tmscore_opts);
+    check_split_conflicts(tmscore_opts);
+    check_matrix_file_name(tmscore_opts);
 }
 
 // parse file list
