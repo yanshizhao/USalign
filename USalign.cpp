@@ -1583,8 +1583,12 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
         chain_align_res.seqxA, user_opts.outfmt_opt, right_num);
     OutputOptions out_opts;
     fill_output_options_from_user_options(out_opts, user_opts);
+    const std::string structure1_display = user_opts.xname.substr(
+        user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size());
+    const std::string structure2_display = user_opts.yname.substr(
+        user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size());
     output_results(
-        ChainPairDesc{user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()), user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size()), chain_id1, chain_id2, xlen, ylen},
+        ChainPairDesc{structure1_display, structure2_display, chain_id1, chain_id2, xlen, ylen},
         chain_align_res, out_opts, resi_vec1, resi_vec2);
     if (dist_arg) output_soi_dist_block(std::cout, ylen,
         chain_align_res.invmap, *dist_arg, pdb_lines1, pdb_lines2);
@@ -1707,8 +1711,12 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
     fill_output_options_from_user_options(out_opts, common_inputs.user_options);
     out_opts.Lnorm_ass = 0;
     out_opts.mm_opt = true;
+    const std::string structure1_display = common_inputs.user_options.xname.substr(
+        mm_params.dir1_opt.size());
+    const std::string structure2_display = common_inputs.user_options.yname.substr(
+        mm_params.dir2_opt.size());
     output_results(
-        ChainPairDesc{common_inputs.user_options.xname.substr(mm_params.dir1_opt.size()), common_inputs.user_options.yname.substr(mm_params.dir2_opt.size()), complex1.chain_ids[0], complex2.chain_ids[0], chain1_len, chain2_len},
+        ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], chain1_len, chain2_len},
         chain_align_res, out_opts, complex1.resi, complex2.resi);
     return 0;
 }
@@ -3110,8 +3118,10 @@ int MMdock(AlignCommonInput& common_inputs)
         fill_output_options_from_user_options(out_opts, user_opts);
         out_opts.outfmt_opt = (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3);
         out_opts.mm_opt = true;
+        const std::string structure1_display = user_opts.xname.substr(user_opts.dir1_opt.size());
+        const std::string structure2_display = user_opts.yname.substr(user_opts.dir2_opt.size());
         output_results(
-            ChainPairDesc{user_opts.xname.substr(user_opts.dir1_opt.size()), user_opts.yname.substr(user_opts.dir2_opt.size()), complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen},
+            ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen},
             chain_align_res, out_opts, complex1.resi, complex2.resi);
         if (user_opts.outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
             user_opts.xname.substr(user_opts.dir1_opt.size()), complex1.chain_ids[0],

@@ -421,8 +421,12 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     out_opts.mirror_opt = 0;
     out_opts.u_opt = se_opts.u_opt;
     out_opts.d_opt = se_opts.d_opt;
+    const std::string structure1_display = chain1.filename.substr(
+        se_opts.dir1_opt.size()+se_opts.dir_opt.size());
+    const std::string structure2_display = chain2.filename.substr(
+        se_opts.dir2_opt.size()+se_opts.dir_opt.size());
     output_results(
-        ChainPairDesc{chain1.filename.substr(se_opts.dir1_opt.size()+se_opts.dir_opt.size()), chain2.filename.substr(se_opts.dir2_opt.size()+se_opts.dir_opt.size()), chain1.chain_id, chain2.chain_id, xlen, ylen},
+        ChainPairDesc{structure1_display, structure2_display, chain1.chain_id, chain2.chain_id, xlen, ylen},
         chain_align_res, out_opts, chain1.resi_vec, chain2.resi_vec);
 
     if (se_opts.do_opt)
