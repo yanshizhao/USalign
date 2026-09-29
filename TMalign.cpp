@@ -307,7 +307,7 @@ void parse_arguments(int argc, char* argv[], TMalignOptions& tmalign_opts)
     }
 }
 
-void postprocess_arguments(TMalignOptions& tmalign_opts)
+void check_input_presence(TMalignOptions& tmalign_opts)
 {
     if(tmalign_opts.xname.size()==0 || (tmalign_opts.yname.size()==0 && tmalign_opts.dir_opt.size()==0) ||
                           (tmalign_opts.yname.size()    && tmalign_opts.dir_opt.size()))
@@ -325,7 +325,10 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
         else if (tmalign_opts.yname.size() && tmalign_opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
+}
 
+void check_dir_conflicts(TMalignOptions& tmalign_opts)
+{
     if (tmalign_opts.suffix_opt.size() && tmalign_opts.dir_opt.size()+tmalign_opts.dir1_opt.size()+tmalign_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
     if ((tmalign_opts.dir_opt.size() || tmalign_opts.dir1_opt.size() || tmalign_opts.dir2_opt.size()))
@@ -335,6 +338,10 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
         else if (tmalign_opts.dir_opt.size() && (tmalign_opts.dir1_opt.size() || tmalign_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
+}
+
+void check_atom_and_mol_type(TMalignOptions& tmalign_opts)
+{
     if (tmalign_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
     if (tmalign_opts.mol_opt!="auto" && tmalign_opts.mol_opt!="protein" && tmalign_opts.mol_opt!="RNA")
@@ -343,13 +350,20 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
         tmalign_opts.atom_opt=" CA ";
     else if (tmalign_opts.mol_opt=="RNA" && tmalign_opts.atom_opt=="auto")
         tmalign_opts.atom_opt=" C3'";
+}
 
+void check_numeric_conflicts(TMalignOptions& tmalign_opts)
+{
     if (tmalign_opts.u_opt && tmalign_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
     if (tmalign_opts.d_opt && tmalign_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
     if (tmalign_opts.outfmt_opt>=2 && (tmalign_opts.a_opt || tmalign_opts.u_opt || tmalign_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
+}
+
+void check_byresi_split_cp(TMalignOptions& tmalign_opts)
+{
     if (tmalign_opts.byresi_opt!=0)
     {
         if (tmalign_opts.i_opt)
@@ -369,7 +383,10 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
         PrintErrorAndQuit("-cp can only be 0 or 1");
     if (tmalign_opts.cp_opt && tmalign_opts.i_opt)
         PrintErrorAndQuit("-cp cannot be used with -i or -I");
+}
 
+void apply_derived_options(TMalignOptions& tmalign_opts)
+{
     // read initial alignment file from 'align.txt'
     if (tmalign_opts.i_opt) read_user_alignment(tmalign_opts.sequence, tmalign_opts.fname_lign, tmalign_opts.i_opt);
 
@@ -380,6 +397,16 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
 
     tmalign_opts.read_resi=tmalign_opts.byresi_opt;  // whether to read residue index
     if (tmalign_opts.byresi_opt==0 && tmalign_opts.o_opt) tmalign_opts.read_resi=2;
+}
+
+void postprocess_arguments(TMalignOptions& tmalign_opts)
+{
+    check_input_presence(tmalign_opts);
+    check_dir_conflicts(tmalign_opts);
+    check_atom_and_mol_type(tmalign_opts);
+    check_numeric_conflicts(tmalign_opts);
+    check_byresi_split_cp(tmalign_opts);
+    apply_derived_options(tmalign_opts);
 }
 
 // parse file list
