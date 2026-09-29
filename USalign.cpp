@@ -4343,9 +4343,9 @@ int mTMalign(AlignCommonInput& common_inputs)
         {
             xlen=ylen=a_vec[i].size();
             xa.clear();
-            xa.reserve(xlen);
+            xa.resize(xlen);
             ya.clear();
-            ya.reserve(ylen);
+            ya.resize(ylen);
             for (r=0;r<xlen;r++)
             {
                 xa[r][0]=ua_vec[i][r][0];
