@@ -206,11 +206,11 @@ void output_fasta_chain(const std::string& filename, const Pdb2fastaOptions& pdb
         <<chain_id<<'\t'<<chain_lines.size()<<'\n'<<sequence<<std::endl;
 }
 
-void convert_file_to_fasta(const std::string& filename, const Pdb2fastaOptions& pdb2fasta_opts,
-    std::vector<std::string>& chainID_list)
+void convert_file_to_fasta(const std::string& filename, const Pdb2fastaOptions& pdb2fasta_opts)
 {
     std::vector<std::vector<std::string> >PDB_lines; // text of chain
     std::vector<int> mol_vec;              // molecule type of chain
+    std::vector<std::string> chainID_list; // list of chainID1
 
     const PdbParseOptions pdb_parse_opts{
         pdb2fasta_opts.ter_opt, pdb2fasta_opts.atom_opt, pdb2fasta_opts.normalize_atom_name,
@@ -248,10 +248,9 @@ int main(int argc, char *argv[])
     std::vector<std::string> chain_list;
     build_file_list(pdb2fasta_opts, chain_list);
 
-    std::vector<std::string> chainID_list; // list of chainID1
     // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
-        convert_file_to_fasta(chain_list[i], pdb2fasta_opts, chainID_list);
+        convert_file_to_fasta(chain_list[i], pdb2fasta_opts);
 
     return 0;
 }
