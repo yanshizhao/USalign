@@ -2838,13 +2838,15 @@ inline double approx_TM(const int xlen, const int ylen, const int a_opt,
     return TMtmp;
 }
 
-bool output_cp(const std::string&xname, const std::string&yname,
-    const std::string &seqxA, const int outfmt_opt,
-    int &left_num, int &right_num, int &left_aln_num, int &right_aln_num,
+void output_cp(const std::string&xname, const std::string&yname,
+    const std::string &seqxA, const int outfmt_opt, int &right_num,
     std::ostream& os = std::cout)
 {
     int r;
     bool after_cp=false;
+    int left_num=0;
+    int left_aln_num=0;
+    int right_aln_num=0;
     for (r=0;r<seqxA.size();r++)
     {
         if (seqxA[r]=='*') after_cp=true;
@@ -2878,7 +2880,6 @@ bool output_cp(const std::string&xname, const std::string&yname,
         else if (outfmt_opt==2) os<<"@"<<xname<<'\t'<<yname<<'\t'<<left_aln_num
             <<'/'<<right_aln_num<<'\t'<<left_num<<'/'<<right_num<<std::endl;
     }
-    return after_cp;
 }
 
 

@@ -480,10 +480,9 @@ int run_batch_parallel(
 
         if (out_opts.outfmt_opt == 0) print_version(ss);
 
-        int left_num=0, right_num=0, left_aln_num=0, right_aln_num=0;
+        int right_num=0;
         if (align_opts.cp_opt) output_cp(xname_out, yname_out,
-            chain_align_res.seqxA, out_opts.outfmt_opt, left_num, right_num,
-            left_aln_num, right_aln_num, ss);
+            chain_align_res.seqxA, out_opts.outfmt_opt, right_num, ss);
 
         output_results(
             ChainPairDesc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len},
@@ -1574,15 +1573,11 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const ControlOptions& ctrl_opts = common_inputs.control_options;
 
     if (user_opts.outfmt_opt == 0) print_version();
-    int left_num=0;
     int right_num=0;
-    int left_aln_num=0;
-    int right_aln_num=0;
     if (ctrl_opts.cp_opt) output_cp(
         user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size()),
         user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size()),
-        chain_align_res.seqxA, user_opts.outfmt_opt,
-        left_num, right_num, left_aln_num, right_aln_num);
+        chain_align_res.seqxA, user_opts.outfmt_opt, right_num);
     OutputOptions out_opts;
     fill_output_options_from_user_options(out_opts, user_opts);
     output_results(
