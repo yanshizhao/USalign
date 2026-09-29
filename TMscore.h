@@ -640,7 +640,7 @@ void output_TMscore_results(
             resi_vec1, resi_vec2, chainID1, chainID2);
 }
 
-int tmscore_initial_alignment(TMscoreAlignState& align_state, const std::vector<std::string>& sequence,
+int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vector<std::string>& sequence,
     CoordArray& xa, CoordArray& ya, ChainPairAlignResult& chain_align_res,
     const int mol_type, const int a_opt, const double TMcut)
 {
@@ -723,7 +723,7 @@ int tmscore_initial_alignment(TMscoreAlignState& align_state, const std::vector<
     return 0;
 }
 
-void tmscore_detailed_search(TMscoreAlignState& align_state, CoordArray& xa, CoordArray& ya,
+void tmscore_detailed_search(TMscoreAlignContext& align_state, CoordArray& xa, CoordArray& ya,
     ChainPairAlignResult& chain_align_res, const bool fast_opt,
     double GDT_list[5], double &maxsub)
 {
@@ -780,7 +780,7 @@ void tmscore_detailed_search(TMscoreAlignState& align_state, CoordArray& xa, Coo
     chain_align_res.rmsd0 = sqrt(chain_align_res.rmsd0 / chain_align_res.n_ali8);
 }
 
-void tmscore_final_scores(TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res,
+void tmscore_final_scores(TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res,
     const double Lnorm_ass, const double d0_scale, const int xlen, const int ylen,
     const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
     double GDT_list[5], double &maxsub)
@@ -848,7 +848,7 @@ void tmscore_final_scores(TMscoreAlignState& align_state, ChainPairAlignResult& 
     }
 }
 
-void tmscore_derive_alignment(TMscoreAlignState& align_state, CoordArray& xa, CoordArray& ya,
+void tmscore_derive_alignment(TMscoreAlignContext& align_state, CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy, ChainPairAlignResult& chain_align_res)
 {
     const int xlen = xa.size();
@@ -935,7 +935,7 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     /***********************/
     // allocate memory
     /***********************/
-    TMscoreAlignState align_state;
+    TMscoreAlignContext align_state;
     int minlen = std::min(xlen, ylen);
     align_state.coords.xtm.resize(minlen);
     align_state.coords.ytm.resize(minlen);

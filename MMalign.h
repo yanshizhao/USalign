@@ -2166,7 +2166,7 @@ inline void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, Coo
 
 inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, const std::string& secx, const std::string& secy,
     const int xlen, const int ylen, CharMatrix& mask, const std::vector<std::string> sequence,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     double& D0_MIN = align_state.search_params.D0_MIN;
     double& Lnorm = align_state.search_params.Lnorm;
@@ -2523,7 +2523,7 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
 }
 
 inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const int xlen, const int ylen,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     double& score_d8 = align_state.search_params.score_d8;
     double& d0 = align_state.search_params.d0;
@@ -2605,7 +2605,7 @@ inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const
 }
 
 inline void dimer_final_tmscore(const int xlen, const int ylen, const ChainPairAlignOptions& align_opts,
-    TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     double& D0_MIN = align_state.search_params.D0_MIN;
     double& Lnorm = align_state.search_params.Lnorm;
@@ -2736,7 +2736,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     const int a_opt = align_opts.a_opt;
     const int mol_type = align_opts.mol_type;
     const double TMcut = align_opts.TMcut;
-    TMscoreAlignState align_state;
+    TMscoreAlignContext align_state;
     double& D0_MIN = align_state.search_params.D0_MIN;
     double& Lnorm = align_state.search_params.Lnorm;
     double& score_d8 = align_state.search_params.score_d8;

@@ -3300,7 +3300,7 @@ struct AlignSearchParams
     int score_sum_method;
 };
 
-struct TMscoreAlignState
+struct TMscoreAlignContext
 {
     AlignCoords       coords;
     AlignTransform    transform;
@@ -3316,7 +3316,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen, int minlen,
     const std::vector<std::string>& sequence,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     double &D0_MIN = align_state.search_params.D0_MIN;
     double &Lnorm = align_state.search_params.Lnorm;
@@ -3498,7 +3498,7 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
 
 inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     double &score_d8 = align_state.search_params.score_d8;
     double &d0 = align_state.search_params.d0;
@@ -3580,7 +3580,7 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
 }
 
 inline void tmalign_final_tmscore(int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     double &D0_MIN = align_state.search_params.D0_MIN;
     double &Lnorm = align_state.search_params.Lnorm;
@@ -3690,7 +3690,7 @@ inline void tmalign_final_tmscore(int xlen, int ylen,
 inline void tmalign_extract_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& seqx, const std::string& seqy, int xlen, int ylen,
     const double d0_out, const int n_ali8,
-    TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
+    TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
 {
     std::string &seqM = chain_align_res.seqM;
     std::string &seqxA = chain_align_res.seqxA;
@@ -3787,7 +3787,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     double &TM3 = chain_align_res.TM3;
     double &TM4 = chain_align_res.TM4;
     double &TM5 = chain_align_res.TM5;
-    TMscoreAlignState align_state;
+    TMscoreAlignContext align_state;
 
     /***********************/
     // allocate memory
