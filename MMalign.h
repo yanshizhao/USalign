@@ -2166,31 +2166,31 @@ inline void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, Coo
 
 inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, const std::string& secx, const std::string& secy,
     const int xlen, const int ylen, CharMatrix& mask, const std::vector<std::string> sequence,
-    const ChainPairAlignOptions& align_opts, TMalignAlignState& tmalign_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
 {
-    double& D0_MIN = tmalign_state.D0_MIN;
-    double& Lnorm = tmalign_state.Lnorm;
-    double& score_d8 = tmalign_state.score_d8;
-    double& d0 = tmalign_state.d0;
-    double& d0_search = tmalign_state.d0_search;
-    double& dcu0 = tmalign_state.dcu0;
-    double& local_d0_search = tmalign_state.local_d0_search;
-    int& simplify_step = tmalign_state.simplify_step;
-    int& score_sum_method = tmalign_state.score_sum_method;
-    double& ddcc = tmalign_state.ddcc;
-    DoubleMatrix& score = tmalign_state.score;
-    CharMatrix& path = tmalign_state.path;
-    DoubleMatrix& val = tmalign_state.val;
-    CoordArray& xtm = tmalign_state.xtm;
-    CoordArray& ytm = tmalign_state.ytm;
-    CoordArray& xt = tmalign_state.xt;
-    CoordArray& r1 = tmalign_state.r1;
-    CoordArray& r2 = tmalign_state.r2;
-    std::vector<int>& invmap0 = tmalign_state.invmap0;
-    std::vector<int>& invmap = tmalign_state.invmap;
-    Vec3& t = tmalign_state.t;
-    RotMat& u = tmalign_state.u;
-    double& TMmax = tmalign_state.TMmax;
+    double& D0_MIN = align_state.D0_MIN;
+    double& Lnorm = align_state.Lnorm;
+    double& score_d8 = align_state.score_d8;
+    double& d0 = align_state.d0;
+    double& d0_search = align_state.d0_search;
+    double& dcu0 = align_state.dcu0;
+    double& local_d0_search = align_state.local_d0_search;
+    int& simplify_step = align_state.simplify_step;
+    int& score_sum_method = align_state.score_sum_method;
+    double& ddcc = align_state.ddcc;
+    DoubleMatrix& score = align_state.score;
+    CharMatrix& path = align_state.path;
+    DoubleMatrix& val = align_state.val;
+    CoordArray& xtm = align_state.xtm;
+    CoordArray& ytm = align_state.ytm;
+    CoordArray& xt = align_state.xt;
+    CoordArray& r1 = align_state.r1;
+    CoordArray& r2 = align_state.r2;
+    std::vector<int>& invmap0 = align_state.invmap0;
+    std::vector<int>& invmap = align_state.invmap;
+    Vec3& t = align_state.t;
+    RotMat& u = align_state.u;
+    double& TMmax = align_state.TMmax;
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
     double& TM1 = chain_align_res.TM1;
@@ -2523,24 +2523,24 @@ inline int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, con
 }
 
 inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const int xlen, const int ylen,
-    const ChainPairAlignOptions& align_opts, TMalignAlignState& tmalign_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
 {
-    double& score_d8 = tmalign_state.score_d8;
-    double& d0 = tmalign_state.d0;
-    double& Lnorm = tmalign_state.Lnorm;
-    double& local_d0_search = tmalign_state.local_d0_search;
-    int& simplify_step = tmalign_state.simplify_step;
-    int& score_sum_method = tmalign_state.score_sum_method;
-    CoordArray& xtm = tmalign_state.xtm;
-    CoordArray& ytm = tmalign_state.ytm;
-    CoordArray& xt = tmalign_state.xt;
-    CoordArray& r1 = tmalign_state.r1;
-    CoordArray& r2 = tmalign_state.r2;
-    std::vector<int>& invmap0 = tmalign_state.invmap0;
-    std::vector<int>& m1 = tmalign_state.m1;
-    std::vector<int>& m2 = tmalign_state.m2;
-    Vec3& t = tmalign_state.t;
-    RotMat& u = tmalign_state.u;
+    double& score_d8 = align_state.score_d8;
+    double& d0 = align_state.d0;
+    double& Lnorm = align_state.Lnorm;
+    double& local_d0_search = align_state.local_d0_search;
+    int& simplify_step = align_state.simplify_step;
+    int& score_sum_method = align_state.score_sum_method;
+    CoordArray& xtm = align_state.xtm;
+    CoordArray& ytm = align_state.ytm;
+    CoordArray& xt = align_state.xt;
+    CoordArray& r1 = align_state.r1;
+    CoordArray& r2 = align_state.r2;
+    std::vector<int>& invmap0 = align_state.invmap0;
+    std::vector<int>& m1 = align_state.m1;
+    std::vector<int>& m2 = align_state.m2;
+    Vec3& t = align_state.t;
+    RotMat& u = align_state.u;
     int& n_ali = chain_align_res.n_ali;
     int& n_ali8 = chain_align_res.n_ali8;
     double& rmsd0 = chain_align_res.rmsd0;
@@ -2605,23 +2605,23 @@ inline void dimer_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c, const
 }
 
 inline void dimer_final_tmscore(const int xlen, const int ylen, const ChainPairAlignOptions& align_opts,
-    TMalignAlignState& tmalign_state, ChainPairAlignResult& chain_align_res)
+    TMscoreAlignState& align_state, ChainPairAlignResult& chain_align_res)
 {
-    double& D0_MIN = tmalign_state.D0_MIN;
-    double& Lnorm = tmalign_state.Lnorm;
-    double& score_d8 = tmalign_state.score_d8;
-    double& d0 = tmalign_state.d0;
-    double& d0_search = tmalign_state.d0_search;
-    double& local_d0_search = tmalign_state.local_d0_search;
-    int& simplify_step = tmalign_state.simplify_step;
-    int& score_sum_method = tmalign_state.score_sum_method;
-    CoordArray& xtm = tmalign_state.xtm;
-    CoordArray& ytm = tmalign_state.ytm;
-    CoordArray& xt = tmalign_state.xt;
-    CoordArray& r1 = tmalign_state.r1;
-    CoordArray& r2 = tmalign_state.r2;
-    Vec3& t = tmalign_state.t;
-    RotMat& u = tmalign_state.u;
+    double& D0_MIN = align_state.D0_MIN;
+    double& Lnorm = align_state.Lnorm;
+    double& score_d8 = align_state.score_d8;
+    double& d0 = align_state.d0;
+    double& d0_search = align_state.d0_search;
+    double& local_d0_search = align_state.local_d0_search;
+    int& simplify_step = align_state.simplify_step;
+    int& score_sum_method = align_state.score_sum_method;
+    CoordArray& xtm = align_state.xtm;
+    CoordArray& ytm = align_state.ytm;
+    CoordArray& xt = align_state.xt;
+    CoordArray& r1 = align_state.r1;
+    CoordArray& r2 = align_state.r2;
+    Vec3& t = align_state.t;
+    RotMat& u = align_state.u;
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
     double& TM1 = chain_align_res.TM1;
@@ -2736,28 +2736,28 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     const int a_opt = align_opts.a_opt;
     const int mol_type = align_opts.mol_type;
     const double TMcut = align_opts.TMcut;
-    TMalignAlignState tmalign_state;
-    double& D0_MIN = tmalign_state.D0_MIN;
-    double& Lnorm = tmalign_state.Lnorm;
-    double& score_d8 = tmalign_state.score_d8;
-    double& d0 = tmalign_state.d0;
-    double& d0_search = tmalign_state.d0_search;
-    double& dcu0 = tmalign_state.dcu0;
-    double& local_d0_search = tmalign_state.local_d0_search;
-    int& simplify_step = tmalign_state.simplify_step;
-    int& score_sum_method = tmalign_state.score_sum_method;
-    double& ddcc = tmalign_state.ddcc;
-    DoubleMatrix& score = tmalign_state.score;
-    CharMatrix& path = tmalign_state.path;
-    DoubleMatrix& val = tmalign_state.val;
-    CoordArray& xtm = tmalign_state.xtm;
-    CoordArray& ytm = tmalign_state.ytm;
-    CoordArray& xt = tmalign_state.xt;
-    CoordArray& r1 = tmalign_state.r1;
-    CoordArray& r2 = tmalign_state.r2;
-    std::vector<int>& invmap0 = tmalign_state.invmap0;
-    std::vector<int>& invmap = tmalign_state.invmap;
-    double& TMmax = tmalign_state.TMmax;
+    TMscoreAlignState align_state;
+    double& D0_MIN = align_state.D0_MIN;
+    double& Lnorm = align_state.Lnorm;
+    double& score_d8 = align_state.score_d8;
+    double& d0 = align_state.d0;
+    double& d0_search = align_state.d0_search;
+    double& dcu0 = align_state.dcu0;
+    double& local_d0_search = align_state.local_d0_search;
+    int& simplify_step = align_state.simplify_step;
+    int& score_sum_method = align_state.score_sum_method;
+    double& ddcc = align_state.ddcc;
+    DoubleMatrix& score = align_state.score;
+    CharMatrix& path = align_state.path;
+    DoubleMatrix& val = align_state.val;
+    CoordArray& xtm = align_state.xtm;
+    CoordArray& ytm = align_state.ytm;
+    CoordArray& xt = align_state.xt;
+    CoordArray& r1 = align_state.r1;
+    CoordArray& r2 = align_state.r2;
+    std::vector<int>& invmap0 = align_state.invmap0;
+    std::vector<int>& invmap = align_state.invmap;
+    double& TMmax = align_state.TMmax;
 
     /***********************/
     // allocate memory
@@ -2790,7 +2790,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     local_d0_search = d0_search;
 
     int rc = dimer_build_initial_alignment(xa_c, ya_c, secx, secy, xlen, ylen, mask, sequence,
-        align_opts, tmalign_state, chain_align_res);
+        align_opts, align_state, chain_align_res);
     if (rc) return rc;
 
     //*******************************************************************//
@@ -2829,12 +2829,12 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
         }
     }
 
-    dimer_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, tmalign_state, chain_align_res);
+    dimer_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, align_state, chain_align_res);
 
 
-    dimer_final_tmscore(xlen, ylen, align_opts, tmalign_state, chain_align_res);
+    dimer_final_tmscore(xlen, ylen, align_opts, align_state, chain_align_res);
 
-    derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, tmalign_state.m1, tmalign_state.m2, n_ali8, d0_out, xlen, ylen,
+    derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, align_state.m1, align_state.m2, n_ali8, d0_out, xlen, ylen,
         t0, u0, Liden, seqxA, seqyA, seqM);
     return 0; // zero for no exception
 }
