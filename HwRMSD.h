@@ -66,7 +66,7 @@ void parse_alignment_into_invmap(const std::string seqxA_tmp,
 }
 
 
-void hwrmsd_align_once(CoordArray& xa, CoordArray& ya, CoordArray& xt,
+void hwrmsd_align(CoordArray& xa, CoordArray& ya, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     const std::string& seqx, const std::string& seqy,
     ChainPairAlignResult& iter_res,
@@ -228,7 +228,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
         if (iter==1 && !i_opt && seq_opt==3) NWalign_main(secx.c_str(), secy.c_str(), xlen,
             ylen, seqxA_tmp, seqyA_tmp, mol_type, invmap_tmp, 1, glocal);
 
-        hwrmsd_align_once(xa, ya, xt, r1, r2, seqx, seqy, iter_res, sequence, align_opts,
+        hwrmsd_align(xa, ya, xt, r1, r2, seqx, seqy, iter_res, sequence, align_opts,
             xlen, ylen, L_ali, t, u);
         d0A = iter_res.d0A;
         d0B = iter_res.d0B;
@@ -238,7 +238,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
         if (n_ali8_tmp==0)
         {
             hwrmsd_pad_alignment_seqs(seqxA_tmp, seqyA_tmp, seqx, seqy, xlen, ylen);
-            hwrmsd_align_once(xa, ya, xt, r1, r2, seqx, seqy, iter_res, sequence, align_opts,
+            hwrmsd_align(xa, ya, xt, r1, r2, seqx, seqy, iter_res, sequence, align_opts,
                 xlen, ylen, L_ali, t, u);
         }
 
