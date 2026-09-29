@@ -287,18 +287,12 @@ struct PairTask {
 };
 
 struct ChainParseOptions {
-    int infmt_opt;
-    std::vector<std::string> chain2parse;
-    std::vector<std::string> model2parse;
-    bool mirror_opt;
+    PdbParseOptions pdb_parse_opts;
     std::string mol_opt;
-    int ter_opt;
-    std::string atom_opt;
-    bool normalize_atom_name;
-    int split_opt;
-    int het_opt;
+    int infmt_opt;
     int read_resi;
-    bool keep_pdb_lines;
+    bool mirror_opt;
+    bool retain_pdb_lines;
 };
 
 // ---------------------------------------------------------------------------
@@ -360,7 +354,7 @@ void parse_file_into_cache(const std::string& fname,
     std::vector<int> mol_vec;
     std::vector<std::string> chainID_list;
     int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec, parse_opts.infmt_opt,
-        PdbParseOptions{parse_opts.ter_opt, parse_opts.atom_opt, parse_opts.normalize_atom_name, parse_opts.split_opt, parse_opts.het_opt, parse_opts.chain2parse, parse_opts.model2parse});
+        parse_opts.pdb_parse_opts);
     if (nchain == 0)
     {
         std::cerr << "Warning! Cannot parse file: " << fname
@@ -399,10 +393,10 @@ void parse_file_into_cache(const std::string& fname,
                 chain.chain_coords[r][2] = -chain.chain_coords[r][2];
         chain.chain_seq = seq;
         if (mol_vec[c] > 0)
-            make_sec(seq, chain.chain_coords, chain.chain_len, chain.chain_sec, parse_opts.atom_opt);
+            make_sec(seq, chain.chain_coords, chain.chain_len, chain.chain_sec, parse_opts.pdb_parse_opts.atom_opt);
         else
             make_sec(chain.chain_coords, chain.chain_len, chain.chain_sec);
-        if (parse_opts.keep_pdb_lines) chain.pdb_lines = std::move(PDB_lines[c]);
+        if (parse_opts.retain_pdb_lines) chain.pdb_lines = std::move(PDB_lines[c]);
         else PDB_lines[c].clear();
         indices.push_back(idx);
     }
@@ -963,24 +957,26 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     // === Parallel batch mode ===
     if (ctrl_opts.parallel_threads > 1 && (parsed_input.chain1_list.size() > 1 || parsed_input.chain2_list.size() > 1)) {
         ChainParseOptions parse_opts1;
+        parse_opts1.pdb_parse_opts = PdbParseOptions{
+            user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+            user_opts.split_opt, user_opts.het_opt,
+            user_opts.chain2parse1, user_opts.model2parse1};
         parse_opts1.infmt_opt = user_opts.infmt1_opt;
-        parse_opts1.chain2parse = user_opts.chain2parse1;
-        parse_opts1.model2parse = user_opts.model2parse1;
-        parse_opts1.mirror_opt = (user_opts.mirror_opt != 0);
         parse_opts1.mol_opt = user_opts.mol_opt;
-        parse_opts1.ter_opt = user_opts.ter_opt;
-        parse_opts1.atom_opt = user_opts.atom_opt;
-        parse_opts1.normalize_atom_name = parsed_input.normalize_atom_name;
-        parse_opts1.split_opt = user_opts.split_opt;
-        parse_opts1.het_opt = user_opts.het_opt;
         parse_opts1.read_resi = tm_params.read_resi;
-        parse_opts1.keep_pdb_lines = ctrl_opts.cp_opt;
+        parse_opts1.mirror_opt = (user_opts.mirror_opt != 0);
+        parse_opts1.retain_pdb_lines = ctrl_opts.cp_opt;
 
-        ChainParseOptions parse_opts2 = parse_opts1;
+        ChainParseOptions parse_opts2;
+        parse_opts2.pdb_parse_opts = PdbParseOptions{
+            user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+            user_opts.split_opt, user_opts.het_opt,
+            user_opts.chain2parse2, user_opts.model2parse2};
         parse_opts2.infmt_opt = user_opts.infmt2_opt;
-        parse_opts2.chain2parse = user_opts.chain2parse2;
-        parse_opts2.model2parse = user_opts.model2parse2;
+        parse_opts2.mol_opt = user_opts.mol_opt;
+        parse_opts2.read_resi = tm_params.read_resi;
         parse_opts2.mirror_opt = false;
+        parse_opts2.retain_pdb_lines = ctrl_opts.cp_opt;
 
         ChainPairAlignOptions align_opts = {0};
         fill_chain_pair_align_options(align_opts, user_opts, ctrl_opts);
