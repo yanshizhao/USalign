@@ -997,13 +997,22 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     }
 #endif  // _OPENMP
 
+    const PdbParseOptions pdb_parse_opts1{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse1, user_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse2, user_opts.model2parse2};
+
     // loop over file names (original serial code)
     for (i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
-            PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1});
+            pdb_parse_opts1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -1045,7 +1054,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                 {
                     user_opts.yname=parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
-                        PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2});
+                        pdb_parse_opts2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
@@ -4436,13 +4445,22 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     std::vector<std::string> resi_vec1;  // residue index for chain1
     std::vector<std::string> resi_vec2;  // residue index for chain2
 
+    const PdbParseOptions pdb_parse_opts1{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse1, user_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse2, user_opts.model2parse2};
+
     // loop over file names
     for (i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
-            PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1});
+            pdb_parse_opts1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -4465,7 +4483,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                 {
                     user_opts.yname=parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
-                        PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2});
+                        pdb_parse_opts2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
@@ -4585,13 +4603,22 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
+    const PdbParseOptions pdb_parse_opts1{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse1, user_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse2, user_opts.model2parse2};
+
     // loop over file names
     for (i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
-            PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1});
+            pdb_parse_opts1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -4615,7 +4642,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                 {
                     user_opts.yname = parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
-                        PdbParseOptions{user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2});
+                        pdb_parse_opts2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
