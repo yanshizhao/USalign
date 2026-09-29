@@ -274,12 +274,19 @@ void parse_arguments(int argc, char* argv[], QTMclustOptions& qtmclust_opts,
 
 }
 
-void postprocess_arguments(QTMclustOptions& qtmclust_opts)
+void check_input_presence(QTMclustOptions& qtmclust_opts)
 {
     if(qtmclust_opts.xname.size()==0) print_help(qtmclust_opts.h_opt);
+}
 
+void check_dir_conflicts(QTMclustOptions& qtmclust_opts)
+{
     if (qtmclust_opts.suffix_opt.size() && qtmclust_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
+}
+
+void check_atom_and_mol_type(QTMclustOptions& qtmclust_opts)
+{
     if (qtmclust_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
     if (qtmclust_opts.mol_opt!="auto" && qtmclust_opts.mol_opt!="protein" && qtmclust_opts.mol_opt!="RNA")
@@ -288,7 +295,10 @@ void postprocess_arguments(QTMclustOptions& qtmclust_opts)
         qtmclust_opts.atom_opt=" CA ";
     else if (qtmclust_opts.mol_opt=="RNA" && qtmclust_opts.atom_opt=="auto")
         qtmclust_opts.atom_opt=" C3'";
+}
 
+void check_numeric_and_split(QTMclustOptions& qtmclust_opts)
+{
     if (qtmclust_opts.u_opt && qtmclust_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
     if (qtmclust_opts.d_opt && qtmclust_opts.d0_scale<=0)
@@ -299,11 +309,23 @@ void postprocess_arguments(QTMclustOptions& qtmclust_opts)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (qtmclust_opts.split_opt<0 || qtmclust_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
 
+void apply_derived_options(QTMclustOptions& qtmclust_opts)
+{
     // read initial alignment file from 'align.txt'
     if (qtmclust_opts.i_opt) read_user_alignment(qtmclust_opts.sequence, qtmclust_opts.fname_lign, qtmclust_opts.i_opt);
 
     if (qtmclust_opts.byresi_opt) qtmclust_opts.i_opt=3;
+}
+
+void postprocess_arguments(QTMclustOptions& qtmclust_opts)
+{
+    check_input_presence(qtmclust_opts);
+    check_dir_conflicts(qtmclust_opts);
+    check_atom_and_mol_type(qtmclust_opts);
+    check_numeric_and_split(qtmclust_opts);
+    apply_derived_options(qtmclust_opts);
 }
 
 void build_file_lists(const QTMclustOptions& qtmclust_opts, std::vector<std::string>& chain_list)

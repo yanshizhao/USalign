@@ -208,7 +208,7 @@ void parse_arguments(int argc, char* argv[], NWalignOptions& nwalign_opts)
     }
 }
 
-void postprocess_arguments(NWalignOptions& nwalign_opts)
+void check_input_presence(NWalignOptions& nwalign_opts)
 {
     if(nwalign_opts.xname.size()==0 || (nwalign_opts.yname.size()==0 && nwalign_opts.dir_opt.size()==0) ||
                               (nwalign_opts.yname.size()    && nwalign_opts.dir_opt.size()))
@@ -221,12 +221,18 @@ void postprocess_arguments(NWalignOptions& nwalign_opts)
         else if (nwalign_opts.yname.size() && nwalign_opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
+}
 
+void check_dir_conflicts(NWalignOptions& nwalign_opts)
+{
     if (nwalign_opts.suffix_opt.size() && nwalign_opts.dir_opt.size()+nwalign_opts.dir1_opt.size()+nwalign_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
     if (nwalign_opts.dir_opt.size() && (nwalign_opts.dir1_opt.size() || nwalign_opts.dir2_opt.size()))
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
+}
 
+void check_atom_and_mol_type(NWalignOptions& nwalign_opts)
+{
     nwalign_opts.normalize_atom_name=(nwalign_opts.atom_opt=="auto" || nwalign_opts.atom_opt=="PC4'"); // auto re-pad atom name
     if (nwalign_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
@@ -236,13 +242,24 @@ void postprocess_arguments(NWalignOptions& nwalign_opts)
         nwalign_opts.atom_opt=" CA ";
     else if (nwalign_opts.mol_opt=="RNA" && nwalign_opts.atom_opt=="auto")
         nwalign_opts.atom_opt=" C3'";
+}
 
+void check_split_conflicts(NWalignOptions& nwalign_opts)
+{
     if (nwalign_opts.split_opt==1 && nwalign_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
     else if (nwalign_opts.split_opt==2 && nwalign_opts.ter_opt!=0 && nwalign_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (nwalign_opts.split_opt<0 || nwalign_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
+
+void postprocess_arguments(NWalignOptions& nwalign_opts)
+{
+    check_input_presence(nwalign_opts);
+    check_dir_conflicts(nwalign_opts);
+    check_atom_and_mol_type(nwalign_opts);
+    check_split_conflicts(nwalign_opts);
 }
 
 // parse file list

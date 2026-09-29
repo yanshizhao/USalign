@@ -263,7 +263,7 @@ void parse_arguments(int argc, char* argv[], SeOptions& se_opts)
     }
 }
 
-void postprocess_arguments(SeOptions& se_opts)
+void check_input_presence(SeOptions& se_opts)
 {
     if(se_opts.xname.size()==0 || (se_opts.yname.size()==0 && se_opts.dir_opt.size()==0) ||
                           (se_opts.yname.size()    && se_opts.dir_opt.size()))
@@ -276,11 +276,18 @@ void postprocess_arguments(SeOptions& se_opts)
         else if (se_opts.yname.size() && se_opts.dir_opt.size())
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
+}
 
+void check_dir_conflicts(SeOptions& se_opts)
+{
     if (se_opts.suffix_opt.size() && se_opts.dir_opt.size()+se_opts.dir1_opt.size()+se_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir1 or -dir2 is set");
     if (se_opts.dir_opt.size() && (se_opts.dir1_opt.size() || se_opts.dir2_opt.size()))
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
+}
+
+void check_atom_and_mol_type(SeOptions& se_opts)
+{
     if (se_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
     if (se_opts.mol_opt!="auto" && se_opts.mol_opt!="protein" && se_opts.mol_opt!="RNA")
@@ -289,12 +296,20 @@ void postprocess_arguments(SeOptions& se_opts)
         se_opts.atom_opt=" CA ";
     else if (se_opts.mol_opt=="RNA" && se_opts.atom_opt=="auto")
         se_opts.atom_opt=" C3'";
+}
+
+void check_numeric_conflicts(SeOptions& se_opts)
+{
     if (se_opts.u_opt && se_opts.Lnorm_ass<=0)
         PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
     if (se_opts.d_opt && se_opts.d0_scale<=0)
         PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
     if (se_opts.outfmt_opt>=2 && (se_opts.a_opt || se_opts.u_opt || se_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
+}
+
+void check_byresi_split_conflicts(SeOptions& se_opts)
+{
     if (se_opts.byresi_opt!=0)
     {
         if (se_opts.i_opt)
@@ -310,11 +325,24 @@ void postprocess_arguments(SeOptions& se_opts)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (se_opts.split_opt<0 || se_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
 
+void apply_derived_options(SeOptions& se_opts)
+{
     // read initial alignment file from 'align.txt'
     if (se_opts.i_opt) read_user_alignment(se_opts.sequence, se_opts.fname_lign, false);
 
     if (se_opts.byresi_opt) se_opts.i_opt=true;
+}
+
+void postprocess_arguments(SeOptions& se_opts)
+{
+    check_input_presence(se_opts);
+    check_dir_conflicts(se_opts);
+    check_atom_and_mol_type(se_opts);
+    check_numeric_conflicts(se_opts);
+    check_byresi_split_conflicts(se_opts);
+    apply_derived_options(se_opts);
 }
 
 // parse file list
