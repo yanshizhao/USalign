@@ -1188,13 +1188,15 @@ bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
     }
     
     int total_mol_opt_chain = 0;
+    const PdbParseOptions pdb_parse_opts{
+        ter_opt, "auto", normalize_atom_name, split_opt, het_opt, chain2parse, model2parse};
     for (size_t file_idx = 0; file_idx < pdb_file_list.size(); file_idx++)
     {
         std::vector<std::vector<std::string> > chain_atom_lines;   // atom lines of every chain in the current PDB file
         std::vector<std::string> chain_id_list;               // chain ID list of the current PDB file
         std::vector<int> chain_mol_types;                // molecule type of each chain in the current PDB file (>0 = RNA, <=0 = protein)
         size_t chain_num = get_PDB_lines(pdb_file_list[file_idx], chain_atom_lines, chain_id_list, chain_mol_types, infmt_opt,
-            PdbParseOptions{ter_opt, "auto", normalize_atom_name, split_opt, het_opt, chain2parse, model2parse});
+            pdb_parse_opts);
         if (chain_num == 0)
         {
             std::cerr << std::endl;
