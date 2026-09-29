@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// ---- 单链解析结果（mm0/mm5-6/mm7 用）----
+// ---- single-chain parse result (used by mm0/mm5-6/mm7) ----
 struct ParsedChain
 {
     // --- 24-byte heavy objects (vector / string) ---
@@ -21,7 +21,7 @@ struct ParsedChain
     int            cur_complex_mol_list;   // molecule type (-1=protein, 1=RNA)
 };
 
-// ---- 多链解析结果（mm1/mm2/mm4 用）----
+// ---- multi-chain parse result (used by mm1/mm2/mm4) ----
 struct ComplexData
 {
     DoubleCube coords;           // coordinates of each chain (was xa_vec)
@@ -65,7 +65,7 @@ struct ChainPairDesc
     int len2;
 };
 
-// ---- 单条链对的结构比对结果（mm0-4 的每对链共用）----
+// ---- per chain-pair structure alignment result (shared by every pair in mm0-4) ----
 struct ChainPairAlignResult
 {
     Vec3 t0;
@@ -127,23 +127,23 @@ struct MstaIterationState
     int ylen_total;
 };
 
-// ---- 命令行选项容器（mm0-7 全部模式共用）----
+// ---- command-line options container (shared by all mm0-7 modes) ----
 struct UserOptions
 {
-    // 文件路径：结构文件和输出文件
+    // file paths: structure files and output files
     std::string xname;
     std::string yname;
     std::string fname_super;
     std::string fname_lign;
     std::string fname_matrix;
 
-    // 目录选项：命令行提供的目录参数
+    // directory options: directory arguments given on the command line
     std::string dir_opt;
     std::string dirpair_opt;
     std::string dir1_opt;
     std::string dir2_opt;
 
-    // 命令行选项：格式、过滤等配置
+    // command-line options: format, filtering and other configuration
     int infmt1_opt;
     int infmt2_opt;
     int ter_opt;
@@ -166,7 +166,7 @@ struct UserOptions
     bool d_opt;
     int outfmt_opt;
 
-    // 计数/比例阈值
+    // count / ratio thresholds
     double Lnorm_ass;
     double d0_scale;
     double TMcut;
@@ -180,7 +180,7 @@ struct UserOptions
 
 struct ParsedInput
 {
-    // 解析结果：由 PDB 文件解析得到的链列表、序列及派生配置
+    // parse result: chain lists, sequence and derived config obtained from a PDB file
     std::vector<std::string> chain1_list;
     std::vector<std::string> chain2_list;
     std::vector<std::string> sequence;
@@ -224,10 +224,10 @@ struct AlignCommonInput
 
 struct MMalignParams
 {
-    std::string dir1_opt;              // 归一化后的 dir1
-    std::string dir2_opt;              // 归一化后的 dir2
-    std::vector<std::string> chain1_list;  // 本次调用结构1 的链文件列表
-    std::vector<std::string> chain2_list;  // 本次调用结构2 的链文件列表
+    std::string dir1_opt;              // normalized dir1
+    std::string dir2_opt;              // normalized dir2
+    std::vector<std::string> chain1_list;  // chain file list of structure 1 for this call
+    std::vector<std::string> chain2_list;  // chain file list of structure 2 for this call
 };
 
 
@@ -279,19 +279,19 @@ struct MMalignFinalParams
 
 struct ChainPairAlignOptions
 {
-    int    i_opt;              // 比对模式：0=自动 1=策略+用户比对 2=仅用户比对 3=-I
-    int    a_opt;              // 是否产出 TM3
-    int    u_opt;              // 0/1/2：1=按用户 Lnorm 出 TM4；2=额外用 Lnorm 覆盖搜索 d0
-    bool   d_opt;              // 是否产出 TM5
-    bool   fast_opt;           // 快速模式
-    bool   se_opt;             // 走 se_main 而非 TMalign_main
-    bool   cp_opt;             // 走 CPalign_main
-    double Lnorm;              // 归一化长度
-    double d0_scale;           // d0 缩放
-    double TMcut;              // 早退阈值
-    int    parallel_threads;   // 引擎内并行度
-    int    ss_opt;             // 1=跳过基于二级结构的初始策略
-    int    mol_type;           // 两链分子类型之和
+    int    i_opt;              // alignment mode: 0=auto 1=strategy+user-aln 2=user-aln only 3=-I
+    int    a_opt;              // whether to output TM3
+    int    u_opt;              // 0/1/2: 1=TM4 by user Lnorm; 2=also override search d0 with Lnorm
+    bool   d_opt;              // whether to output TM5
+    bool   fast_opt;           // fast mode
+    bool   se_opt;             // use se_main instead of TMalign_main
+    bool   cp_opt;             // use CPalign_main
+    double Lnorm;              // normalization length
+    double d0_scale;           // d0 scale
+    double TMcut;              // early-termination threshold
+    int    parallel_threads;   // intra-engine parallelism
+    int    ss_opt;             // 1=skip the secondary-structure-based initial strategy
+    int    mol_type;           // sum of the molecule types of the two chains
 };
 
 struct OutputOptions
