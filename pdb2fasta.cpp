@@ -122,20 +122,35 @@ void parse_arguments(int argc, char* argv[], Pdb2fastaOptions& pdb2fasta_opts)
     }
 }
 
-void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
+void check_input_presence(Pdb2fastaOptions& pdb2fasta_opts)
 {
     if(pdb2fasta_opts.xname.size()==0||pdb2fasta_opts.xname=="-h") print_help();
+}
 
+void check_dir_conflicts(Pdb2fastaOptions& pdb2fasta_opts)
+{
     if (pdb2fasta_opts.suffix_opt.size() && pdb2fasta_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
+}
+
+void check_atom_name_size(Pdb2fastaOptions& pdb2fasta_opts)
+{
     if (pdb2fasta_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
+}
+
+void check_split_conflicts(Pdb2fastaOptions& pdb2fasta_opts)
+{
     if (pdb2fasta_opts.split_opt==1 && pdb2fasta_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
     else if (pdb2fasta_opts.split_opt==2 && pdb2fasta_opts.ter_opt!=0 && pdb2fasta_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (pdb2fasta_opts.split_opt<0 || pdb2fasta_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
+
+void check_mol_type_and_atom_default(Pdb2fastaOptions& pdb2fasta_opts)
+{
     if (pdb2fasta_opts.mol_opt=="prot") pdb2fasta_opts.mol_opt="protein";
     else if (pdb2fasta_opts.mol_opt=="DNA") pdb2fasta_opts.mol_opt="RNA";
     if (pdb2fasta_opts.mol_opt!="auto" && pdb2fasta_opts.mol_opt!="protein" && pdb2fasta_opts.mol_opt!="RNA")
@@ -148,6 +163,15 @@ void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
         pdb2fasta_opts.atom_opt=" CA ";
     else if (pdb2fasta_opts.mol_opt=="RNA" && pdb2fasta_opts.atom_opt=="auto")
         pdb2fasta_opts.atom_opt=" C3'";
+}
+
+void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
+{
+    check_input_presence(pdb2fasta_opts);
+    check_dir_conflicts(pdb2fasta_opts);
+    check_atom_name_size(pdb2fasta_opts);
+    check_split_conflicts(pdb2fasta_opts);
+    check_mol_type_and_atom_default(pdb2fasta_opts);
 }
 
 // parse file list

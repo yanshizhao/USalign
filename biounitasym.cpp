@@ -89,14 +89,25 @@ void parse_arguments(int argc, char* argv[], BiounitasymOptions& biounitasym_opt
     }
 }
 
-void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
+void check_input_presence(BiounitasymOptions& biounitasym_opts)
 {
     if(biounitasym_opts.xname.size()==0||biounitasym_opts.xname=="-h") print_help();
+}
 
+void check_dir_conflicts(BiounitasymOptions& biounitasym_opts)
+{
     if (biounitasym_opts.suffix_opt.size() && biounitasym_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
+}
+
+void check_atom_name_size(BiounitasymOptions& biounitasym_opts)
+{
     if (biounitasym_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
+}
+
+void check_mol_type_and_atom_default(BiounitasymOptions& biounitasym_opts)
+{
     if (biounitasym_opts.mol_opt=="prot") biounitasym_opts.mol_opt="protein";
     else if (biounitasym_opts.mol_opt=="DNA") biounitasym_opts.mol_opt="RNA";
     if (biounitasym_opts.mol_opt!="auto" && biounitasym_opts.mol_opt!="protein" && biounitasym_opts.mol_opt!="RNA")
@@ -109,6 +120,14 @@ void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
         biounitasym_opts.atom_opt=" CA ";
     else if (biounitasym_opts.mol_opt=="RNA" && biounitasym_opts.atom_opt=="auto")
         biounitasym_opts.atom_opt=" C3'";
+}
+
+void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
+{
+    check_input_presence(biounitasym_opts);
+    check_dir_conflicts(biounitasym_opts);
+    check_atom_name_size(biounitasym_opts);
+    check_mol_type_and_atom_default(biounitasym_opts);
 }
 
 // parse file list

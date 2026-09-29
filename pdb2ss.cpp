@@ -124,13 +124,19 @@ void parse_arguments(int argc, char* argv[], Pdb2ssOptions& pdb2ss_opts)
     }
 }
 
-void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
+void check_input_presence(Pdb2ssOptions& pdb2ss_opts)
 {
     if(pdb2ss_opts.xname.size()==0||pdb2ss_opts.xname=="-h") print_help();
+}
 
+void check_dir_conflicts(Pdb2ssOptions& pdb2ss_opts)
+{
     if (pdb2ss_opts.suffix_opt.size() && pdb2ss_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
+}
 
+void check_atom_and_mol_type(Pdb2ssOptions& pdb2ss_opts)
+{
     pdb2ss_opts.normalize_atom_name=(pdb2ss_opts.atom_opt=="auto" || pdb2ss_opts.atom_opt=="PC4'"); // auto re-pad atom name
     if (pdb2ss_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
@@ -140,12 +146,24 @@ void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
         pdb2ss_opts.atom_opt=" CA ";
     else if (pdb2ss_opts.mol_opt=="RNA" && pdb2ss_opts.atom_opt=="auto")
         pdb2ss_opts.atom_opt=" C3'";
+}
+
+void check_split_conflicts(Pdb2ssOptions& pdb2ss_opts)
+{
     if (pdb2ss_opts.split_opt==1 && pdb2ss_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
     else if (pdb2ss_opts.split_opt==2 && pdb2ss_opts.ter_opt!=0 && pdb2ss_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
     if (pdb2ss_opts.split_opt<0 || pdb2ss_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}
+
+void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
+{
+    check_input_presence(pdb2ss_opts);
+    check_dir_conflicts(pdb2ss_opts);
+    check_atom_and_mol_type(pdb2ss_opts);
+    check_split_conflicts(pdb2ss_opts);
 }
 
 // parse file list

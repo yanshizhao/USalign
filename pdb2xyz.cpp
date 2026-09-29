@@ -108,20 +108,38 @@ void parse_arguments(int argc, char* argv[], Pdb2xyzOptions& pdb2xyz_opts)
     }
 }
 
-void postprocess_arguments(Pdb2xyzOptions& pdb2xyz_opts)
+void check_input_presence(Pdb2xyzOptions& pdb2xyz_opts)
 {
     if(pdb2xyz_opts.xname.size()==0||pdb2xyz_opts.xname=="-h") print_help();
+}
 
+void check_dir_conflicts(Pdb2xyzOptions& pdb2xyz_opts)
+{
     if (pdb2xyz_opts.suffix_opt.size() && pdb2xyz_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
+}
 
+void check_atom_name_size(Pdb2xyzOptions& pdb2xyz_opts)
+{
     pdb2xyz_opts.normalize_atom_name=(pdb2xyz_opts.atom_opt=="auto" || pdb2xyz_opts.atom_opt=="PC4'"); // auto re-pad atom name
     if (pdb2xyz_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
+}
+
+void check_split_conflicts(Pdb2xyzOptions& pdb2xyz_opts)
+{
     if (pdb2xyz_opts.split_opt==1 && pdb2xyz_opts.ter_opt!=0)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
     else if (pdb2xyz_opts.split_opt==2 && pdb2xyz_opts.ter_opt!=0 && pdb2xyz_opts.ter_opt!=1)
         PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
+}
+
+void postprocess_arguments(Pdb2xyzOptions& pdb2xyz_opts)
+{
+    check_input_presence(pdb2xyz_opts);
+    check_dir_conflicts(pdb2xyz_opts);
+    check_atom_name_size(pdb2xyz_opts);
+    check_split_conflicts(pdb2xyz_opts);
 }
 
 // parse file list
