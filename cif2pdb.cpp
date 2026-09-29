@@ -237,7 +237,103 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
     return changed_chains;
 }
 
-struct MmcifParseState
+struct MmcifInput
+{
+    std::ifstream fin;
+#ifndef NO_PSTREAM
+    redi::ipstream fin_gz; // if file is compressed
+#endif
+    int compress_type;     // uncompressed file
+    MmcifInput() : compress_type(0) {}
+};
+
+void mmcif_open_input(MmcifInput& in, const std::string& filename)
+{
+#ifndef NO_PSTREAM
+    if (filename.size()>=3 &&
+        filename.substr(filename.size()-3,3)==".gz")
+    {
+        in.fin_gz.open("gunzip -c '"+filename+"'");
+        in.compress_type=1;
+    }
+    else if (filename.size()>=4 &&
+        filename.substr(filename.size()-4,4)==".bz2")
+    {
+        in.fin_gz.open("bzcat '"+filename+"'");
+        in.compress_type=2;
+    }
+    else
+    {
+        if (filename=="-") in.compress_type=-1;
+        else in.fin.open(filename.c_str());
+    }
+#else
+    if (filename.size()>=3 &&
+        filename.substr(filename.size()-3,3)==".gz")
+        PrintErrorAndQuit("ERROR! gz file is not supported on this platform");
+    else if (filename.size()>=4 &&
+        filename.substr(filename.size()-4,4)==".bz2")
+        PrintErrorAndQuit("ERROR! bz2 file is not supported on this platform");
+    else
+    {
+        if (filename=="-") in.compress_type=-1;
+        else in.fin.open(filename.c_str());
+    }
+#endif
+}
+
+bool mmcif_input_good(const MmcifInput& in)
+{
+#ifndef NO_PSTREAM
+    return (in.compress_type==-1)?std::cin.good():(in.compress_type?in.fin_gz.good():in.fin.good());
+#else
+    return (in.compress_type==-1)?std::cin.good():in.fin.good();
+#endif
+}
+
+void mmcif_read_line(MmcifInput& in, std::string& line)
+{
+    if (in.compress_type==-1) std::getline(std::cin, line);
+#ifndef NO_PSTREAM
+    else if (in.compress_type) std::getline(in.fin_gz, line);
+#endif
+    else                      std::getline(in.fin, line);
+}
+
+void mmcif_read_line_checked(MmcifInput& in, const std::string& filename, std::string& line)
+{
+    if (in.compress_type==-1)
+    {
+        if (std::cin.good()) std::getline(std::cin, line);
+        else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
+    }
+#ifndef NO_PSTREAM
+    else if (in.compress_type)
+    {
+        if (in.fin_gz.good()) std::getline(in.fin_gz, line);
+        else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
+    }
+#endif
+    else
+    {
+        if (in.fin.good()) std::getline(in.fin, line);
+        else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
+    }
+}
+
+void mmcif_close_input(MmcifInput& in)
+{
+    if (in.compress_type>=0)
+    {
+#ifndef NO_PSTREAM
+        if (in.compress_type) in.fin_gz.close();
+        else
+#endif
+        in.fin.close();
+    }
+}
+
+struct MmcifParseContext
 {
     std::stringstream i8_stream;
     std::map<std::string,int> _atom_site;
@@ -255,7 +351,7 @@ struct MmcifParseState
     size_t a;
 };
 
-void mmcif_read_atom_fields(MmcifParseState& st, const std::string& line, const bool mse_opt)
+void mmcif_read_atom_fields(MmcifParseContext& st, const std::string& line, const bool mse_opt)
 {
     st.line_vec.clear();
     split(line,st.line_vec);
@@ -273,7 +369,7 @@ void mmcif_read_atom_fields(MmcifParseState& st, const std::string& line, const 
         st.atom=st.atom.substr(0,st.atom.size()-1);
 }
 
-bool mmcif_pass_residue_filter(MmcifParseState& st, const bool dna_opt, const bool rna_opt,
+bool mmcif_pass_residue_filter(MmcifParseContext& st, const bool dna_opt, const bool rna_opt,
     const bool protein_opt, const bool hoh_opt, const bool lig_opt)
 {
     if (st.group_PDB=="HETATM")
@@ -306,7 +402,7 @@ bool mmcif_pass_residue_filter(MmcifParseState& st, const bool dna_opt, const bo
     return true;
 }
 
-bool mmcif_read_chain_fields(MmcifParseState& st, const std::string& line,
+bool mmcif_read_chain_fields(MmcifParseContext& st, const std::string& line,
     const std::string& chain_opt)
 {
     if (st._atom_site.count("auth_seq_id"))
@@ -331,7 +427,7 @@ bool mmcif_read_chain_fields(MmcifParseState& st, const std::string& line,
     return true;
 }
 
-int mmcif_switch_model_if_needed(MmcifParseState& st,
+int mmcif_switch_model_if_needed(MmcifParseContext& st,
     const std::vector<std::vector<std::string> >&PDB_lines)
 {
     if (st._atom_site.count("pdbx_PDB_model_num") &&
@@ -344,7 +440,7 @@ int mmcif_switch_model_if_needed(MmcifParseState& st,
     return 1;
 }
 
-bool mmcif_pass_alt_id_filter(MmcifParseState& st)
+bool mmcif_pass_alt_id_filter(MmcifParseContext& st)
 {
     if (st._atom_site.count("label_alt_id")) // in 39.4 % of entries
     {
@@ -362,7 +458,7 @@ bool mmcif_pass_alt_id_filter(MmcifParseState& st)
     return true;
 }
 
-void mmcif_append_pdb_line(MmcifParseState& st,
+void mmcif_append_pdb_line(MmcifParseContext& st,
     std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list)
 {
     if (st.prev_asym_id!=st.asym_id)
@@ -398,62 +494,20 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 {
     std::string line;
 
-    int compress_type=0; // uncompressed file
-    std::ifstream fin;
-#ifndef NO_PSTREAM
-    redi::ipstream fin_gz; // if file is compressed
-    if (filename.size()>=3 &&
-        filename.substr(filename.size()-3,3)==".gz")
-    {
-        fin_gz.open("gunzip -c '"+filename+"'");
-        compress_type=1;
-    }
-    else if (filename.size()>=4 &&
-        filename.substr(filename.size()-4,4)==".bz2")
-    {
-        fin_gz.open("bzcat '"+filename+"'");
-        compress_type=2;
-    }
-    else
-    {
-        if (filename=="-") compress_type=-1;
-        else fin.open(filename.c_str());
-    }
-#else
-    if (filename.size()>=3 &&
-        filename.substr(filename.size()-3,3)==".gz")
-        PrintErrorAndQuit("ERROR! gz file is not supported on this platform");
-    else if (filename.size()>=4 &&
-        filename.substr(filename.size()-4,4)==".bz2")
-        PrintErrorAndQuit("ERROR! bz2 file is not supported on this platform");
-    else
-    {
-        if (filename=="-") compress_type=-1;
-        else fin.open(filename.c_str());
-    }
-#endif
+    MmcifInput in;
+    mmcif_open_input(in, filename);
 
     bool loop_ = false; // not reading following content
     int atom_site_pos;
-    MmcifParseState st;
+    MmcifParseContext st;
     st.alt_id=" ";  // alternative location indicator
     st.asym_id="."; // this is similar to chainID, except that
                         // chainID is char while asym_id is a string
                        // with possibly multiple char
     st.a=0; // atom index
-    while (
-#ifndef NO_PSTREAM
-        (compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good())
-#else
-        (compress_type==-1)?std::cin.good():fin.good()
-#endif
-    )
+    while (mmcif_input_good(in))
     {
-        if  (compress_type==-1) std::getline(std::cin, line);
-#ifndef NO_PSTREAM
-        else if (compress_type) getline(fin_gz, line);
-#endif
-        else                    std::getline(fin, line);
+        mmcif_read_line(in, line);
         if (line.size()==0) continue;
         if (loop_) loop_ = (line.size()>=2)?(line.compare(0,2,"# ")):(line.compare(0,1,"#"));
         if (!loop_)
@@ -461,23 +515,7 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
             if (line.compare(0,5,"loop_")) continue;
             while(1)
             {
-                if (compress_type==-1)
-                {
-                    if (std::cin.good()) std::getline(std::cin, line);
-                    else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
-                }
-#ifndef NO_PSTREAM
-                else if (compress_type)
-                {
-                    if (fin_gz.good()) getline(fin_gz, line);
-                    else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
-                }
-#endif
-                else
-                {
-                    if (fin.good()) std::getline(fin, line);
-                    else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
-                }
+                mmcif_read_line_checked(in, filename, line);
                 if (line.size()) break;
             }
             if (line.compare(0,11,"_atom_site.")) continue;
@@ -489,11 +527,7 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 
             while(1)
             {
-                if  (compress_type==-1) std::getline(std::cin, line);
-#ifndef NO_PSTREAM
-                else if (compress_type) getline(fin_gz, line);
-#endif
-                else                    std::getline(fin, line);
+                mmcif_read_line(in, line);
                 if (line.size()==0) continue;
                 if (line.compare(0,11,"_atom_site.")) break;
                 st._atom_site[Trim(line.substr(11))]=++atom_site_pos;
@@ -525,14 +559,7 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
         mmcif_append_pdb_line(st, PDB_lines, chainID_list);
     }
 
-    if (compress_type>=0)
-    {
-#ifndef NO_PSTREAM
-        if (compress_type) fin_gz.close();
-        else
-#endif
-        fin.close();
-    }
+    mmcif_close_input(in);
     chainID_list.push_back("");
     return PDB_lines.size();
 }
