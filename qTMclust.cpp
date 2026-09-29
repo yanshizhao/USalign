@@ -390,9 +390,6 @@ void read_all_chains(const std::vector<std::string>& chain_list, const QTMclustO
         PDB_lines.clear();
         xchainnum+=newchainnum;
     }
-    coord_template.clear();
-    // swap completely destroy the vector and free up the memory capacity
-    std::vector<std::vector<std::string> >().swap(PDB_lines);
 }
 
 struct QTMclustRun
