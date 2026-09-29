@@ -1050,11 +1050,14 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
     std::vector<char>tmp_sec_array;
     int read_resi=2;
 
+    const PdbParseOptions pdb_parse_opts{
+        ter_opt, atom_opt, normalize_atom_name, split_opt, het_opt, chain2parse, model2parse};
+
     for (i=0;i<chain_list.size();i++)
     {
         name=chain_list[i];
         chainnum=get_PDB_lines(name, PDB_lines, chainID_list, mol_vec, infmt_opt,
-            PdbParseOptions{ter_opt, atom_opt, normalize_atom_name, split_opt, het_opt, chain2parse, model2parse});
+            pdb_parse_opts);
         if (!chainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<get_basename(name)
