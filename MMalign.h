@@ -1591,13 +1591,8 @@ inline void mmalign_output_per_chain_alignments(
             }
 
             // clean up
-            seqxA.clear();
-            seqM.clear();
-            seqyA.clear();
             sequence[0].clear();
             sequence[1].clear();
-
-            chain_align_res.do_vec.clear();
         }
     }
 }
@@ -1734,13 +1729,9 @@ inline void MMalign_final(
         print_align_res, out_opts, complex1.resi, complex2.resi);
 
     // clean up
-    seqM.clear();
-    seqxA.clear();
-    seqyA.clear();
     sequence[0].clear();
     sequence[1].clear();
     sequence[2].clear();
-    chain_align_res.do_vec.clear();
 
     if (!final_params.full_opt) return;
 
