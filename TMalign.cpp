@@ -239,28 +239,6 @@ bool parse_file_option(int argc, char* argv[], int& i, TMalignOptions& tmalign_o
             PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
         tmalign_opts.fname_lign = argv[i + 1];      tmalign_opts.i_opt = 3;      i++;
     }
-    else if (std::string(argv[i]) == "-chain1")
-    {
-        split(argv[i+1], tmalign_opts.chain2parse1, ',');   i++;
-    }
-    else if (std::string(argv[i]) == "-chain2")
-    {
-        split(argv[i+1], tmalign_opts.chain2parse2, ',');   i++;
-    }
-    else if (std::string(argv[i]) == "-model1")
-    {
-        split(argv[i+1], tmalign_opts.model2parse1, ',');   i++;
-    }
-    else if (std::string(argv[i]) == "-model2")
-    {
-        split(argv[i+1], tmalign_opts.model2parse2, ',');   i++;
-    }
-    else if (std::string(argv[i]) == "-dir")    { tmalign_opts.dir_opt    = argv[i + 1]; i++; }
-    else if (std::string(argv[i]) == "-dir1")   { tmalign_opts.dir1_opt   = argv[i + 1]; i++; }
-    else if (std::string(argv[i]) == "-dir2")   { tmalign_opts.dir2_opt   = argv[i + 1]; i++; }
-    else if (std::string(argv[i]) == "-suffix") { tmalign_opts.suffix_opt = argv[i + 1]; i++; }
-    else if (std::string(argv[i]) == "-atom")   { tmalign_opts.atom_opt   = argv[i + 1]; i++; }
-    else if (std::string(argv[i]) == "-mol")    { tmalign_opts.mol_opt    = argv[i + 1]; i++; }
     else return false;
     return true;
 }
@@ -293,7 +271,16 @@ bool parse_numeric_option(int argc, char* argv[], int& i, TMalignOptions& tmalig
 
 bool parse_string_option(int argc, char* argv[], int& i, TMalignOptions& tmalign_opts)
 {
-    if (std::string(argv[i]) == "-a" && i + 1 < argc)
+    if (std::string(argv[i]) == "-seq")
+    {
+        tmalign_opts.byresi_opt=5;
+    }
+    else if (std::string(argv[i]) == "-cp")
+    {
+        tmalign_opts.cp_opt=1;
+    }
+    else if (i + 1 >= argc) return false;
+    else if (std::string(argv[i]) == "-a")
     {
         if (std::string(argv[i + 1]) == "T")      tmalign_opts.a_opt=true;
         else if (std::string(argv[i + 1]) == "F") tmalign_opts.a_opt=false;
@@ -305,14 +292,16 @@ bool parse_string_option(int argc, char* argv[], int& i, TMalignOptions& tmalign
         }
         i++;
     }
-    else if (std::string(argv[i]) == "-seq")
-    {
-        tmalign_opts.byresi_opt=5;
-    }
-    else if (std::string(argv[i]) == "-cp")
-    {
-        tmalign_opts.cp_opt=1;
-    }
+    else if (std::string(argv[i]) == "-chain1") { split(argv[i+1], tmalign_opts.chain2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-chain2") { split(argv[i+1], tmalign_opts.chain2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-model1") { split(argv[i+1], tmalign_opts.model2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-model2") { split(argv[i+1], tmalign_opts.model2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-dir")    { tmalign_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir1")   { tmalign_opts.dir1_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir2")   { tmalign_opts.dir2_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { tmalign_opts.suffix_opt = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-atom")   { tmalign_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-mol")    { tmalign_opts.mol_opt    = argv[i + 1]; i++; }
     else return false;
     return true;
 }
