@@ -537,12 +537,7 @@ void align_oligomer_pairs(const ComplexData& complex1, const ComplexData& comple
                 maxTMmono_j=j;
             }
 
-            // clean up
-            chain_align_res.seqM.clear();
-            chain_align_res.seqxA.clear();
-            chain_align_res.seqyA.clear();
-            chain_align_res.do_vec.clear();
-        }
+            }
 
 
     }

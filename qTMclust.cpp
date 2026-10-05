@@ -713,11 +713,6 @@ bool run_tmalign_refine_stage(QTMclustRun& run)
             <<setiosflags(std::ios::fixed)<<std::setprecision(4)
             <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<std::endl;
 
-        chain_align_res.seqM.clear();
-        chain_align_res.seqxA.clear();
-        chain_align_res.seqyA.clear();
-        chain_align_res.do_vec.clear();
-
         double TM=TM3; // average length
         if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
         else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length
@@ -748,11 +743,6 @@ bool run_tmalign_refine_stage(QTMclustRun& run)
                 &sec_vec[chain_i][0], &sec_vec[chain_j][0],
                 chain_align_res,
                 xlen, ylen, qtmclust_opts.sequence, align_opts);
-            chain_align_res.seqM.clear();
-            chain_align_res.seqxA.clear();
-            chain_align_res.seqyA.clear();
-            chain_align_res.do_vec.clear();
-
             TM=TM3;                // average length
             if      (qtmclust_opts.s_opt==1) TM=TM2; // shorter length
             else if (qtmclust_opts.s_opt==2) TM=TM1; // longer length

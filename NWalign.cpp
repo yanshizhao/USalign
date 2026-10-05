@@ -393,12 +393,7 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
                         xlen, ylen, seqM, seqxA,
                         seqyA, Liden, L_ali, aln_score, nwalign_opts.outfmt_opt);
 
-                    // Done! Free memory
-                    seqM.clear();
-                    seqxA.clear();
-                    seqyA.clear();
-
-                } // chain_j
+                    } // chain_j
                 if (chain2_list.size()>1)
                 {
                     yname.clear();

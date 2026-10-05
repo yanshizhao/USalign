@@ -2890,12 +2890,7 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
             ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
             chain_align_res, out_opts, complex1.resi, complex2.resi);
         
-        // clean up
-        chain_align_res.seqM.clear();
-        chain_align_res.seqxA.clear();
-        chain_align_res.seqyA.clear();
-        chain_align_res.do_vec.clear();
-    }
+        }
     if (user_opts.outfmt_opt==2)
     {
         double TM=0;
@@ -3029,12 +3024,6 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                 seqxA_mat[i][j]=chain_align_res.seqxA;
                 seqyA_mat[i][j]=chain_align_res.seqyA;
                 TMave_mat[i][j]=chain_align_res.TM4*Lnorm_pair;
-
-                // clean up
-                chain_align_res.seqM.clear();
-                chain_align_res.seqxA.clear();
-                chain_align_res.seqyA.clear();
-                chain_align_res.do_vec.clear();
             }
         }
     }
@@ -3749,13 +3738,8 @@ void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaI
                 a_vec[i][r][2]=xt[r][2];
             }
         
-            // clean up
-            chain_align_res.seqM.clear();
-            chain_align_res.seqxA.clear();
-            chain_align_res.seqyA.clear();
             parsed_input.sequence[0].clear();
             parsed_input.sequence[1].clear();
-            chain_align_res.do_vec.clear();
         }
 }
 
@@ -3885,11 +3869,6 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
 
             // clean up
             tmp_gap.clear();
-
-            chain_align_res.seqM.clear();
-            chain_align_res.seqxA.clear();
-            chain_align_res.seqyA.clear();
-            chain_align_res.do_vec.clear();
         }
         std::vector<std::string>().swap(msa_ext);
         std::vector<std::pair<double,int> >().swap(msta_iter_state.TM_pair_vec);
@@ -4052,12 +4031,6 @@ bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& 
                 msta_iter_state.totals.rmsd_ali+=chain_align_res.rmsd_ali;  // TMscore and rmsd in standard_TMscore
                 msta_iter_state.totals.n_ali+=chain_align_res.n_ali;
                 msta_iter_state.totals.n_ali8+=chain_align_res.n_ali8;
-
-                // clean up
-                chain_align_res.seqM.clear();
-                chain_align_res.seqxA.clear();
-                chain_align_res.seqyA.clear();
-                chain_align_res.do_vec.clear();
             }
             
         }
@@ -4188,12 +4161,6 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 if (ctrl_opts.full_opt) output_results(
                     ChainPairDesc{structure1_display, structure2_display, chainID_list[i], chainID_list[j], xlen, ylen},
                     chain_align_res, out_opts, resi_vec, resi_vec);
-
-                // clean up
-                chain_align_res.seqM.clear();
-                chain_align_res.seqxA.clear();
-                chain_align_res.seqyA.clear();
-                chain_align_res.do_vec.clear();
             }
         }
     }
@@ -4528,10 +4495,6 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
                         chainID_list1[chain_i], chainID_list2[chain_j],
                         resi_vec1, resi_vec2, &soi_context.pair_distances);
 
-                    // Done! Free memory
-                    chain_align_res.seqM.clear();
-                    chain_align_res.seqxA.clear();
-                    chain_align_res.seqyA.clear();
                     resi_vec2.clear();
                 } // chain_j
                 if (parsed_input.chain2_list.size()>1)
