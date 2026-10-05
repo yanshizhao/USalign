@@ -1,7 +1,6 @@
 // command line argument parsing and document of MMalign main program
 
 #include "MMalign.h"
-#include "option_parse.h"
 
 void print_version()
 {
@@ -164,84 +163,108 @@ struct MMalignOptions
 /**********************/
 //    get argument
 /**********************/
+struct BoolFlag { const char* name; bool* target; };
+
+bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+    {
+        if (std::string(arg) == flags[k].name)
+        {
+            *flags[k].target = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_file_option(int argc, char* argv[], int& i, MMalignOptions& mmalign_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-o")
+    {
+        mmalign_opts.fname_super = argv[i + 1];     mmalign_opts.o_opt = true;   i++;
+    }
+    else if (std::string(argv[i]) == "-m")
+    {
+        mmalign_opts.fname_matrix = argv[i + 1];    mmalign_opts.m_opt = true;   i++;
+    }
+    else return false;
+    return true;
+}
+
+bool parse_numeric_option(int argc, char* argv[], int& i, MMalignOptions& mmalign_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-d")
+    {
+        mmalign_opts.d0_scale = safe_stod(argv[i + 1]);     mmalign_opts.d_opt = true;   i++;
+    }
+    else if (std::string(argv[i]) == "-infmt1") { mmalign_opts.infmt1_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-infmt2") { mmalign_opts.infmt2_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-ter")    { mmalign_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-split")  { mmalign_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-outfmt") { mmalign_opts.outfmt_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-TMcut")  { mmalign_opts.TMcut      = safe_stod(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-het")    { mmalign_opts.het_opt    = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, MMalignOptions& mmalign_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-a")
+    {
+        if (std::string(argv[i + 1]) == "T")      mmalign_opts.a_opt=true;
+        else if (std::string(argv[i + 1]) == "F") mmalign_opts.a_opt=false;
+        else
+        {
+            mmalign_opts.a_opt=safe_stoi(argv[i + 1]);
+            if (mmalign_opts.a_opt!=-2 && mmalign_opts.a_opt!=-1 && mmalign_opts.a_opt!=1)
+                PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
+        }
+        i++;
+    }
+    else if (std::string(argv[i]) == "-full")
+    {
+        if (std::string(argv[i + 1]) == "T")      mmalign_opts.full_opt=true;
+        else if (std::string(argv[i + 1]) == "F") mmalign_opts.full_opt=false;
+        else PrintErrorAndQuit("-full must be T or F");
+        i++;
+    }
+    else if (std::string(argv[i]) == "-chain1") { split(argv[i+1], mmalign_opts.chain2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-chain2") { split(argv[i+1], mmalign_opts.chain2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-model1") { split(argv[i+1], mmalign_opts.model2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-model2") { split(argv[i+1], mmalign_opts.model2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-dir1")   { mmalign_opts.dir1_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir2")   { mmalign_opts.dir2_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { mmalign_opts.suffix_opt = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-atom")   { mmalign_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-mol")    { mmalign_opts.mol_opt    = argv[i + 1]; i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], MMalignOptions& mmalign_opts)
 {
-    const OptionSpec option_specs[] =
-    {
-        { "-o",       &mmalign_opts.fname_super,  &mmalign_opts.o_opt, OPTION_STRING },
-        { "-d",       &mmalign_opts.d0_scale,     &mmalign_opts.d_opt, OPTION_DOUBLE },
-        { "-v",       &mmalign_opts.v_opt,        nullptr, OPTION_FLAG },
-        { "-h",       &mmalign_opts.h_opt,        nullptr, OPTION_FLAG },
-        { "-m",       &mmalign_opts.fname_matrix, &mmalign_opts.m_opt, OPTION_STRING },
-        { "-fast",    &mmalign_opts.fast_opt,     nullptr, OPTION_FLAG },
-        { "-infmt1",  &mmalign_opts.infmt1_opt,   nullptr, OPTION_INT },
-        { "-infmt2",  &mmalign_opts.infmt2_opt,   nullptr, OPTION_INT },
-        { "-ter",     &mmalign_opts.ter_opt,      nullptr, OPTION_INT },
-        { "-split",   &mmalign_opts.split_opt,    nullptr, OPTION_INT },
-        { "-atom",    &mmalign_opts.atom_opt,     nullptr, OPTION_STRING },
-        { "-mol",     &mmalign_opts.mol_opt,      nullptr, OPTION_STRING },
-        { "-dir1",    &mmalign_opts.dir1_opt,     nullptr, OPTION_STRING },
-        { "-dir2",    &mmalign_opts.dir2_opt,     nullptr, OPTION_STRING },
-        { "-suffix",  &mmalign_opts.suffix_opt,   nullptr, OPTION_STRING },
-        { "-outfmt",  &mmalign_opts.outfmt_opt,   nullptr, OPTION_INT },
-        { "-TMcut",   &mmalign_opts.TMcut,        nullptr, OPTION_DOUBLE },
-        { "-het",     &mmalign_opts.het_opt,      nullptr, OPTION_INT },
+    const BoolFlag bool_flags[] = {
+        {"-v",    &mmalign_opts.v_opt},
+        {"-h",    &mmalign_opts.h_opt},
+        {"-fast", &mmalign_opts.fast_opt},
     };
-    const std::size_t option_spec_num = sizeof(option_specs) / sizeof(option_specs[0]);
+    const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
 
     for(int i = 1; i < argc; i++)
     {
-        if (parse_option(option_specs, option_spec_num, argc, argv, i) == OPTION_MATCHED)
-        {
+        if (parse_file_option(argc, argv, i, mmalign_opts))
             continue;
-        }
-        if ( std::string(argv[i]) == "-a" && i < (argc-1) )
-        {
-            if (std::string(argv[i + 1]) == "T")      mmalign_opts.a_opt=true;
-            else if (std::string(argv[i + 1]) == "F") mmalign_opts.a_opt=false;
-            else
-            {
-                mmalign_opts.a_opt=safe_stoi(argv[i + 1]);
-                if (mmalign_opts.a_opt!=-2 && mmalign_opts.a_opt!=-1 && mmalign_opts.a_opt!=1)
-                    PrintErrorAndQuit("-a must be -2, -1, 1, T or F");
-            }
-            i++;
-        }
-        else if ( std::string(argv[i]) == "-full" && i < (argc-1) )
-        {
-            if (std::string(argv[i + 1]) == "T")      mmalign_opts.full_opt=true;
-            else if (std::string(argv[i + 1]) == "F") mmalign_opts.full_opt=false;
-            else PrintErrorAndQuit("-full must be T or F");
-            i++;
-        }
-        else if (std::string(argv[i]) == "-chain1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],mmalign_opts.chain2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-chain2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],mmalign_opts.chain2parse2,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],mmalign_opts.model2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],mmalign_opts.model2parse2,',');
-            i++;
-        }
+        else if (parse_numeric_option(argc, argv, i, mmalign_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, mmalign_opts))
+            continue;
+        else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
+            continue;
         else if (mmalign_opts.xname.size() == 0) mmalign_opts.xname=argv[i];
         else if (mmalign_opts.yname.size() == 0) mmalign_opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
