@@ -347,7 +347,7 @@ inline void fill_output_options_from_user_options(OutputOptions& out_opts, const
     out_opts.d_opt = user_opts.d_opt;
 }
 
-inline void fill_output_options_from_mmalign_final_params(OutputOptions& out_opts, const MMalignFinalParams& params)
+inline void fill_out_opts_from_mmalign_final(OutputOptions& out_opts, const MMalignFinalParams& params)
 {
     out_opts.fname_matrix = params.m_opt ? params.fname_matrix : "";
     out_opts.fname_super = params.fname_super;
