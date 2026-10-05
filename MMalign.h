@@ -1387,7 +1387,7 @@ inline double MMalign_search(
     }
     return total_score;
 }
-inline void mmalign_assemble_complex_alignment(
+inline void mmalign_assemble_complex(
     const std::string& seqM,
     const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
     const std::vector<int>& xlen_vec, const std::vector<int>& ylen_vec,
@@ -1449,7 +1449,7 @@ inline void mmalign_assemble_complex_alignment(
 
 }
 
-inline void mmalign_output_per_chain_alignments(
+inline void mmalign_output_chain_aligns(
     const ComplexData& complex1, const ComplexData& complex2,
     AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
@@ -1689,7 +1689,7 @@ inline void MMalign_final(
     // prepare full complex alignment
     std::string chainID1="";
     std::string chainID2="";
-    mmalign_assemble_complex_alignment(seqM, complex1.seqs, complex2.seqs, complex1.lengths, complex2.lengths,
+    mmalign_assemble_complex(seqM, complex1.seqs, complex2.seqs, complex1.lengths, complex2.lengths,
         complex1.chain_ids, complex2.chain_ids, assign_result.chain2_of_chain1, assign_result.chain1_of_chain2,
         final_params.chain1_num, final_params.chain2_num, pair_result.aligned_seq1, pair_result.aligned_seq2, pair_result.aligned_consensus,
         chainID1, chainID2, sequence);
@@ -1737,7 +1737,7 @@ inline void MMalign_final(
 
     if (final_params.outfmt_opt<=2) std::cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
 
-    mmalign_output_per_chain_alignments(complex1, complex2, pair_result, assign_result,
+    mmalign_output_chain_aligns(complex1, complex2, pair_result, assign_result,
         final_params, sequence, t0, u0);
     sequence.clear();
     return;
