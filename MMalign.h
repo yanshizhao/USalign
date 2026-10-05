@@ -1577,7 +1577,7 @@ inline void mmalign_output_per_chain_alignments(
                 print_align_res.seqxA = pair_result.aligned_seq1[i][j];
                 print_align_res.seqyA = pair_result.aligned_seq2[i][j];
                 OutputOptions out_opts;
-                fill_out_opts_from_mmalign_final(out_opts, final_params);
+                fill_out_opts_mmalign_final(out_opts, final_params);
                 out_opts.Lnorm_ass = Lnorm_ass;
                 out_opts.fname_matrix = "";
                 out_opts.fname_super = "";
@@ -1719,7 +1719,7 @@ inline void MMalign_final(
     print_align_res.seqxA = sequence[0];
     print_align_res.seqyA = sequence[1];
     OutputOptions out_opts;
-    fill_out_opts_from_mmalign_final(out_opts, final_params);
+    fill_out_opts_mmalign_final(out_opts, final_params);
     out_opts.Lnorm_ass = Lnorm_ass;
     out_opts.mm_opt = true;
     const std::string structure1_display = final_params.xname;

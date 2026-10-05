@@ -977,7 +977,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
         fill_chain_pair_align_options(align_opts, user_opts, ctrl_opts);
 
         OutputOptions out_opts;
-        fill_output_options_from_user_options(out_opts, user_opts);
+        fill_out_opts_from_user_opts(out_opts, user_opts);
 
         return run_batch_parallel(
             parsed_input.chain1_list, parsed_input.chain2_list,
@@ -1573,7 +1573,7 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
         user_opts.yname.substr(user_opts.dir2_opt.size() + user_opts.dir_opt.size()),
         chain_align_res.seqxA, user_opts.outfmt_opt, right_num);
     OutputOptions out_opts;
-    fill_output_options_from_user_options(out_opts, user_opts);
+    fill_out_opts_from_user_opts(out_opts, user_opts);
     const std::string structure1_display = user_opts.xname.substr(
         user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size());
     const std::string structure2_display = user_opts.yname.substr(
@@ -1699,7 +1699,7 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
     if (common_inputs.user_options.outfmt_opt == 0) print_version();
 
     OutputOptions out_opts;
-    fill_output_options_from_user_options(out_opts, common_inputs.user_options);
+    fill_out_opts_from_user_opts(out_opts, common_inputs.user_options);
     out_opts.Lnorm_ass = 0;
     out_opts.mm_opt = true;
     const std::string structure1_display = common_inputs.user_options.xname.substr(
@@ -2880,7 +2880,7 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         TM_vec.push_back(chain_align_res.TM2);
 
         OutputOptions out_opts;
-        fill_output_options_from_user_options(out_opts, user_opts);
+        fill_out_opts_from_user_opts(out_opts, user_opts);
         out_opts.fname_matrix = "";
         out_opts.fname_super = "";
         out_opts.o_opt = 0;
@@ -3097,7 +3097,7 @@ int MMdock(AlignCommonInput& common_inputs)
 
         // print chain_align_res
         OutputOptions out_opts;
-        fill_output_options_from_user_options(out_opts, user_opts);
+        fill_out_opts_from_user_opts(out_opts, user_opts);
         out_opts.outfmt_opt = (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3);
         out_opts.mm_opt = true;
         const std::string structure1_display = user_opts.xname.substr(user_opts.dir1_opt.size());

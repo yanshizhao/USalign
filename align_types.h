@@ -329,7 +329,7 @@ inline void fill_chain_pair_align_options(ChainPairAlignOptions& align_opts,
     align_opts.ss_opt = 0;
 }
 
-inline void fill_output_options_from_user_options(OutputOptions& out_opts, const UserOptions& user_opts)
+inline void fill_out_opts_from_user_opts(OutputOptions& out_opts, const UserOptions& user_opts)
 {
     out_opts.fname_matrix = user_opts.m_opt ? user_opts.fname_matrix : "";
     out_opts.fname_super = user_opts.fname_super;
@@ -347,7 +347,7 @@ inline void fill_output_options_from_user_options(OutputOptions& out_opts, const
     out_opts.d_opt = user_opts.d_opt;
 }
 
-inline void fill_out_opts_from_mmalign_final(OutputOptions& out_opts, const MMalignFinalParams& params)
+inline void fill_out_opts_mmalign_final(OutputOptions& out_opts, const MMalignFinalParams& params)
 {
     out_opts.fname_matrix = params.m_opt ? params.fname_matrix : "";
     out_opts.fname_super = params.fname_super;
