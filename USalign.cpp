@@ -2884,8 +2884,10 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         out_opts.fname_matrix = "";
         out_opts.fname_super = "";
         out_opts.o_opt = 0;
+        const std::string structure1_display = user_opts.xname;
+        const std::string structure2_display = user_opts.yname;
         if (user_opts.outfmt_opt<2) output_results(
-            ChainPairDesc{user_opts.xname.c_str(), user_opts.yname.c_str(), complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
+            ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
             chain_align_res, out_opts, complex1.resi, complex2.resi);
         
         // clean up
@@ -3526,8 +3528,10 @@ static void run_mTMalign_pairwise_parallel(
                 out_opts.mirror_opt = 0;
                 out_opts.u_opt = false;
                 out_opts.d_opt = d_opt;
+                const std::string structure1_display = chain_list[chain_i];
+                const std::string structure2_display = chain_list[chain_j];
                 output_results(
-                    ChainPairDesc{chain_list[chain_i], chain_list[chain_j], chainID_list[chain_i], chainID_list[chain_j], xlen, ylen},
+                    ChainPairDesc{structure1_display, structure2_display, chainID_list[chain_i], chainID_list[chain_j], xlen, ylen},
                     chain_align_res, out_opts, resi_vec, resi_vec, ss);
                 full_out[chain_i * chain_num + chain_j] = ss.str();
             }
@@ -3730,8 +3734,10 @@ void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaI
             out_opts.mirror_opt = 0;
             out_opts.u_opt = u_opt;
             out_opts.d_opt = user_opts.d_opt;
+            const std::string structure1_display = msta_iter_state.xname_vec[i];
+            const std::string structure2_display = msta_iter_state.xname_vec[j];
             if (user_opts.outfmt_opt<0) output_results(
-                ChainPairDesc{msta_iter_state.xname_vec[i].c_str(), msta_iter_state.xname_vec[j].c_str(), "", "", xlen, ylen},
+                ChainPairDesc{structure1_display, structure2_display, "", "", xlen, ylen},
                 chain_align_res, out_opts, resi_vec, resi_vec);
          
             xt.resize(xlen);
@@ -4177,8 +4183,10 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 out_opts.mirror_opt = 0;
                 out_opts.u_opt = false;
                 out_opts.d_opt = user_opts.d_opt;
+                const std::string structure1_display = parsed_input.chain1_list[i];
+                const std::string structure2_display = parsed_input.chain1_list[j];
                 if (ctrl_opts.full_opt) output_results(
-                    ChainPairDesc{parsed_input.chain1_list[i], parsed_input.chain1_list[j], chainID_list[i], chainID_list[j], xlen, ylen},
+                    ChainPairDesc{structure1_display, structure2_display, chainID_list[i], chainID_list[j], xlen, ylen},
                     chain_align_res, out_opts, resi_vec, resi_vec);
 
                 // clean up

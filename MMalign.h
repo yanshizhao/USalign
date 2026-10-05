@@ -1583,8 +1583,10 @@ inline void mmalign_output_per_chain_alignments(
                 out_opts.fname_super = "";
                 out_opts.o_opt = 0;
                 out_opts.mirror_opt = 0;
+                const std::string structure1_display = final_params.xname;
+                const std::string structure2_display = final_params.yname;
                 output_results(
-                    ChainPairDesc{final_params.xname, final_params.yname, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
+                    ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
                     print_align_res, out_opts, complex1.resi, complex2.resi);
             }
 
@@ -1725,8 +1727,10 @@ inline void MMalign_final(
     fill_out_opts_from_mmalign_final(out_opts, final_params);
     out_opts.Lnorm_ass = Lnorm_ass;
     out_opts.mm_opt = true;
+    const std::string structure1_display = final_params.xname;
+    const std::string structure2_display = final_params.yname;
     output_results(
-        ChainPairDesc{final_params.xname, final_params.yname, chainID1, chainID2, xlen, ylen},
+        ChainPairDesc{structure1_display, structure2_display, chainID1, chainID2, xlen, ylen},
         print_align_res, out_opts, complex1.resi, complex2.resi);
 
     // clean up
