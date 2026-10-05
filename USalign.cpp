@@ -4385,7 +4385,7 @@ int mTMalign(AlignCommonInput& common_inputs)
 
 int parse_chain_for_soi(const std::vector<std::string>& pdb_lines, const std::string& chain_name,
     int& mol, const UserOptions& user_opts, const SoiAlignParams& soi_params,
-    const bool mirror_opt, CoordArray& a, std::string& seq, std::string& sec,
+    const bool mirror_opt, CoordArray& coords, std::string& seq, std::string& sec,
     std::vector<std::string>& resi_vec, CoordArray& k_nearest, IntPairArray& sec_bond)
 {
     int len=pdb_lines.size();
@@ -4402,15 +4402,15 @@ int parse_chain_for_soi(const std::vector<std::string>& pdb_lines, const std::st
         std::cerr<<"Sequence is too short <3!: "<<chain_name<<std::endl;
         return len;
     }
-    a.clear();
-    a.reserve(len);
+    coords.clear();
+    coords.reserve(len);
     if (soi_params.closeK_opt>=3) k_nearest.resize(len*soi_params.closeK_opt);
     sec.resize(len + 1);
-    len = read_PDB(pdb_lines, a, seq, resi_vec, soi_params.read_resi);
-    if (mirror_opt) for (int r=0;r<len;r++) a[r][2]=-a[r][2];
-    if (mol>0) make_sec(seq, a, len, sec, user_opts.atom_opt);
-    else make_sec(a, len, sec); // secondary structure assignment
-    if (soi_params.closeK_opt>=3) getCloseK(a, len, soi_params.closeK_opt, k_nearest);
+    len = read_PDB(pdb_lines, coords, seq, resi_vec, soi_params.read_resi);
+    if (mirror_opt) for (int r=0;r<len;r++) coords[r][2]=-coords[r][2];
+    if (mol>0) make_sec(seq, coords, len, sec, user_opts.atom_opt);
+    else make_sec(coords, len, sec); // secondary structure assignment
+    if (soi_params.closeK_opt>=3) getCloseK(coords, len, soi_params.closeK_opt, k_nearest);
     if (soi_params.mm_opt==6)
     {
         sec_bond.resize(len);

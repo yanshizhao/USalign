@@ -620,18 +620,18 @@ inline double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::ve
 
 inline void copy_chain_data(const DoubleMatrix&a_vec_i,
     const std::vector<char>&seq_vec_i,const std::vector<char>&sec_vec_i,
-    const int len,CoordArray& a,std::string &seq,std::string &sec)
+    const int len,CoordArray& coords,std::string &seq,std::string &sec)
 {
     int r;
     seq.clear();
     seq.reserve(len);
     sec.assign(len, '\0');
-    a.resize(len);
+    coords.resize(len);
     for (r=0;r<len;r++)
     {
-        a[r][0]=a_vec_i[r][0];
-        a[r][1]=a_vec_i[r][1];
-        a[r][2]=a_vec_i[r][2];
+        coords[r][0]=a_vec_i[r][0];
+        coords[r][1]=a_vec_i[r][1];
+        coords[r][2]=a_vec_i[r][2];
         seq += seq_vec_i[r];
         sec[r]=sec_vec_i[r];
     }

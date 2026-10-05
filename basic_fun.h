@@ -969,17 +969,17 @@ size_t get_FASTA_lines(const std::string filename,
     return FASTA_lines.size();
 }
 
-int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& a, std::string &seq,
+int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& coords, std::string &seq,
     std::vector<std::string> &resi_vec, const int read_resi)
 {
     size_t i;
     seq.clear();
     seq.reserve(PDB_lines.size());
-    a.clear();
-    a.reserve(PDB_lines.size());
+    coords.clear();
+    coords.reserve(PDB_lines.size());
     for (i=0;i<PDB_lines.size();i++)
     {
-        a.push_back({safe_stod(PDB_lines[i].substr(30, 8)),
+        coords.push_back({safe_stod(PDB_lines[i].substr(30, 8)),
                      safe_stod(PDB_lines[i].substr(38, 8)),
                      safe_stod(PDB_lines[i].substr(46, 8))});
         seq += AAmap(PDB_lines[i].substr(17, 3));
