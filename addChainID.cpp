@@ -93,34 +93,46 @@ void addChainID(const std::string &infile,const std::string &outfile,
     return;
 }
 
+struct AddChainIDOptions
+{
+    std::string infile  = "";
+    std::string outfile = "";
+    std::string chainID = "";
+};
+
+void parse_arguments(int argc, char* argv[], AddChainIDOptions& addchainid_opts)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if      (addchainid_opts.infile.size() == 0)  addchainid_opts.infile = argv[i];
+        else if (addchainid_opts.outfile.size() == 0) addchainid_opts.outfile = argv[i];
+        else if (addchainid_opts.chainID.size() == 0) addchainid_opts.chainID = argv[i];
+        else
+        {
+            std::cerr << "ERROR! no such option " << argv[i] << std::endl;
+            exit(1);
+        }
+    }
+}
+
+void postprocess_arguments(AddChainIDOptions& addchainid_opts)
+{
+    if (addchainid_opts.outfile.size() == 0) addchainid_opts.outfile = "-";
+    if (addchainid_opts.chainID.size() == 0) addchainid_opts.chainID = "  ";
+    else if (addchainid_opts.chainID.size() == 1) addchainid_opts.chainID = " " + addchainid_opts.chainID;
+    else if (addchainid_opts.chainID.size() > 2)
+        addchainid_opts.chainID = addchainid_opts.chainID.substr(addchainid_opts.chainID.size() - 2, 2);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    std::string infile ="";
-    std::string outfile="";
-    std::string chainID="";
+    AddChainIDOptions addchainid_opts;
+    parse_arguments(argc, argv, addchainid_opts);
+    postprocess_arguments(addchainid_opts);
 
-    for (int i=1; i<argc; i++)
-    {
-        if      ( infile.size()==0) infile =argv[i];
-        else if (outfile.size()==0) outfile=argv[i];
-        else if (chainID.size()==0) chainID=argv[i];
-        else
-        {
-            std::cerr<<"ERROR! no such option "<<argv[i]<<std::endl;
-            exit(1);
-        }
-    }
+    addChainID(addchainid_opts.infile, addchainid_opts.outfile, addchainid_opts.chainID);
 
-    if (outfile.size()==0) outfile="-";
-    if (chainID.size()==0) chainID="  ";
-    else if (chainID.size()==1) chainID=" "+chainID;
-    else if (chainID.size()>2) chainID=chainID.substr(chainID.size()-2,2);
-
-    addChainID(infile,outfile,chainID);
-    
-    infile.clear();
-    outfile.clear();
     return 0;
 }

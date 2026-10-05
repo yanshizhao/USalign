@@ -565,50 +565,69 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 }
 
 
+struct Cif2pdbOptions
+{
+    std::string xname     = "";
+    std::string yname     = "";
+    std::string chain_opt = "";    // read all chains
+    int    split_opt = 0;          // do not split chain
+    int    het_opt   = 0;          // do not read HETATM residues
+    int    mol_opt   = 7;          // auto-detect the molecule type as protein/RNA
+};
+
+void parse_arguments(int argc, char* argv[], Cif2pdbOptions& cif2pdb_opts)
+{
+    for(int i = 1; i < argc; i++)
+    {
+        if ( std::string(argv[i]) == "-split" && i < (argc-1) )
+        {
+            cif2pdb_opts.split_opt=std::stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
+        {
+            cif2pdb_opts.mol_opt=std::stoi(argv[i + 1]); i++;
+        }
+        else if ( std::string(argv[i]) == "-chain" && i < (argc-1) )
+        {
+            cif2pdb_opts.chain_opt=argv[i + 1]; i++;
+        }
+        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
+        {
+            cif2pdb_opts.het_opt=std::stoi(argv[i + 1]); i++;
+        }
+        else if (cif2pdb_opts.xname.size() == 0) cif2pdb_opts.xname=argv[i];
+        else if (cif2pdb_opts.yname.size() == 0) cif2pdb_opts.yname=argv[i];
+        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
+    }
+}
+
+void postprocess_arguments(Cif2pdbOptions& cif2pdb_opts)
+{
+    if(cif2pdb_opts.yname.size()==0)
+    {
+        if (cif2pdb_opts.xname.size()==0)
+            PrintErrorAndQuit("Please provide input structures");
+        else if (cif2pdb_opts.yname.size()==0) cif2pdb_opts.yname="-";
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
     /**********************/
-    //    get argument   
+    //    get argument
     /**********************/
-    std::string xname       = "";
-    std::string yname       = "";
+    Cif2pdbOptions cif2pdb_opts;
+    parse_arguments(argc, argv, cif2pdb_opts);
+    postprocess_arguments(cif2pdb_opts);
 
-    int    split_opt =0;     // do not split chain
-    int    het_opt   =0;     // do not read HETATM residues
-    int    mol_opt   =7;     // auto-detect the molecule type as protein/RNA
-    std::string chain_opt ="";    // read all chains
-
-    for(int i = 1; i < argc; i++)
-    {
-        if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            split_opt=std::stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
-        {
-            mol_opt=std::stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-chain" && i < (argc-1) )
-        {
-            chain_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            het_opt=std::stoi(argv[i + 1]); i++;
-        }
-        else if (xname.size() == 0) xname=argv[i];
-        else if (yname.size() == 0) yname=argv[i];
-        else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
-    }
-
-    if(yname.size()==0)
-    {
-        if (xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (yname.size()==0) yname="-";
-    }
+    std::string xname       = cif2pdb_opts.xname;
+    std::string yname       = cif2pdb_opts.yname;
+    int    split_opt = cif2pdb_opts.split_opt;
+    int    het_opt   = cif2pdb_opts.het_opt;
+    int    mol_opt   = cif2pdb_opts.mol_opt;
+    std::string chain_opt = cif2pdb_opts.chain_opt;
 
     bool dna_opt=(mol_opt>=4);
     mol_opt %= 4;

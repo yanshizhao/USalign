@@ -27,27 +27,43 @@ void print_help()
     exit(EXIT_SUCCESS);
 }
 
+struct XyzSfetchOptions
+{
+    std::string filename = "";
+    std::string list_opt = "";
+};
+
+void parse_arguments(int argc, char* argv[], XyzSfetchOptions& xyzsfetch_opts)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if (xyzsfetch_opts.filename.size() == 0) xyzsfetch_opts.filename = argv[i];
+        else xyzsfetch_opts.list_opt = argv[i];
+    }
+}
+
+void postprocess_arguments(XyzSfetchOptions& xyzsfetch_opts)
+{
+    std::string& filename = xyzsfetch_opts.filename;
+    if (filename.size() == 0 || filename == "-h") print_help();
+    if ((filename.size() >= 3 && filename.substr(filename.size() - 3, 3) == ".gz") ||
+        (filename.size() >= 4 && filename.substr(filename.size() - 4, 4) == ".bz2"))
+    {
+        std::cerr << "ERROR! This program does not support .gz or .bz2 file" << std::endl;
+        exit(EXIT_SUCCESS);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    // get argument
-    std::string filename="";
-    std::string list_opt="";
+    XyzSfetchOptions xyzsfetch_opts;
+    parse_arguments(argc, argv, xyzsfetch_opts);
+    postprocess_arguments(xyzsfetch_opts);
 
-    for(int i=1; i<argc; i++)
-    {
-        if (filename.size()==0) filename=argv[i];
-        else list_opt=argv[i];
-    }
-
-    if(filename.size()==0||filename=="-h") print_help();
-    if ((filename.size()>=3 && filename.substr(filename.size()-3,3)==".gz")||
-        (filename.size()>=4 && filename.substr(filename.size()-4,4)==".bz2"))
-    {
-        std::cerr<<"ERROR! This program does not support .gz or .bz2 file"<<std::endl;
-        exit(EXIT_SUCCESS);
-    }
+    std::string& filename = xyzsfetch_opts.filename;
+    std::string& list_opt = xyzsfetch_opts.list_opt;
 
     std::ifstream fin(filename.c_str());
 

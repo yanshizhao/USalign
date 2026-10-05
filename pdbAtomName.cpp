@@ -203,29 +203,40 @@ size_t pdbAtomName(const std::string &infile,const std::string &outfile)
     return changeNum;
 }
 
+struct PdbAtomNameOptions
+{
+    std::string infile  = "";
+    std::string outfile = "";
+};
+
+void parse_arguments(int argc, char* argv[], PdbAtomNameOptions& pdbatomname_opts)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if (pdbatomname_opts.infile.size() == 0) pdbatomname_opts.infile = argv[i];
+        else if (pdbatomname_opts.outfile.size() == 0) pdbatomname_opts.outfile = argv[i];
+        else
+        {
+            std::cerr << "ERROR! no such option " << argv[i] << std::endl;
+            exit(1);
+        }
+    }
+}
+
+void postprocess_arguments(PdbAtomNameOptions& pdbatomname_opts)
+{
+    if (pdbatomname_opts.outfile.size() == 0) pdbatomname_opts.outfile = "-";
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    std::string infile ="";
-    std::string outfile="";
+    PdbAtomNameOptions pdbatomname_opts;
+    parse_arguments(argc, argv, pdbatomname_opts);
+    postprocess_arguments(pdbatomname_opts);
 
-    for (int i=1; i<argc; i++)
-    {
-        if (infile.size()==0) infile=argv[i];
-        else if (outfile.size()==0) outfile=argv[i];
-        else
-        {
-            std::cerr<<"ERROR! no such option "<<argv[i]<<std::endl;
-            exit(1);
-        }
-    }
+    pdbAtomName(pdbatomname_opts.infile, pdbatomname_opts.outfile);
 
-    if (outfile.size()==0) outfile="-";
-
-    pdbAtomName(infile,outfile);
-    
-    infile.clear();
-    outfile.clear();
     return 0;
 }
