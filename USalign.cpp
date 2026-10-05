@@ -3612,26 +3612,26 @@ struct MstaIterParams
 };
 
 
-void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
+void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
-    UserOptions& user_opts = ctx.user_opts;
-    ParsedInput& parsed_input = ctx.parsed_input;
-    ControlOptions& ctrl_opts = ctx.ctrl_opts;
-    const CharMatrix& seq_vec = ctx.complex.seqs;
-    const CharMatrix& sec_vec = ctx.complex.secs;
-    const std::vector<int>& len_vec = ctx.complex.lengths;
-    const std::vector<std::string>& chainID_list = ctx.chainID_list;
-    const std::vector<std::string>& resi_vec = ctx.resi_vec;
-    DoubleCube& a_vec = ctx.a_vec;
-    const DoubleMatrix& TMave_mat = ctx.TMave_mat;
-    std::vector<std::vector<std::string> >& seqxA_mat = ctx.seqxA_mat;
-    std::vector<std::vector<std::string> >& seqyA_mat = ctx.seqyA_mat;
-    const int chain_num = ctx.chain_num;
-    const double Lnorm_ass = ctx.Lnorm_ass;
-    const bool u_opt = ctx.u_opt;
-    const bool fast_opt = ctx.fast_opt;
-    const int cur_complex_mol_list = ctx.mol_type_sum;
-    MstaIterBuffers& buffers = ctx.buffers;
+    UserOptions& user_opts = msta_iter_params.user_opts;
+    ParsedInput& parsed_input = msta_iter_params.parsed_input;
+    ControlOptions& ctrl_opts = msta_iter_params.ctrl_opts;
+    const CharMatrix& seq_vec = msta_iter_params.complex.seqs;
+    const CharMatrix& sec_vec = msta_iter_params.complex.secs;
+    const std::vector<int>& len_vec = msta_iter_params.complex.lengths;
+    const std::vector<std::string>& chainID_list = msta_iter_params.chainID_list;
+    const std::vector<std::string>& resi_vec = msta_iter_params.resi_vec;
+    DoubleCube& a_vec = msta_iter_params.a_vec;
+    const DoubleMatrix& TMave_mat = msta_iter_params.TMave_mat;
+    std::vector<std::vector<std::string> >& seqxA_mat = msta_iter_params.seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat = msta_iter_params.seqyA_mat;
+    const int chain_num = msta_iter_params.chain_num;
+    const double Lnorm_ass = msta_iter_params.Lnorm_ass;
+    const bool u_opt = msta_iter_params.u_opt;
+    const bool fast_opt = msta_iter_params.fast_opt;
+    const int cur_complex_mol_list = msta_iter_params.mol_type_sum;
+    MstaIterBuffers& buffers = msta_iter_params.buffers;
     int& i = buffers.member_chain_idx;
     int& j = buffers.partner_chain_idx;
     int& xlen = buffers.member_len;
@@ -3744,19 +3744,19 @@ void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaI
 }
 
 
-void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
+void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
-    UserOptions& user_opts = ctx.user_opts;
-    ParsedInput& parsed_input = ctx.parsed_input;
-    const CharMatrix& seq_vec = ctx.complex.seqs;
-    const CharMatrix& sec_vec = ctx.complex.secs;
-    const std::vector<int>& len_vec = ctx.complex.lengths;
-    DoubleCube& a_vec = ctx.a_vec;
-    const double Lnorm_ass = ctx.Lnorm_ass;
-    const bool u_opt = ctx.u_opt;
-    const bool fast_opt = ctx.fast_opt;
-    const int cur_complex_mol_list = ctx.mol_type_sum;
-    MstaIterBuffers& buffers = ctx.buffers;
+    UserOptions& user_opts = msta_iter_params.user_opts;
+    ParsedInput& parsed_input = msta_iter_params.parsed_input;
+    const CharMatrix& seq_vec = msta_iter_params.complex.seqs;
+    const CharMatrix& sec_vec = msta_iter_params.complex.secs;
+    const std::vector<int>& len_vec = msta_iter_params.complex.lengths;
+    DoubleCube& a_vec = msta_iter_params.a_vec;
+    const double Lnorm_ass = msta_iter_params.Lnorm_ass;
+    const bool u_opt = msta_iter_params.u_opt;
+    const bool fast_opt = msta_iter_params.fast_opt;
+    const int cur_complex_mol_list = msta_iter_params.mol_type_sum;
+    MstaIterBuffers& buffers = msta_iter_params.buffers;
     int& i = buffers.member_chain_idx;
     int& xlen = buffers.member_len;
     int& ylen = buffers.partner_len;
@@ -3802,7 +3802,7 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
             std::string& seqxA = chain_align_res.seqxA;
             std::string& seqyA = chain_align_res.seqyA;
             ChainPairAlignOptions align_opts;
-            fill_chain_pair_align_options(align_opts, user_opts, ctx.ctrl_opts);
+            fill_chain_pair_align_options(align_opts, user_opts, msta_iter_params.ctrl_opts);
             align_opts.i_opt = 0;
             align_opts.u_opt = u_opt;
             align_opts.fast_opt = fast_opt;
@@ -3874,12 +3874,12 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
         std::vector<std::pair<double,int> >().swap(msta_iter_state.TM_pair_vec);
 }
 
-void msta_rebuild_pair_matrices(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
+void msta_rebuild_pair_matrices(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
-    std::vector<std::vector<std::string> >& seqxA_mat = ctx.seqxA_mat;
-    std::vector<std::vector<std::string> >& seqyA_mat = ctx.seqyA_mat;
-    const int chain_num = ctx.chain_num;
-    MstaIterBuffers& buffers = ctx.buffers;
+    std::vector<std::vector<std::string> >& seqxA_mat = msta_iter_params.seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat = msta_iter_params.seqyA_mat;
+    const int chain_num = msta_iter_params.chain_num;
+    MstaIterBuffers& buffers = msta_iter_params.buffers;
     int& i = buffers.member_chain_idx;
     int& j = buffers.partner_chain_idx;
     int& ylen = buffers.partner_len;
@@ -3915,22 +3915,22 @@ void msta_rebuild_pair_matrices(MstaIterationState& msta_iter_state, MstaIterPar
         }
 }
 
-bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
+bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
-    UserOptions& user_opts = ctx.user_opts;
-    ParsedInput& parsed_input = ctx.parsed_input;
-    const CharMatrix& seq_vec = ctx.complex.seqs;
-    const CharMatrix& sec_vec = ctx.complex.secs;
-    const std::vector<int>& len_vec = ctx.complex.lengths;
-    DoubleCube& a_vec = ctx.a_vec;
-    std::vector<std::vector<std::string> >& seqxA_mat = ctx.seqxA_mat;
-    std::vector<std::vector<std::string> >& seqyA_mat = ctx.seqyA_mat;
-    const int chain_num = ctx.chain_num;
-    const double Lnorm_ass = ctx.Lnorm_ass;
-    const bool u_opt = ctx.u_opt;
-    const bool fast_opt = ctx.fast_opt;
-    const int cur_complex_mol_list = ctx.mol_type_sum;
-    MstaIterBuffers& buffers = ctx.buffers;
+    UserOptions& user_opts = msta_iter_params.user_opts;
+    ParsedInput& parsed_input = msta_iter_params.parsed_input;
+    const CharMatrix& seq_vec = msta_iter_params.complex.seqs;
+    const CharMatrix& sec_vec = msta_iter_params.complex.secs;
+    const std::vector<int>& len_vec = msta_iter_params.complex.lengths;
+    DoubleCube& a_vec = msta_iter_params.a_vec;
+    std::vector<std::vector<std::string> >& seqxA_mat = msta_iter_params.seqxA_mat;
+    std::vector<std::vector<std::string> >& seqyA_mat = msta_iter_params.seqyA_mat;
+    const int chain_num = msta_iter_params.chain_num;
+    const double Lnorm_ass = msta_iter_params.Lnorm_ass;
+    const bool u_opt = msta_iter_params.u_opt;
+    const bool fast_opt = msta_iter_params.fast_opt;
+    const int cur_complex_mol_list = msta_iter_params.mol_type_sum;
+    MstaIterBuffers& buffers = msta_iter_params.buffers;
     int& i = buffers.member_chain_idx;
     int& j = buffers.partner_chain_idx;
     int& xlen = buffers.member_len;
@@ -3980,7 +3980,7 @@ bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& 
                 chain_align_res.d0_out = 5.0;
                 chain_align_res.invmap.assign(ylen + 1, 0);
                 ChainPairAlignOptions align_opts;
-                fill_chain_pair_align_options(align_opts, user_opts, ctx.ctrl_opts);
+                fill_chain_pair_align_options(align_opts, user_opts, msta_iter_params.ctrl_opts);
                 align_opts.i_opt = 1;
                 align_opts.u_opt = u_opt;
                 align_opts.fast_opt = fast_opt;
@@ -4040,21 +4040,21 @@ bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& 
 }
 
 
-void msta_iterate(MstaIterationState& msta_iter_state, MstaIterParams& ctx)
+void msta_iterate(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
-    const DoubleMatrix& TMave_mat = ctx.TMave_mat;
-    const int chain_num = ctx.chain_num;
+    const DoubleMatrix& TMave_mat = msta_iter_params.TMave_mat;
+    const int chain_num = msta_iter_params.chain_num;
     int iter=0;
 
     for (iter=0; iter<msta_iter_state.max_iter; iter++)
     {
         msta_iter_state.repr_idx=select_representative(TMave_mat, chain_num);
 
-        msta_superpose_to_representative(msta_iter_state, ctx);
-        msta_build_msa(msta_iter_state, ctx);
-        msta_rebuild_pair_matrices(msta_iter_state, ctx);
+        msta_superpose_to_representative(msta_iter_state, msta_iter_params);
+        msta_build_msa(msta_iter_state, msta_iter_params);
+        msta_rebuild_pair_matrices(msta_iter_state, msta_iter_params);
 
-        if (!msta_accumulate_stats(msta_iter_state, ctx)) break;
+        if (!msta_accumulate_stats(msta_iter_state, msta_iter_params)) break;
     }
 }
 
@@ -4241,9 +4241,9 @@ int mTMalign(AlignCommonInput& common_inputs)
     state.TM_mat.assign(chain_num,state.TM_vec);
     state.d0_mat.assign(chain_num,state.d0_vec);
     state.seqID_mat.assign(chain_num,state.seqID_vec);
-    MstaIterParams iter_ctx(common_inputs, complex, a_vec, TMave_mat, seqxA_mat,
+    MstaIterParams msta_iter_params(common_inputs, complex, a_vec, TMave_mat, seqxA_mat,
         seqyA_mat, chain_num, Lnorm_ass, u_opt, fast_opt, cur_complex_mol_list);
-    msta_iterate(state, iter_ctx);
+    msta_iterate(state, msta_iter_params);
     for (i=0;i<chain_num;i++)
     {
         for (j=0;j<chain_num;j++)
