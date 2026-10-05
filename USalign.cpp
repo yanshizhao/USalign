@@ -2456,7 +2456,7 @@ struct UnpairedGroup
 //         is_struct1_chain - true means collecting unpaired chains of structure 1
 //         my_name - file name of the current complex
 //         unpaired_groups, group_info - grouping result output
-void collect_unpaired_chains_complex(const MMalignContext& mmalign_context,
+void collect_unpaired_chains(const MMalignContext& mmalign_context,
     int chain1_num,
     int chain2_num,
     bool is_struct1_chain,
@@ -2495,9 +2495,9 @@ void collect_unpaired_chains(const MMalignContext& mmalign_context,
     std::map<std::string, std::vector<std::string> >& unpaired_groups,
     std::map<std::string, UnpairedGroup>& group_info)
 {
-    collect_unpaired_chains_complex(mmalign_context, chain1_num, chain2_num, true, name1, unpaired_groups, group_info);
+    collect_unpaired_chains(mmalign_context, chain1_num, chain2_num, true, name1, unpaired_groups, group_info);
 
-    collect_unpaired_chains_complex(mmalign_context, chain1_num, chain2_num, false, name2, unpaired_groups, group_info);
+    collect_unpaired_chains(mmalign_context, chain1_num, chain2_num, false, name2, unpaired_groups, group_info);
 }
 
 // ---- Print the Unpaired block grouped by (file, type, reason) ----
@@ -3612,7 +3612,7 @@ struct MstaIterParams
 };
 
 
-void msta_superpose_to_representative(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
+void msta_superpose_to_rep(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
     UserOptions& user_opts = msta_iter_params.user_opts;
     ParsedInput& parsed_input = msta_iter_params.parsed_input;
@@ -4050,7 +4050,7 @@ void msta_iterate(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter
     {
         msta_iter_state.repr_idx=select_representative(TMave_mat, chain_num);
 
-        msta_superpose_to_representative(msta_iter_state, msta_iter_params);
+        msta_superpose_to_rep(msta_iter_state, msta_iter_params);
         msta_build_msa(msta_iter_state, msta_iter_params);
         msta_rebuild_pair_matrices(msta_iter_state, msta_iter_params);
 

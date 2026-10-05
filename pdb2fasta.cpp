@@ -144,7 +144,7 @@ void check_split_conflicts(Pdb2fastaOptions& pdb2fasta_opts)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 }
 
-void check_mol_type_and_atom_default(Pdb2fastaOptions& pdb2fasta_opts)
+void check_mol_type_atom_default(Pdb2fastaOptions& pdb2fasta_opts)
 {
     if (pdb2fasta_opts.mol_opt=="prot") pdb2fasta_opts.mol_opt="protein";
     else if (pdb2fasta_opts.mol_opt=="DNA") pdb2fasta_opts.mol_opt="RNA";
@@ -166,7 +166,7 @@ void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
     check_dir_conflicts(pdb2fasta_opts);
     check_atom_name_size(pdb2fasta_opts);
     check_split_conflicts(pdb2fasta_opts);
-    check_mol_type_and_atom_default(pdb2fasta_opts);
+    check_mol_type_atom_default(pdb2fasta_opts);
 }
 
 // parse file list

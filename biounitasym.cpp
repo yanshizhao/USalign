@@ -109,7 +109,7 @@ void check_atom_name_size(BiounitasymOptions& biounitasym_opts)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
 }
 
-void check_mol_type_and_atom_default(BiounitasymOptions& biounitasym_opts)
+void check_mol_type_atom_default(BiounitasymOptions& biounitasym_opts)
 {
     if (biounitasym_opts.mol_opt=="prot") biounitasym_opts.mol_opt="protein";
     else if (biounitasym_opts.mol_opt=="DNA") biounitasym_opts.mol_opt="RNA";
@@ -130,7 +130,7 @@ void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
     check_input_presence(biounitasym_opts);
     check_dir_conflicts(biounitasym_opts);
     check_atom_name_size(biounitasym_opts);
-    check_mol_type_and_atom_default(biounitasym_opts);
+    check_mol_type_atom_default(biounitasym_opts);
 }
 
 // parse file list
@@ -168,7 +168,7 @@ double count_inter_chain_clashes(const CoordArray& xa, const CoordArray& ya)
     return clashcount;
 }
 
-void compute_chain_pair_clash_ratios(const std::string& filename,
+void compute_pair_clash_ratios(const std::string& filename,
     const std::vector<std::vector<std::string> >& PDB_lines, const int chainnum,
     std::vector<double>& clashratio_vec)
 {
@@ -253,7 +253,7 @@ void report_multimodel_clash(const std::string& filename, const BiounitasymOptio
     }
 
     std::vector<double> clashratio_vec;
-    compute_chain_pair_clash_ratios(filename, PDB_lines, chainnum, clashratio_vec);
+    compute_pair_clash_ratios(filename, PDB_lines, chainnum, clashratio_vec);
     report_biounit_verdict(filename, clashratio_vec);
 }
 

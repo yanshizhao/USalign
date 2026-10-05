@@ -30,7 +30,7 @@ inline void tu2t_u(std::vector<double> tu_tmp, Vec3& t0, RotMat& u0)
 }
 
 // extract rotation matrix based on TMscore8
-inline void output_flexalign_rotation_matrix(const std::string& fname_matrix,
+inline void output_flexalign_matrix(const std::string& fname_matrix,
     const DoubleMatrix&tu_vec)
 {
     Vec3 t; RotMat u;
@@ -1333,7 +1333,7 @@ inline void output_flexalign_results(
     }
     std::cout << std::endl;
 
-    if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_rotation_matrix(
+    if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_matrix(
             opts.fname_matrix, flexalign_res.tu_vec);
 
     if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
