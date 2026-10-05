@@ -2912,7 +2912,7 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     if (user_opts.m_opt) output_dock_rotation_matrix(user_opts.fname_matrix,
         xname_vec,yname_vec, ut_mat, assign1_list);
 
-    if (user_opts.o_opt) output_dock(parsed_input.chain1_list, user_opts.ter_opt, user_opts.split_opt, user_opts.infmt1_opt,
+    if (user_opts.o_opt) output_superposed_chains(parsed_input.chain1_list, user_opts.ter_opt, user_opts.split_opt, user_opts.infmt1_opt,
         user_opts.atom_opt, user_opts.mirror_opt, ut_mat, user_opts.fname_super);
 }
 

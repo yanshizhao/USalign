@@ -952,7 +952,7 @@ inline size_t get_full_PDB_lines(const std::string filename,
     return PDB_lines.size();
 }
 
-inline void output_dock(const std::vector<std::string>&chain_list, const int ter_opt,
+inline void output_superposed_chains(const std::vector<std::string>&chain_list, const int ter_opt,
     const int split_opt, const int infmt_opt, const std::string atom_opt,
     const int mirror_opt, const RotArray& ut_mat, const std::string&fname_super)
 {
