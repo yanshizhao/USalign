@@ -363,7 +363,7 @@ struct SoiAlignSearchState
     std::vector<int> invmap0;
 };
 
-inline void soi_align_initial_seq_dependent(CoordArray& xa_c, CoordArray& ya_c,
+inline void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &seqx, const std::string &seqy,
     const std::string &secx, const std::string &secy,
     int xlen, int ylen, const std::vector<std::string> sequence,
@@ -874,7 +874,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     soi_search_state.local_d0_search = soi_search_state.d0_search;
     soi_search_state.iteration_max=(fast_opt)?2:30;
 
-    soi_align_initial_seq_dependent(xa_c, ya_c, seqx, seqy, secx, secy,
+    soi_align_initial_seq(xa_c, ya_c, seqx, seqy, secx, secy,
         xlen, ylen, sequence, align_opts, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt);
     soi_align_initial_closek(xa_c, ya_c, xk, yk, closeK_opt,
         xlen, ylen, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt);
@@ -913,7 +913,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
 
 
-inline void soi_build_score_and_seed_invmap(CoordArray& xa, CoordArray& ya,
+inline void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
     int xlen, int ylen, const ChainPairAlignOptions& align_opts,
     ChainPairAlignResult& chain_align_res, IntPairArray& secx_bond, IntPairArray& secy_bond,
     const int mm_opt, DoubleMatrix& score)
@@ -1060,7 +1060,7 @@ inline bool soi_se_score_alignment(CoordArray& xa, CoordArray& ya,
     return false;
 }
 
-inline void soi_se_extract_alignment_strings(CoordArray& xa, CoordArray& ya,
+inline void soi_se_extract_strings(CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy, int xlen, int ylen,
     ChainPairAlignResult& chain_align_res)
 {
@@ -1114,11 +1114,11 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
 {
     DoubleMatrix score;
-    soi_build_score_and_seed_invmap(xa, ya, xlen, ylen, align_opts, chain_align_res,
+    soi_build_score_seed_invmap(xa, ya, xlen, ylen, align_opts, chain_align_res,
         secx_bond, secy_bond, mm_opt, score);
     if (soi_se_score_alignment(xa, ya, xlen, ylen, align_opts, outfmt_opt,
         score, chain_align_res, dist_list)) return 0;
-    soi_se_extract_alignment_strings(xa, ya, seqx, seqy, xlen, ylen, chain_align_res);
+    soi_se_extract_strings(xa, ya, seqx, seqy, xlen, ylen, chain_align_res);
     return 0;
 }
 
