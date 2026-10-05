@@ -144,119 +144,98 @@ struct SeOptions
 /**********************/
 //    get argument
 /**********************/
+struct BoolFlag { const char* name; bool* target; };
+
+bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+    {
+        if (std::string(arg) == flags[k].name)
+        {
+            *flags[k].target = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_file_option(int argc, char* argv[], int& i, SeOptions& se_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-i" || std::string(argv[i]) == "-I")
+    {
+        se_opts.fname_lign = argv[i + 1];   se_opts.i_opt = true;   i++;
+    }
+    else return false;
+    return true;
+}
+
+bool parse_numeric_option(int argc, char* argv[], int& i, SeOptions& se_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L")
+    {
+        se_opts.Lnorm_ass = safe_stod(argv[i + 1]);     se_opts.u_opt = true;   i++;
+    }
+    else if (std::string(argv[i]) == "-d")
+    {
+        se_opts.d0_scale = safe_stod(argv[i + 1]);      se_opts.d_opt = true;   i++;
+    }
+    else if (std::string(argv[i]) == "-infmt1") { se_opts.infmt1_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-infmt2") { se_opts.infmt2_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-ter")    { se_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-split")  { se_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-outfmt") { se_opts.outfmt_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-byresi" ||
+             std::string(argv[i]) == "-TMscore" ||
+             std::string(argv[i]) == "-tmscore") { se_opts.byresi_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-het")    { se_opts.het_opt    = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, SeOptions& se_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-a")
+    {
+        if (std::string(argv[i + 1]) == "T")      se_opts.a_opt=true;
+        else if (std::string(argv[i + 1]) == "F") se_opts.a_opt=false;
+        else PrintErrorAndQuit("Wrong value for option -a! It should be T or F");
+        i++;
+    }
+    else if (std::string(argv[i]) == "-atom")   { se_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-mol")    { se_opts.mol_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir")    { se_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir1")   { se_opts.dir1_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir2")   { se_opts.dir2_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { se_opts.suffix_opt = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-chain1") { split(argv[i+1], se_opts.chain2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-chain2") { split(argv[i+1], se_opts.chain2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-model1") { split(argv[i+1], se_opts.model2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-model2") { split(argv[i+1], se_opts.model2parse2, ','); i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], SeOptions& se_opts)
 {
+    const BoolFlag bool_flags[] = {
+        {"-do", &se_opts.do_opt},
+        {"-h",  &se_opts.h_opt},
+    };
+    const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
+
     for(int i = 1; i < argc; i++)
     {
-        if ( (std::string(argv[i]) == "-u" ||
-              std::string(argv[i]) == "-L") && i < (argc-1) )
-        {
-            se_opts.Lnorm_ass = safe_stod(argv[i + 1]); se_opts.u_opt = true; i++;
-        }
-        else if ( std::string(argv[i]) == "-a" && i < (argc-1) )
-        {
-            if (std::string(argv[i + 1]) == "T")      se_opts.a_opt=true;
-            else if (std::string(argv[i + 1]) == "F") se_opts.a_opt=false;
-            else PrintErrorAndQuit("Wrong value for option -a! It should be T or F");
-            i++;
-        }
-        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
-        {
-            se_opts.d0_scale = safe_stod(argv[i + 1]); se_opts.d_opt = true; i++;
-        }
-        else if ( std::string(argv[i]) == "-do" )
-        {
-            se_opts.do_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-h" )
-        {
-            se_opts.h_opt = true;
-        }
-        else if ((std::string(argv[i]) == "-i"||std::string(argv[i]) == "-I") && i<(argc-1))
-        {
-            se_opts.fname_lign = argv[i + 1];      se_opts.i_opt = true; i++;
-        }
-        else if ( std::string(argv[i]) == "-infmt1" && i < (argc-1) )
-        {
-            se_opts.infmt1_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-infmt2" && i < (argc-1) )
-        {
-            se_opts.infmt2_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
-        {
-            se_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            se_opts.split_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            se_opts.atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
-        {
-            se_opts.mol_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
-        {
-            se_opts.dir_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir1" && i < (argc-1) )
-        {
-            se_opts.dir1_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir2" && i < (argc-1) )
-        {
-            se_opts.dir2_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            se_opts.suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-outfmt" && i < (argc-1) )
-        {
-            se_opts.outfmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( (std::string(argv[i]) == "-byresi" || std::string(argv[i]) == "-TMscore" ||
-                   std::string(argv[i]) == "-tmscore" ) && i < (argc-1) )
-        {
-            se_opts.byresi_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            se_opts.het_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if (std::string(argv[i]) == "-chain1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],se_opts.chain2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-chain2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],se_opts.chain2parse2,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],se_opts.model2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],se_opts.model2parse2,',');
-            i++;
-        }
+        if (parse_file_option(argc, argv, i, se_opts))
+            continue;
+        else if (parse_numeric_option(argc, argv, i, se_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, se_opts))
+            continue;
+        else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
+            continue;
         else if (se_opts.xname.size() == 0) se_opts.xname=argv[i];
         else if (se_opts.yname.size() == 0) se_opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
