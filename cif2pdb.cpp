@@ -351,140 +351,140 @@ struct MmcifParseContext
     size_t a;
 };
 
-void mmcif_read_atom_fields(MmcifParseContext& st, const std::string& line, const bool mse_opt)
+void mmcif_read_atom_fields(MmcifParseContext& mmcif_context, const std::string& line, const bool mse_opt)
 {
-    st.line_vec.clear();
-    split(line,st.line_vec);
-    st.atom     =st.line_vec[st._atom_site["label_atom_id"]];
-    st.resn     =st.line_vec[st._atom_site["label_comp_id"]];
-    st.group_PDB=st.line_vec[st._atom_site["group_PDB"]];
-    if (st.group_PDB=="ATOM") st.group_PDB="ATOM  ";
-    if (mse_opt && st.resn=="MSE")
+    mmcif_context.line_vec.clear();
+    split(line,mmcif_context.line_vec);
+    mmcif_context.atom     =mmcif_context.line_vec[mmcif_context._atom_site["label_atom_id"]];
+    mmcif_context.resn     =mmcif_context.line_vec[mmcif_context._atom_site["label_comp_id"]];
+    mmcif_context.group_PDB=mmcif_context.line_vec[mmcif_context._atom_site["group_PDB"]];
+    if (mmcif_context.group_PDB=="ATOM") mmcif_context.group_PDB="ATOM  ";
+    if (mse_opt && mmcif_context.resn=="MSE")
     {
-        st.group_PDB="ATOM  ";
-        if (st.atom=="SE") st.atom="SD";
+        mmcif_context.group_PDB="ATOM  ";
+        if (mmcif_context.atom=="SE") mmcif_context.atom="SD";
     }
-    if (st.atom[0]=='"') st.atom=st.atom.substr(1);
-    if (st.atom.size() && st.atom[st.atom.size()-1]=='"')
-        st.atom=st.atom.substr(0,st.atom.size()-1);
+    if (mmcif_context.atom[0]=='"') mmcif_context.atom=mmcif_context.atom.substr(1);
+    if (mmcif_context.atom.size() && mmcif_context.atom[mmcif_context.atom.size()-1]=='"')
+        mmcif_context.atom=mmcif_context.atom.substr(0,mmcif_context.atom.size()-1);
 }
 
-bool mmcif_pass_residue_filter(MmcifParseContext& st, const bool dna_opt, const bool rna_opt,
+bool mmcif_pass_residue_filter(MmcifParseContext& mmcif_context, const bool dna_opt, const bool rna_opt,
     const bool protein_opt, const bool hoh_opt, const bool lig_opt)
 {
-    if (st.group_PDB=="HETATM")
+    if (mmcif_context.group_PDB=="HETATM")
     {
         if (!lig_opt) return false;
-        if (!hoh_opt && st.resn=="HOH") return false;
-        if (st.asym_id!=st.prev_asym_id && st.prev_asym_id.size())
-            st.asym_id=st.prev_asym_id; // no separate chain for ligand
+        if (!hoh_opt && mmcif_context.resn=="HOH") return false;
+        if (mmcif_context.asym_id!=mmcif_context.prev_asym_id && mmcif_context.prev_asym_id.size())
+            mmcif_context.asym_id=mmcif_context.prev_asym_id; // no separate chain for ligand
     }
-    else if (st.group_PDB!="ATOM  ") return false;
+    else if (mmcif_context.group_PDB!="ATOM  ") return false;
 
-    if (st.resn.size()==1)
+    if (mmcif_context.resn.size()==1)
     {
-        if (!rna_opt && st.group_PDB=="ATOM  ") return false;
-        st.resn="  "+st.resn;
+        if (!rna_opt && mmcif_context.group_PDB=="ATOM  ") return false;
+        mmcif_context.resn="  "+mmcif_context.resn;
     }
-    else if (st.resn.size()==2)
+    else if (mmcif_context.resn.size()==2)
     {
-        if (!dna_opt && st.resn[0]=='D' && st.group_PDB=="ATOM  ") return false;
-        st.resn=" " +st.resn;
+        if (!dna_opt && mmcif_context.resn[0]=='D' && mmcif_context.group_PDB=="ATOM  ") return false;
+        mmcif_context.resn=" " +mmcif_context.resn;
     }
-    else if (st.resn.size()==3 && !protein_opt && st.group_PDB=="ATOM  ") return false;
-    else if (st.resn.size()>=4) st.resn=st.resn.substr(0,3);
+    else if (mmcif_context.resn.size()==3 && !protein_opt && mmcif_context.group_PDB=="ATOM  ") return false;
+    else if (mmcif_context.resn.size()>=4) mmcif_context.resn=mmcif_context.resn.substr(0,3);
 
-    if      (st.atom.size()==0) return false;
-    else if (st.atom.size()==1) st.atom=" "+st.atom+"  ";
-    else if (st.atom.size()==2) st.atom=" "+st.atom+" "; // wrong for sidechain H
-    else if (st.atom.size()==3) st.atom=" "+st.atom;
-    else if (st.atom.size()>=5) st.atom=st.atom.substr(0,4);
+    if      (mmcif_context.atom.size()==0) return false;
+    else if (mmcif_context.atom.size()==1) mmcif_context.atom=" "+mmcif_context.atom+"  ";
+    else if (mmcif_context.atom.size()==2) mmcif_context.atom=" "+mmcif_context.atom+" "; // wrong for sidechain H
+    else if (mmcif_context.atom.size()==3) mmcif_context.atom=" "+mmcif_context.atom;
+    else if (mmcif_context.atom.size()>=5) mmcif_context.atom=mmcif_context.atom.substr(0,4);
     return true;
 }
 
-bool mmcif_read_chain_fields(MmcifParseContext& st, const std::string& line,
+bool mmcif_read_chain_fields(MmcifParseContext& mmcif_context, const std::string& line,
     const std::string& chain_opt)
 {
-    if (st._atom_site.count("auth_seq_id"))
-         st.resi=st.line_vec[st._atom_site["auth_seq_id"]];
-    else st.resi=st.line_vec[st._atom_site["label_seq_id"]];
-    if (st._atom_site.count("pdbx_PDB_ins_code") &&
-        st.line_vec[st._atom_site["pdbx_PDB_ins_code"]]!="?")
-        st.resi+=st.line_vec[st._atom_site["pdbx_PDB_ins_code"]][0];
-    else st.resi+=" ";
-    if (st.resi.size()>5)
+    if (mmcif_context._atom_site.count("auth_seq_id"))
+         mmcif_context.resi=mmcif_context.line_vec[mmcif_context._atom_site["auth_seq_id"]];
+    else mmcif_context.resi=mmcif_context.line_vec[mmcif_context._atom_site["label_seq_id"]];
+    if (mmcif_context._atom_site.count("pdbx_PDB_ins_code") &&
+        mmcif_context.line_vec[mmcif_context._atom_site["pdbx_PDB_ins_code"]]!="?")
+        mmcif_context.resi+=mmcif_context.line_vec[mmcif_context._atom_site["pdbx_PDB_ins_code"]][0];
+    else mmcif_context.resi+=" ";
+    if (mmcif_context.resi.size()>5)
     {
         std::cerr<<"WARNING! Cannot parse line due to long residue index\n"<<line<<std::endl;
         return false;
     }
 
-    if (st._atom_site.count("auth_asym_id"))
-         st.asym_id=st.line_vec[st._atom_site["auth_asym_id"]];
-    else st.asym_id=st.line_vec[st._atom_site["label_asym_id"]];
-    if (st.asym_id==".") st.asym_id=" ";
-    if (chain_opt.size() && st.asym_id!=chain_opt &&
-        !(st.asym_id==" " && (chain_opt=="_" || chain_opt=="."))) return false;
+    if (mmcif_context._atom_site.count("auth_asym_id"))
+         mmcif_context.asym_id=mmcif_context.line_vec[mmcif_context._atom_site["auth_asym_id"]];
+    else mmcif_context.asym_id=mmcif_context.line_vec[mmcif_context._atom_site["label_asym_id"]];
+    if (mmcif_context.asym_id==".") mmcif_context.asym_id=" ";
+    if (chain_opt.size() && mmcif_context.asym_id!=chain_opt &&
+        !(mmcif_context.asym_id==" " && (chain_opt=="_" || chain_opt=="."))) return false;
     return true;
 }
 
-int mmcif_switch_model_if_needed(MmcifParseContext& st,
+int mmcif_switch_model_if_needed(MmcifParseContext& mmcif_context,
     const std::vector<std::vector<std::string> >&PDB_lines)
 {
-    if (st._atom_site.count("pdbx_PDB_model_num") &&
-        st.model_index!=st.line_vec[st._atom_site["pdbx_PDB_model_num"]])
+    if (mmcif_context._atom_site.count("pdbx_PDB_model_num") &&
+        mmcif_context.model_index!=mmcif_context.line_vec[mmcif_context._atom_site["pdbx_PDB_model_num"]])
     {
         if (PDB_lines.size()) return 0;
-        st.model_index=st.line_vec[st._atom_site["pdbx_PDB_model_num"]];
-        std::map<std::string, std::string>().swap(st.alt_id_dict);
+        mmcif_context.model_index=mmcif_context.line_vec[mmcif_context._atom_site["pdbx_PDB_model_num"]];
+        std::map<std::string, std::string>().swap(mmcif_context.alt_id_dict);
     }
     return 1;
 }
 
-bool mmcif_pass_alt_id_filter(MmcifParseContext& st)
+bool mmcif_pass_alt_id_filter(MmcifParseContext& mmcif_context)
 {
-    if (st._atom_site.count("label_alt_id")) // in 39.4 % of entries
+    if (mmcif_context._atom_site.count("label_alt_id")) // in 39.4 % of entries
     {
-        st.alt_id=st.line_vec[st._atom_site["label_alt_id"]];
-        if (st.alt_id==".") st.alt_id=" ";
+        mmcif_context.alt_id=mmcif_context.line_vec[mmcif_context._atom_site["label_alt_id"]];
+        if (mmcif_context.alt_id==".") mmcif_context.alt_id=" ";
         else
         {
-            st.resi_chain=st.asym_id+st.resi;
-            if (st.alt_id_dict.count(st.resi_chain)==0)
-                st.alt_id_dict[st.resi_chain]=st.alt_id;
-            else if (st.alt_id_dict.count(st.resi_chain) &&
-                   st.alt_id!=st.alt_id_dict[st.resi_chain]) return false;
+            mmcif_context.resi_chain=mmcif_context.asym_id+mmcif_context.resi;
+            if (mmcif_context.alt_id_dict.count(mmcif_context.resi_chain)==0)
+                mmcif_context.alt_id_dict[mmcif_context.resi_chain]=mmcif_context.alt_id;
+            else if (mmcif_context.alt_id_dict.count(mmcif_context.resi_chain) &&
+                   mmcif_context.alt_id!=mmcif_context.alt_id_dict[mmcif_context.resi_chain]) return false;
         }
     }
     return true;
 }
 
-void mmcif_append_pdb_line(MmcifParseContext& st,
+void mmcif_append_pdb_line(MmcifParseContext& mmcif_context,
     std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list)
 {
-    if (st.prev_asym_id!=st.asym_id)
+    if (mmcif_context.prev_asym_id!=mmcif_context.asym_id)
     {
         PDB_lines.push_back(std::vector<std::string>());
-        chainID_list.push_back(st.asym_id);
-        st.prev_asym_id=st.asym_id;
+        chainID_list.push_back(mmcif_context.asym_id);
+        mmcif_context.prev_asym_id=mmcif_context.asym_id;
     }
 
-    st.a++;
-    st.a%=100000;
-    st.i8_stream<<st.group_PDB
-        <<std::setw(5)<<st.a<<" "<<st.atom<<st.alt_id<<st.resn<<" "<<st.asym_id[st.asym_id.size()-1]
-        <<std::setw(5)<<st.resi<<"   "
-        <<std::setw(8)<<st.line_vec[st._atom_site["Cartn_x"]].substr(0,8)
-        <<std::setw(8)<<st.line_vec[st._atom_site["Cartn_y"]].substr(0,8)
-        <<std::setw(8)<<st.line_vec[st._atom_site["Cartn_z"]].substr(0,8);
-    if (st._atom_site.count("B_iso_or_equiv"))
+    mmcif_context.a++;
+    mmcif_context.a%=100000;
+    mmcif_context.i8_stream<<mmcif_context.group_PDB
+        <<std::setw(5)<<mmcif_context.a<<" "<<mmcif_context.atom<<mmcif_context.alt_id<<mmcif_context.resn<<" "<<mmcif_context.asym_id[mmcif_context.asym_id.size()-1]
+        <<std::setw(5)<<mmcif_context.resi<<"   "
+        <<std::setw(8)<<mmcif_context.line_vec[mmcif_context._atom_site["Cartn_x"]].substr(0,8)
+        <<std::setw(8)<<mmcif_context.line_vec[mmcif_context._atom_site["Cartn_y"]].substr(0,8)
+        <<std::setw(8)<<mmcif_context.line_vec[mmcif_context._atom_site["Cartn_z"]].substr(0,8);
+    if (mmcif_context._atom_site.count("B_iso_or_equiv"))
     {
-        st.i8_stream<<"  1.00"<<std::setw(6)<<st.line_vec[st._atom_site["B_iso_or_equiv"]].substr(0,6);
-        if (st._atom_site.count("type_symbol"))
-            st.i8_stream<<std::setw(12)<<st.line_vec[st._atom_site["type_symbol"]].substr(0,12);
+        mmcif_context.i8_stream<<"  1.00"<<std::setw(6)<<mmcif_context.line_vec[mmcif_context._atom_site["B_iso_or_equiv"]].substr(0,6);
+        if (mmcif_context._atom_site.count("type_symbol"))
+            mmcif_context.i8_stream<<std::setw(12)<<mmcif_context.line_vec[mmcif_context._atom_site["type_symbol"]].substr(0,12);
     }
-    st.i8_stream<<std::endl;
-    PDB_lines.back().push_back(st.i8_stream.str());
-    st.i8_stream.str(std::string());
+    mmcif_context.i8_stream<<std::endl;
+    PDB_lines.back().push_back(mmcif_context.i8_stream.str());
+    mmcif_context.i8_stream.str(std::string());
 }
 
 size_t get_all_mmcif_lines(const std::string filename, const std::string chain_opt,
@@ -499,12 +499,12 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 
     bool loop_ = false; // not reading following content
     int atom_site_pos;
-    MmcifParseContext st;
-    st.alt_id=" ";  // alternative location indicator
-    st.asym_id="."; // this is similar to chainID, except that
+    MmcifParseContext mmcif_context;
+    mmcif_context.alt_id=" ";  // alternative location indicator
+    mmcif_context.asym_id="."; // this is similar to chainID, except that
                         // chainID is char while asym_id is a string
                        // with possibly multiple char
-    st.a=0; // atom index
+    mmcif_context.a=0; // atom index
     while (mmcif_input_good(in))
     {
         mmcif_read_line(in, line);
@@ -521,28 +521,28 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
             if (line.compare(0,11,"_atom_site.")) continue;
 
             loop_=true;
-            st._atom_site.clear();
+            mmcif_context._atom_site.clear();
             atom_site_pos=0;
-            st._atom_site[Trim(line.substr(11))]=atom_site_pos;
+            mmcif_context._atom_site[Trim(line.substr(11))]=atom_site_pos;
 
             while(1)
             {
                 mmcif_read_line(in, line);
                 if (line.size()==0) continue;
                 if (line.compare(0,11,"_atom_site.")) break;
-                st._atom_site[Trim(line.substr(11))]=++atom_site_pos;
+                mmcif_context._atom_site[Trim(line.substr(11))]=++atom_site_pos;
             }
 
-            if (st._atom_site.count("group_PDB")*
-                st._atom_site.count("label_atom_id")*
-                st._atom_site.count("label_comp_id")*
-               (st._atom_site.count("auth_asym_id")+
-                st._atom_site.count("label_asym_id"))*
-               (st._atom_site.count("auth_seq_id")+
-                st._atom_site.count("label_seq_id"))*
-                st._atom_site.count("Cartn_x")*
-                st._atom_site.count("Cartn_y")*
-                st._atom_site.count("Cartn_z")==0)
+            if (mmcif_context._atom_site.count("group_PDB")*
+                mmcif_context._atom_site.count("label_atom_id")*
+                mmcif_context._atom_site.count("label_comp_id")*
+               (mmcif_context._atom_site.count("auth_asym_id")+
+                mmcif_context._atom_site.count("label_asym_id"))*
+               (mmcif_context._atom_site.count("auth_seq_id")+
+                mmcif_context._atom_site.count("label_seq_id"))*
+                mmcif_context._atom_site.count("Cartn_x")*
+                mmcif_context._atom_site.count("Cartn_y")*
+                mmcif_context._atom_site.count("Cartn_z")==0)
             {
                 loop_ = false;
                 std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
@@ -550,13 +550,13 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
             }
         }
 
-        mmcif_read_atom_fields(st, line, mse_opt);
-        if (!mmcif_pass_residue_filter(st, dna_opt, rna_opt, protein_opt, hoh_opt, lig_opt))
+        mmcif_read_atom_fields(mmcif_context, line, mse_opt);
+        if (!mmcif_pass_residue_filter(mmcif_context, dna_opt, rna_opt, protein_opt, hoh_opt, lig_opt))
             continue;
-        if (!mmcif_read_chain_fields(st, line, chain_opt)) continue;
-        if (!mmcif_switch_model_if_needed(st, PDB_lines)) break;
-        if (!mmcif_pass_alt_id_filter(st)) continue;
-        mmcif_append_pdb_line(st, PDB_lines, chainID_list);
+        if (!mmcif_read_chain_fields(mmcif_context, line, chain_opt)) continue;
+        if (!mmcif_switch_model_if_needed(mmcif_context, PDB_lines)) break;
+        if (!mmcif_pass_alt_id_filter(mmcif_context)) continue;
+        mmcif_append_pdb_line(mmcif_context, PDB_lines, chainID_list);
     }
 
     mmcif_close_input(in);
