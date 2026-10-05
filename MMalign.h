@@ -1451,8 +1451,8 @@ inline void mmalign_assemble_complex_alignment(
 
 inline void mmalign_output_per_chain_alignments(
     const ComplexData& complex1, const ComplexData& complex2,
-    AllChainPairsResult& pairs, ChainAssignResult& assign,
-    const MMalignFinalParams& params, std::vector<std::string>& sequence,
+    AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
+    const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
     const Vec3& t0, const RotMat& u0)
 {
     int i;
@@ -1490,7 +1490,7 @@ inline void mmalign_output_per_chain_alignments(
     int& n_ali8 = chain_align_res.n_ali8;
 
     // re-compute chain level alignment
-    for (i=0;i<params.chain1_num;i++)
+    for (i=0;i<final_params.chain1_num;i++)
     {
         xlen=complex1.lengths[i];
         secx.resize(xlen+1);
@@ -1502,12 +1502,12 @@ inline void mmalign_output_per_chain_alignments(
         xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
-        for (j=0;j<params.chain2_num;j++)
+        for (j=0;j<final_params.chain2_num;j++)
         {
             ylen=complex2.lengths[j];
             if (ylen<3)
             {
-                pairs.tm_matrix[i][j]=-1;
+                pair_result.tm_matrix[i][j]=-1;
                 continue;
             }
             secy.resize(ylen+1);
@@ -1523,22 +1523,22 @@ inline void mmalign_output_per_chain_alignments(
             seqM="";
             seqxA="";
             seqyA="";
-            double Lnorm_ass=params.len_aa;
-            if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_ass=params.len_na;
-            sequence[0]=pairs.aligned_seq1[i][j];
-            sequence[1]=pairs.aligned_seq2[i][j];
+            double Lnorm_ass=final_params.len_aa;
+            if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_ass=final_params.len_na;
+            sequence[0]=pair_result.aligned_seq1[i][j];
+            sequence[1]=pair_result.aligned_seq2[i][j];
 
             // entry function for structure alignment
             ChainPairAlignOptions se_opts;
             se_opts.i_opt = 1;
-            se_opts.a_opt = params.a_opt;
+            se_opts.a_opt = final_params.a_opt;
             se_opts.u_opt = 2;
-            se_opts.d_opt = params.d_opt;
+            se_opts.d_opt = final_params.d_opt;
             se_opts.fast_opt = false;
             se_opts.se_opt = false;
             se_opts.cp_opt = false;
             se_opts.Lnorm = Lnorm_ass;
-            se_opts.d0_scale = params.d0_scale;
+            se_opts.d0_scale = final_params.d0_scale;
             se_opts.TMcut = -1;
             se_opts.parallel_threads = 1;
             se_opts.ss_opt = 0;
@@ -1547,10 +1547,10 @@ inline void mmalign_output_per_chain_alignments(
             se_main(xt, ya, seqx, seqy, chain_align_res,
                 xlen, ylen, sequence, se_opts, 1);
 
-            pairs.tm_matrix[i][j]=TM4*Lnorm_ass;
+            pair_result.tm_matrix[i][j]=TM4*Lnorm_ass;
 
             // print result
-            if (j==assign.chain2_of_chain1[i])
+            if (j==assign_result.chain2_of_chain1[i])
             {
                 ChainPairAlignResult print_align_res = { 0};
                 print_align_res.t0 = t0;
@@ -1573,18 +1573,18 @@ inline void mmalign_output_per_chain_alignments(
                 print_align_res.d0B = d0B;
                 print_align_res.d0a = d0a;
                 print_align_res.d0u = d0u;
-                print_align_res.seqM = pairs.aligned_consensus[i][j];
-                print_align_res.seqxA = pairs.aligned_seq1[i][j];
-                print_align_res.seqyA = pairs.aligned_seq2[i][j];
+                print_align_res.seqM = pair_result.aligned_consensus[i][j];
+                print_align_res.seqxA = pair_result.aligned_seq1[i][j];
+                print_align_res.seqyA = pair_result.aligned_seq2[i][j];
                 OutputOptions out_opts;
-                fill_out_opts_from_mmalign_final(out_opts, params);
+                fill_out_opts_from_mmalign_final(out_opts, final_params);
                 out_opts.Lnorm_ass = Lnorm_ass;
                 out_opts.fname_matrix = "";
                 out_opts.fname_super = "";
                 out_opts.o_opt = 0;
                 out_opts.mirror_opt = 0;
                 output_results(
-                    ChainPairDesc{params.xname, params.yname, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
+                    ChainPairDesc{final_params.xname, final_params.yname, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
                     print_align_res, out_opts, complex1.resi, complex2.resi);
             }
 
@@ -1602,16 +1602,16 @@ inline void mmalign_output_per_chain_alignments(
 
 inline void MMalign_final(
     const ComplexData& complex1, const ComplexData& complex2,
-    AllChainPairsResult& pairs, ChainAssignResult& assign,
-    const MMalignFinalParams& params, std::vector<std::string>& sequence,
+    AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
+    const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
     const bool se_opt)
 {
     int i;
     int j;
     int xlen=0;
     int ylen=0;
-    for (i=0;i<params.chain1_num;i++) xlen+=complex1.lengths[i];
-    for (j=0;j<params.chain2_num;j++) ylen+=complex2.lengths[j];
+    for (i=0;i<final_params.chain1_num;i++) xlen+=complex1.lengths[i];
+    for (j=0;j<final_params.chain2_num;j++) ylen+=complex2.lengths[j];
     if (xlen<=3 || ylen<=3) return;
 
     std::string seqx;
@@ -1626,8 +1626,8 @@ inline void MMalign_final(
     ya.resize(ylen);
 
     int mol_type=copy_chain_pair_data(complex1, complex2,
-        xa, ya, seqx, seqy, secx, secy, params.chain1_num,
-        pairs.aligned_seq1, pairs.aligned_seq2, assign.chain2_of_chain1, sequence);
+        xa, ya, seqx, seqy, secx, secy, final_params.chain1_num,
+        pair_result.aligned_seq1, pair_result.aligned_seq2, assign_result.chain2_of_chain1, sequence);
     seqx.resize(xlen+1);
     seqy.resize(ylen+1);
 
@@ -1657,21 +1657,21 @@ inline void MMalign_final(
     double& TM_ali = chain_align_res.TM_ali;
     double& rmsd_ali = chain_align_res.rmsd_ali;
     int& n_ali8 = chain_align_res.n_ali8;
-    double Lnorm_ass=params.len_aa+params.len_na;
+    double Lnorm_ass=final_params.len_aa+final_params.len_na;
 
     init_rt_mat(t0, u0);
     std::vector<int> invmap(ylen+1);
 
     ChainPairAlignOptions final_align_opts;
     final_align_opts.i_opt = 3;
-    final_align_opts.a_opt = params.a_opt;
+    final_align_opts.a_opt = final_params.a_opt;
     final_align_opts.u_opt = false;
-    final_align_opts.d_opt = params.d_opt;
-    final_align_opts.fast_opt = params.fast_opt;
+    final_align_opts.d_opt = final_params.d_opt;
+    final_align_opts.fast_opt = final_params.fast_opt;
     final_align_opts.se_opt = false;
     final_align_opts.cp_opt = false;
     final_align_opts.Lnorm = Lnorm_ass;
-    final_align_opts.d0_scale = params.d0_scale;
+    final_align_opts.d0_scale = final_params.d0_scale;
     final_align_opts.TMcut = -1;
     final_align_opts.parallel_threads = 1;
     final_align_opts.ss_opt = 0;
@@ -1693,8 +1693,8 @@ inline void MMalign_final(
     std::string chainID1="";
     std::string chainID2="";
     mmalign_assemble_complex_alignment(seqM, complex1.seqs, complex2.seqs, complex1.lengths, complex2.lengths,
-        complex1.chain_ids, complex2.chain_ids, assign.chain2_of_chain1, assign.chain1_of_chain2,
-        params.chain1_num, params.chain2_num, pairs.aligned_seq1, pairs.aligned_seq2, pairs.aligned_consensus,
+        complex1.chain_ids, complex2.chain_ids, assign_result.chain2_of_chain1, assign_result.chain1_of_chain2,
+        final_params.chain1_num, final_params.chain2_num, pair_result.aligned_seq1, pair_result.aligned_seq2, pair_result.aligned_consensus,
         chainID1, chainID2, sequence);
     // print alignment
     ChainPairAlignResult print_align_res = { 0};
@@ -1722,11 +1722,11 @@ inline void MMalign_final(
     print_align_res.seqxA = sequence[0];
     print_align_res.seqyA = sequence[1];
     OutputOptions out_opts;
-    fill_out_opts_from_mmalign_final(out_opts, params);
+    fill_out_opts_from_mmalign_final(out_opts, final_params);
     out_opts.Lnorm_ass = Lnorm_ass;
     out_opts.mm_opt = true;
     output_results(
-        ChainPairDesc{params.xname, params.yname, chainID1, chainID2, xlen, ylen},
+        ChainPairDesc{final_params.xname, final_params.yname, chainID1, chainID2, xlen, ylen},
         print_align_res, out_opts, complex1.resi, complex2.resi);
 
     // clean up
@@ -1738,12 +1738,12 @@ inline void MMalign_final(
     sequence[2].clear();
     chain_align_res.do_vec.clear();
 
-    if (!params.full_opt) return;
+    if (!final_params.full_opt) return;
 
-    if (params.outfmt_opt<=2) std::cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
+    if (final_params.outfmt_opt<=2) std::cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
 
-    mmalign_output_per_chain_alignments(complex1, complex2, pairs, assign,
-        params, sequence, t0, u0);
+    mmalign_output_per_chain_alignments(complex1, complex2, pair_result, assign_result,
+        final_params, sequence, t0, u0);
     sequence.clear();
     return;
 }
