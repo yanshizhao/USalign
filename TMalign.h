@@ -1988,7 +1988,7 @@ inline void normalize_mmcif_atom_fields(
         inscode=line_vec[atom_site["pdbx_PDB_ins_code"]][0];
 }
 
-inline void write_rasmol_mmcif_atom_line_chain_a(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
+inline void write_rasmol_mmcif_chain_a(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
 {
     os<<"ATOM  "<<std::setw(6)<<std::setw(5)<<serial%100000<<' '<<rasmol_state.atom<<' '
         <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
@@ -2153,20 +2153,20 @@ inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
                         if (rasmol_state.after_ter==false &&
                             rasmol_state.line_vec[rasmol_state._atom_site["group_PDB"]]=="ATOM")
                         {
-                            write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1);
+                            write_rasmol_mmcif_chain_a(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1);
                             if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),
                                 rasmol_state.resi_aln1.end(),rasmol_state.resi)!=rasmol_state.resi_aln1.end())
                             {
-                                write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1);
+                                write_rasmol_mmcif_chain_a(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1);
                             }
                             if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
                             {
                                 rasmol_state.ca_idx1++;
-                                write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1);
+                                write_rasmol_mmcif_chain_a(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1);
                                 if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),
                                     rasmol_state.resi_aln1.end(),rasmol_state.resi)!=rasmol_state.resi_aln1.end())
                                 {
-                                    write_rasmol_mmcif_atom_line_chain_a(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1);
+                                    write_rasmol_mmcif_chain_a(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1);
                                     rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1);
                                 }
                             }
@@ -2200,7 +2200,7 @@ inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
     rasmol_state.idx_vec.clear();
 }
 
-inline void write_rasmol_mmcif_atom_line_chain_b(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
+inline void write_rasmol_mmcif_chain_b(std::ostream& os, TMalignRasmolState& rasmol_state, const int serial)
 {
     os<<"ATOM  "<<std::setw(6)<<std::setw(5)<<serial%100000<<' '
         <<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
@@ -2336,20 +2336,20 @@ inline void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
                         if (rasmol_state.after_ter==false &&
                             rasmol_state.line_vec[rasmol_state._atom_site["group_PDB"]]=="ATOM")
                         {
-                            write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
+                            write_rasmol_mmcif_chain_b(rasmol_state.buf_all_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
                             if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),
                                 rasmol_state.resi_aln2.end(),rasmol_state.resi)!=rasmol_state.resi_aln2.end())
                             {
-                                write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
+                                write_rasmol_mmcif_chain_b(rasmol_state.buf_atm, rasmol_state, rasmol_state.lig_idx1+rasmol_state.lig_idx2);
                             }
                             if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
                             {
                                 rasmol_state.ca_idx2++;
-                                write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
+                                write_rasmol_mmcif_chain_b(rasmol_state.buf_all, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
                                 if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),
                                     rasmol_state.resi_aln2.end(),rasmol_state.resi)!=rasmol_state.resi_aln2.end())
                                 {
-                                    write_rasmol_mmcif_atom_line_chain_b(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
+                                    write_rasmol_mmcif_chain_b(rasmol_state.buf, rasmol_state, rasmol_state.ca_idx1+rasmol_state.ca_idx2);
                                     rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1+rasmol_state.ca_idx2);
                                 }
                             }
@@ -3314,7 +3314,7 @@ struct TMscoreAlignContext
     DoubleMatrix      val;
 };
 
-inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
+inline int tmalign_build_initial(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen, int minlen,
     const std::vector<std::string>& sequence,
@@ -3689,7 +3689,7 @@ inline void tmalign_final_tmscore(int xlen, int ylen,
     }
 }
 
-inline void tmalign_extract_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
+inline void tmalign_extract_strings(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& seqx, const std::string& seqy, int xlen, int ylen,
     const double d0_out, const int n_ali8,
     TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
@@ -3820,7 +3820,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     if (align_context.search_params.Lnorm <= 40) align_context.ddcc = 0.1;   //Lnorm was setted in parameter_set4search
     align_context.search_params.local_d0_search = align_context.search_params.d0_search;
 
-    int rc = tmalign_build_initial_alignment(xa_c, ya_c, secx, secy,
+    int rc = tmalign_build_initial(xa_c, ya_c, secx, secy,
         xlen, ylen, minlen, sequence, align_opts, align_context, chain_align_res);
     if (rc) return rc;
 
@@ -3863,7 +3863,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
 
     tmalign_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, align_context, chain_align_res);
     tmalign_final_tmscore(xlen, ylen, align_opts, align_context, chain_align_res);
-    tmalign_extract_alignment_strings(xa_c, ya_c, seqx, seqy, xlen, ylen,
+    tmalign_extract_strings(xa_c, ya_c, seqx, seqy, xlen, ylen,
         chain_align_res.d0_out, chain_align_res.n_ali8, align_context, chain_align_res);
 
     return 0; // zero for no exception
@@ -3955,7 +3955,7 @@ inline void shift_cp_template_by_point(CoordArray& xa_cp, std::string& seqx_cp, 
     }
 }
 
-inline void restore_cp_template_from_source(CoordArray& xa_cp, std::string& seqx_cp, std::string& secx_cp,
+inline void restore_cp_template(CoordArray& xa_cp, std::string& seqx_cp, std::string& secx_cp,
     const CoordArray& xa, const std::string& seqx, const std::string& secx, const int xlen)
 {
     for (int r=0;r<xlen;r++)
@@ -4110,7 +4110,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
         if (n_ali8>=cp_aln_best || TM4>=TM4_cp)
         {
             cp_point=0;
-            restore_cp_template_from_source(xa_cp, seqx_cp, secx_cp, xa, seqx, secx, xlen);
+            restore_cp_template(xa_cp, seqx_cp, secx_cp, xa, seqx, secx, xlen);
         }
     }
 
