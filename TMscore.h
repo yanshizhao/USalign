@@ -640,7 +640,7 @@ void output_TMscore_results(
             resi_vec1, resi_vec2, chainID1, chainID2);
 }
 
-int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vector<std::string>& sequence,
+int tmscore_initial_alignment(TMscoreAlignContext& align_context, const std::vector<std::string>& sequence,
     CoordArray& xa, CoordArray& ya, ChainPairAlignResult& chain_align_res,
     const int mol_type, const int a_opt, const double TMcut)
 {
@@ -651,7 +651,7 @@ int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vecto
     //    Stick to the initial alignment              //
     //************************************************//
     for (int j = 0; j < ylen; j++)// Set aligned position to be "-1"
-        align_state.res_map.invmap[j] = -1;
+        align_context.res_map.invmap[j] = -1;
 
     int i1 = -1;// in C version, index starts from zero, not from one
     int i2 = -1;
@@ -665,26 +665,26 @@ int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vecto
         {
             i2++;
             if (i2 >= ylen || i1 >= xlen) kk1 = L;
-            else if (sequence[0][kk1] != '-') align_state.res_map.invmap[i2] = i1;
+            else if (sequence[0][kk1] != '-') align_context.res_map.invmap[i2] = i1;
         }
     }
 
     //--------------- 2. Align proteins from original alignment
-    double prevD0_MIN = align_state.search_params.D0_MIN;// stored for later use
-    int prevLnorm = align_state.search_params.Lnorm;
-    double prevd0 = align_state.search_params.d0;
-    chain_align_res.TM_ali = standard_TMscore(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, xa, ya, ylen,
-        align_state.res_map.invmap, chain_align_res.L_ali, chain_align_res.rmsd_ali, align_state.search_params.D0_MIN, align_state.search_params.Lnorm, align_state.search_params.d0,
-        align_state.search_params.score_d8, align_state.transform.t, align_state.transform.u, mol_type);
-    align_state.search_params.D0_MIN = prevD0_MIN;
-    align_state.search_params.Lnorm = prevLnorm;
-    align_state.search_params.d0 = prevd0;
-    double TM = detailed_search_standard(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, xa, ya, ylen,
-        align_state.res_map.invmap, align_state.transform.t, align_state.transform.u, 40, 8, align_state.search_params.local_d0_search, true, align_state.search_params.Lnorm, align_state.search_params.score_d8, align_state.search_params.d0);
-    if (TM > align_state.transform.TMmax)
+    double prevD0_MIN = align_context.search_params.D0_MIN;// stored for later use
+    int prevLnorm = align_context.search_params.Lnorm;
+    double prevd0 = align_context.search_params.d0;
+    chain_align_res.TM_ali = standard_TMscore(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, xa, ya, ylen,
+        align_context.res_map.invmap, chain_align_res.L_ali, chain_align_res.rmsd_ali, align_context.search_params.D0_MIN, align_context.search_params.Lnorm, align_context.search_params.d0,
+        align_context.search_params.score_d8, align_context.transform.t, align_context.transform.u, mol_type);
+    align_context.search_params.D0_MIN = prevD0_MIN;
+    align_context.search_params.Lnorm = prevLnorm;
+    align_context.search_params.d0 = prevd0;
+    double TM = detailed_search_standard(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, xa, ya, ylen,
+        align_context.res_map.invmap, align_context.transform.t, align_context.transform.u, 40, 8, align_context.search_params.local_d0_search, true, align_context.search_params.Lnorm, align_context.search_params.score_d8, align_context.search_params.d0);
+    if (TM > align_context.transform.TMmax)
     {
-        align_state.transform.TMmax = TM;
-        for (int i = 0; i<ylen; i++) align_state.res_map.invmap0[i] = align_state.res_map.invmap[i];
+        align_context.transform.TMmax = TM;
+        for (int i = 0; i<ylen; i++) align_context.res_map.invmap0[i] = align_context.res_map.invmap[i];
     }
 
     //*******************************************************************//
@@ -694,7 +694,7 @@ int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vecto
     bool flag=false;
     for(int i=0; i<ylen; i++)
     {
-        if(align_state.res_map.invmap0[i]>=0)
+        if(align_context.res_map.invmap0[i]>=0)
         {
             flag=true;
             break;
@@ -711,7 +711,7 @@ int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vecto
     if (TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, a_opt,
-            xa, ya, chain_align_res.t0, chain_align_res.u0, align_state.res_map.invmap0, mol_type);
+            xa, ya, chain_align_res.t0, chain_align_res.u0, align_context.res_map.invmap0, mol_type);
 
         if (TMtmp<0.6*TMcut)
         {
@@ -723,7 +723,7 @@ int tmscore_initial_alignment(TMscoreAlignContext& align_state, const std::vecto
     return 0;
 }
 
-void tmscore_detailed_search(TMscoreAlignContext& align_state, CoordArray& xa, CoordArray& ya,
+void tmscore_detailed_search(TMscoreAlignContext& align_context, CoordArray& xa, CoordArray& ya,
     ChainPairAlignResult& chain_align_res, const bool fast_opt,
     double GDT_list[5], double &maxsub)
 {
@@ -735,52 +735,52 @@ void tmscore_detailed_search(TMscoreAlignContext& align_state, CoordArray& xa, C
     //********************************************************************//
     //run detailed TMscore search engine for the best alignment, and
     //extract the best rotation matrix (t, u) for the best alignment
-    align_state.search_params.simplify_step=1;
-    if (fast_opt) align_state.search_params.simplify_step=40;
-    align_state.search_params.score_sum_method=8;
-    detailed_search_standard(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, xa, ya, ylen,
-        align_state.res_map.invmap0, align_state.transform.t, align_state.transform.u, align_state.search_params.simplify_step, align_state.search_params.score_sum_method, align_state.search_params.local_d0_search,
-        false, align_state.search_params.Lnorm, align_state.search_params.score_d8, align_state.search_params.d0,
+    align_context.search_params.simplify_step=1;
+    if (fast_opt) align_context.search_params.simplify_step=40;
+    align_context.search_params.score_sum_method=8;
+    detailed_search_standard(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, xa, ya, ylen,
+        align_context.res_map.invmap0, align_context.transform.t, align_context.transform.u, align_context.search_params.simplify_step, align_context.search_params.score_sum_method, align_context.search_params.local_d0_search,
+        false, align_context.search_params.Lnorm, align_context.search_params.score_d8, align_context.search_params.d0,
         GDT_list, maxsub);
 
     //select pairs with dis<d8 for final TMscore computation and output alignment
     int k=0;
-    do_rotation(xa, align_state.coords.xt, xlen, align_state.transform.t, align_state.transform.u);
+    do_rotation(xa, align_context.coords.xt, xlen, align_context.transform.t, align_context.transform.u);
     k=0;
     for(int j=0; j<ylen; j++)
     {
-        int i=align_state.res_map.invmap0[j];
+        int i=align_context.res_map.invmap0[j];
         if(i>=0)//aligned
         {
             chain_align_res.n_ali++;
-            align_state.res_map.m1[k]=i;
-            align_state.res_map.m2[k]=j;
+            align_context.res_map.m1[k]=i;
+            align_context.res_map.m2[k]=j;
 
-            align_state.coords.xtm[k][0]=xa[i][0];
-            align_state.coords.xtm[k][1]=xa[i][1];
-            align_state.coords.xtm[k][2]=xa[i][2];
+            align_context.coords.xtm[k][0]=xa[i][0];
+            align_context.coords.xtm[k][1]=xa[i][1];
+            align_context.coords.xtm[k][2]=xa[i][2];
 
-            align_state.coords.ytm[k][0]=ya[j][0];
-            align_state.coords.ytm[k][1]=ya[j][1];
-            align_state.coords.ytm[k][2]=ya[j][2];
+            align_context.coords.ytm[k][0]=ya[j][0];
+            align_context.coords.ytm[k][1]=ya[j][1];
+            align_context.coords.ytm[k][2]=ya[j][2];
 
-            align_state.coords.r1[k][0] = align_state.coords.xt[i][0];
-            align_state.coords.r1[k][1] = align_state.coords.xt[i][1];
-            align_state.coords.r1[k][2] = align_state.coords.xt[i][2];
-            align_state.coords.r2[k][0] = ya[j][0];
-            align_state.coords.r2[k][1] = ya[j][1];
-            align_state.coords.r2[k][2] = ya[j][2];
+            align_context.coords.r1[k][0] = align_context.coords.xt[i][0];
+            align_context.coords.r1[k][1] = align_context.coords.xt[i][1];
+            align_context.coords.r1[k][2] = align_context.coords.xt[i][2];
+            align_context.coords.r2[k][0] = ya[j][0];
+            align_context.coords.r2[k][1] = ya[j][1];
+            align_context.coords.r2[k][2] = ya[j][2];
 
             k++;
         }
     }
     chain_align_res.n_ali8=k;
 
-    Kabsch(align_state.coords.r1, align_state.coords.r2, chain_align_res.n_ali8, 0, chain_align_res.rmsd0, align_state.transform.t, align_state.transform.u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    Kabsch(align_context.coords.r1, align_context.coords.r2, chain_align_res.n_ali8, 0, chain_align_res.rmsd0, align_context.transform.t, align_context.transform.u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
     chain_align_res.rmsd0 = sqrt(chain_align_res.rmsd0 / chain_align_res.n_ali8);
 }
 
-void tmscore_final_scores(TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res,
+void tmscore_final_scores(TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res,
     const double Lnorm_ass, const double d0_scale, const int xlen, const int ylen,
     const int a_opt, const bool u_opt, const bool d_opt, const int mol_type,
     double GDT_list[5], double &maxsub)
@@ -790,18 +790,18 @@ void tmscore_final_scores(TMscoreAlignContext& align_state, ChainPairAlignResult
     //    Please set parameters for output    //
     //****************************************//
     double rmsd;
-    align_state.search_params.simplify_step=1;
-    align_state.search_params.score_sum_method=0;
+    align_context.search_params.simplify_step=1;
+    align_context.search_params.score_sum_method=0;
     double Lnorm_0=ylen;
 
 
     //normalized by length of structure A
-    parameter_set4final(Lnorm_0, align_state.search_params.D0_MIN, align_state.search_params.Lnorm, align_state.search_params.d0, align_state.search_params.d0_search, mol_type);
-    chain_align_res.d0A=align_state.search_params.d0;
+    parameter_set4final(Lnorm_0, align_context.search_params.D0_MIN, align_context.search_params.Lnorm, align_context.search_params.d0, align_context.search_params.d0_search, mol_type);
+    chain_align_res.d0A=align_context.search_params.d0;
     chain_align_res.d0_0=chain_align_res.d0A;
-    align_state.search_params.local_d0_search = align_state.search_params.d0_search;
-    chain_align_res.TM1 = TMscore8_search(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0, align_state.search_params.simplify_step,
-        align_state.search_params.score_sum_method, rmsd, align_state.search_params.local_d0_search, align_state.search_params.Lnorm, align_state.search_params.score_d8, align_state.search_params.d0,
+    align_context.search_params.local_d0_search = align_context.search_params.d0_search;
+    chain_align_res.TM1 = TMscore8_search(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0, align_context.search_params.simplify_step,
+        align_context.search_params.score_sum_method, rmsd, align_context.search_params.local_d0_search, align_context.search_params.Lnorm, align_context.search_params.score_d8, align_context.search_params.d0,
         GDT_list, maxsub);
     chain_align_res.TM_0 = chain_align_res.TM1;
 
@@ -809,46 +809,46 @@ void tmscore_final_scores(TMscoreAlignContext& align_state, ChainPairAlignResult
     {
         //normalized by average length of structures A, B
         Lnorm_0=(xlen+ylen)*0.5;
-        parameter_set4final(Lnorm_0, align_state.search_params.D0_MIN, align_state.search_params.Lnorm, align_state.search_params.d0, align_state.search_params.d0_search, mol_type);
-        chain_align_res.d0a=align_state.search_params.d0;
+        parameter_set4final(Lnorm_0, align_context.search_params.D0_MIN, align_context.search_params.Lnorm, align_context.search_params.d0, align_context.search_params.d0_search, mol_type);
+        chain_align_res.d0a=align_context.search_params.d0;
         chain_align_res.d0_0=chain_align_res.d0a;
-        align_state.search_params.local_d0_search = align_state.search_params.d0_search;
+        align_context.search_params.local_d0_search = align_context.search_params.d0_search;
 
-        chain_align_res.TM3 = TMscore8_search(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
-            align_state.search_params.simplify_step, align_state.search_params.score_sum_method, rmsd, align_state.search_params.local_d0_search, align_state.search_params.Lnorm,
-            align_state.search_params.score_d8, align_state.search_params.d0);
+        chain_align_res.TM3 = TMscore8_search(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
+            align_context.search_params.simplify_step, align_context.search_params.score_sum_method, rmsd, align_context.search_params.local_d0_search, align_context.search_params.Lnorm,
+            align_context.search_params.score_d8, align_context.search_params.d0);
         chain_align_res.TM_0=chain_align_res.TM3;
     }
     if (u_opt)
     {
         //normalized by user assigned length
-        parameter_set4final(Lnorm_ass, align_state.search_params.D0_MIN, align_state.search_params.Lnorm,
-            align_state.search_params.d0, align_state.search_params.d0_search, mol_type);
-        chain_align_res.d0u=align_state.search_params.d0;
+        parameter_set4final(Lnorm_ass, align_context.search_params.D0_MIN, align_context.search_params.Lnorm,
+            align_context.search_params.d0, align_context.search_params.d0_search, mol_type);
+        chain_align_res.d0u=align_context.search_params.d0;
         chain_align_res.d0_0=chain_align_res.d0u;
         Lnorm_0=Lnorm_ass;
-        align_state.search_params.local_d0_search = align_state.search_params.d0_search;
-        chain_align_res.TM4 = TMscore8_search(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
-            align_state.search_params.simplify_step, align_state.search_params.score_sum_method, rmsd, align_state.search_params.local_d0_search, align_state.search_params.Lnorm,
-            align_state.search_params.score_d8, align_state.search_params.d0);
+        align_context.search_params.local_d0_search = align_context.search_params.d0_search;
+        chain_align_res.TM4 = TMscore8_search(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
+            align_context.search_params.simplify_step, align_context.search_params.score_sum_method, rmsd, align_context.search_params.local_d0_search, align_context.search_params.Lnorm,
+            align_context.search_params.score_d8, align_context.search_params.d0);
         chain_align_res.TM_0=chain_align_res.TM4;
     }
     if (d_opt)
     {
         //scaled by user assigned d0
-        parameter_set4scale(ylen, d0_scale, align_state.search_params.Lnorm, align_state.search_params.d0, align_state.search_params.d0_search);
+        parameter_set4scale(ylen, d0_scale, align_context.search_params.Lnorm, align_context.search_params.d0, align_context.search_params.d0_search);
         chain_align_res.d0_out=d0_scale;
         chain_align_res.d0_0=d0_scale;
         //Lnorm_0=ylen;
-        align_state.search_params.local_d0_search = align_state.search_params.d0_search;
-        chain_align_res.TM5 = TMscore8_search(align_state.coords.r1, align_state.coords.r2, align_state.coords.xtm, align_state.coords.ytm, align_state.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
-            align_state.search_params.simplify_step, align_state.search_params.score_sum_method, rmsd, align_state.search_params.local_d0_search, align_state.search_params.Lnorm,
-            align_state.search_params.score_d8, align_state.search_params.d0);
+        align_context.search_params.local_d0_search = align_context.search_params.d0_search;
+        chain_align_res.TM5 = TMscore8_search(align_context.coords.r1, align_context.coords.r2, align_context.coords.xtm, align_context.coords.ytm, align_context.coords.xt, chain_align_res.n_ali8, chain_align_res.t0, chain_align_res.u0,
+            align_context.search_params.simplify_step, align_context.search_params.score_sum_method, rmsd, align_context.search_params.local_d0_search, align_context.search_params.Lnorm,
+            align_context.search_params.score_d8, align_context.search_params.d0);
         chain_align_res.TM_0=chain_align_res.TM5;
     }
 }
 
-void tmscore_derive_alignment(TMscoreAlignContext& align_state, CoordArray& xa, CoordArray& ya,
+void tmscore_derive_alignment(TMscoreAlignContext& align_context, CoordArray& xa, CoordArray& ya,
     const std::string& seqx, const std::string& seqy, ChainPairAlignResult& chain_align_res)
 {
     const int xlen = xa.size();
@@ -860,7 +860,7 @@ void tmscore_derive_alignment(TMscoreAlignContext& align_state, CoordArray& xa, 
     chain_align_res.seqM.assign( ali_len,' ');
     chain_align_res.seqyA.assign(ali_len,'-');
 
-    do_rotation(xa, align_state.coords.xt, xlen, chain_align_res.t0, chain_align_res.u0);
+    do_rotation(xa, align_context.coords.xt, xlen, chain_align_res.t0, chain_align_res.u0);
 
     int kk=0;
     int i_old=0;
@@ -868,7 +868,7 @@ void tmscore_derive_alignment(TMscoreAlignContext& align_state, CoordArray& xa, 
     double d=0;
     for(int k=0; k<chain_align_res.n_ali8; k++)
     {
-        for(int i=i_old; i<align_state.res_map.m1[k]; i++)
+        for(int i=i_old; i<align_context.res_map.m1[k]; i++)
         {
             //align x to gap
             chain_align_res.seqxA[kk]=seqx[i];
@@ -877,7 +877,7 @@ void tmscore_derive_alignment(TMscoreAlignContext& align_state, CoordArray& xa, 
             kk++;
         }
 
-        for(int j=j_old; j<align_state.res_map.m2[k]; j++)
+        for(int j=j_old; j<align_context.res_map.m2[k]; j++)
         {
             //align y to gap
             chain_align_res.seqxA[kk]='-';
@@ -886,16 +886,16 @@ void tmscore_derive_alignment(TMscoreAlignContext& align_state, CoordArray& xa, 
             kk++;
         }
 
-        chain_align_res.seqxA[kk]=seqx[align_state.res_map.m1[k]];
-        chain_align_res.seqyA[kk]=seqy[align_state.res_map.m2[k]];
+        chain_align_res.seqxA[kk]=seqx[align_context.res_map.m1[k]];
+        chain_align_res.seqyA[kk]=seqy[align_context.res_map.m2[k]];
         chain_align_res.Liden+=(chain_align_res.seqxA[kk]==chain_align_res.seqyA[kk]);
-        d=sqrt(dist(align_state.coords.xt[align_state.res_map.m1[k]], ya[align_state.res_map.m2[k]]));
+        d=sqrt(dist(align_context.coords.xt[align_context.res_map.m1[k]], ya[align_context.res_map.m2[k]]));
         //if(d<d0_out) seqM[kk]=':';
         //else         seqM[kk]='.';
         if(d<5) chain_align_res.seqM[kk]=':';
         kk++;
-        i_old=align_state.res_map.m1[k]+1;
-        j_old=align_state.res_map.m2[k]+1;
+        i_old=align_context.res_map.m1[k]+1;
+        j_old=align_context.res_map.m2[k]+1;
     }
 
     //tail
@@ -935,38 +935,38 @@ int TMscore_main(CoordArray& xa, CoordArray& ya,
     /***********************/
     // allocate memory
     /***********************/
-    TMscoreAlignContext align_state;
+    TMscoreAlignContext align_context;
     int minlen = std::min(xlen, ylen);
-    align_state.coords.xtm.resize(minlen);
-    align_state.coords.ytm.resize(minlen);
-    align_state.coords.xt.resize(xlen);
-    align_state.coords.r1.resize(minlen);
-    align_state.coords.r2.resize(minlen);
-    align_state.res_map.invmap.resize(ylen+1);
-    align_state.res_map.invmap0.assign(ylen+1, -1);
-    align_state.res_map.m1.resize(xlen);
-    align_state.res_map.m2.resize(ylen);
+    align_context.coords.xtm.resize(minlen);
+    align_context.coords.ytm.resize(minlen);
+    align_context.coords.xt.resize(xlen);
+    align_context.coords.r1.resize(minlen);
+    align_context.coords.r2.resize(minlen);
+    align_context.res_map.invmap.resize(ylen+1);
+    align_context.res_map.invmap0.assign(ylen+1, -1);
+    align_context.res_map.m1.resize(xlen);
+    align_context.res_map.m2.resize(ylen);
 
     /***********************/
     //    parameter set   
     /***********************/
-    parameter_set4search(xlen, ylen, align_state.search_params.D0_MIN, align_state.search_params.Lnorm,
-        align_state.search_params.score_d8, align_state.search_params.d0, align_state.search_params.d0_search, align_state.search_params.dcu0);
-    align_state.search_params.simplify_step    = 40; //for simplified search engine
-    align_state.search_params.score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
-    align_state.transform.TMmax = -1;
-    align_state.search_params.local_d0_search = align_state.search_params.d0_search;
+    parameter_set4search(xlen, ylen, align_context.search_params.D0_MIN, align_context.search_params.Lnorm,
+        align_context.search_params.score_d8, align_context.search_params.d0, align_context.search_params.d0_search, align_context.search_params.dcu0);
+    align_context.search_params.simplify_step    = 40; //for simplified search engine
+    align_context.search_params.score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
+    align_context.transform.TMmax = -1;
+    align_context.search_params.local_d0_search = align_context.search_params.d0_search;
 
-    int rc = tmscore_initial_alignment(align_state, sequence, xa, ya, chain_align_res,
+    int rc = tmscore_initial_alignment(align_context, sequence, xa, ya, chain_align_res,
         mol_type, a_opt, TMcut);
     if (rc) return rc;
 
-    tmscore_detailed_search(align_state, xa, ya, chain_align_res, fast_opt, GDT_list, maxsub);
+    tmscore_detailed_search(align_context, xa, ya, chain_align_res, fast_opt, GDT_list, maxsub);
 
-    tmscore_final_scores(align_state, chain_align_res, Lnorm_ass, d0_scale, xlen, ylen,
+    tmscore_final_scores(align_context, chain_align_res, Lnorm_ass, d0_scale, xlen, ylen,
         a_opt, u_opt, d_opt, mol_type, GDT_list, maxsub);
 
-    tmscore_derive_alignment(align_state, xa, ya, seqx, seqy, chain_align_res);
+    tmscore_derive_alignment(align_context, xa, ya, seqx, seqy, chain_align_res);
 
     return 0; // zero for no exception
 }

@@ -3318,31 +3318,31 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen, int minlen,
     const std::vector<std::string>& sequence,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
 {
-    double &D0_MIN = align_state.search_params.D0_MIN;
-    double &Lnorm = align_state.search_params.Lnorm;
-    double &score_d8 = align_state.search_params.score_d8;
-    double &d0 = align_state.search_params.d0;
-    double &d0_search = align_state.search_params.d0_search;
-    double &dcu0 = align_state.search_params.dcu0;
-    double &local_d0_search = align_state.search_params.local_d0_search;
-    int &simplify_step = align_state.search_params.simplify_step;
-    int &score_sum_method = align_state.search_params.score_sum_method;
-    double &ddcc = align_state.ddcc;
-    DoubleMatrix &score = align_state.score;
-    CharMatrix &path = align_state.path;
-    DoubleMatrix &val = align_state.val;
-    CoordArray &xtm = align_state.coords.xtm;
-    CoordArray &ytm = align_state.coords.ytm;
-    CoordArray &xt = align_state.coords.xt;
-    CoordArray &r1 = align_state.coords.r1;
-    CoordArray &r2 = align_state.coords.r2;
-    std::vector<int> &invmap0 = align_state.res_map.invmap0;
-    std::vector<int> &invmap = align_state.res_map.invmap;
-    Vec3 &t = align_state.transform.t;
-    RotMat &u = align_state.transform.u;
-    double &TMmax = align_state.transform.TMmax;
+    double &D0_MIN = align_context.search_params.D0_MIN;
+    double &Lnorm = align_context.search_params.Lnorm;
+    double &score_d8 = align_context.search_params.score_d8;
+    double &d0 = align_context.search_params.d0;
+    double &d0_search = align_context.search_params.d0_search;
+    double &dcu0 = align_context.search_params.dcu0;
+    double &local_d0_search = align_context.search_params.local_d0_search;
+    int &simplify_step = align_context.search_params.simplify_step;
+    int &score_sum_method = align_context.search_params.score_sum_method;
+    double &ddcc = align_context.ddcc;
+    DoubleMatrix &score = align_context.score;
+    CharMatrix &path = align_context.path;
+    DoubleMatrix &val = align_context.val;
+    CoordArray &xtm = align_context.coords.xtm;
+    CoordArray &ytm = align_context.coords.ytm;
+    CoordArray &xt = align_context.coords.xt;
+    CoordArray &r1 = align_context.coords.r1;
+    CoordArray &r2 = align_context.coords.r2;
+    std::vector<int> &invmap0 = align_context.res_map.invmap0;
+    std::vector<int> &invmap = align_context.res_map.invmap;
+    Vec3 &t = align_context.transform.t;
+    RotMat &u = align_context.transform.u;
+    double &TMmax = align_context.transform.TMmax;
     double &TM_ali = chain_align_res.TM_ali;
     int &L_ali = chain_align_res.L_ali;
     double &rmsd_ali = chain_align_res.rmsd_ali;
@@ -3500,24 +3500,24 @@ inline int tmalign_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c,
 
 inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
 {
-    double &score_d8 = align_state.search_params.score_d8;
-    double &d0 = align_state.search_params.d0;
-    double &Lnorm = align_state.search_params.Lnorm;
-    double &local_d0_search = align_state.search_params.local_d0_search;
-    int &simplify_step = align_state.search_params.simplify_step;
-    int &score_sum_method = align_state.search_params.score_sum_method;
-    CoordArray &xtm = align_state.coords.xtm;
-    CoordArray &ytm = align_state.coords.ytm;
-    CoordArray &xt = align_state.coords.xt;
-    CoordArray &r1 = align_state.coords.r1;
-    CoordArray &r2 = align_state.coords.r2;
-    std::vector<int> &invmap0 = align_state.res_map.invmap0;
-    std::vector<int> &m1 = align_state.res_map.m1;
-    std::vector<int> &m2 = align_state.res_map.m2;
-    Vec3 &t = align_state.transform.t;
-    RotMat &u = align_state.transform.u;
+    double &score_d8 = align_context.search_params.score_d8;
+    double &d0 = align_context.search_params.d0;
+    double &Lnorm = align_context.search_params.Lnorm;
+    double &local_d0_search = align_context.search_params.local_d0_search;
+    int &simplify_step = align_context.search_params.simplify_step;
+    int &score_sum_method = align_context.search_params.score_sum_method;
+    CoordArray &xtm = align_context.coords.xtm;
+    CoordArray &ytm = align_context.coords.ytm;
+    CoordArray &xt = align_context.coords.xt;
+    CoordArray &r1 = align_context.coords.r1;
+    CoordArray &r2 = align_context.coords.r2;
+    std::vector<int> &invmap0 = align_context.res_map.invmap0;
+    std::vector<int> &m1 = align_context.res_map.m1;
+    std::vector<int> &m2 = align_context.res_map.m2;
+    Vec3 &t = align_context.transform.t;
+    RotMat &u = align_context.transform.u;
     const bool fast_opt = align_opts.fast_opt;
     const int i_opt = align_opts.i_opt;
     int &n_ali = chain_align_res.n_ali;
@@ -3582,23 +3582,23 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
 }
 
 inline void tmalign_final_tmscore(int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
+    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
 {
-    double &D0_MIN = align_state.search_params.D0_MIN;
-    double &Lnorm = align_state.search_params.Lnorm;
-    double &score_d8 = align_state.search_params.score_d8;
-    double &d0 = align_state.search_params.d0;
-    double &d0_search = align_state.search_params.d0_search;
-    double &local_d0_search = align_state.search_params.local_d0_search;
-    int &simplify_step = align_state.search_params.simplify_step;
-    int &score_sum_method = align_state.search_params.score_sum_method;
-    CoordArray &xtm = align_state.coords.xtm;
-    CoordArray &ytm = align_state.coords.ytm;
-    CoordArray &xt = align_state.coords.xt;
-    CoordArray &r1 = align_state.coords.r1;
-    CoordArray &r2 = align_state.coords.r2;
-    Vec3 &t = align_state.transform.t;
-    RotMat &u = align_state.transform.u;
+    double &D0_MIN = align_context.search_params.D0_MIN;
+    double &Lnorm = align_context.search_params.Lnorm;
+    double &score_d8 = align_context.search_params.score_d8;
+    double &d0 = align_context.search_params.d0;
+    double &d0_search = align_context.search_params.d0_search;
+    double &local_d0_search = align_context.search_params.local_d0_search;
+    int &simplify_step = align_context.search_params.simplify_step;
+    int &score_sum_method = align_context.search_params.score_sum_method;
+    CoordArray &xtm = align_context.coords.xtm;
+    CoordArray &ytm = align_context.coords.ytm;
+    CoordArray &xt = align_context.coords.xt;
+    CoordArray &r1 = align_context.coords.r1;
+    CoordArray &r2 = align_context.coords.r2;
+    Vec3 &t = align_context.transform.t;
+    RotMat &u = align_context.transform.u;
     double &TM1 = chain_align_res.TM1;
     double &TM2 = chain_align_res.TM2;
     double &TM3 = chain_align_res.TM3;
@@ -3692,16 +3692,16 @@ inline void tmalign_final_tmscore(int xlen, int ylen,
 inline void tmalign_extract_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& seqx, const std::string& seqy, int xlen, int ylen,
     const double d0_out, const int n_ali8,
-    TMscoreAlignContext& align_state, ChainPairAlignResult& chain_align_res)
+    TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
 {
     std::string &seqM = chain_align_res.seqM;
     std::string &seqxA = chain_align_res.seqxA;
     std::string &seqyA = chain_align_res.seqyA;
     std::vector<double> &do_vec = chain_align_res.do_vec;
     double &Liden = chain_align_res.Liden;
-    CoordArray &xt = align_state.coords.xt;
-    std::vector<int> &m1 = align_state.res_map.m1;
-    std::vector<int> &m2 = align_state.res_map.m2;
+    CoordArray &xt = align_context.coords.xt;
+    std::vector<int> &m1 = align_context.res_map.m1;
+    std::vector<int> &m2 = align_context.res_map.m2;
     Vec3 &t0 = chain_align_res.t0;
     RotMat &u0 = chain_align_res.u0;
     double d;
@@ -3789,39 +3789,39 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     double &TM3 = chain_align_res.TM3;
     double &TM4 = chain_align_res.TM4;
     double &TM5 = chain_align_res.TM5;
-    TMscoreAlignContext align_state;
+    TMscoreAlignContext align_context;
 
     /***********************/
     // allocate memory
     /***********************/
     int minlen = std::min(xlen, ylen);
-    align_state.score.assign(xlen+1, std::vector<double>(ylen+1));
-    align_state.path.assign( xlen+1, std::vector<char>(ylen+1));
-    align_state.val.assign(  xlen+1, std::vector<double>(ylen+1));
-    align_state.coords.xtm.resize(minlen);
-    align_state.coords.ytm.resize(minlen);
-    align_state.coords.xt.resize(xlen);
-    align_state.coords.r1.resize(minlen);
-    align_state.coords.r2.resize(minlen);
+    align_context.score.assign(xlen+1, std::vector<double>(ylen+1));
+    align_context.path.assign( xlen+1, std::vector<char>(ylen+1));
+    align_context.val.assign(  xlen+1, std::vector<double>(ylen+1));
+    align_context.coords.xtm.resize(minlen);
+    align_context.coords.ytm.resize(minlen);
+    align_context.coords.xt.resize(xlen);
+    align_context.coords.r1.resize(minlen);
+    align_context.coords.r2.resize(minlen);
 
     /***********************/
     //    parameter set
     /***********************/
-    parameter_set4search(xlen, ylen, align_state.search_params.D0_MIN, align_state.search_params.Lnorm,
-        align_state.search_params.score_d8, align_state.search_params.d0, align_state.search_params.d0_search, align_state.search_params.dcu0);
-    align_state.search_params.simplify_step    = 40; //for simplified search engine
-    align_state.search_params.score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
+    parameter_set4search(xlen, ylen, align_context.search_params.D0_MIN, align_context.search_params.Lnorm,
+        align_context.search_params.score_d8, align_context.search_params.d0, align_context.search_params.d0_search, align_context.search_params.dcu0);
+    align_context.search_params.simplify_step    = 40; //for simplified search engine
+    align_context.search_params.score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
 
-    align_state.res_map.invmap0.assign(ylen+1, -1);
-    align_state.res_map.invmap.assign(ylen+1, 0);
-    align_state.transform.TMmax = -1;
+    align_context.res_map.invmap0.assign(ylen+1, -1);
+    align_context.res_map.invmap.assign(ylen+1, 0);
+    align_context.transform.TMmax = -1;
 
-    align_state.ddcc = 0.4;
-    if (align_state.search_params.Lnorm <= 40) align_state.ddcc = 0.1;   //Lnorm was setted in parameter_set4search
-    align_state.search_params.local_d0_search = align_state.search_params.d0_search;
+    align_context.ddcc = 0.4;
+    if (align_context.search_params.Lnorm <= 40) align_context.ddcc = 0.1;   //Lnorm was setted in parameter_set4search
+    align_context.search_params.local_d0_search = align_context.search_params.d0_search;
 
     int rc = tmalign_build_initial_alignment(xa_c, ya_c, secx, secy,
-        xlen, ylen, minlen, sequence, align_opts, align_state, chain_align_res);
+        xlen, ylen, minlen, sequence, align_opts, align_context, chain_align_res);
     if (rc) return rc;
 
     //*******************************************************************//
@@ -3831,7 +3831,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     bool flag=false;
     for(int i=0; i<ylen; i++)
     {
-        if(align_state.res_map.invmap0[i]>=0)
+        if(align_context.res_map.invmap0[i]>=0)
         {
             flag=true;
             break;
@@ -3850,7 +3850,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     if (align_opts.TMcut>0)
     {
         double TMtmp=approx_TM(xlen, ylen, align_opts.a_opt,
-            xa_c, ya_c, t0, u0, align_state.res_map.invmap0, align_opts.mol_type);
+            xa_c, ya_c, t0, u0, align_context.res_map.invmap0, align_opts.mol_type);
 
         if (TMtmp<0.6*align_opts.TMcut)
         {
@@ -3861,10 +3861,10 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
         }
     }
 
-    tmalign_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, align_state, chain_align_res);
-    tmalign_final_tmscore(xlen, ylen, align_opts, align_state, chain_align_res);
+    tmalign_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, align_context, chain_align_res);
+    tmalign_final_tmscore(xlen, ylen, align_opts, align_context, chain_align_res);
     tmalign_extract_alignment_strings(xa_c, ya_c, seqx, seqy, xlen, ylen,
-        chain_align_res.d0_out, chain_align_res.n_ali8, align_state, chain_align_res);
+        chain_align_res.d0_out, chain_align_res.n_ali8, align_context, chain_align_res);
 
     return 0; // zero for no exception
 }
