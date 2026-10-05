@@ -114,94 +114,67 @@ struct NWalignOptions
 /**********************/
 //    get argument
 /**********************/
+struct BoolFlag { const char* name; bool* target; };
+
+bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+    {
+        if (std::string(arg) == flags[k].name)
+        {
+            *flags[k].target = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_numeric_option(int argc, char* argv[], int& i, NWalignOptions& nwalign_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-infmt1") { nwalign_opts.infmt1_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-infmt2") { nwalign_opts.infmt2_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-ter")    { nwalign_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-split")  { nwalign_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-outfmt") { nwalign_opts.outfmt_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-glocal") { nwalign_opts.glocal     = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-het")    { nwalign_opts.het_opt    = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, NWalignOptions& nwalign_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-atom")   { nwalign_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-mol")    { nwalign_opts.mol_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir")    { nwalign_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir1")   { nwalign_opts.dir1_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir2")   { nwalign_opts.dir2_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { nwalign_opts.suffix_opt = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-chain1") { split(argv[i+1], nwalign_opts.chain2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-chain2") { split(argv[i+1], nwalign_opts.chain2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-model1") { split(argv[i+1], nwalign_opts.model2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-model2") { split(argv[i+1], nwalign_opts.model2parse2, ','); i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], NWalignOptions& nwalign_opts)
 {
+    const BoolFlag bool_flags[] = {
+        {"-h", &nwalign_opts.h_opt},
+    };
+    const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
+
     for(int i = 1; i < argc; i++)
     {
-        if ( std::string(argv[i]) == "-h" )
-        {
-            nwalign_opts.h_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-infmt1" && i < (argc-1) )
-        {
-            nwalign_opts.infmt1_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-infmt2" && i < (argc-1) )
-        {
-            nwalign_opts.infmt2_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
-        {
-            nwalign_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            nwalign_opts.split_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            nwalign_opts.atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
-        {
-            nwalign_opts.mol_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
-        {
-            nwalign_opts.dir_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir1" && i < (argc-1) )
-        {
-            nwalign_opts.dir1_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir2" && i < (argc-1) )
-        {
-            nwalign_opts.dir2_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            nwalign_opts.suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-outfmt" && i < (argc-1) )
-        {
-            nwalign_opts.outfmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-glocal" && i < (argc-1) )
-        {
-            nwalign_opts.glocal=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            nwalign_opts.het_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if (std::string(argv[i]) == "-chain1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],nwalign_opts.chain2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-chain2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],nwalign_opts.chain2parse2,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],nwalign_opts.model2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],nwalign_opts.model2parse2,',');
-            i++;
-        }
+        if (parse_numeric_option(argc, argv, i, nwalign_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, nwalign_opts))
+            continue;
+        else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
+            continue;
         else if (nwalign_opts.xname.size() == 0) nwalign_opts.xname=argv[i];
         else if (nwalign_opts.yname.size() == 0) nwalign_opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
