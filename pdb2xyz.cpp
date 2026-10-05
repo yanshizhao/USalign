@@ -58,52 +58,47 @@ struct Pdb2xyzOptions
 /**********************/
 //    get argument
 /**********************/
+bool parse_numeric_option(int argc, char* argv[], int& i, Pdb2xyzOptions& pdb2xyz_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-ter")     { pdb2xyz_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-split")  { pdb2xyz_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-infmt")  { pdb2xyz_opts.infmt_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-het")    { pdb2xyz_opts.het_opt    = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, Pdb2xyzOptions& pdb2xyz_opts)
+{
+    if (std::string(argv[i]) == "-chain")
+    {
+        if (i + 1 >= argc)
+            PrintErrorAndQuit("ERROR! Missing value for -chain");
+        split(argv[i+1], pdb2xyz_opts.chain2parse, ','); i++;
+    }
+    else if (std::string(argv[i]) == "-model")
+    {
+        if (i + 1 >= argc)
+            PrintErrorAndQuit("ERROR! Missing value for -model");
+        split(argv[i+1], pdb2xyz_opts.model2parse, ','); i++;
+    }
+    else if (i + 1 >= argc) return false;
+    else if (std::string(argv[i]) == "-atom")   { pdb2xyz_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir")    { pdb2xyz_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { pdb2xyz_opts.suffix_opt = argv[i + 1]; i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], Pdb2xyzOptions& pdb2xyz_opts)
 {
     for(int i = 1; i < argc; i++)
     {
-        if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
-        {
-            pdb2xyz_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            pdb2xyz_opts.split_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            pdb2xyz_opts.atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
-        {
-            pdb2xyz_opts.dir_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            pdb2xyz_opts.suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
-        {
-            pdb2xyz_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            pdb2xyz_opts.het_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if (std::string(argv[i]) == "-chain" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain");
-            split(argv[i+1],pdb2xyz_opts.chain2parse,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model");
-            split(argv[i+1],pdb2xyz_opts.model2parse,',');
-            i++;
-        }
+        if (parse_numeric_option(argc, argv, i, pdb2xyz_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, pdb2xyz_opts))
+            continue;
         else pdb2xyz_opts.xname=argv[i];
     }
 }
