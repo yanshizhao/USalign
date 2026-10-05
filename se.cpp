@@ -557,12 +557,6 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
         chainID_list1.clear();
         mol_vec1.clear();
     } // i
-    if (chain2_list.size()==1)
-    {
-        PDB_lines2.clear();
-        chainID_list2.clear();
-        mol_vec2.clear();
-    }
 }
 
 int main(int argc, char *argv[])
