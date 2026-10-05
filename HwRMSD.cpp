@@ -1,5 +1,4 @@
 #include "HwRMSD.h"
-#include "option_parse.h"
 
 void print_extra_help()
 {
@@ -170,89 +169,115 @@ struct HwRMSDOptions
 /**********************/
 //    get argument
 /**********************/
+struct BoolFlag { const char* name; bool* target; };
+
+bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+    {
+        if (std::string(arg) == flags[k].name)
+        {
+            *flags[k].target = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_file_option(int argc, char* argv[], int& i, HwRMSDOptions& hwrmsd_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-o")
+    {
+        hwrmsd_opts.fname_super = argv[i + 1];      hwrmsd_opts.o_opt = true;    i++;
+    }
+    else if (std::string(argv[i]) == "-m")
+    {
+        hwrmsd_opts.fname_matrix = argv[i + 1];     hwrmsd_opts.m_opt = true;    i++;
+    }
+    else if (std::string(argv[i]) == "-i")
+    {
+        if (hwrmsd_opts.i_opt==3)
+            PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
+        hwrmsd_opts.fname_lign = argv[i + 1];       hwrmsd_opts.i_opt = 1;       i++;
+    }
+    else if (std::string(argv[i]) == "-I")
+    {
+        if (hwrmsd_opts.i_opt==1)
+            PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
+        hwrmsd_opts.fname_lign = argv[i + 1];       hwrmsd_opts.i_opt = 3;       i++;
+    }
+    else return false;
+    return true;
+}
+
+bool parse_numeric_option(int argc, char* argv[], int& i, HwRMSDOptions& hwrmsd_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L")
+    {
+        hwrmsd_opts.Lnorm_ass = safe_stod(argv[i + 1]);     hwrmsd_opts.u_opt = true;    i++;
+    }
+    else if (std::string(argv[i]) == "-d")
+    {
+        hwrmsd_opts.d0_scale = safe_stod(argv[i + 1]);      hwrmsd_opts.d_opt = true;    i++;
+    }
+    else if (std::string(argv[i]) == "-infmt1") { hwrmsd_opts.infmt1_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-infmt2") { hwrmsd_opts.infmt2_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-ter")    { hwrmsd_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-split")  { hwrmsd_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-outfmt") { hwrmsd_opts.outfmt_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-byresi") { hwrmsd_opts.byresi_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-glocal") { hwrmsd_opts.glocal     = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-iter")   { hwrmsd_opts.iter_opt   = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-early")  { hwrmsd_opts.early_opt  = safe_stod(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-seq")    { hwrmsd_opts.seq_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-het")    { hwrmsd_opts.het_opt    = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, HwRMSDOptions& hwrmsd_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-a")
+    {
+        if (std::string(argv[i + 1]) == "T")      hwrmsd_opts.a_opt=true;
+        else if (std::string(argv[i + 1]) == "F") hwrmsd_opts.a_opt=false;
+        else PrintErrorAndQuit("Wrong value for option -a! It should be T or F");
+        i++;
+    }
+    else if (std::string(argv[i]) == "-chain1") { split(argv[i+1], hwrmsd_opts.chain2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-chain2") { split(argv[i+1], hwrmsd_opts.chain2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-model1") { split(argv[i+1], hwrmsd_opts.model2parse1, ','); i++; }
+    else if (std::string(argv[i]) == "-model2") { split(argv[i+1], hwrmsd_opts.model2parse2, ','); i++; }
+    else if (std::string(argv[i]) == "-dir")    { hwrmsd_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir1")   { hwrmsd_opts.dir1_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir2")   { hwrmsd_opts.dir2_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { hwrmsd_opts.suffix_opt = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-atom")   { hwrmsd_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-mol")    { hwrmsd_opts.mol_opt    = argv[i + 1]; i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], HwRMSDOptions& hwrmsd_opts)
 {
-    const OptionSpec option_specs[] =
-    {
-        { "-o",       &hwrmsd_opts.fname_super,  &hwrmsd_opts.o_opt, OPTION_STRING },
-        { "-u",       &hwrmsd_opts.Lnorm_ass,    &hwrmsd_opts.u_opt, OPTION_DOUBLE },
-        { "-L",       &hwrmsd_opts.Lnorm_ass,    &hwrmsd_opts.u_opt, OPTION_DOUBLE },
-        { "-d",       &hwrmsd_opts.d0_scale,     &hwrmsd_opts.d_opt, OPTION_DOUBLE },
-        { "-h",       &hwrmsd_opts.h_opt,        nullptr, OPTION_FLAG },
-        { "-m",       &hwrmsd_opts.fname_matrix, &hwrmsd_opts.m_opt, OPTION_STRING },
-        { "-infmt1",  &hwrmsd_opts.infmt1_opt,   nullptr, OPTION_INT },
-        { "-infmt2",  &hwrmsd_opts.infmt2_opt,   nullptr, OPTION_INT },
-        { "-ter",     &hwrmsd_opts.ter_opt,      nullptr, OPTION_INT },
-        { "-split",   &hwrmsd_opts.split_opt,    nullptr, OPTION_INT },
-        { "-atom",    &hwrmsd_opts.atom_opt,     nullptr, OPTION_STRING },
-        { "-mol",     &hwrmsd_opts.mol_opt,      nullptr, OPTION_STRING },
-        { "-dir",     &hwrmsd_opts.dir_opt,      nullptr, OPTION_STRING },
-        { "-dir1",    &hwrmsd_opts.dir1_opt,     nullptr, OPTION_STRING },
-        { "-dir2",    &hwrmsd_opts.dir2_opt,     nullptr, OPTION_STRING },
-        { "-suffix",  &hwrmsd_opts.suffix_opt,   nullptr, OPTION_STRING },
-        { "-outfmt",  &hwrmsd_opts.outfmt_opt,   nullptr, OPTION_INT },
-        { "-byresi",  &hwrmsd_opts.byresi_opt,   nullptr, OPTION_INT },
-        { "-glocal",  &hwrmsd_opts.glocal,       nullptr, OPTION_INT },
-        { "-iter",    &hwrmsd_opts.iter_opt,     nullptr, OPTION_INT },
-        { "-early",   &hwrmsd_opts.early_opt,    nullptr, OPTION_DOUBLE },
-        { "-seq",     &hwrmsd_opts.seq_opt,      nullptr, OPTION_INT },
-        { "-het",     &hwrmsd_opts.het_opt,      nullptr, OPTION_INT },
+    const BoolFlag bool_flags[] = {
+        {"-h", &hwrmsd_opts.h_opt},
     };
-    const std::size_t option_spec_num = sizeof(option_specs) / sizeof(option_specs[0]);
+    const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
 
     for(int i = 1; i < argc; i++)
     {
-        if (parse_option(option_specs, option_spec_num, argc, argv, i) == OPTION_MATCHED)
-        {
+        if (parse_file_option(argc, argv, i, hwrmsd_opts))
             continue;
-        }
-        if ( std::string(argv[i]) == "-a" && i < (argc-1) )
-        {
-            if (std::string(argv[i + 1]) == "T")      hwrmsd_opts.a_opt=true;
-            else if (std::string(argv[i + 1]) == "F") hwrmsd_opts.a_opt=false;
-            else PrintErrorAndQuit("Wrong value for option -a! It should be T or F");
-            i++;
-        }
-        else if ( std::string(argv[i]) == "-i" && i < (argc-1) )
-        {
-            if (hwrmsd_opts.i_opt==3)
-                PrintErrorAndQuit("ERROR! -i and -I cannot be used together");
-            hwrmsd_opts.fname_lign = argv[i + 1];      hwrmsd_opts.i_opt = 1; i++;
-        }
-        else if (std::string(argv[i]) == "-I" && i < (argc-1) )
-        {
-            if (hwrmsd_opts.i_opt==1)
-                PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
-            hwrmsd_opts.fname_lign = argv[i + 1];      hwrmsd_opts.i_opt = 3; i++;
-        }
-        else if (std::string(argv[i]) == "-chain1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain1");
-            split(argv[i+1],hwrmsd_opts.chain2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-chain2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -chain2");
-            split(argv[i+1],hwrmsd_opts.chain2parse2,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model1" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model1");
-            split(argv[i+1],hwrmsd_opts.model2parse1,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model2" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -model2");
-            split(argv[i+1],hwrmsd_opts.model2parse2,',');
-            i++;
-        }
+        else if (parse_numeric_option(argc, argv, i, hwrmsd_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, hwrmsd_opts))
+            continue;
+        else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
+            continue;
         else if (hwrmsd_opts.xname.size() == 0) hwrmsd_opts.xname=argv[i];
         else if (hwrmsd_opts.yname.size() == 0) hwrmsd_opts.yname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
