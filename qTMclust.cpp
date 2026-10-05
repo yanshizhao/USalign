@@ -166,112 +166,118 @@ struct QTMclustOptions
     bool   h_opt = false; // print full help message
 };
 
+struct BoolFlag { const char* name; bool* target; };
+
+bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
+{
+    for (size_t k = 0; k < n; k++)
+    {
+        if (std::string(arg) == flags[k].name)
+        {
+            *flags[k].target = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_file_option(int argc, char* argv[], int& i, QTMclustOptions& qtmclust_opts,
+    std::map<std::string, std::map<std::string,bool> >& init_cluster)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-I")
+    {
+        qtmclust_opts.fname_lign = argv[i + 1];     qtmclust_opts.i_opt = 3;     i++;
+    }
+    else if (std::string(argv[i]) == "-o")
+    {
+        qtmclust_opts.fname_clust = argv[i + 1];    i++;
+    }
+    else if (std::string(argv[i]) == "-init")
+    {
+        read_init_cluster(argv[i+1], init_cluster);  i++;
+    }
+    else return false;
+    return true;
+}
+
+bool parse_numeric_option(int argc, char* argv[], int& i, QTMclustOptions& qtmclust_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-u" || std::string(argv[i]) == "-L")
+    {
+        PrintErrorAndQuit("Sorry! -u has not been implemented yet");
+        qtmclust_opts.Lnorm_ass = safe_stod(argv[i + 1]);   qtmclust_opts.u_opt = true;  i++;
+    }
+    else if (std::string(argv[i]) == "-d")
+    {
+        PrintErrorAndQuit("Sorry! -d has not been implemented yet");
+        qtmclust_opts.d0_scale = safe_stod(argv[i + 1]);    qtmclust_opts.d_opt = true;  i++;
+    }
+    else if (std::string(argv[i]) == "-s")
+    {
+        qtmclust_opts.s_opt = safe_stoi(argv[i + 1]);   i++;
+        if (qtmclust_opts.s_opt<1 || qtmclust_opts.s_opt>6)
+            PrintErrorAndQuit("-s must be within 1 to 6");
+    }
+    else if (std::string(argv[i]) == "-infmt")  { qtmclust_opts.infmt_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-ter")    { qtmclust_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-split")  { qtmclust_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-TMcut")
+    {
+        qtmclust_opts.TMcut = safe_stod(argv[i + 1]);   i++;
+        if (qtmclust_opts.TMcut>1 or qtmclust_opts.TMcut<0.45)
+            PrintErrorAndQuit("TMcut must be in the range of [0.45,1)");
+    }
+    else if (std::string(argv[i]) == "-byresi")
+    {
+        PrintErrorAndQuit("Sorry! -byresi has not been implemented yet");
+        qtmclust_opts.byresi_opt = safe_stoi(argv[i + 1]);  i++;
+    }
+    else if (std::string(argv[i]) == "-het")    { qtmclust_opts.het_opt = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, QTMclustOptions& qtmclust_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-a")
+    {
+        PrintErrorAndQuit("Sorry! -a is not used for clustering");
+    }
+    else if (std::string(argv[i]) == "-atom")   { qtmclust_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-mol")    { qtmclust_opts.mol_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir")    { qtmclust_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { qtmclust_opts.suffix_opt = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-chain")  { split(argv[i+1], qtmclust_opts.chain2parse, ','); i++; }
+    else if (std::string(argv[i]) == "-model")  { split(argv[i+1], qtmclust_opts.model2parse, ','); i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], QTMclustOptions& qtmclust_opts,
     std::map<std::string, std::map<std::string,bool> >& init_cluster)
 {
+    const BoolFlag bool_flags[] = {
+        {"-h",    &qtmclust_opts.h_opt},
+        {"-fast", &qtmclust_opts.fast_opt},
+    };
+    const size_t n_bool_flags = sizeof(bool_flags) / sizeof(bool_flags[0]);
+
     for(int i = 1; i < argc; i++)
     {
-        if ( (std::string(argv[i]) == "-u"||std::string(argv[i]) == "-L") && i < (argc-1) )
-        {
-            PrintErrorAndQuit("Sorry! -u has not been implemented yet");
-            qtmclust_opts.Lnorm_ass = safe_stod(argv[i + 1]); qtmclust_opts.u_opt = true; i++;
-        }
-        else if ( std::string(argv[i]) == "-d" && i < (argc-1) )
-        {
-            PrintErrorAndQuit("Sorry! -d has not been implemented yet");
-            qtmclust_opts.d0_scale = safe_stod(argv[i + 1]); qtmclust_opts.d_opt = true; i++;
-        }
-        else if (std::string(argv[i]) == "-I" && i < (argc-1) )
-        {
-            qtmclust_opts.fname_lign = argv[i + 1];      qtmclust_opts.i_opt = 3; i++;
-        }
-        else if ( std::string(argv[i]) == "-o" && i < (argc-1) )
-        {
-            qtmclust_opts.fname_clust = argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-a" && i < (argc-1))
-        {
-            PrintErrorAndQuit("Sorry! -a is not used for clustering");
-        }
-        else if ( std::string(argv[i]) == "-s" && i < (argc-1) )
-        {
-            qtmclust_opts.s_opt=safe_stoi(argv[i + 1]); i++;
-            if (qtmclust_opts.s_opt<1 || qtmclust_opts.s_opt>6)
-                PrintErrorAndQuit("-s must be within 1 to 6");
-        }
-        else if ( std::string(argv[i]) == "-h" )
-        {
-            qtmclust_opts.h_opt = true;
-        }
-        else if (std::string(argv[i]) == "-fast")
-        {
-            qtmclust_opts.fast_opt = true;
-        }
-        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
-        {
-            qtmclust_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-ter" && i < (argc-1) )
-        {
-            qtmclust_opts.ter_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-split" && i < (argc-1) )
-        {
-            qtmclust_opts.split_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            qtmclust_opts.atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" && i < (argc-1) )
-        {
-            qtmclust_opts.mol_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
-        {
-            qtmclust_opts.dir_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            qtmclust_opts.suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-TMcut" && i < (argc-1) )
-        {
-            qtmclust_opts.TMcut=safe_stod(argv[i + 1]); i++;
-            if (qtmclust_opts.TMcut>1 or qtmclust_opts.TMcut<0.45)
-                PrintErrorAndQuit("TMcut must be in the range of [0.45,1)");
-        }
-        else if ( std::string(argv[i]) == "-byresi" && i < (argc-1) )
-        {
-            PrintErrorAndQuit("Sorry! -byresi has not been implemented yet");
-            qtmclust_opts.byresi_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            qtmclust_opts.het_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-init" && i < (argc-1) )
-        {
-            read_init_cluster(argv[i+1],init_cluster); i++;
-        }
-        else if (std::string(argv[i]) == "-chain" )
-        {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -chain");
-            split(argv[i+1],qtmclust_opts.chain2parse,',');
-            i++;
-        }
-        else if (std::string(argv[i]) == "-model" )
-        {
-            if (i>=(argc-1)) 
-                PrintErrorAndQuit("ERROR! Missing value for -model");
-            split(argv[i+1],qtmclust_opts.model2parse,',');
-            i++;
-        }
+        if (parse_file_option(argc, argv, i, qtmclust_opts, init_cluster))
+            continue;
+        else if (parse_numeric_option(argc, argv, i, qtmclust_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, qtmclust_opts))
+            continue;
+        else if (apply_bool_flag(argv[i], bool_flags, n_bool_flags))
+            continue;
         else if (qtmclust_opts.xname.size() == 0) qtmclust_opts.xname=argv[i];
         else PrintErrorAndQuit(std::string("ERROR! Undefined option ")+argv[i]);
     }
-
 }
 
 void check_input_presence(QTMclustOptions& qtmclust_opts)
