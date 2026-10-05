@@ -96,7 +96,7 @@ struct ChainPairAlignResult
     std::vector<int> invmap;
 };
 
-inline void init_identity_t_u(Vec3& t0, RotMat& u0)
+inline void init_rt_mat(Vec3& t0, RotMat& u0)
 {
     u0[0][0]=u0[1][1]=u0[2][2]=1;
     u0[0][1]=         u0[0][2]=

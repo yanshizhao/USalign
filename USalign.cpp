@@ -1533,7 +1533,7 @@ void align_chain_pair(ChainPairAlignResult& chain_align_res,
     else if (align_opts.se_opt)
     {
         chain_align_res.invmap.assign(ylen + 1, 0);
-        init_identity_t_u(chain_align_res.t0, chain_align_res.u0);
+        init_rt_mat(chain_align_res.t0, chain_align_res.u0);
         se_main(xa, ya, seqx, seqy,
             chain_align_res,
             xlen, ylen, sequence, align_opts, outfmt_opt);
