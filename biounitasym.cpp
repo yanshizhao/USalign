@@ -55,36 +55,39 @@ struct BiounitasymOptions
 /**********************/
 //    get argument
 /**********************/
+bool parse_numeric_option(int argc, char* argv[], int& i, BiounitasymOptions& biounitasym_opts)
+{
+    if (i + 1 >= argc) return false;
+    if (std::string(argv[i]) == "-infmt")   { biounitasym_opts.infmt_opt = safe_stoi(argv[i + 1]); i++; }
+    else if (std::string(argv[i]) == "-het") { biounitasym_opts.het_opt  = safe_stoi(argv[i + 1]); i++; }
+    else return false;
+    return true;
+}
+
+bool parse_string_option(int argc, char* argv[], int& i, BiounitasymOptions& biounitasym_opts)
+{
+    if (std::string(argv[i]) == "-mol")
+    {
+        if (i + 1 >= argc)
+            PrintErrorAndQuit("ERROR! Missing value for -mol");
+        biounitasym_opts.mol_opt = argv[i + 1]; i++;
+    }
+    else if (i + 1 >= argc) return false;
+    else if (std::string(argv[i]) == "-atom")   { biounitasym_opts.atom_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dir")    { biounitasym_opts.dir_opt    = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-suffix") { biounitasym_opts.suffix_opt = argv[i + 1]; i++; }
+    else return false;
+    return true;
+}
+
 void parse_arguments(int argc, char* argv[], BiounitasymOptions& biounitasym_opts)
 {
     for (int i = 1; i < argc; i++)
     {
-        if ( std::string(argv[i]) == "-atom" && i < (argc-1) )
-        {
-            biounitasym_opts.atom_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-mol" )
-        {
-            if (i>=(argc-1))
-                PrintErrorAndQuit("ERROR! Missing value for -mol");
-            biounitasym_opts.mol_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-dir" && i < (argc-1) )
-        {
-            biounitasym_opts.dir_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-suffix" && i < (argc-1) )
-        {
-            biounitasym_opts.suffix_opt=argv[i + 1]; i++;
-        }
-        else if ( std::string(argv[i]) == "-infmt" && i < (argc-1) )
-        {
-            biounitasym_opts.infmt_opt=safe_stoi(argv[i + 1]); i++;
-        }
-        else if ( std::string(argv[i]) == "-het" && i < (argc-1) )
-        {
-            biounitasym_opts.het_opt=safe_stoi(argv[i + 1]); i++;
-        }
+        if (parse_numeric_option(argc, argv, i, biounitasym_opts))
+            continue;
+        else if (parse_string_option(argc, argv, i, biounitasym_opts))
+            continue;
         else biounitasym_opts.xname=argv[i];
     }
 }
