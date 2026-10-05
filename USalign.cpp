@@ -295,12 +295,7 @@ struct ChainParseOptions {
     bool retain_pdb_lines;
 };
 
-// ---------------------------------------------------------------------------
-// output_do_block — print aligned residue-pair distances (-do mode)
-// Extracted from the inner loop so it can be reused in both serial and
-// parallel paths.
-// ---------------------------------------------------------------------------
-void output_do_block(std::ostream& os,
+void output_do_distance_table(std::ostream& os,
     const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& pdb_lines1,
     const std::vector<std::string>& pdb_lines2,
@@ -483,7 +478,7 @@ int run_batch_parallel(
             chain_align_res, out_opts, c1.resi_vec, c2.resi_vec, ss);
 
         if (do_opt || (align_opts.cp_opt && out_opts.outfmt_opt <= 0))
-            output_do_block(ss, chain_align_res.seqxA, chain_align_res.seqyA,
+            output_do_distance_table(ss, chain_align_res.seqxA, chain_align_res.seqyA,
                 c1.pdb_lines, c2.pdb_lines, chain_align_res.do_vec, right_num);
 
         out_lines[task.order] = ss.str();
@@ -894,7 +889,7 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const std::vector<std::string>& resi_vec1,
     const std::vector<std::string>& resi_vec2,
     const std::vector<double>* dist_arg = NULL);
-void output_soi_dist_block(std::ostream& os, int ylen,
+void output_soi_dist_table(std::ostream& os, int ylen,
     const std::vector<int>& invmap, const std::vector<double>& dist_list,
     const std::vector<std::string>& pdb_lines1,
     const std::vector<std::string>& pdb_lines2);
@@ -1586,16 +1581,16 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     output_results(
         ChainPairDesc{structure1_display, structure2_display, chain_id1, chain_id2, xlen, ylen},
         chain_align_res, out_opts, resi_vec1, resi_vec2);
-    if (dist_arg) output_soi_dist_block(std::cout, ylen,
+    if (dist_arg) output_soi_dist_table(std::cout, ylen,
         chain_align_res.invmap, *dist_arg, pdb_lines1, pdb_lines2);
     else if (ctrl_opts.do_opt || (ctrl_opts.cp_opt && user_opts.outfmt_opt <= 0))
     {
-        output_do_block(std::cout, chain_align_res.seqxA, chain_align_res.seqyA,
+        output_do_distance_table(std::cout, chain_align_res.seqxA, chain_align_res.seqyA,
             pdb_lines1, pdb_lines2, chain_align_res.do_vec, right_num);
     }
 }
 
-void output_soi_dist_block(std::ostream& os, int ylen,
+void output_soi_dist_table(std::ostream& os, int ylen,
     const std::vector<int>& invmap, const std::vector<double>& dist_list,
     const std::vector<std::string>& pdb_lines1,
     const std::vector<std::string>& pdb_lines2)
