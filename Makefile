@@ -1,6 +1,14 @@
 CC=g++
 MINGW=x86_64-w64-mingw32-g++
 CFLAGS=-O3 -ffast-math -std=gnu++11
+# Keep compiler temporaries inside the tree so the build does not depend on a
+# writable system temp dir (e.g. C:\Windows\ when TEMP is unset under MSYS make).
+BUILD_TMP:=$(CURDIR)/.build_tmp
+$(shell mkdir -p $(BUILD_TMP))
+export TMPDIR:=$(BUILD_TMP)
+export TMP:=$(BUILD_TMP)
+export TEMP:=$(BUILD_TMP)
+INC=-Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Iapp/tools
 OMPFLAGS=-fopenmp
 ifeq ($(OS),Windows_NT)
     # Windows (MSYS2, MinGW, PowerShell, cmd)
@@ -16,59 +24,60 @@ PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta
 
 all: USalign
 
-qTMclust: qTMclust.cpp HwRMSD.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+qTMclust: app/tools/qtmclust_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-USalign: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h NWalign.h BLOSUM.h flexalign.h UPGMA.h
-		${CC} ${CFLAGS} ${OMPFLAGS} USalign.cpp UPGMA.cpp -o $@ ${LDFLAGS}
+USalign: app/usalign.cpp engine/upgma/UPGMA.cpp
+		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USalign.exe: USalign.cpp UPGMA.cpp SOIalign.h MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h NWalign.h BLOSUM.h flexalign.h UPGMA.h
-		${MINGW} ${STATIC_MINGW} ${CFLAGS} USalign.cpp UPGMA.cpp -o $@ ${LDFLAGS}
+USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp
+		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-TMalign: TMalign.cpp param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+TMalign: app/tools/tmalign_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-TMscore: TMscore.cpp TMscore.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+TMscore: app/tools/tmscore_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-MMalign: MMalign.cpp MMalign.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+MMalign: app/tools/mmalign_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-se: se.cpp se.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h NWalign.h BLOSUM.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+se: app/tools/se_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-pdb2ss: pdb2ss.cpp se.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+pdb2ss: app/tools/pdb2ss_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-ca2rr: ca2rr.cpp ca2rr.h se.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h
-	${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+ca2rr: app/tools/ca2rr_main.cpp
+	${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-pdb2xyz: pdb2xyz.cpp basic_fun.h pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+pdb2xyz: app/tools/pdb2xyz_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-xyz_sfetch: xyz_sfetch.cpp
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+xyz_sfetch: app/tools/xyz_sfetch_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-pdb2fasta: pdb2fasta.cpp basic_fun.h pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+pdb2fasta: app/tools/pdb2fasta_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-biounitasym: biounitasym.cpp basic_fun.h pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+biounitasym: app/tools/biounitasym_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-NWalign: NWalign.cpp NWalign.h basic_fun.h pstream.h BLOSUM.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+NWalign: app/tools/nwalign_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-HwRMSD: HwRMSD.cpp HwRMSD.h NWalign.h BLOSUM.h se.h param_set.h basic_fun.h Kabsch.h NW.h TMalign.h pstream.h se.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+HwRMSD: app/tools/hwrmsd_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-cif2pdb: cif2pdb.cpp pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+cif2pdb: app/tools/cif2pdb_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-pdbAtomName: pdbAtomName.cpp pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+pdbAtomName: app/tools/pdbatomname_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
-addChainID: addChainID.cpp pstream.h
-		${CC} ${CFLAGS} $@.cpp -o $@ ${LDFLAGS}
+addChainID: app/tools/addchainid_main.cpp
+		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
 
 clean:
 		rm -f ${PROGRAM}
+		rm -rf $(BUILD_TMP)

@@ -27,3 +27,4 @@ ca2rr
 .idea
 cmake-build-debug
 *.o
+.build_tmp/

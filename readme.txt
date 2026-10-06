@@ -106,14 +106,14 @@
            make
        macOS does not support static linking. Remove the -static flag when compiling manually.
    1.2 Manual compilation in bash:
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
            mingw32-make clean
            mingw32-make
    2.2 Manual compilation in PowerShell:
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -o USalign USalign.cpp UPGMA.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 

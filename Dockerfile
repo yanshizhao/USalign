@@ -1,7 +1,7 @@
 FROM gcc:12.2 as build
 COPY . /usr/src/usalign
 WORKDIR /usr/src/usalign
-RUN make -j
+RUN make -j qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta pdb2ss NWalign HwRMSD cif2pdb
 RUN strip qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta pdb2ss NWalign HwRMSD cif2pdb
 
 # Don't use alpine since we need ubuntu's support
