@@ -1,8 +1,7 @@
 #include "TMscore.h"
+#include "banner.h"
 
-void print_version()
-{
-    std::cout <<
+const char TMSCORE_BANNER[] =
 "\n"
 " *************************************************************************\n"
 " *                                 TM-SCORE                              *\n"
@@ -12,9 +11,7 @@ void print_version()
 " *       0.5 < TM-score < 1.00, in about the same fold                   *\n"
 " * Reference: Yang Zhang and Jeffrey Skolnick, Proteins 2004 57: 702-710 *\n"
 " * For comments, please email to: yangzhanglab@umich.edu                 *\n"
-" *************************************************************************"
-    << std::endl;
-}
+" *************************************************************************";
 
 void print_extra_help()
 {
@@ -89,7 +86,6 @@ void print_extra_help()
 
 void print_help(bool h_opt=false)
 {
-    //print_version();
     std::cout <<
 "\n"
 " Brief instruction for running TM-score program:\n"
@@ -290,7 +286,7 @@ void check_input_presence(TMscoreOptions& tmscore_opts)
         if (tmscore_opts.h_opt) print_help(tmscore_opts.h_opt);
         if (tmscore_opts.v_opt)
         {
-            print_version();
+            print_banner(TMSCORE_BANNER);
             exit(EXIT_FAILURE);
         }
         if (tmscore_opts.xname.size()==0)
@@ -416,7 +412,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         GDT_list,maxsub,tmscore_opts.TMcut);
 
     // print result
-    if (tmscore_opts.outfmt_opt==0) print_version();
+    if (tmscore_opts.outfmt_opt==0) print_banner(TMSCORE_BANNER);
     output_TMscore_results(
         chain1.filename.substr(tmscore_opts.dir1_opt.size()+tmscore_opts.dir_opt.size()),
         chain2.filename.substr(tmscore_opts.dir2_opt.size()+tmscore_opts.dir_opt.size()),

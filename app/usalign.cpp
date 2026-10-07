@@ -1,14 +1,13 @@
 // command line argument parsing and document of US-align main program
 
 #include "align_types.h"
+#include "banner.h"
 #include "MMalign.h"
 #include "SOIalign.h"
 #include "flexalign.h"
 #include "UPGMA.h"
 
-void print_version(std::ostream& os = std::cout)
-{
-    os <<
+const char USALIGN_BANNER[] =
 "\n"
 " ********************************************************************\n"
 " * US-align (Version 20260819)                                      *\n"
@@ -17,9 +16,7 @@ void print_version(std::ostream& os = std::cout)
 " *            C Zhang, M Shine, AM Pyle, Y Zhang. (2022) Nat Methods*\n"
 " *            C Zhang, AM Pyle (2022) iScience.                     *\n"
 " * Please email comments and suggestions to zhang@zhanggroup.org    *\n"
-" ********************************************************************"
-    << std::endl;
-}
+" ********************************************************************";
 
 void print_extra_help()
 {
@@ -148,7 +145,7 @@ void print_extra_help()
 
 void print_help()
 {
-    print_version();
+    print_banner(USALIGN_BANNER);
     std::cout <<
 "\n"
 "Usage: USalign PDB1.pdb PDB2.pdb [Options]\n"
@@ -467,7 +464,7 @@ int run_batch_parallel(
         std::string yname_out = c2.filename.substr(
             dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
 
-        if (out_opts.outfmt_opt == 0) print_version(ss);
+        if (out_opts.outfmt_opt == 0) print_banner(USALIGN_BANNER, ss);
 
         int right_num=0;
         if (align_opts.cp_opt) output_cp(xname_out, yname_out,
@@ -1566,7 +1563,7 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const UserOptions& user_opts = common_inputs.user_options;
     const ControlOptions& ctrl_opts = common_inputs.control_options;
 
-    if (user_opts.outfmt_opt == 0) print_version();
+    if (user_opts.outfmt_opt == 0) print_banner(USALIGN_BANNER);
     int right_num=0;
     if (ctrl_opts.cp_opt) output_cp(
         user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size()),
@@ -1696,7 +1693,7 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
             common_inputs.user_options.fast_opt, i_opt, 0, 1),
         common_inputs.parsed_input.sequence, common_inputs.user_options.outfmt_opt);
 
-    if (common_inputs.user_options.outfmt_opt == 0) print_version();
+    if (common_inputs.user_options.outfmt_opt == 0) print_banner(USALIGN_BANNER);
 
     OutputOptions out_opts;
     fill_out_opts_from_user_opts(out_opts, common_inputs.user_options);
@@ -2570,7 +2567,7 @@ void output_final_results(MMalignContext& mmalign_context,
 {
     if (mmalign_context.common_inputs.user_options.outfmt_opt == 0)
     {
-        print_version();
+        print_banner(USALIGN_BANNER);
     }
     
     std::string xname = get_basename(mmalign_context.common_inputs.user_options.xname);
@@ -2814,7 +2811,7 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     enhanced_greedy_search(TMave_mat, assign1_list,
         assign2_list, chain1_num, chain2_num);
 
-    if (user_opts.outfmt_opt==0) print_version();
+    if (user_opts.outfmt_opt==0) print_banner(USALIGN_BANNER);
     RotArray ut_mat; // rotation matrices for all-against-all alignment
     ut_mat.resize(chain1_num);
     int ui;
@@ -4296,7 +4293,7 @@ int mTMalign(AlignCommonInput& common_inputs)
     seqM=buf.str();
     seqM=seqM.substr(0,seqM.size()-1);
     buf.str(std::string());
-    if (user_opts.outfmt_opt==0) print_version();
+    if (user_opts.outfmt_opt==0) print_banner(USALIGN_BANNER);
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
     state.totals.seqM=seqM;
@@ -4638,7 +4635,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                     flex_result = FlexAlignResult();
                     run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flex_result);
 
-                    if (user_opts.outfmt_opt==0) print_version();
+                    if (user_opts.outfmt_opt==0) print_banner(USALIGN_BANNER);
                     output_flexalign_results(chain1_data, chain2_data, flex_result, user_opts, false);
                 } // chain_j
                 if (parsed_input.chain2_list.size()>1)
@@ -4740,7 +4737,7 @@ void check_input_presence(UserOptions& user_opts, ControlOptions& control)
         if (control.h_opt) print_help();
         if (control.v_opt)
         {
-            print_version();
+            print_banner(USALIGN_BANNER);
             exit(EXIT_FAILURE);
         }
         if (user_opts.xname.size()==0)

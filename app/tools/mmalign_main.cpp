@@ -1,18 +1,15 @@
 // command line argument parsing and document of MMalign main program
 
 #include "MMalign.h"
+#include "banner.h"
 
-void print_version()
-{
-    std::cout <<
+const char MMALIGN_BANNER[] =
 "\n"
 " **********************************************************************\n"
 " * MM-align (Version 20231222): complex structure alignment           *\n"
 " * References: S Mukherjee, Y Zhang. Nucl Acids Res 37(11):e83 (2009) *\n"
 " * Please email comments and suggestions to yangzhanglab@umich.edu    *\n"
-" **********************************************************************"
-    << std::endl;
-}
+" **********************************************************************";
 
 void print_extra_help()
 {
@@ -81,7 +78,7 @@ void print_extra_help()
 
 void print_help(bool h_opt=false)
 {
-    print_version();
+    print_banner(MMALIGN_BANNER);
     std::cout <<
 "\n"
 "Usage: MMalign complex1.pdb complex2.pdb [Options]\n"
@@ -278,7 +275,7 @@ void check_input_presence(MMalignOptions& mmalign_opts)
         if (mmalign_opts.h_opt) print_help(mmalign_opts.h_opt);
         if (mmalign_opts.v_opt)
         {
-            print_version();
+            print_banner(MMALIGN_BANNER);
             exit(EXIT_FAILURE);
         }
         if (mmalign_opts.xname.size()==0)
@@ -761,7 +758,7 @@ std::vector<int> assign2_init(chain2_num);
     }
 
     // final alignment
-    if (mmalign_opts.outfmt_opt==0) print_version();
+    if (mmalign_opts.outfmt_opt==0) print_banner(MMALIGN_BANNER);
     {
         ComplexData final_complex1 = complex1;
         ComplexData final_complex2 = complex2;

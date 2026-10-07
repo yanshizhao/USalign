@@ -1,19 +1,16 @@
 // command line argument parsing and document of TMalign main program
 
 #include "TMalign.h"
+#include "banner.h"
 
-void print_version()
-{
-    std::cout <<
+const char TMALIGN_BANNER[] =
 "\n"
 " **********************************************************************\n"
 " * TM-align (Version 20240303): protein and RNA structure alignment   *\n"
 " * References: Y Zhang, J Skolnick. Nucl Acids Res 33, 2302-9 (2005)  *\n"
 " *             S Gong, C Zhang, Y Zhang. Bioinformatics, bz282 (2019) *\n"
 " * Please email comments and suggestions to yangzhanglab@umich.edu    *\n"
-" **********************************************************************"
-    << std::endl;
-}
+" **********************************************************************";
 
 void print_extra_help()
 {
@@ -110,7 +107,7 @@ void print_extra_help()
 
 void print_help(bool h_opt=false)
 {
-    print_version();
+    print_banner(TMALIGN_BANNER);
     std::cout <<
 "\n"
 "Usage: TMalign PDB1.pdb PDB2.pdb [Options]\n"
@@ -340,7 +337,7 @@ void check_input_presence(TMalignOptions& tmalign_opts)
         if (tmalign_opts.h_opt) print_help(tmalign_opts.h_opt);
         if (tmalign_opts.v_opt)
         {
-            print_version();
+            print_banner(TMALIGN_BANNER);
             exit(EXIT_FAILURE);
         }
         if (tmalign_opts.xname.size()==0)
@@ -502,7 +499,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         xlen, ylen, tmalign_opts.sequence, align_opts);
 
     // print result
-    if (tmalign_opts.outfmt_opt==0) print_version();
+    if (tmalign_opts.outfmt_opt==0) print_banner(TMALIGN_BANNER);
     OutputOptions out_opts;
     out_opts.fname_matrix = (tmalign_opts.m_opt?tmalign_opts.fname_matrix:"");
     out_opts.fname_super = (tmalign_opts.o_opt?tmalign_opts.fname_super:"");
