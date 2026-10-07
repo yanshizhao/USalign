@@ -106,6 +106,17 @@
                (PDB1.pdb, PDB2.pdb, align.txt) are under the "example" folder.
 ===============================================================================
 
+================================
+ Source code organization
+================================
+The source tree is organized into five layers, from the bottom up:
+
+    common/         foundation shared by all other layers
+    engine/         alignment engines (one sub-directory per engine)
+    orchestration/  dispatch of a chain-pair alignment to an engine
+    output_funcs/   formatting of alignment results into text / PDB / scripts
+    app/            command-line entry points (one main() per program)
+
 =========================
  How to install US-align
 =========================
