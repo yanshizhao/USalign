@@ -1,4 +1,4 @@
-#include "io.h"
+#include "common.h"
 
 void print_help()
 {

@@ -4,7 +4,7 @@
 
 #include "TMalign.h"
 #include "se.h"
-#include "align_types.h"
+#include "common.h"
 
 #define MAX_SEC_STRUCT_OPT 1
 

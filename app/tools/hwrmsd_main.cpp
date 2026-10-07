@@ -1,5 +1,5 @@
 #include "HwRMSD.h"
-#include "cli.h"
+#include "common.h"
 
 void print_extra_help()
 {

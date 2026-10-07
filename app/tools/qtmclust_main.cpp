@@ -3,7 +3,7 @@
  * HwRMSD.h implement HwRMSD filter.
  * No filter will be used if only TMalign.h is included. */
 
-#include "cli.h"
+#include "common.h"
 
 #include "HwRMSD.h"
 #include "TMalign.h"

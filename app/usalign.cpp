@@ -1,8 +1,6 @@
 // command line argument parsing and document of US-align main program
 
-#include "align_types.h"
-#include "banner.h"
-#include "cli.h"
+#include "common.h"
 #include "output_do.h"
 #include "orchestration.h"
 #include "MMalign.h"

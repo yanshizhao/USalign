@@ -1,7 +1,6 @@
 #include "se.h"
-#include "seqalign.h"
+#include "common.h"
 #include "output_do.h"
-#include "cli.h"
 
 void print_extra_help()
 {

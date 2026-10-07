@@ -2,7 +2,7 @@
 #define TMalign_ca2ct_h 1
 
 #include "TMalign.h"
-#include "GeometryTools.h"
+#include "common.h"
 
 const double CACB=1.53;
 

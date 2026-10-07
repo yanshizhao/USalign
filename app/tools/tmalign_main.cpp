@@ -1,8 +1,7 @@
 // command line argument parsing and document of TMalign main program
 
 #include "TMalign.h"
-#include "banner.h"
-#include "cli.h"
+#include "common.h"
 
 const char TMALIGN_BANNER[] =
 "\n"

@@ -2,10 +2,7 @@
 /* Functions for the core TMalign algorithm, including the entry function
  * TMalign_main */
 
-#include "param.h"
-#include "geometry.h"
-#include "seqalign.h"
-#include "align_types.h"
+#include "common.h"
 #include "output.h"
 #ifdef _OPENMP
 #include <omp.h>

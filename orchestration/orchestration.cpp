@@ -1,6 +1,6 @@
 #include "orchestration.h"
 
-#include "banner.h"
+#include "common.h"
 #include "output_do.h"
 #include "se.h"
 

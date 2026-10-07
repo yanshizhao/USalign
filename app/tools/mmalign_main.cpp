@@ -1,8 +1,7 @@
 // command line argument parsing and document of MMalign main program
 
 #include "MMalign.h"
-#include "banner.h"
-#include "cli.h"
+#include "common.h"
 
 const char MMALIGN_BANNER[] =
 "\n"

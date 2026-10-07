@@ -1,6 +1,5 @@
 #pragma once
-#include "io.h"
-#include "align_types.h"
+#include "common.h"
 
 // script format: 0 - no script; 1 - pymol; 3 - chimerax
 void output_pymol(const std::string xname, const std::string yname,

@@ -1,6 +1,5 @@
 #include "TMscore.h"
-#include "banner.h"
-#include "cli.h"
+#include "common.h"
 
 const char TMSCORE_BANNER[] =
 "\n"
