@@ -22,14 +22,14 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
-ENGINE_CPP=engine/tmalign/tmalign_output.cpp engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
+ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
 COMMON_CPP=common/common.cpp
 ORCH_CPP=orchestration/orchestration.cpp
-OUTPUT_CPP=output/output.cpp
+OUTPUT_CPP=output/output.cpp output/tmalign_output.cpp
 
 all: USalign
 
-qTMclust: app/tools/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+qTMclust: app/tools/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP) $(OUTPUT_CPP)
@@ -38,19 +38,19 @@ USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OR
 USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP) $(OUTPUT_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-TMalign: app/tools/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+TMalign: app/tools/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-TMscore: app/tools/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+TMscore: app/tools/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-MMalign: app/tools/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+MMalign: app/tools/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 se: app/tools/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2ss: app/tools/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+pdb2ss: app/tools/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 ca2rr: app/tools/ca2rr_main.cpp $(COMMON_CPP)
@@ -71,7 +71,7 @@ biounitasym: app/tools/biounitasym_main.cpp $(COMMON_CPP)
 NWalign: app/tools/nwalign_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-HwRMSD: app/tools/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+HwRMSD: app/tools/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 cif2pdb: app/tools/cif2pdb_main.cpp
