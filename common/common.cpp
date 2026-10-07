@@ -1478,8 +1478,6 @@ std::string get_default_outdir()
 
 std::string resolve_outdir(const std::string& given_outdir)
 {
-    std::string outdir = given_outdir.empty() ? get_default_outdir() : given_outdir;
-    make_dirs(outdir);
-    return outdir;
+    return given_outdir.empty() ? get_default_outdir() : given_outdir;
 }
 

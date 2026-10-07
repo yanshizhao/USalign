@@ -1936,6 +1936,7 @@ inline std::string join_outdir(const std::string& outdir, const std::string& nam
     if (name.empty() || name == "-" || outdir.empty() || outdir == ".") return name;
     if (name[0] == '/' || name[0] == '\\') return name;
     if (name.size() > 1 && name[1] == ':') return name;
+    make_dirs(outdir);
     if (outdir[outdir.size() - 1] == '/' || outdir[outdir.size() - 1] == '\\')
         return outdir + name;
     return outdir + "/" + name;
