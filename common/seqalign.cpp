@@ -1,40 +1,7 @@
-#pragma once
-// header for Needleman-Wunsch global sequence alignment
-#ifndef NWalign_H
-#define NWalign_H 1
+#include "seqalign.h"
 
-#include "io.h"
-#include "BLOSUM.h"
-
-const int gapopen_blosum62=-11;
-const int gapext_blosum62=-1;
-
-const int gapopen_blastn=-15; //-5;
-const int gapext_blastn =-4;  //-2;
-
-struct GotohMatrix
-{
-    IntMatrix S;
-    IntMatrix JumpH;
-    IntMatrix JumpV;
-    IntMatrix P;
-    IntMatrix H;
-    IntMatrix V;
-
-    void init(const int xlen, const int ylen)
-    {
-        S.assign(xlen+1, std::vector<int>(ylen+1));
-        JumpH.assign(xlen+1, std::vector<int>(ylen+1));
-        JumpV.assign(xlen+1, std::vector<int>(ylen+1));
-        P.assign(xlen+1, std::vector<int>(ylen+1));
-        H.assign(xlen+1, std::vector<int>(ylen+1));
-        V.assign(xlen+1, std::vector<int>(ylen+1));
-    }
-};
-
-// initialize matrix in gotoh algorithm
 void init_gotoh_mat(GotohMatrix& m, const int xlen, const int ylen, const int gapopen,
-    const int gapext, const int glocal=0, const int alt_init=1)
+    const int gapext, const int glocal, const int alt_init)
 {
     IntMatrix& S = m.S;
     IntMatrix& JumpH = m.JumpH;
@@ -74,8 +41,6 @@ void init_gotoh_mat(GotohMatrix& m, const int xlen, const int ylen, const int ga
     }
 }
 
-/* locate the cell with highest alignment score. reset path after
- * the cell to zero */
 void find_highest_align_score( GotohMatrix& m,
     int &aln_score, const int xlen,const int ylen)
 {
@@ -104,30 +69,8 @@ void find_highest_align_score( GotohMatrix& m,
     for (i=0;i<xlen+1;i++) for (j=max_aln_j+1;j<ylen+1;j++) P[i][j]=0;
 }
 
-/* calculate dynamic programming matrix using gotoh algorithm
- * S     - cumulative scorefor each cell
- * P     - std::string representation for path
- *         0 :   uninitialized, for gaps at N- & C- termini when glocal>0
- *         1 : \ match-mismatch
- *         2 : | vertical gap (insertion)
- *         4 : - horizontal gap (deletion)
- * JumpH - horizontal long gap number.
- * JumpV - vertical long gap number.
- * all matrices are in the size of [len(seqx)+1]*[len(seqy)+1]
- *
- * glocal - global or local alignment
- *         0 : global alignment (Needleman-Wunsch dynamic programming)
- *         1 : glocal-query alignment
- *         2 : glocal-both alignment
- *         3 : local alignment (Smith-Waterman dynamic programming)
- *
- * alt_init - whether to adopt alternative matrix initialization
- *         1 : use wei zheng's matrix initialization
- *         0 : use yang zhang's matrix initialization, does NOT work
- *             for glocal alignment
- */
 int calculate_score_gotoh(const int xlen,const int ylen, GotohMatrix& m, const int gapopen,const int gapext,
-    const int glocal=0, const int alt_init=1)
+    const int glocal, const int alt_init)
 {
     IntMatrix& S = m.S;
     IntMatrix& JumpH = m.JumpH;
@@ -217,186 +160,9 @@ int calculate_score_gotoh(const int xlen,const int ylen, GotohMatrix& m, const i
     return aln_score; // final alignment score
 }
 
-inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
-    const GotohMatrix& m, std::string& seqxA, std::string& seqyA,
-    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
-{
-    const IntMatrix& JumpH = m.JumpH;
-    const IntMatrix& JumpV = m.JumpV;
-    const IntMatrix& P = m.P;
-    int i;
-    int j;
-    int gaplen;
-    std::string buf;
-
-    if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf.resize(std::max(xlen,ylen)+1);
-
-    i=xlen;
-    j=ylen;
-    while(i+j)
-    {
-        gaplen=0;
-        if (P[i][j]>=4)
-        {
-            gaplen=JumpH[i][j];
-            j-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqy[j],gaplen);
-            seqyA=buf+seqyA;
-
-            buf.assign(gaplen,'-');
-            seqxA=buf+seqxA;
-        }
-        else if (P[i][j] % 4 >= 2)
-        {
-            gaplen=JumpV[i][j];
-            i-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqx[i],gaplen);
-            seqxA=buf+seqxA;
-
-            buf.assign(gaplen,'-');
-            seqyA=buf+seqyA;
-        }
-        else
-        {
-            if (i==0 && j!=0)
-            {
-                buf.assign(seqy.data(),j);
-                seqyA=buf+seqyA;
-                buf.assign(j,'-');
-                seqxA=buf+seqxA;
-                break;
-            }
-            if (i!=0 && j==0)
-            {
-                buf.assign(seqx.data(),i);
-                seqxA=buf+seqxA;
-                buf.assign(i,'-');
-                seqyA=buf+seqyA;
-                break;
-            }
-            i--;
-            j--;
-            if (invmap_only) invmap[j]=i;
-            if (invmap_only!=1)
-            {
-                seqxA=seqx[i]+seqxA;
-                seqyA=seqy[j]+seqyA;
-            }
-        }
-    }
-}
-
-
-inline void trace_back_sw(const std::string& seqx, const std::string& seqy,
-    const GotohMatrix& m, std::string& seqxA, std::string& seqyA,
-    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
-{
-    const IntMatrix& JumpH = m.JumpH;
-    const IntMatrix& JumpV = m.JumpV;
-    const IntMatrix& P = m.P;
-    int i;
-    int j;
-    int gaplen;
-    bool found_start_cell=false;
-    std::string buf;
-
-    if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf.resize(std::max(xlen,ylen)+1);
-
-    i=xlen;
-    j=ylen;
-    for (i=xlen;i>=0;i--)
-    {
-        for (j=ylen;j>=0;j--)
-        {
-            if (P[i][j]!=0)
-            {
-                found_start_cell=true;
-                break;
-            }
-        }
-        if (found_start_cell) break;
-    }
-
-    // copy C terminal sequence
-    if (invmap_only!=1)
-    {
-        buf.assign(ylen-j,'-');
-        seqxA=buf;
-        buf.assign(&seqx[i],xlen-i);
-        seqxA+=buf;
-
-        buf.assign(&seqy[j],ylen-j);
-        seqyA+=buf;
-        buf.assign(xlen-i,'-');
-        seqyA+=buf;
-    }
-
-    if (i<0||j<0) return;
-
-    // traceback aligned sequences
-    while(P[i][j]!=0)
-    {
-        gaplen=0;
-        if (P[i][j]>=4)
-        {
-            gaplen=JumpH[i][j];
-            j-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqy[j],gaplen);
-            seqyA=buf+seqyA;
-
-            buf.assign(gaplen,'-');
-            seqxA=buf+seqxA;
-        }
-        else if (P[i][j] % 4 >= 2)
-        {
-            gaplen=JumpV[i][j];
-            i-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqx[i],gaplen);
-            seqxA=buf+seqxA;
-
-            buf.assign(gaplen,'-');
-            seqyA=buf+seqyA;
-        }
-        else
-        {
-            i--;
-            j--;
-            if (invmap_only) invmap[j]=i;
-            if (invmap_only!=1)
-            {
-                seqxA=seqx[i]+seqxA;
-                seqyA=seqy[j]+seqyA;
-            }
-        }
-    }
-    // copy N terminal sequence
-    if (invmap_only!=1)
-    {
-        buf.assign(j,'-');
-        buf.append(seqx.data(),i);
-        seqxA=buf+seqxA;
-
-        buf.assign(seqy.data(),j);
-        buf.append(i,'-');
-        seqyA=buf+seqyA;
-    }
-}
-
-
-/* entry function for NWalign
- * invmap_only - whether to return seqxA and seqyA or to return invmap
- *               0: only return seqxA and seqyA
- *               1: only return invmap
- *               2: return seqxA, seqyA and invmap */
 int NWalign_main(const std::string &seqx, const std::string &seqy, const int xlen,
     const int ylen, std::string & seqxA, std::string & seqyA, const int mol_type,
-    std::vector<int>& invmap, const int invmap_only=0, const int glocal=0)
+    std::vector<int>& invmap, const int invmap_only, const int glocal)
 {
     GotohMatrix m;
     m.init(xlen, ylen);
@@ -477,7 +243,7 @@ void get_seqID(const std::string& seqxA, const std::string& seqyA,
 void output_NWalign_results(
     const std::string xname, const std::string yname,
     const std::string& chainID1, const std::string& chainID2,
-    const int xlen, const int ylen, const std::string& seqM, 
+    const int xlen, const int ylen, const std::string& seqM,
     const std::string& seqxA, const std::string& seqyA, const double Liden,
     const int L_ali, const int aln_score, const int outfmt_opt)
 {
@@ -521,9 +287,6 @@ void output_NWalign_results(
     std::cout << std::endl;
 }
 
-/* extract pairwise sequence alignment from residue index vectors,
- * assuming that "sequence" contains two empty strings.
- * return length of alignment, including gap. */
 int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string& seqx, const std::string& seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const int byresi_opt)
@@ -646,13 +409,11 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
                 chainID2_prev=chainID2;
             }
         }
-        
+
     }
     return sequence[0].size();
 }
 
-/* extract pairwise sequence alignment from residue index vectors,
- * return length of alignment, including gap. */
 int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string& seqx, const std::string& seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const std::vector<int> xlen_vec, const std::vector<int> ylen_vec,
@@ -727,5 +488,3 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
     }
     return sequence[0].size();
 }
-
-#endif

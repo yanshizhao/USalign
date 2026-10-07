@@ -1,5 +1,5 @@
 #include "se.h"
-#include "NWalign.h"
+#include "seqalign.h"
 
 void print_extra_help()
 {

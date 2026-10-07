@@ -1,7 +1,7 @@
 #pragma once
 #ifndef TMalign_HwRMSD_h
 #define TMalign_HwRMSD_h 1
-#include "NWalign.h"
+#include "seqalign.h"
 #include "se.h"
 
 double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,

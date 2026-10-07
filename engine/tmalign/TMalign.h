@@ -3,9 +3,8 @@
  * TMalign_main */
 
 #include "param.h"
-#include "NW.h"
 #include "geometry.h"
-#include "NWalign.h"
+#include "seqalign.h"
 #include "align_types.h"
 #ifdef _OPENMP
 #include <omp.h>
