@@ -53,9 +53,6 @@ se: app/tools/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 pdb2ss: app/tools/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-ca2rr: app/tools/ca2rr_main.cpp $(COMMON_CPP)
-	${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
-
 pdb2xyz: app/tools/pdb2xyz_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
