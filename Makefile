@@ -8,7 +8,7 @@ $(shell mkdir -p $(BUILD_TMP))
 export TMPDIR:=$(BUILD_TMP)
 export TMP:=$(BUILD_TMP)
 export TEMP:=$(BUILD_TMP)
-INC=-Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput -Iapp/tools
+INC=-Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_formatting -Iapp/tools
 OMPFLAGS=-fopenmp
 ifeq ($(OS),Windows_NT)
     # Windows (MSYS2, MinGW, PowerShell, cmd)
@@ -25,7 +25,7 @@ PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta
 ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
 COMMON_CPP=common/common.cpp
 ORCH_CPP=orchestration/orchestration.cpp
-OUTPUT_CPP=output/output.cpp output/tmalign_output.cpp
+OUTPUT_CPP=output_formatting/output.cpp output_formatting/tmalign_output.cpp
 
 all: USalign
 
