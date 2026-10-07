@@ -1,6 +1,6 @@
 #include "se.h"
 #include "common.h"
-#include "output_do.h"
+#include "output.h"
 
 void print_extra_help()
 {

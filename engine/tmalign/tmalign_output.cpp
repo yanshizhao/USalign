@@ -1,4 +1,4 @@
-#include "output.h"
+#include "tmalign_output.h"
 
 void output_pymol(const std::string xname, const std::string yname,
     const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,

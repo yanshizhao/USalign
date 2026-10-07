@@ -1,8 +1,8 @@
 // command line argument parsing and document of US-align main program
 
 #include "common.h"
-#include "output_do.h"
 #include "orchestration.h"
+#include "output.h"
 #include "MMalign.h"
 #include "SOIalign.h"
 #include "flexalign.h"
