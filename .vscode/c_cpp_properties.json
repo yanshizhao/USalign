@@ -1,0 +1,27 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "USalign",
+            "compilerPath": "D:/softworks/msys2/ucrt64/bin/g++.exe",
+            "includePath": [
+                "${workspaceFolder}/common",
+                "${workspaceFolder}/engine/tmalign",
+                "${workspaceFolder}/engine/flexalign",
+                "${workspaceFolder}/engine/mmalign",
+                "${workspaceFolder}/engine/soialign",
+                "${workspaceFolder}/engine/se",
+                "${workspaceFolder}/engine/tmscore",
+                "${workspaceFolder}/engine/hwrmsd",
+                "${workspaceFolder}/engine/upgma",
+                "${workspaceFolder}/orchestration",
+                "${workspaceFolder}/output",
+                "${workspaceFolder}/app/tools"
+            ],
+            "defines": ["_OPENMP"],
+            "cStandard": "c11",
+            "cppStandard": "gnu++11",
+            "intelliSenseMode": "windows-gcc-x64"
+        }
+    ]
+}
