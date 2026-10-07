@@ -1,4 +1,5 @@
 #pragma once
+#include "common.h"
 #include "TMalign.h"
 
 int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, std::vector<int>& i_ali,

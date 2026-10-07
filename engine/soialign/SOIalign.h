@@ -2,6 +2,7 @@
 #ifndef SOIalign_h
 #define SOIalign_h 1
 
+#include "common.h"
 #include "TMalign.h"
 
 inline void assign_sec_bond(IntPairArray& secx_bond, const std::string& secx, const int xlen)
