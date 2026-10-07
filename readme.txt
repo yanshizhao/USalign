@@ -95,6 +95,15 @@
    2026/05/27: Allow both -mm 1 and -dir/-dir1/-dir2
    2026/07/06: Add -threads N to set number of threads for OpenMP parallel
 	       execution. For example, '-threads 4' uses 4 threads.
+   2026/10/07: Output files (-o, -m, -rasmol, -chimerax and the upgma_tree
+               files of -mm 4) now default to a "results" folder created next
+               to the executable. Use '-outdir <dir>' to specify another
+               directory, or '-outdir .' to write to the current directory
+               (the previous behavior). The "make" target now only builds
+               USalign by default; list the other tools explicitly to build
+               them. Source files are organized into common/, engine/,
+               orchestration/, output_funcs/ and app/; example inputs
+               (PDB1.pdb, PDB2.pdb, align.txt) are under the "example" folder.
 ===============================================================================
 
 =========================
@@ -104,16 +113,21 @@
    1.1 Compile with make (Recommended):
            make clean
            make
+       "make" builds the USalign program by default. Any other tool
+       (TMalign, TMscore, MMalign, se, qTMclust, HwRMSD, NWalign, pdb2ss,
+       pdb2xyz, pdb2fasta, biounitasym, cif2pdb, pdbAtomName, addChainID,
+       xyz_sfetch) is built by listing it explicitly, e.g. "make TMalign".
        macOS does not support static linking. Remove the -static flag when compiling manually.
    1.2 Manual compilation in bash:
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/output.cpp engine/tmalign/TMalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/param.cpp common/io.cpp common/geometry.cpp common/seqalign.cpp orchestration/output_do.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp output_funcs/tmalign_output.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
            mingw32-make clean
            mingw32-make
+       Same targets as in 1.1: only USalign is built by default.
    2.2 Manual compilation in PowerShell:
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/output.cpp engine/tmalign/TMalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/param.cpp common/io.cpp common/geometry.cpp common/seqalign.cpp orchestration/output_do.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp output_funcs/tmalign_output.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
@@ -153,8 +167,20 @@ conda install -c bioconda usalign
 =====================
 You can run the program without arguments to obtain a brief instruction
 
-    ./USalign structure1.pdb structure2.pdb
+    ./USalign example/PDB1.pdb example/PDB2.pdb
+
+(Example input files PDB1.pdb, PDB2.pdb and align.txt are in the "example"
+folder.)
 
 A full list of available options can be explored by:
 
     ./USalign -h
+
+Output files: by default, the files written by the program (-o, -m, -rasmol,
+-chimerax and the upgma_tree files of -mm 4) are placed in a "results" folder
+created next to the executable. Use
+
+    -outdir <dir>    write output files to the given directory
+    -outdir .        write output files to the current directory
+
+to change this. Results that are not saved to a file are printed to stdout.
