@@ -22,32 +22,33 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
+ENGINE_CPP=engine/tmalign/output.cpp
 COMMON_CPP=common/param.cpp common/io.cpp common/geometry.cpp common/seqalign.cpp
 
 all: USalign
 
-qTMclust: app/tools/qtmclust_main.cpp $(COMMON_CPP)
+qTMclust: app/tools/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(COMMON_CPP)
+USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
 USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(COMMON_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-TMalign: app/tools/tmalign_main.cpp $(COMMON_CPP)
+TMalign: app/tools/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-TMscore: app/tools/tmscore_main.cpp $(COMMON_CPP)
+TMscore: app/tools/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-MMalign: app/tools/mmalign_main.cpp $(COMMON_CPP)
+MMalign: app/tools/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-se: app/tools/se_main.cpp $(COMMON_CPP)
+se: app/tools/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2ss: app/tools/pdb2ss_main.cpp $(COMMON_CPP)
+pdb2ss: app/tools/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 ca2rr: app/tools/ca2rr_main.cpp $(COMMON_CPP)
@@ -68,7 +69,7 @@ biounitasym: app/tools/biounitasym_main.cpp $(COMMON_CPP)
 NWalign: app/tools/nwalign_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-HwRMSD: app/tools/hwrmsd_main.cpp $(COMMON_CPP)
+HwRMSD: app/tools/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 cif2pdb: app/tools/cif2pdb_main.cpp
