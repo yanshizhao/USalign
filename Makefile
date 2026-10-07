@@ -24,13 +24,14 @@ PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta
 
 ENGINE_CPP=engine/tmalign/output.cpp engine/tmalign/TMalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
 COMMON_CPP=common/param.cpp common/io.cpp common/geometry.cpp common/seqalign.cpp
+ORCH_CPP=orchestration/output_do.cpp
 
 all: USalign
 
 qTMclust: app/tools/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP)
+USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
 USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(COMMON_CPP)
@@ -45,7 +46,7 @@ TMscore: app/tools/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 MMalign: app/tools/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-se: app/tools/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
+se: app/tools/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 pdb2ss: app/tools/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP)

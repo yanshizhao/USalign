@@ -1,5 +1,6 @@
 #include "se.h"
 #include "seqalign.h"
+#include "output_do.h"
 
 void print_extra_help()
 {
@@ -348,35 +349,6 @@ void read_chain(const std::vector<std::string>& chain_lines, const std::string& 
         chain.resi_vec, se_opts.byresi_opt);
 }
 
-void output_do_distance_table(const std::vector<std::string>& pdb_lines1, const std::vector<std::string>& pdb_lines2,
-    const ChainPairAlignResult& chain_align_res)
-{
-    std::cout<<"###############\t###############\t#########"<<std::endl;
-    std::cout<<"#Aligned atom 1\tAligned atom 2 \tDistance#"<<std::endl;
-    size_t r1=0;
-    size_t r2=0;
-    int    postcp=0;
-    for (size_t r=0;r<chain_align_res.seqxA.size();r++)
-    {
-        r1+=chain_align_res.seqxA[r]!='-';
-        r2+=chain_align_res.seqyA[r]!='-';
-        if (chain_align_res.seqxA[r]=='*')
-        {
-            std::cout<<"###### Circular\tPermutation ###\t#########\n";
-            r1=0;
-            postcp=1;
-        }
-        else if (chain_align_res.seqxA[r]!='-' && chain_align_res.seqyA[r]!='-')
-        {
-            std::cout<<pdb_lines1[r1-1].substr(12,15)<<'\t'
-                <<pdb_lines2[r2-1].substr(12,15)<<'\t'
-                <<std::setw(9)<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
-                <<chain_align_res.do_vec[r-postcp]<<'\n';
-        }
-    }
-    std::cout<<"###############\t###############\t#########"<<std::endl;
-}
-
 void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     const std::vector<std::string>& pdb_lines1, const std::vector<std::string>& pdb_lines2,
     const SeOptions& se_opts)
@@ -437,7 +409,8 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         chain_align_res, out_opts, chain1.resi_vec, chain2.resi_vec);
 
     if (se_opts.do_opt)
-        output_do_distance_table(pdb_lines1, pdb_lines2, chain_align_res);
+        output_do_distance_table(std::cout, chain_align_res.seqxA, chain_align_res.seqyA,
+            pdb_lines1, pdb_lines2, chain_align_res.do_vec, 0);
 }
 
 void align_all_chain_pairs(std::vector<std::string>& chain1_list,
