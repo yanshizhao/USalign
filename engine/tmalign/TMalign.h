@@ -2,9 +2,9 @@
 /* Functions for the core TMalign algorithm, including the entry function
  * TMalign_main */
 
-#include "param_set.h"
+#include "param.h"
 #include "NW.h"
-#include "Kabsch.h"
+#include "geometry.h"
 #include "NWalign.h"
 #include "align_types.h"
 #ifdef _OPENMP

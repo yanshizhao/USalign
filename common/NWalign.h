@@ -3,7 +3,7 @@
 #ifndef NWalign_H
 #define NWalign_H 1
 
-#include "basic_fun.h"
+#include "io.h"
 #include "BLOSUM.h"
 
 const int gapopen_blosum62=-11;

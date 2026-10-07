@@ -2,7 +2,7 @@
 #ifndef TMalign_GeometryTools_h
 #define TMalign_GeometryTools_h 1
 
-#include "basic_fun.h" // For reading gzip and bz2 compressed files
+#include "io.h" // For reading gzip and bz2 compressed files
 
 const double Extra=1.0e-4; // pseudocount
 const float PI=3.141592653589793;

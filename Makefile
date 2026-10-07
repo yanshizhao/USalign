@@ -22,61 +22,63 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
+COMMON_CPP=common/param.cpp common/io.cpp common/geometry.cpp
+
 all: USalign
 
-qTMclust: app/tools/qtmclust_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+qTMclust: app/tools/qtmclust_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-USalign: app/usalign.cpp engine/upgma/UPGMA.cpp
+USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp
+USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(COMMON_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-TMalign: app/tools/tmalign_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+TMalign: app/tools/tmalign_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-TMscore: app/tools/tmscore_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+TMscore: app/tools/tmscore_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-MMalign: app/tools/mmalign_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+MMalign: app/tools/mmalign_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-se: app/tools/se_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+se: app/tools/se_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2ss: app/tools/pdb2ss_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+pdb2ss: app/tools/pdb2ss_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-ca2rr: app/tools/ca2rr_main.cpp
-	${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+ca2rr: app/tools/ca2rr_main.cpp $(COMMON_CPP)
+	${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2xyz: app/tools/pdb2xyz_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+pdb2xyz: app/tools/pdb2xyz_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 xyz_sfetch: app/tools/xyz_sfetch_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2fasta: app/tools/pdb2fasta_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+pdb2fasta: app/tools/pdb2fasta_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-biounitasym: app/tools/biounitasym_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+biounitasym: app/tools/biounitasym_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-NWalign: app/tools/nwalign_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+NWalign: app/tools/nwalign_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-HwRMSD: app/tools/hwrmsd_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+HwRMSD: app/tools/hwrmsd_main.cpp $(COMMON_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 cif2pdb: app/tools/cif2pdb_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 pdbAtomName: app/tools/pdbatomname_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 addChainID: app/tools/addchainid_main.cpp
-		${CC} ${CFLAGS} ${INC} $< -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 clean:
 		rm -f ${PROGRAM}

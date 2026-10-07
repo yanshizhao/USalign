@@ -1,4 +1,36 @@
+// Basic geometry operations
 #pragma once
+
+#include <cmath>
+#include <array>
+#include <vector>
+
+using CoordArray    = std::vector<std::array<double, 3> >;   // Array of 3D coordinates (x,y,z)
+using DoubleMatrix  = std::vector<std::vector<double> >;     // 2D matrix of doubles
+using CharMatrix    = std::vector<std::vector<char> >;       // 2D matrix of chars
+using IntMatrix     = std::vector<std::vector<int> >;        // 2D matrix of ints
+using RotArray      = std::vector<std::array<double, 12> >;  // Array of rotation matrices (3x3 + translation)
+using IntPairArray  = std::vector<std::array<int, 2> >;      // Array of int pairs [start, end]
+using DoubleCube    = std::vector<std::vector<std::vector<double> > >;  // 3D cube: [chain][residue][xyz]
+using Vec3          = std::array<double, 3>;                // 3D vector (translation)
+using RotMat        = std::array<std::array<double, 3>, 3>; // 3×3 rotation matrix
+
+inline double dist(const std::array<double,3>& x, const std::array<double,3>& y)
+{
+    double d1=x[0]-y[0];
+    double d2=x[1]-y[1];
+    double d3=x[2]-y[2];
+    return (d1*d1 + d2*d2 + d3*d3);
+}
+
+inline double dot(const std::array<double,3>& a, const std::array<double,3>& b)
+{
+    return (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+}
+
+void transform(const Vec3& t, const RotMat& u, const Vec3& x, Vec3& x1);
+
+void do_rotation(CoordArray& x, CoordArray& x1, int len, const Vec3& t, const RotMat& u);
 
 /**************************************************************************
 Implemetation of Kabsch algoritm for finding the best rotation matrix
