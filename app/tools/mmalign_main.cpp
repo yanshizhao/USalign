@@ -115,6 +115,9 @@ void print_help(bool h_opt=false)
 "    MMalign complex1.pdb complex2.pdb -d 5.0\n"
 "    MMalign complex1.pdb complex2.pdb -a T -o complex1.sup\n"
 "    MMalign complex1.pdb complex2.pdb -m matrix.txt\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -124,6 +127,7 @@ void print_help(bool h_opt=false)
 
 struct MMalignOptions
 {
+    std::string outdir_opt = "";
     std::string xname       = "";
     std::string yname       = "";
     std::string fname_super = ""; // file name for superposed structure
@@ -192,6 +196,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, MMalignOptions& mmalig
 
 bool parse_string_option(int argc, char* argv[], int& i, MMalignOptions& mmalign_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        mmalign_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (i + 1 >= argc) return false;
     if (std::string(argv[i]) == "-a")
     {
@@ -312,6 +322,9 @@ void check_matrix_file_name(MMalignOptions& mmalign_opts)
 
 void postprocess_arguments(MMalignOptions& mmalign_opts)
 {
+    mmalign_opts.outdir_opt = resolve_outdir(mmalign_opts.outdir_opt);
+    mmalign_opts.fname_super = join_outdir(mmalign_opts.outdir_opt, mmalign_opts.fname_super);
+    mmalign_opts.fname_matrix = join_outdir(mmalign_opts.outdir_opt, mmalign_opts.fname_matrix);
     check_input_presence(mmalign_opts);
     check_dir_conflicts(mmalign_opts);
     check_atom_and_mol_type(mmalign_opts);

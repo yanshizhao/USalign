@@ -115,6 +115,9 @@ void print_help(bool h_opt=false)
 "    established by sequence alignment:\n"
 "     $ TMscore model.pdb native.pdb -seq\n"
 "\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -124,6 +127,7 @@ void print_help(bool h_opt=false)
 
 struct TMscoreOptions
 {
+    std::string outdir_opt = "";
     std::string xname       = "";
     std::string yname       = "";
     std::string fname_super = ""; // file name for superposed structure
@@ -200,6 +204,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, TMscoreOptions& tmscor
 
 bool parse_string_option(int argc, char* argv[], int& i, TMscoreOptions& tmscore_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        tmscore_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (std::string(argv[i]) == "-c")
     {
         tmscore_opts.byresi_opt=2;
@@ -336,6 +346,9 @@ void check_matrix_file_name(TMscoreOptions& tmscore_opts)
 
 void postprocess_arguments(TMscoreOptions& tmscore_opts)
 {
+    tmscore_opts.outdir_opt = resolve_outdir(tmscore_opts.outdir_opt);
+    tmscore_opts.fname_super = join_outdir(tmscore_opts.outdir_opt, tmscore_opts.fname_super);
+    tmscore_opts.fname_matrix = join_outdir(tmscore_opts.outdir_opt, tmscore_opts.fname_matrix);
     check_input_presence(tmscore_opts);
     check_dir_conflicts(tmscore_opts);
     check_atom_and_mol_type(tmscore_opts);

@@ -102,6 +102,9 @@ void print_help(bool h_opt=false)
 "    se example/PDB1.pdb example/PDB2.pdb\n"
 "    se example/PDB1.pdb example/PDB2.pdb -u 100 -d 5.0 -a T\n"
 "    se example/PDB1.pdb example/PDB2.pdb -i example/align.txt\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -111,6 +114,7 @@ void print_help(bool h_opt=false)
 
 struct SeOptions
 {
+    std::string outdir_opt = "";
     std::string xname       = "";
     std::string yname       = "";
     std::string fname_lign  = ""; // file name for user alignment
@@ -179,6 +183,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, SeOptions& se_opts)
 
 bool parse_string_option(int argc, char* argv[], int& i, SeOptions& se_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        se_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (i + 1 >= argc) return false;
     if (std::string(argv[i]) == "-a")
     {
@@ -299,6 +309,7 @@ void apply_derived_options(SeOptions& se_opts)
 
 void postprocess_arguments(SeOptions& se_opts)
 {
+    se_opts.outdir_opt = resolve_outdir(se_opts.outdir_opt);
     check_input_presence(se_opts);
     check_dir_conflicts(se_opts);
     check_atom_and_mol_type(se_opts);

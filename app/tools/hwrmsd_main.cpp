@@ -119,6 +119,9 @@ void print_help(bool h_opt=false)
 "    HwRMSD example/PDB1.pdb example/PDB2.pdb -a T -o PDB1.sup\n"
 "    HwRMSD example/PDB1.pdb example/PDB2.pdb -i example/align.txt\n"
 "    HwRMSD example/PDB1.pdb example/PDB2.pdb -m matrix.txt\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -128,6 +131,7 @@ void print_help(bool h_opt=false)
 
 struct HwRMSDOptions
 {
+    std::string outdir_opt = "";
     std::string xname = "";
     std::string yname = "";
     std::string fname_super = ""; // file name for superposed structure
@@ -222,6 +226,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, HwRMSDOptions& hwrmsd_
 
 bool parse_string_option(int argc, char* argv[], int& i, HwRMSDOptions& hwrmsd_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        hwrmsd_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (i + 1 >= argc) return false;
     if (std::string(argv[i]) == "-a")
     {
@@ -353,6 +363,9 @@ void apply_derived_options(HwRMSDOptions& hwrmsd_opts)
 
 void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
 {
+    hwrmsd_opts.outdir_opt = resolve_outdir(hwrmsd_opts.outdir_opt);
+    hwrmsd_opts.fname_super = join_outdir(hwrmsd_opts.outdir_opt, hwrmsd_opts.fname_super);
+    hwrmsd_opts.fname_matrix = join_outdir(hwrmsd_opts.outdir_opt, hwrmsd_opts.fname_matrix);
     check_input_presence(hwrmsd_opts);
     check_dir_conflicts(hwrmsd_opts);
     check_atom_and_mol_type(hwrmsd_opts);

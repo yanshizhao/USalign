@@ -145,6 +145,9 @@ void print_help(bool h_opt=false)
 "    TMalign example/PDB1.pdb example/PDB2.pdb -a T -o PDB1.sup\n"
 "    TMalign example/PDB1.pdb example/PDB2.pdb -i example/align.txt\n"
 "    TMalign example/PDB1.pdb example/PDB2.pdb -m matrix.txt\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -154,6 +157,7 @@ void print_help(bool h_opt=false)
 
 struct TMalignOptions
 {
+    std::string outdir_opt = "";
     std::string xname       = "";
     std::string yname       = "";
     std::string fname_super = ""; // file name for superposed structure
@@ -250,6 +254,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, TMalignOptions& tmalig
 
 bool parse_string_option(int argc, char* argv[], int& i, TMalignOptions& tmalign_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        tmalign_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (std::string(argv[i]) == "-seq")
     {
         tmalign_opts.byresi_opt=5;
@@ -405,6 +415,9 @@ void apply_derived_options(TMalignOptions& tmalign_opts)
 
 void postprocess_arguments(TMalignOptions& tmalign_opts)
 {
+    tmalign_opts.outdir_opt = resolve_outdir(tmalign_opts.outdir_opt);
+    tmalign_opts.fname_super = join_outdir(tmalign_opts.outdir_opt, tmalign_opts.fname_super);
+    tmalign_opts.fname_matrix = join_outdir(tmalign_opts.outdir_opt, tmalign_opts.fname_matrix);
     check_input_presence(tmalign_opts);
     check_dir_conflicts(tmalign_opts);
     check_atom_and_mol_type(tmalign_opts);

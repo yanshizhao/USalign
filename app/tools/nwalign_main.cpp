@@ -79,6 +79,9 @@ void print_help(bool h_opt=false)
 "             2: xyz format\n"
 "             3: PDBx/mmCIF format\n"
 "             4: FASTA format sequence\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -88,6 +91,7 @@ void print_help(bool h_opt=false)
 
 struct NWalignOptions
 {
+    std::string outdir_opt = "";
     std::string xname = "";
     std::string yname = "";
     std::string atom_opt = "auto";  // use C alpha atom for protein and C3' for RNA
@@ -127,6 +131,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, NWalignOptions& nwalig
 
 bool parse_string_option(int argc, char* argv[], int& i, NWalignOptions& nwalign_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        nwalign_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (i + 1 >= argc) return false;
     if (std::string(argv[i]) == "-atom")   { nwalign_opts.atom_opt   = argv[i + 1]; i++; }
     else if (std::string(argv[i]) == "-mol")    { nwalign_opts.mol_opt    = argv[i + 1]; i++; }
@@ -211,6 +221,7 @@ void check_split_conflicts(NWalignOptions& nwalign_opts)
 
 void postprocess_arguments(NWalignOptions& nwalign_opts)
 {
+    nwalign_opts.outdir_opt = resolve_outdir(nwalign_opts.outdir_opt);
     check_input_presence(nwalign_opts);
     check_dir_conflicts(nwalign_opts);
     check_atom_and_mol_type(nwalign_opts);

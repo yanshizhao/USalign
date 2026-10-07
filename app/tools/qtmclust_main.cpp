@@ -88,6 +88,9 @@ void print_help(bool h_opt=false)
 "\n"
 "    -h       Print the full help message, including additional options.\n"
 "\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable, e.g. '-outdir out' writes to 'out/'.\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();
@@ -141,6 +144,7 @@ void read_init_cluster(const std::string&filename,
 }
 struct QTMclustOptions
 {
+    std::string outdir_opt = "";
     std::string xname = "";
     std::string fname_clust = ""; // file name for output cluster result
     std::string fname_lign  = ""; // file name for user alignment
@@ -228,6 +232,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, QTMclustOptions& qtmcl
 
 bool parse_string_option(int argc, char* argv[], int& i, QTMclustOptions& qtmclust_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        qtmclust_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (i + 1 >= argc) return false;
     if (std::string(argv[i]) == "-a")
     {
@@ -314,6 +324,8 @@ void apply_derived_options(QTMclustOptions& qtmclust_opts)
 
 void postprocess_arguments(QTMclustOptions& qtmclust_opts)
 {
+    qtmclust_opts.outdir_opt = resolve_outdir(qtmclust_opts.outdir_opt);
+    qtmclust_opts.fname_clust = join_outdir(qtmclust_opts.outdir_opt, qtmclust_opts.fname_clust);
     check_input_presence(qtmclust_opts);
     check_dir_conflicts(qtmclust_opts);
     check_atom_and_mol_type(qtmclust_opts);
