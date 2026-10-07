@@ -4,23 +4,26 @@
 # vim temporary backup
 .*.sw*
 
-# binary executables
-cif2pdb
-TMalign
-TMalignc
-pdb2xyz
-pdb2fasta
-pdb2ss
-xyz_sfetch
-se
-qTMclust
-USalign
-NWalign
-HwRMSD
-MMalign
-TMscore
-pdbAtomName
-ca2rr
+# binary executables (root only; anchored so they do not shadow source dirs
+# such as engine/tmalign, engine/se, engine/tmscore on case-insensitive filesystems)
+/cif2pdb
+/TMalign
+/TMalignc
+/pdb2xyz
+/pdb2fasta
+/pdb2ss
+/xyz_sfetch
+/se
+/qTMclust
+/USalign
+/NWalign
+/HwRMSD
+/MMalign
+/TMscore
+/pdbAtomName
+/ca2rr
+/addChainID
+/biounitasym
 *.exe
 *.zip
 
