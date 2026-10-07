@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include "common.h"
 #include "pstream.h"
 
 void print_help()
@@ -13,6 +14,9 @@ void print_help()
 "Add chain ID to PDB format file.\n"
 "\n"
 "Usage: addChainID input.pdb output.pdb chainID\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable.\n"
     <<std::endl;
     exit(EXIT_SUCCESS);
 }
@@ -95,6 +99,7 @@ void addChainID(const std::string &infile,const std::string &outfile,
 
 struct AddChainIDOptions
 {
+    std::string outdir_opt = "";
     std::string infile  = "";
     std::string outfile = "";
     std::string chainID = "";
@@ -104,6 +109,11 @@ void parse_arguments(int argc, char* argv[], AddChainIDOptions& addchainid_opts)
 {
     for (int i = 1; i < argc; i++)
     {
+        if (std::string(argv[i]) == "-outdir" && i + 1 < argc)
+        {
+            addchainid_opts.outdir_opt = argv[i + 1]; i++;
+            continue;
+        }
         if      (addchainid_opts.infile.size() == 0)  addchainid_opts.infile = argv[i];
         else if (addchainid_opts.outfile.size() == 0) addchainid_opts.outfile = argv[i];
         else if (addchainid_opts.chainID.size() == 0) addchainid_opts.chainID = argv[i];
@@ -117,6 +127,8 @@ void parse_arguments(int argc, char* argv[], AddChainIDOptions& addchainid_opts)
 
 void postprocess_arguments(AddChainIDOptions& addchainid_opts)
 {
+    addchainid_opts.outdir_opt = resolve_outdir(addchainid_opts.outdir_opt);
+    addchainid_opts.outfile = join_outdir(addchainid_opts.outdir_opt, addchainid_opts.outfile);
     if (addchainid_opts.outfile.size() == 0) addchainid_opts.outfile = "-";
     if (addchainid_opts.chainID.size() == 0) addchainid_opts.chainID = "  ";
     else if (addchainid_opts.chainID.size() == 1) addchainid_opts.chainID = " " + addchainid_opts.chainID;

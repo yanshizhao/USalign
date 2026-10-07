@@ -12,6 +12,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include "common.h"
 
 void print_help()
 {
@@ -23,12 +24,16 @@ void print_help()
 "Usage: xyz_sfetch ca.xyz list > subset.xyz\n"
 "    From xyz file 'ca.xyz' and respective index file 'ca.xyz.index',\n"
 "    fetch all entries listed by 'list'. Output them to 'subset.xyz'.\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable.\n"
     <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
 struct XyzSfetchOptions
 {
+    std::string outdir_opt = "";
     std::string filename = "";
     std::string list_opt = "";
 };
@@ -37,6 +42,11 @@ void parse_arguments(int argc, char* argv[], XyzSfetchOptions& xyzsfetch_opts)
 {
     for (int i = 1; i < argc; i++)
     {
+        if (std::string(argv[i]) == "-outdir" && i + 1 < argc)
+        {
+            xyzsfetch_opts.outdir_opt = argv[i + 1]; i++;
+            continue;
+        }
         if (xyzsfetch_opts.filename.size() == 0) xyzsfetch_opts.filename = argv[i];
         else xyzsfetch_opts.list_opt = argv[i];
     }
@@ -44,6 +54,7 @@ void parse_arguments(int argc, char* argv[], XyzSfetchOptions& xyzsfetch_opts)
 
 void postprocess_arguments(XyzSfetchOptions& xyzsfetch_opts)
 {
+    xyzsfetch_opts.outdir_opt = resolve_outdir(xyzsfetch_opts.outdir_opt);
     std::string& filename = xyzsfetch_opts.filename;
     if (filename.size() == 0 || filename == "-h") print_help();
     if ((filename.size() >= 3 && filename.substr(filename.size() - 3, 3) == ".gz") ||
@@ -74,7 +85,7 @@ int main(int argc, char *argv[])
     int start_pos,end_pos; // position of starting and ending character
     if (list_opt.size()==0)
     {
-        std::ofstream fp((filename+".index").c_str());
+        std::ofstream fp(join_outdir(xyzsfetch_opts.outdir_opt, filename+".index").c_str());
         while (fin.good())
         {
             start_pos=fin.tellg();

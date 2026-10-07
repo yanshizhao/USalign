@@ -56,7 +56,7 @@ pdb2ss: app/tools/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 pdb2xyz: app/tools/pdb2xyz_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-xyz_sfetch: app/tools/xyz_sfetch_main.cpp
+xyz_sfetch: app/tools/xyz_sfetch_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 pdb2fasta: app/tools/pdb2fasta_main.cpp $(COMMON_CPP)
@@ -71,13 +71,13 @@ NWalign: app/tools/nwalign_main.cpp $(COMMON_CPP)
 HwRMSD: app/tools/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-cif2pdb: app/tools/cif2pdb_main.cpp
+cif2pdb: app/tools/cif2pdb_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdbAtomName: app/tools/pdbatomname_main.cpp
+pdbAtomName: app/tools/pdbatomname_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-addChainID: app/tools/addchainid_main.cpp
+addChainID: app/tools/addchainid_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 clean:

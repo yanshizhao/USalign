@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include "common.h"
 #include "pstream.h"
 
 void print_help()
@@ -13,6 +14,9 @@ void print_help()
 "Fix atom name justification in PDB format file.\n"
 "\n"
 "Usage: pdbAtomName input.pdb output.pdb\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable.\n"
     <<std::endl;
     exit(EXIT_SUCCESS);
 }
@@ -205,6 +209,7 @@ size_t pdbAtomName(const std::string &infile,const std::string &outfile)
 
 struct PdbAtomNameOptions
 {
+    std::string outdir_opt = "";
     std::string infile  = "";
     std::string outfile = "";
 };
@@ -213,6 +218,11 @@ void parse_arguments(int argc, char* argv[], PdbAtomNameOptions& pdbatomname_opt
 {
     for (int i = 1; i < argc; i++)
     {
+        if (std::string(argv[i]) == "-outdir" && i + 1 < argc)
+        {
+            pdbatomname_opts.outdir_opt = argv[i + 1]; i++;
+            continue;
+        }
         if (pdbatomname_opts.infile.size() == 0) pdbatomname_opts.infile = argv[i];
         else if (pdbatomname_opts.outfile.size() == 0) pdbatomname_opts.outfile = argv[i];
         else
@@ -225,6 +235,8 @@ void parse_arguments(int argc, char* argv[], PdbAtomNameOptions& pdbatomname_opt
 
 void postprocess_arguments(PdbAtomNameOptions& pdbatomname_opts)
 {
+    pdbatomname_opts.outdir_opt = resolve_outdir(pdbatomname_opts.outdir_opt);
+    pdbatomname_opts.outfile = join_outdir(pdbatomname_opts.outdir_opt, pdbatomname_opts.outfile);
     if (pdbatomname_opts.outfile.size() == 0) pdbatomname_opts.outfile = "-";
 }
 

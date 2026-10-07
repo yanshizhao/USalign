@@ -43,12 +43,15 @@ void print_help()
 "             0: PDB format\n"
 "             2: xyz format\n"
 "             3: PDBx/mmCIF format\n"
+"\n"
+"    -outdir  Directory for output files (accepted for CLI uniformity).\n"
     <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
 struct Pdb2fastaOptions
 {
+    std::string outdir_opt = "";
     std::string xname = "";
     std::string atom_opt = "auto";  // use C alpha atom for protein and C3' for RNA
     std::string mol_opt = "auto";   // auto-detect the molecule type as protein/RNA
@@ -79,6 +82,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, Pdb2fastaOptions& pdb2
 
 bool parse_string_option(int argc, char* argv[], int& i, Pdb2fastaOptions& pdb2fasta_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        pdb2fasta_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (std::string(argv[i]) == "-mol")
     {
         if (i + 1 >= argc)

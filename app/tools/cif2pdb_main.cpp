@@ -14,6 +14,7 @@
 #include <string>
 #include <iomanip>
 #include <map>
+#include "common.h"
 
 #include "pstream.h" // For reading gzip and bz2 compressed files
 
@@ -42,49 +43,11 @@ void print_help()
 "             2: 'ATOM  ' and all 'HETATM', excluding HOH\n"
 "             3: 'ATOM  ' and all 'HETATM', including HOH\n"
 "             If -het >=1, MSE will be converted to MET\n"
+"\n"
+"    -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"             next to the executable.\n"
     <<std::endl;
     exit(EXIT_SUCCESS);
-}
-
-void PrintErrorAndQuit(const std::string sErrorString)
-{
-    std::cout << sErrorString << std::endl;
-    exit(1);
-}
-
-// strip white space at the begining or end of string
-std::string Trim(const std::string &inputString)
-{
-    std::string result = inputString;
-    int idxBegin = inputString.find_first_not_of(" \n\r\t");
-    int idxEnd = inputString.find_last_not_of(" \n\r\t");
-    if (idxBegin >= 0 && idxEnd >= 0)
-        result = inputString.substr(idxBegin, idxEnd + 1 - idxBegin);
-    return result;
-}
-
-/* split a long string into vectors by whitespace 
- * line          - input string
- * line_vec      - output vector 
- * delimiter     - delimiter */
-void split(const std::string &line, std::vector<std::string> &line_vec,
-    const char delimiter=' ')
-{
-    bool within_word = false;
-    for (size_t pos=0;pos<line.size();pos++)
-    {
-        if (line[pos]==delimiter)
-        {
-            within_word = false;
-            continue;
-        }
-        if (!within_word)
-        {
-            within_word = true;
-            line_vec.push_back("");
-        }
-        line_vec.back()+=line[pos];
-    }
 }
 
 void write_mmcif_chain_remark(std::ostream& os, const std::vector<std::string>& chain_lines,
@@ -567,6 +530,7 @@ size_t get_all_mmcif_lines(const std::string filename, const std::string chain_o
 
 struct Cif2pdbOptions
 {
+    std::string outdir_opt = "";
     std::string xname     = "";
     std::string yname     = "";
     std::string chain_opt = "";    // read all chains
@@ -579,6 +543,11 @@ void parse_arguments(int argc, char* argv[], Cif2pdbOptions& cif2pdb_opts)
 {
     for(int i = 1; i < argc; i++)
     {
+        if (std::string(argv[i]) == "-outdir" && i + 1 < argc)
+        {
+            cif2pdb_opts.outdir_opt = argv[i + 1]; i++;
+            continue;
+        }
         if ( std::string(argv[i]) == "-split" && i < (argc-1) )
         {
             cif2pdb_opts.split_opt=std::stoi(argv[i + 1]); i++;
@@ -603,6 +572,8 @@ void parse_arguments(int argc, char* argv[], Cif2pdbOptions& cif2pdb_opts)
 
 void postprocess_arguments(Cif2pdbOptions& cif2pdb_opts)
 {
+    cif2pdb_opts.outdir_opt = resolve_outdir(cif2pdb_opts.outdir_opt);
+    cif2pdb_opts.yname = join_outdir(cif2pdb_opts.outdir_opt, cif2pdb_opts.yname);
     if(cif2pdb_opts.yname.size()==0)
     {
         if (cif2pdb_opts.xname.size()==0)

@@ -36,12 +36,15 @@ void print_help()
 "    -infmt   Input format for chain2\n"
 "            -1: (default) automatically detect PDB or PDBx/mmCIF format\n"
 "             3: PDBx/mmCIF format\n"
+"\n"
+"    -outdir  Directory for output files (accepted for CLI uniformity).\n"
     <<std::endl;
     exit(EXIT_SUCCESS);
 }
 
 struct Pdb2xyzOptions
 {
+    std::string outdir_opt = "";
     std::string xname = "";
     std::string atom_opt = "auto";  // use C alpha atom for protein and C3' for RNA
     std::string suffix_opt = "";    // set -suffix to empty
@@ -71,6 +74,12 @@ bool parse_numeric_option(int argc, char* argv[], int& i, Pdb2xyzOptions& pdb2xy
 
 bool parse_string_option(int argc, char* argv[], int& i, Pdb2xyzOptions& pdb2xyz_opts)
 {
+    if (std::string(argv[i]) == "-outdir")
+    {
+        if (i + 1 >= argc) return false;
+        pdb2xyz_opts.outdir_opt = argv[i + 1]; i++;
+        return true;
+    }
     if (std::string(argv[i]) == "-chain")
     {
         if (i + 1 >= argc)
