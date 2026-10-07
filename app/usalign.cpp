@@ -2,6 +2,7 @@
 
 #include "align_types.h"
 #include "banner.h"
+#include "cli.h"
 #include "output_do.h"
 #include "orchestration.h"
 #include "MMalign.h"
@@ -4498,21 +4499,8 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     return 0;
 }
 
-inline std::string get_argv_value(int argc, char* argv[], int& i, const char* opt)
+enum OutputFormat
 {
-    if (i >= argc - 1)
-        PrintErrorAndQuit(std::string("ERROR! Missing value for ") + opt);
-    return argv[++i];
-}
-
-inline void split_next(int argc, char* argv[], int& i, const char* opt,
-                       std::vector<std::string>& target)
-{
-    split(get_argv_value(argc, argv, i, opt), target, ',');
-}
-
-enum OutputFormat 
-{ 
     OUT_NONE = 0, 
     OUT_O = 1, 
     OUT_RASMOL = 2, 
@@ -4547,19 +4535,6 @@ inline void set_user_alignment(std::string& fname_lign, int& i_opt,
         PrintErrorAndQuit("ERROR! -I and -i cannot be used together");
     fname_lign = value;
     i_opt = incoming;
-}
-
-struct BoolFlag { const char* name; bool* target; };
-
-inline bool apply_bool_flag(const char* arg, const BoolFlag* flags, const size_t n)
-{
-    for (size_t k = 0; k < n; k++)
-        if (std::string(arg) == flags[k].name)
-        {
-            *flags[k].target = true;
-            return true;
-        }
-    return false;
 }
 
 void check_input_presence(UserOptions& user_opts, ControlOptions& control)

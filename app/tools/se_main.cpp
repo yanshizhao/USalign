@@ -1,6 +1,7 @@
 #include "se.h"
 #include "seqalign.h"
 #include "output_do.h"
+#include "cli.h"
 
 void print_extra_help()
 {
@@ -141,24 +142,6 @@ struct SeOptions
     bool d_opt = false; // flag for -d, user specified d0
     bool do_opt= false; // flag for -do, output distance of i-th aligned pair
 };
-
-/**********************/
-//    get argument
-/**********************/
-struct BoolFlag { const char* name; bool* target; };
-
-bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
-{
-    for (size_t k = 0; k < n; k++)
-    {
-        if (std::string(arg) == flags[k].name)
-        {
-            *flags[k].target = true;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool parse_file_option(int argc, char* argv[], int& i, SeOptions& se_opts)
 {

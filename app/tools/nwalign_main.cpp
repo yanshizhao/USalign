@@ -1,4 +1,5 @@
 #include "seqalign.h"
+#include "cli.h"
 
 void print_extra_help()
 {
@@ -110,24 +111,6 @@ struct NWalignOptions
     bool h_opt = false;             // print full help message
     bool normalize_atom_name = false;
 };
-
-/**********************/
-//    get argument
-/**********************/
-struct BoolFlag { const char* name; bool* target; };
-
-bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
-{
-    for (size_t k = 0; k < n; k++)
-    {
-        if (std::string(arg) == flags[k].name)
-        {
-            *flags[k].target = true;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool parse_numeric_option(int argc, char* argv[], int& i, NWalignOptions& nwalign_opts)
 {

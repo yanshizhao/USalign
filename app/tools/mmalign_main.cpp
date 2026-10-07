@@ -2,6 +2,7 @@
 
 #include "MMalign.h"
 #include "banner.h"
+#include "cli.h"
 
 const char MMALIGN_BANNER[] =
 "\n"
@@ -156,24 +157,6 @@ struct MMalignOptions
     bool   full_opt  = false;// do not show chain level alignment
     bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
 };
-
-/**********************/
-//    get argument
-/**********************/
-struct BoolFlag { const char* name; bool* target; };
-
-bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
-{
-    for (size_t k = 0; k < n; k++)
-    {
-        if (std::string(arg) == flags[k].name)
-        {
-            *flags[k].target = true;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool parse_file_option(int argc, char* argv[], int& i, MMalignOptions& mmalign_opts)
 {

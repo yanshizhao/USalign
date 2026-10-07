@@ -3,6 +3,8 @@
  * HwRMSD.h implement HwRMSD filter.
  * No filter will be used if only TMalign.h is included. */
 
+#include "cli.h"
+
 #include "HwRMSD.h"
 #include "TMalign.h"
 
@@ -165,21 +167,6 @@ struct QTMclustOptions
     bool   d_opt = false; // flag for -d, user specified d0
     bool   h_opt = false; // print full help message
 };
-
-struct BoolFlag { const char* name; bool* target; };
-
-bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
-{
-    for (size_t k = 0; k < n; k++)
-    {
-        if (std::string(arg) == flags[k].name)
-        {
-            *flags[k].target = true;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool parse_file_option(int argc, char* argv[], int& i, QTMclustOptions& qtmclust_opts,
     std::map<std::string, std::map<std::string,bool> >& init_cluster)

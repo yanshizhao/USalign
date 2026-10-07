@@ -1,5 +1,6 @@
 #include "TMscore.h"
 #include "banner.h"
+#include "cli.h"
 
 const char TMSCORE_BANNER[] =
 "\n"
@@ -160,24 +161,6 @@ struct TMscoreOptions
     bool   fast_opt  =false; // flags for -fast, fTM-align algorithm
     bool normalize_atom_name = false;
 };
-
-/**********************/
-//    get argument
-/**********************/
-struct BoolFlag { const char* name; bool* target; };
-
-bool apply_bool_flag(const char* arg, const BoolFlag* flags, size_t n)
-{
-    for (size_t k = 0; k < n; k++)
-    {
-        if (std::string(arg) == flags[k].name)
-        {
-            *flags[k].target = true;
-            return true;
-        }
-    }
-    return false;
-}
 
 bool parse_file_option(int argc, char* argv[], int& i, TMscoreOptions& tmscore_opts)
 {
