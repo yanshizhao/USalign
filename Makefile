@@ -34,7 +34,7 @@ qTMclust: app/tools/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
 USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(COMMON_CPP)
+USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
 TMalign: app/tools/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP)
