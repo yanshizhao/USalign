@@ -1,4 +1,5 @@
 #include "UPGMA.h"
+#include "common.h"
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -476,9 +477,9 @@ std::vector<std::string> clean_chain_names(const std::vector<std::string>& names
 // ============ Distance matrix output ============
 // Save distance matrix in PHYLIP format
 void save_distance_matrix(const std::vector<std::string>& names,
-    const std::vector<std::vector<double>>& dist_mat, int chain_num)
+    const std::vector<std::vector<double>>& dist_mat, int chain_num, const std::string& outdir)
 {
-    std::ofstream dmf("upgma_tree.dist");
+    std::ofstream dmf(join_outdir(outdir, "upgma_tree.dist"));
     dmf << chain_num << "\n";
     for (int i = 0; i < chain_num; i++) {
         std::string name = names[i].substr(0, 10);
@@ -501,7 +502,7 @@ void save_distance_matrix(const std::vector<std::string>& names,
 void output_upgma_tree(
     const std::vector<std::string>& names,
     const std::vector<std::vector<double>>& tm_mat,
-    int chain_num)
+    int chain_num, const std::string& outdir)
 {
     if (chain_num < 3) return;
 
@@ -512,13 +513,13 @@ void output_upgma_tree(
 
     // 2. Save Newick format tree
     std::string newick = get_tree_string(tree.get(), 5);
-    std::ofstream nf("upgma_tree.txt");
+    std::ofstream nf(join_outdir(outdir, "upgma_tree.txt"));
     nf << newick << "\n";
     nf.close();
 
     // 3. Save SVG and distance matrix
-    save_svg(tree.get(), "upgma_tree.svg");
-    save_distance_matrix(clean_names, dist_mat, chain_num);
+    save_svg(tree.get(), join_outdir(outdir, "upgma_tree.svg"));
+    save_distance_matrix(clean_names, dist_mat, chain_num, outdir);
 
     // 4. Print tree to terminal
     std::cout << "\n# UPGMA Phylogenetic Tree:\n";

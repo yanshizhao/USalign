@@ -33,5 +33,5 @@ std::unique_ptr<UPGMA_Tree> build_upgma_tree(const std::vector<std::string>& nam
 std::string get_tree_string(const UPGMA_Tree* tree, int precision = 5);
 void print_tree(const UPGMA_Tree* tree, std::ostream& os = std::cout);
 bool save_svg(const UPGMA_Tree* tree, const std::string& filename);
-void save_distance_matrix(const std::vector<std::string>& names, const std::vector<std::vector<double>>& dist_mat, int chain_num);
-void output_upgma_tree(const std::vector<std::string>& names, const std::vector<std::vector<double>>& tm_mat, int chain_num);
+void save_distance_matrix(const std::vector<std::string>& names, const std::vector<std::vector<double>>& dist_mat, int chain_num, const std::string& outdir);
+void output_upgma_tree(const std::vector<std::string>& names, const std::vector<std::vector<double>>& tm_mat, int chain_num, const std::string& outdir);

@@ -216,6 +216,9 @@ void print_help()
 "      -m  Output rotation matrix for superposition, e.g., '-m matrix.txt'\n"
 "          prints the matrix to 'matrix.txt'; '-m -' prints to stdout.\n"
 "\n"
+"  -outdir  Directory for output files. Defaults to the 'results' folder\n"
+"           next to the executable. e.g., '-outdir out' writes to 'out/'.\n"
+"\n"
 "      -d  TM-score scaled by an assigned d0, e.g., '-d 3.5' reports MaxSub\n"
 "          score, where d0 is 3.5 Angstrom. -d does not change final alignment.\n"
 "\n"
@@ -4058,7 +4061,7 @@ int mTMalign(AlignCommonInput& common_inputs)
         parsed_input.chain1_list[i].substr(user_opts.dir_opt.size())+chainID_list[i]);
 
     // build and output UPGMA phylogenetic tree
-    output_upgma_tree(state.xname_vec, TMave_mat, chain_num);
+    output_upgma_tree(state.xname_vec, TMave_mat, chain_num, user_opts.outdir_opt);
 
     state.assign_list.assign(chain_num, 0);
     state.compare_num = 0;
@@ -4904,6 +4907,11 @@ bool parse_string_option(int argc, char* argv[], int& i, AlignCommonInput& commo
         const std::string val = get_argv_value(argc, argv, i, "-atom");
         user_opts.atom_opt=val;
     }
+    else if ( std::string(argv[i]) == "-outdir" )
+    {
+        const std::string val = get_argv_value(argc, argv, i, "-outdir");
+        user_opts.outdir_opt=val;
+    }
     else if ( std::string(argv[i]) == "-mol" )
     {
         const std::string val = get_argv_value(argc, argv, i, "-mol");
@@ -4988,6 +4996,10 @@ void postprocess_arguments(AlignCommonInput& common_inputs)
     UserOptions&    user_opts = common_inputs.user_options;
     ParsedInput&    parsed    = common_inputs.parsed_input;
     ControlOptions& control   = common_inputs.control_options;
+
+    user_opts.outdir_opt   = resolve_outdir(user_opts.outdir_opt);
+    user_opts.fname_super  = join_outdir(user_opts.outdir_opt, user_opts.fname_super);
+    user_opts.fname_matrix = join_outdir(user_opts.outdir_opt, user_opts.fname_matrix);
 
     check_input_presence(user_opts, control);
     check_dir_option_limits(user_opts, control);

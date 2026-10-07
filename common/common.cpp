@@ -1,5 +1,22 @@
 #include "common.h"
 
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+#endif
+
 void transform(const Vec3& t, const RotMat& u, const Vec3& x, Vec3& x1)
 {
     x1[0]=t[0]+dot(u[0], x);
@@ -1408,3 +1425,61 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
     }
     return sequence[0].size();
 }
+
+std::string get_executable_dir()
+{
+    std::string path;
+#ifdef _WIN32
+    char buf[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, buf, MAX_PATH);
+    if (n > 0 && n < MAX_PATH) path.assign(buf, n);
+#elif defined(__APPLE__)
+    uint32_t size = 0;
+    _NSGetExecutablePath(NULL, &size);
+    if (size > 0)
+    {
+        std::vector<char> buf(size);
+        if (_NSGetExecutablePath(buf.data(), &size) == 0) path.assign(buf.data());
+    }
+#else
+    char buf[4096];
+    ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+    if (n > 0) path.assign(buf, n);
+#endif
+    if (path.empty()) return std::string(".");
+    std::size_t slash = path.find_last_of("/\\");
+    if (slash == std::string::npos) return std::string(".");
+    return path.substr(0, slash);
+}
+
+bool make_dirs(const std::string& dir_path)
+{
+    if (dir_path.empty()) return true;
+    std::string cur;
+    for (std::size_t i = 0; i < dir_path.size(); i++)
+    {
+        cur += dir_path[i];
+        if (dir_path[i] != '/' && dir_path[i] != '\\' && i + 1 != dir_path.size()) continue;
+        if (cur == "/" || cur == "\\") continue;
+        if (cur.size() == 2 && cur[1] == ':') continue;
+#ifdef _WIN32
+        _mkdir(cur.c_str());
+#else
+        mkdir(cur.c_str(), 0755);
+#endif
+    }
+    return true;
+}
+
+std::string get_default_outdir()
+{
+    return get_executable_dir() + "/results";
+}
+
+std::string resolve_outdir(const std::string& given_outdir)
+{
+    std::string outdir = given_outdir.empty() ? get_default_outdir() : given_outdir;
+    make_dirs(outdir);
+    return outdir;
+}
+

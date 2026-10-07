@@ -1663,6 +1663,7 @@ struct UserOptions
     std::string fname_super;
     std::string fname_lign;
     std::string fname_matrix;
+    std::string outdir_opt;
 
     // directory options: directory arguments given on the command line
     std::string dir_opt;
@@ -1923,4 +1924,19 @@ inline void split_next(int argc, char* argv[], int& i, const char* opt,
                        std::vector<std::string>& target)
 {
     split(get_argv_value(argc, argv, i, opt), target, ',');
+}
+
+std::string get_executable_dir();
+bool make_dirs(const std::string& dir_path);
+std::string get_default_outdir();
+std::string resolve_outdir(const std::string& given_outdir);
+
+inline std::string join_outdir(const std::string& outdir, const std::string& name)
+{
+    if (name.empty() || name == "-" || outdir.empty() || outdir == ".") return name;
+    if (name[0] == '/' || name[0] == '\\') return name;
+    if (name.size() > 1 && name[1] == ':') return name;
+    if (outdir[outdir.size() - 1] == '/' || outdir[outdir.size() - 1] == '\\')
+        return outdir + name;
+    return outdir + "/" + name;
 }
