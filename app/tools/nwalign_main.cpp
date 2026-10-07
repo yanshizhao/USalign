@@ -61,7 +61,7 @@ void print_help(bool h_opt=false)
     std::cout <<
 "Pairwise sequence alignment between two sequences.\n"
 "\n"
-"Usage: NWalign PDB1.pdb PDB2.pdb [Options]\n"
+"Usage: NWalign example/PDB1.pdb example/PDB2.pdb [Options]\n"
 "\n"
 "Options:\n"
 "    -h       Print the full help message\n"

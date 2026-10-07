@@ -80,7 +80,7 @@ void print_help(bool h_opt=false)
     std::cout <<
 "Extract sequence alignment from a pair of superposed structures.\n"
 "\n"
-"Usage: se PDB1.pdb PDB2.pdb [Options]\n"
+"Usage: se example/PDB1.pdb example/PDB2.pdb [Options]\n"
 "\n"
 "Options:\n"
 "    -u    TM-score normalized by user assigned length (the same as -L)\n"
@@ -90,7 +90,7 @@ void print_help(bool h_opt=false)
 "    -a    TM-score normalized by the average length of two structures\n"
 "          T or F, (default F)\n"
 "\n"
-"    -i    (Same as -I) use alignment specified in fasta file 'align.txt'\n"
+"    -i    (Same as -I) use alignment specified in fasta file 'example/align.txt'\n"
 "\n"
 "    -d    TM-score scaled by an assigned d0, e.g. 5 Angstroms\n"
 "\n"
@@ -99,9 +99,9 @@ void print_help(bool h_opt=false)
 "    (Options -u, -a, -d won't change the final structure alignment)\n"
 "\n"
 "Example usages:\n"
-"    se PDB1.pdb PDB2.pdb\n"
-"    se PDB1.pdb PDB2.pdb -u 100 -d 5.0 -a T\n"
-"    se PDB1.pdb PDB2.pdb -i align.txt\n"
+"    se example/PDB1.pdb example/PDB2.pdb\n"
+"    se example/PDB1.pdb example/PDB2.pdb -u 100 -d 5.0 -a T\n"
+"    se example/PDB1.pdb example/PDB2.pdb -i example/align.txt\n"
     <<std::endl;
 
     if (h_opt) print_extra_help();

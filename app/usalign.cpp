@@ -138,7 +138,7 @@ void print_help()
     print_banner(USALIGN_BANNER);
     std::cout <<
 "\n"
-"Usage: USalign PDB1.pdb PDB2.pdb [Options]\n"
+"Usage: USalign example/PDB1.pdb example/PDB2.pdb [Options]\n"
 "\n"
 "Options:\n"
 "    -mol  Type of molecule(s) to align.\n"
@@ -209,9 +209,9 @@ void print_help()
 "             optimal chain mapping, and then superpose two complex\n"
 "             structures by TM-score\n"
 "\n"
-"      -I  Use the final alignment specified by FASTA file 'align.txt'\n"
+"      -I  Use the final alignment specified by FASTA file 'example/align.txt'\n"
 "\n"
-"      -i  Use alignment specified by 'align.txt' as an initial alignment\n"
+"      -i  Use alignment specified by 'example/align.txt' as an initial alignment\n"
 "\n"
 "      -m  Output rotation matrix for superposition, e.g., '-m matrix.txt'\n"
 "          prints the matrix to 'matrix.txt'; '-m -' prints to stdout.\n"
