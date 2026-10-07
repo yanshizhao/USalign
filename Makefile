@@ -22,7 +22,7 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
-ENGINE_CPP=engine/tmalign/output.cpp
+ENGINE_CPP=engine/tmalign/output.cpp engine/tmalign/TMalign.cpp
 COMMON_CPP=common/param.cpp common/io.cpp common/geometry.cpp common/seqalign.cpp
 
 all: USalign
