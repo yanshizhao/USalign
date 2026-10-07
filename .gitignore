@@ -31,6 +31,3 @@
 cmake-build-debug
 *.o
 .build_tmp/
-
-# default output directory (-outdir defaults here)
-/results/
