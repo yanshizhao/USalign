@@ -25,7 +25,7 @@ PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta
 ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
 COMMON_CPP=common/common.cpp
 ORCH_CPP=orchestration/orchestration.cpp
-OUTPUT_CPP=output_funcs/output.cpp output_funcs/tmalign_output.cpp
+OUTPUT_CPP=output_funcs/output.cpp
 
 all: USalign
 
