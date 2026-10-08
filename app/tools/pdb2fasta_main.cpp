@@ -137,22 +137,6 @@ void check_atom_name_size(Pdb2fastaOptions& pdb2fasta_opts)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
 }
 
-void check_mol_type_atom_default(Pdb2fastaOptions& pdb2fasta_opts)
-{
-    if (pdb2fasta_opts.mol_opt=="prot") pdb2fasta_opts.mol_opt="protein";
-    else if (pdb2fasta_opts.mol_opt=="DNA") pdb2fasta_opts.mol_opt="RNA";
-    if (pdb2fasta_opts.mol_opt!="auto" && pdb2fasta_opts.mol_opt!="protein" && pdb2fasta_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be one of the"
-            "following:\nauto, prot (the same as 'protein'), and "
-            "RNA (the same as 'DNA').");
-
-    pdb2fasta_opts.normalize_atom_name=(pdb2fasta_opts.atom_opt=="auto" || pdb2fasta_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (pdb2fasta_opts.mol_opt=="protein" && pdb2fasta_opts.atom_opt=="auto")
-        pdb2fasta_opts.atom_opt=" CA ";
-    else if (pdb2fasta_opts.mol_opt=="RNA" && pdb2fasta_opts.atom_opt=="auto")
-        pdb2fasta_opts.atom_opt=" C3'";
-}
-
 void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
 {
     check_input_presence(pdb2fasta_opts);

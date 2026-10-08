@@ -2032,3 +2032,20 @@ inline void check_matrix_file_name(CliOptions& cli_opts)
     if (cli_opts.m_opt && cli_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
 }
+
+template<class CliOptions>
+inline void check_mol_type_atom_default(CliOptions& cli_opts)
+{
+    if (cli_opts.mol_opt=="prot") cli_opts.mol_opt="protein";
+    else if (cli_opts.mol_opt=="DNA") cli_opts.mol_opt="RNA";
+    if (cli_opts.mol_opt!="auto" && cli_opts.mol_opt!="protein" && cli_opts.mol_opt!="RNA")
+        PrintErrorAndQuit("ERROR! Molecule type must be one of the"
+            "following:\nauto, prot (the same as 'protein'), and "
+            "RNA (the same as 'DNA').");
+
+    cli_opts.normalize_atom_name=(cli_opts.atom_opt=="auto" || cli_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (cli_opts.mol_opt=="protein" && cli_opts.atom_opt=="auto")
+        cli_opts.atom_opt=" CA ";
+    else if (cli_opts.mol_opt=="RNA" && cli_opts.atom_opt=="auto")
+        cli_opts.atom_opt=" C3'";
+}

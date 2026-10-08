@@ -112,22 +112,6 @@ void check_atom_name_size(BiounitasymOptions& biounitasym_opts)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
 }
 
-void check_mol_type_atom_default(BiounitasymOptions& biounitasym_opts)
-{
-    if (biounitasym_opts.mol_opt=="prot") biounitasym_opts.mol_opt="protein";
-    else if (biounitasym_opts.mol_opt=="DNA") biounitasym_opts.mol_opt="RNA";
-    if (biounitasym_opts.mol_opt!="auto" && biounitasym_opts.mol_opt!="protein" && biounitasym_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be one of the"
-            "following:\nauto, prot (the same as 'protein'), and "
-            "RNA (the same as 'DNA').");
-
-    biounitasym_opts.normalize_atom_name=(biounitasym_opts.atom_opt=="auto" || biounitasym_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (biounitasym_opts.mol_opt=="protein" && biounitasym_opts.atom_opt=="auto")
-        biounitasym_opts.atom_opt=" CA ";
-    else if (biounitasym_opts.mol_opt=="RNA" && biounitasym_opts.atom_opt=="auto")
-        biounitasym_opts.atom_opt=" C3'";
-}
-
 void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
 {
     check_input_presence(biounitasym_opts);
