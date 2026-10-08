@@ -101,6 +101,13 @@
                engine/, orchestration/, output_funcs/ and app/; "make" now
                builds only USalign by default (list other tools explicitly);
                example inputs moved to the "example" folder.
+   2026/10/08: app/usalign.cpp reduced to CLI routing only (parsing,
+               validation, dispatch); each alignment mode's orchestration
+               moved back into its engine under engine/<mode>/. New standalone
+               "USFlexalign" executable for flexible alignment (-mm 7). The
+               output module merged (tmalign_output.{h,cpp} -> output.{h,cpp}).
+               Shared CLI helpers (build_file_lists / check_* families)
+               deduplicated into common/common.h templates.
 ===============================================================================
 
 ================================
@@ -108,11 +115,21 @@
 ================================
 Sources are organized into five layers, from the bottom up:
 
-    common/         foundation shared by all other layers
-    engine/         alignment engines (one sub-directory per engine)
+    common/         foundation shared by all other layers (common.h holds the
+                    shared data structures and the CLI helper templates)
+    engine/         alignment engines (one sub-directory per engine):
+                    tmalign/ mmalign/ mmdock/ mtmalign/ soialign/ flexalign/
+                    tmscore/ hwrmsd/ se/ upgma/
     orchestration/  dispatch of a chain-pair alignment to an engine
     output_funcs/   formatting of alignment results into text / PDB / scripts
-    app/usalign.cpp the USalign entry point; app/tools/ holds the other programs
+    app/            the USalign entry point (app/usalign.cpp + app/usalign.h,
+                    routing only) and the other standalone programs under
+                    app/tools/
+
+Each alignment mode (-mm 0/1/2/4/5/6/7) is driven by its engine: the chain
+loop, per-pair alignment and result output live in the engine's own
+.h/.cpp, while app/usalign.cpp only parses arguments, validates them and
+dispatches to the engine entry point.
 
 =========================
  How to install US-align
@@ -126,7 +143,7 @@ Sources are organized into five layers, from the bottom up:
        programs).
    1.2 Manual compilation in bash (do not add -static; macOS cannot link
        statically):
-           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
@@ -134,7 +151,7 @@ Sources are organized into five layers, from the bottom up:
            mingw32-make
        Same targets as in 1.1: only USalign is built by default.
    2.2 Manual compilation in PowerShell (-static is required on Windows):
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
@@ -185,6 +202,13 @@ folder.)
 A full list of available options can be explored by:
 
     ./USalign -h
+
+Flexible (hinge) alignment can also be run as a standalone program:
+
+    ./USFlexalign example/PDB1.pdb example/PDB2.pdb
+
+which is equivalent to "./USalign ... -mm 7" plus the flexible-alignment
+options (-hinge / -afp / -TMpass).
 
 Output files: by default, the files written by the program (-o, -m, -rasmol,
 -chimerax and the upgma_tree files of -mm 4) are placed in a "results" folder
