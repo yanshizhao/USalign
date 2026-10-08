@@ -370,18 +370,6 @@ void check_hinge(USFlexalignOptions& usflexalign_opts)
         PrintErrorAndQuit("ERROR! -hinge must be <10");
 }
 
-void check_atom_and_mol_type(USFlexalignOptions& usflexalign_opts)
-{
-    if (usflexalign_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (usflexalign_opts.mol_opt!="auto" && usflexalign_opts.mol_opt!="protein" && usflexalign_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (usflexalign_opts.mol_opt=="protein" && usflexalign_opts.atom_opt=="auto")
-        usflexalign_opts.atom_opt=" CA ";
-    else if (usflexalign_opts.mol_opt=="RNA" && usflexalign_opts.atom_opt=="auto")
-        usflexalign_opts.atom_opt=" C3'";
-}
-
 void check_numeric_conflicts(USFlexalignOptions& usflexalign_opts)
 {
     if (usflexalign_opts.u_opt && usflexalign_opts.Lnorm_ass<=0)

@@ -354,18 +354,6 @@ void check_dir_conflicts(TMalignOptions& tmalign_opts)
     }
 }
 
-void check_atom_and_mol_type(TMalignOptions& tmalign_opts)
-{
-    if (tmalign_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (tmalign_opts.mol_opt!="auto" && tmalign_opts.mol_opt!="protein" && tmalign_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (tmalign_opts.mol_opt=="protein" && tmalign_opts.atom_opt=="auto")
-        tmalign_opts.atom_opt=" CA ";
-    else if (tmalign_opts.mol_opt=="RNA" && tmalign_opts.atom_opt=="auto")
-        tmalign_opts.atom_opt=" C3'";
-}
-
 void check_numeric_conflicts(TMalignOptions& tmalign_opts)
 {
     if (tmalign_opts.u_opt && tmalign_opts.Lnorm_ass<=0)

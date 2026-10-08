@@ -284,18 +284,6 @@ void check_dir_conflicts(MMalignOptions& mmalign_opts)
         PrintErrorAndQuit("-m or -o cannot be set with -dir1 or -dir2");
 }
 
-void check_atom_and_mol_type(MMalignOptions& mmalign_opts)
-{
-    if (mmalign_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (mmalign_opts.mol_opt!="auto" && mmalign_opts.mol_opt!="protein" && mmalign_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (mmalign_opts.mol_opt=="protein" && mmalign_opts.atom_opt=="auto")
-        mmalign_opts.atom_opt=" CA ";
-    else if (mmalign_opts.mol_opt=="RNA" && mmalign_opts.atom_opt=="auto")
-        mmalign_opts.atom_opt=" C3'";
-}
-
 void check_numeric_conflicts(MMalignOptions& mmalign_opts)
 {
     if (mmalign_opts.d_opt && mmalign_opts.d0_scale<=0)

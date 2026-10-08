@@ -1955,3 +1955,16 @@ inline void build_file_lists(const CliOptions& cli_opts, std::vector<std::string
     else if (cli_opts.dir2_opt.size()==0) chain2_list.push_back(cli_opts.yname);
     else file2chainlist(chain2_list, cli_opts.yname, cli_opts.dir2_opt, cli_opts.suffix_opt);
 }
+
+template<class CliOptions>
+inline void check_atom_and_mol_type(CliOptions& cli_opts)
+{
+    if (cli_opts.atom_opt.size()!=4)
+        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
+    if (cli_opts.mol_opt!="auto" && cli_opts.mol_opt!="protein" && cli_opts.mol_opt!="RNA")
+        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
+    else if (cli_opts.mol_opt=="protein" && cli_opts.atom_opt=="auto")
+        cli_opts.atom_opt=" CA ";
+    else if (cli_opts.mol_opt=="RNA" && cli_opts.atom_opt=="auto")
+        cli_opts.atom_opt=" C3'";
+}

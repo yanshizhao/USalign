@@ -288,18 +288,6 @@ void check_dir_conflicts(QTMclustOptions& qtmclust_opts)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
 }
 
-void check_atom_and_mol_type(QTMclustOptions& qtmclust_opts)
-{
-    if (qtmclust_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (qtmclust_opts.mol_opt!="auto" && qtmclust_opts.mol_opt!="protein" && qtmclust_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (qtmclust_opts.mol_opt=="protein" && qtmclust_opts.atom_opt=="auto")
-        qtmclust_opts.atom_opt=" CA ";
-    else if (qtmclust_opts.mol_opt=="RNA" && qtmclust_opts.atom_opt=="auto")
-        qtmclust_opts.atom_opt=" C3'";
-}
-
 void check_numeric_and_split(QTMclustOptions& qtmclust_opts)
 {
     if (qtmclust_opts.u_opt && qtmclust_opts.Lnorm_ass<=0)

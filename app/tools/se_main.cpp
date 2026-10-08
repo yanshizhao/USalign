@@ -258,18 +258,6 @@ void check_dir_conflicts(SeOptions& se_opts)
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 }
 
-void check_atom_and_mol_type(SeOptions& se_opts)
-{
-    if (se_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (se_opts.mol_opt!="auto" && se_opts.mol_opt!="protein" && se_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (se_opts.mol_opt=="protein" && se_opts.atom_opt=="auto")
-        se_opts.atom_opt=" CA ";
-    else if (se_opts.mol_opt=="RNA" && se_opts.atom_opt=="auto")
-        se_opts.atom_opt=" C3'";
-}
-
 void check_numeric_conflicts(SeOptions& se_opts)
 {
     if (se_opts.u_opt && se_opts.Lnorm_ass<=0)
