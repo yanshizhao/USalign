@@ -3696,3 +3696,8 @@ void flexalign_usbcat_main(
     int sparse_val,
     const FlexalignParams& flex_params,
     FlexAlignResult& flexalign_res);
+
+void fill_flexalign_params(
+    FlexalignParams& flex_params,
+    const ControlOptions& control);
+int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_params, FlexAlignResult& flex_result);
