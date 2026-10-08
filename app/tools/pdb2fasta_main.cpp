@@ -131,12 +131,6 @@ void check_input_presence(Pdb2fastaOptions& pdb2fasta_opts)
     if(pdb2fasta_opts.xname.size()==0||pdb2fasta_opts.xname=="-h") print_help();
 }
 
-void check_dir_conflicts(Pdb2fastaOptions& pdb2fasta_opts)
-{
-    if (pdb2fasta_opts.suffix_opt.size() && pdb2fasta_opts.dir_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir is set");
-}
-
 void check_atom_name_size(Pdb2fastaOptions& pdb2fasta_opts)
 {
     if (pdb2fasta_opts.atom_opt.size()!=4)
@@ -162,7 +156,7 @@ void check_mol_type_atom_default(Pdb2fastaOptions& pdb2fasta_opts)
 void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
 {
     check_input_presence(pdb2fasta_opts);
-    check_dir_conflicts(pdb2fasta_opts);
+    check_suffix_dir_conflicts(pdb2fasta_opts);
     check_atom_name_size(pdb2fasta_opts);
     check_split_conflicts(pdb2fasta_opts);
     check_mol_type_atom_default(pdb2fasta_opts);

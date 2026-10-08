@@ -130,16 +130,10 @@ void check_input_presence(Pdb2ssOptions& pdb2ss_opts)
     if(pdb2ss_opts.xname.size()==0||pdb2ss_opts.xname=="-h") print_help();
 }
 
-void check_dir_conflicts(Pdb2ssOptions& pdb2ss_opts)
-{
-    if (pdb2ss_opts.suffix_opt.size() && pdb2ss_opts.dir_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir is set");
-}
-
 void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
 {
     check_input_presence(pdb2ss_opts);
-    check_dir_conflicts(pdb2ss_opts);
+    check_suffix_dir_conflicts(pdb2ss_opts);
     check_atom_and_mol_type_norm(pdb2ss_opts);
     check_split_conflicts(pdb2ss_opts);
 }

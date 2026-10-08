@@ -2018,3 +2018,10 @@ inline void check_dir_conflicts(CliOptions& cli_opts)
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
 }
+
+template<class CliOptions>
+inline void check_suffix_dir_conflicts(CliOptions& cli_opts)
+{
+    if (cli_opts.suffix_opt.size() && cli_opts.dir_opt.size()==0)
+        PrintErrorAndQuit("-suffix is only valid if -dir is set");
+}
