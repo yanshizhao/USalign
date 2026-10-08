@@ -302,12 +302,6 @@ void check_numeric_conflicts(TMscoreOptions& tmscore_opts)
         PrintErrorAndQuit("-c should be used with -ter <=1");
 }
 
-void check_matrix_file_name(TMscoreOptions& tmscore_opts)
-{
-    if (tmscore_opts.m_opt && tmscore_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
-        PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
-}
-
 void postprocess_arguments(TMscoreOptions& tmscore_opts)
 {
     tmscore_opts.outdir_opt = resolve_outdir(tmscore_opts.outdir_opt);

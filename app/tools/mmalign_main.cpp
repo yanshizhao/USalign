@@ -302,12 +302,6 @@ void check_ter_split_conflicts(MMalignOptions& mmalign_opts)
         PrintErrorAndQuit("-split 1 should be used with -ter 0");
 }
 
-void check_matrix_file_name(MMalignOptions& mmalign_opts)
-{
-    if (mmalign_opts.m_opt && mmalign_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
-        PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
-}
-
 void postprocess_arguments(MMalignOptions& mmalign_opts)
 {
     mmalign_opts.outdir_opt = resolve_outdir(mmalign_opts.outdir_opt);

@@ -2025,3 +2025,10 @@ inline void check_suffix_dir_conflicts(CliOptions& cli_opts)
     if (cli_opts.suffix_opt.size() && cli_opts.dir_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
 }
+
+template<class CliOptions>
+inline void check_matrix_file_name(CliOptions& cli_opts)
+{
+    if (cli_opts.m_opt && cli_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
+        PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+}
