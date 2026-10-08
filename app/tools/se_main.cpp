@@ -258,16 +258,6 @@ void check_dir_conflicts(SeOptions& se_opts)
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 }
 
-void check_numeric_conflicts(SeOptions& se_opts)
-{
-    if (se_opts.u_opt && se_opts.Lnorm_ass<=0)
-        PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
-    if (se_opts.d_opt && se_opts.d0_scale<=0)
-        PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (se_opts.outfmt_opt>=2 && (se_opts.a_opt || se_opts.u_opt || se_opts.d_opt))
-        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-}
-
 void check_byresi_split_conflicts(SeOptions& se_opts)
 {
     if (se_opts.byresi_opt!=0)

@@ -370,16 +370,6 @@ void check_hinge(USFlexalignOptions& usflexalign_opts)
         PrintErrorAndQuit("ERROR! -hinge must be <10");
 }
 
-void check_numeric_conflicts(USFlexalignOptions& usflexalign_opts)
-{
-    if (usflexalign_opts.u_opt && usflexalign_opts.Lnorm_ass<=0)
-        PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
-    if (usflexalign_opts.d_opt && usflexalign_opts.d0_scale<=0)
-        PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (usflexalign_opts.outfmt_opt>=2 && (usflexalign_opts.a_opt || usflexalign_opts.u_opt || usflexalign_opts.d_opt))
-        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-}
-
 void apply_derived_options(USFlexalignOptions& usflexalign_opts)
 {
     if (usflexalign_opts.split_opt < 0)      usflexalign_opts.split_opt = 2;

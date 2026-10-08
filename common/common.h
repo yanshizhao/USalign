@@ -1993,3 +1993,14 @@ inline void check_split_conflicts(CliOptions& cli_opts)
     if (cli_opts.split_opt<0 || cli_opts.split_opt>2)
         PrintErrorAndQuit("-split can only be 0, 1 or 2");
 }
+
+template<class CliOptions>
+inline void check_numeric_conflicts(CliOptions& cli_opts)
+{
+    if (cli_opts.u_opt && cli_opts.Lnorm_ass<=0)
+        PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
+    if (cli_opts.d_opt && cli_opts.d0_scale<=0)
+        PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
+    if (cli_opts.outfmt_opt>=2 && (cli_opts.a_opt || cli_opts.u_opt || cli_opts.d_opt))
+        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
+}

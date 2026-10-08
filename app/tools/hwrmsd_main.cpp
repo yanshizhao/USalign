@@ -305,16 +305,6 @@ void check_dir_conflicts(HwRMSDOptions& hwrmsd_opts)
     }
 }
 
-void check_numeric_conflicts(HwRMSDOptions& hwrmsd_opts)
-{
-    if (hwrmsd_opts.u_opt && hwrmsd_opts.Lnorm_ass<=0)
-        PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
-    if (hwrmsd_opts.d_opt && hwrmsd_opts.d0_scale<=0)
-        PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (hwrmsd_opts.outfmt_opt>=2 && (hwrmsd_opts.a_opt || hwrmsd_opts.u_opt || hwrmsd_opts.d_opt))
-        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-}
-
 void check_byresi_split_iter_seq(HwRMSDOptions& hwrmsd_opts)
 {
     if (hwrmsd_opts.byresi_opt!=0)

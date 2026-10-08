@@ -354,16 +354,6 @@ void check_dir_conflicts(TMalignOptions& tmalign_opts)
     }
 }
 
-void check_numeric_conflicts(TMalignOptions& tmalign_opts)
-{
-    if (tmalign_opts.u_opt && tmalign_opts.Lnorm_ass<=0)
-        PrintErrorAndQuit("Wrong value for option -u!  It should be >0");
-    if (tmalign_opts.d_opt && tmalign_opts.d0_scale<=0)
-        PrintErrorAndQuit("Wrong value for option -d!  It should be >0");
-    if (tmalign_opts.outfmt_opt>=2 && (tmalign_opts.a_opt || tmalign_opts.u_opt || tmalign_opts.d_opt))
-        PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
-}
-
 void check_byresi_split_cp(TMalignOptions& tmalign_opts)
 {
     if (tmalign_opts.byresi_opt!=0)
