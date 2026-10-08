@@ -1,5 +1,6 @@
 // command line argument parsing and document of US-align main program
 
+#include "usalign.h"
 #include "common.h"
 #include "orchestration.h"
 #include "output.h"
