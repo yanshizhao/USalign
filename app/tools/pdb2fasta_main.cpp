@@ -147,26 +147,6 @@ void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
 }
 
 // parse file list
-void build_file_list(const Pdb2fastaOptions& pdb2fasta_opts, std::vector<std::string>& chain_list)
-{
-    if (pdb2fasta_opts.dir_opt.size()==0)
-        chain_list.push_back(pdb2fasta_opts.xname);
-    else
-    {
-        std::ifstream fp(pdb2fasta_opts.xname);
-        if (! fp.is_open())
-            PrintErrorAndQuit("Can not open file: " + pdb2fasta_opts.xname + "\n");
-        std::string line;
-        while (fp.good())
-        {
-            std::getline(fp, line);
-            if (! line.size()) continue;
-            chain_list.push_back(pdb2fasta_opts.dir_opt+Trim(line)+pdb2fasta_opts.suffix_opt);
-        }
-        fp.close();
-    }
-}
-
 void output_fasta_chain(const std::string& filename, const Pdb2fastaOptions& pdb2fasta_opts,
     const std::vector<std::string>& chain_lines, const std::string& chain_id)
 {

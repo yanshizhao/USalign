@@ -139,26 +139,6 @@ void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
 }
 
 // parse file list
-void build_file_list(const Pdb2ssOptions& pdb2ss_opts, std::vector<std::string>& chain_list)
-{
-    if (pdb2ss_opts.dir_opt.size()==0)
-        chain_list.push_back(pdb2ss_opts.xname);
-    else
-    {
-        std::ifstream fp(pdb2ss_opts.xname);
-        if (! fp.is_open())
-            PrintErrorAndQuit("Can not open file: " + pdb2ss_opts.xname + "\n");
-        std::string line;
-        while (fp.good())
-        {
-            std::getline(fp, line);
-            if (! line.size()) continue;
-            chain_list.push_back(pdb2ss_opts.dir_opt+Trim(line)+pdb2ss_opts.suffix_opt);
-        }
-        fp.close();
-    }
-}
-
 void output_ss_chain(const std::string& filename, const Pdb2ssOptions& pdb2ss_opts,
     const std::vector<std::string>& chain_lines, const int mol_type, const std::string& chain_id)
 {

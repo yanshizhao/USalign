@@ -2049,3 +2049,24 @@ inline void check_mol_type_atom_default(CliOptions& cli_opts)
     else if (cli_opts.mol_opt=="RNA" && cli_opts.atom_opt=="auto")
         cli_opts.atom_opt=" C3'";
 }
+
+template<class CliOptions>
+inline void build_file_list(const CliOptions& cli_opts, std::vector<std::string>& chain_list)
+{
+    if (cli_opts.dir_opt.size()==0)
+        chain_list.push_back(cli_opts.xname);
+    else
+    {
+        std::ifstream fp(cli_opts.xname);
+        if (! fp.is_open())
+            PrintErrorAndQuit("Can not open file: " + cli_opts.xname + "\n");
+        std::string line;
+        while (fp.good())
+        {
+            std::getline(fp, line);
+            if (! line.size()) continue;
+            chain_list.push_back(cli_opts.dir_opt+Trim(line)+cli_opts.suffix_opt);
+        }
+        fp.close();
+    }
+}

@@ -121,26 +121,6 @@ void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
 }
 
 // parse file list
-void build_file_list(const BiounitasymOptions& biounitasym_opts, std::vector<std::string>& chain_list)
-{
-    if (biounitasym_opts.dir_opt.size()==0)
-        chain_list.push_back(biounitasym_opts.xname);
-    else
-    {
-        std::ifstream fp(biounitasym_opts.xname);
-        if (! fp.is_open())
-            PrintErrorAndQuit("Can not open file: " + biounitasym_opts.xname + "\n");
-        std::string line;
-        while (fp.good())
-        {
-            std::getline(fp, line);
-            if (! line.size()) continue;
-            chain_list.push_back(biounitasym_opts.dir_opt+Trim(line)+biounitasym_opts.suffix_opt);
-        }
-        fp.close();
-    }
-}
-
 double count_inter_chain_clashes(const CoordArray& xa, const CoordArray& ya)
 {
     double clashcount=0;
