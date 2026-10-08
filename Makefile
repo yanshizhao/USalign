@@ -8,7 +8,7 @@ $(shell mkdir -p $(BUILD_TMP))
 export TMPDIR:=$(BUILD_TMP)
 export TMP:=$(BUILD_TMP)
 export TEMP:=$(BUILD_TMP)
-INC=-Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Ioutput_funcs -Iapp/tools -Iapp/tools/tool_include
+INC=-Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include
 OMPFLAGS=-fopenmp
 ifeq ($(OS),Windows_NT)
     # Windows (MSYS2, MinGW, PowerShell, cmd)
@@ -22,65 +22,65 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign USFlexalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
-ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/orchestration.cpp
-USALIGN_ENGINE_CPP=engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp
-COMMON_CPP=common/common.cpp
-OUTPUT_CPP=output_funcs/output.cpp
+ENGINE_CPP=src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/orchestration.cpp
+USALIGN_ENGINE_CPP=src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp
+COMMON_CPP=src/common/common.cpp
+OUTPUT_CPP=src/output_funcs/output.cpp
 
 all: USalign
 
-qTMclust: app/tools/tool_main/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+qTMclust: src/app/tools/tool_main/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-USalign: app/usalign/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+USalign: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USalign.exe: app/usalign/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+USalign.exe: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USFlexalign: app/tools/tool_main/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+USFlexalign: src/app/tools/tool_main/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-TMalign: app/tools/tool_main/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+TMalign: src/app/tools/tool_main/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-TMscore: app/tools/tool_main/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+TMscore: src/app/tools/tool_main/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-MMalign: app/tools/tool_main/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+MMalign: src/app/tools/tool_main/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-se: app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+se: src/app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2ss: app/tools/tool_main/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+pdb2ss: src/app/tools/tool_main/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2xyz: app/tools/tool_main/pdb2xyz_main.cpp $(COMMON_CPP)
+pdb2xyz: src/app/tools/tool_main/pdb2xyz_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-xyz_sfetch: app/tools/tool_main/xyz_sfetch_main.cpp $(COMMON_CPP)
+xyz_sfetch: src/app/tools/tool_main/xyz_sfetch_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdb2fasta: app/tools/tool_main/pdb2fasta_main.cpp $(COMMON_CPP)
+pdb2fasta: src/app/tools/tool_main/pdb2fasta_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-biounitasym: app/tools/tool_main/biounitasym_main.cpp $(COMMON_CPP)
+biounitasym: src/app/tools/tool_main/biounitasym_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-NWalign: app/tools/tool_main/nwalign_main.cpp $(COMMON_CPP)
+NWalign: src/app/tools/tool_main/nwalign_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-HwRMSD: app/tools/tool_main/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+HwRMSD: src/app/tools/tool_main/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-cif2pdb: app/tools/tool_main/cif2pdb_main.cpp $(COMMON_CPP)
+cif2pdb: src/app/tools/tool_main/cif2pdb_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-pdbAtomName: app/tools/tool_main/pdbatomname_main.cpp $(COMMON_CPP)
+pdbAtomName: src/app/tools/tool_main/pdbatomname_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-addChainID: app/tools/tool_main/addchainid_main.cpp $(COMMON_CPP)
+addChainID: src/app/tools/tool_main/addchainid_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 clean:

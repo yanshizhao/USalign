@@ -97,40 +97,41 @@
 	       execution. For example, '-threads 4' uses 4 threads.
    2026/10/07: Output files now default to a "results" folder created next to
                the executable; change it with '-outdir <dir>' ('-outdir .' for
-               the current directory). Source files reorganized into common/,
-               engine/, orchestration/, output_funcs/ and app/; "make" now
+               the current directory). Source files reorganized into src/common/,
+               src/engine/, orchestration/, src/output_funcs/ and app/; "make" now
                builds only USalign by default (list other tools explicitly);
                example inputs moved to the "example" folder.
-   2026/10/08: app/usalign/usalign.cpp reduced to CLI routing only (parsing,
+   2026/10/08: src/app/usalign/usalign.cpp reduced to CLI routing only (parsing,
                validation, dispatch); each alignment mode's orchestration
-               moved back into its engine under engine/<mode>/. New standalone
+               moved back into its engine under src/engine/<mode>/. New standalone
                "USFlexalign" executable for flexible alignment (-mm 7). The
                output module merged (tmalign_output.{h,cpp} -> output.{h,cpp}).
                Shared CLI helpers (build_file_lists / check_* families)
-               deduplicated into common/common.h templates.
+               deduplicated into src/common/common.h templates.
 ===============================================================================
 
 ================================
  Source code organization
 ================================
-Sources are organized into four layers, from the bottom up:
+All C++ sources live under src/, organized into four layers, from the bottom up:
 
-    common/         foundation shared by all other layers (common.h holds the
-                    shared data structures, the CLI helper templates and the
-                    single chain-pair dispatcher align_chain_pair, implemented
-                    in common/orchestration.cpp)
-    engine/         alignment engines (one sub-directory per engine):
-                    tmalign/ mmalign/ mmdock/ mtmalign/ soialign/ flexalign/
-                    tmscore/ hwrmsd/ se/ upgma/
-    output_funcs/   formatting of alignment results into text / PDB / scripts
-    app/            the USalign entry point (app/usalign/usalign.cpp + app/usalign/usalign.h,
-                    routing only) and the other standalone programs under
-                    app/tools/ (implementations in tool_main/, declarations and
-                    the shared tools.h umbrella header in tool_include/)
+    src/common/       foundation shared by all other layers (common.h holds the
+                      shared data structures, the CLI helper templates and the
+                      single chain-pair dispatcher align_chain_pair, implemented
+                      in src/common/orchestration.cpp)
+    src/engine/       alignment engines (one sub-directory per engine):
+                      tmalign/ mmalign/ mmdock/ mtmalign/ soialign/ flexalign/
+                      tmscore/ hwrmsd/ se/ upgma/
+    src/output_funcs/ formatting of alignment results into text / PDB / scripts
+    src/app/          the USalign entry point (src/app/usalign/usalign.cpp +
+                      src/app/usalign/usalign.h, routing only) and the other
+                      standalone programs under src/app/tools/ (implementations
+                      in tool_main/, declarations and the shared tools.h umbrella
+                      header in tool_include/)
 
 Each alignment mode (-mm 0/1/2/4/5/6/7) is driven by its engine: the chain
 loop, per-pair alignment and result output live in the engine's own
-.h/.cpp, while app/usalign/usalign.cpp only parses arguments, validates them and
+.h/.cpp, while src/app/usalign/usalign.cpp only parses arguments, validates them and
 dispatches to the engine entry point.
 
 =========================
@@ -145,7 +146,7 @@ dispatches to the engine entry point.
        programs).
    1.2 Manual compilation in bash (do not add -static; macOS cannot link
        statically):
-           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Ioutput_funcs -Iapp/tools -o USalign app/usalign/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp common/orchestration.cpp output_funcs/output.cpp
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/common/orchestration.cpp src/output_funcs/output.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
@@ -153,7 +154,7 @@ dispatches to the engine entry point.
            mingw32-make
        Same targets as in 1.1: only USalign is built by default.
    2.2 Manual compilation in PowerShell (-static is required on Windows):
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Ioutput_funcs -Iapp/tools -o USalign app/usalign/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp common/orchestration.cpp output_funcs/output.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/common/orchestration.cpp src/output_funcs/output.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
@@ -229,27 +230,27 @@ under app/ and is built by listing its target name explicitly:
 
 Target        Build command           Source
 ----------    --------------------    ------------------------------------------
-USalign       make                    app/usalign/usalign.cpp (default target)
-USFlexalign   make USFlexalign        app/tools/tool_main/usflexalign_main.cpp
-TMalign       make TMalign            app/tools/tool_main/tmalign_main.cpp
-TMscore       make TMscore            app/tools/tool_main/tmscore_main.cpp
-MMalign       make MMalign            app/tools/tool_main/mmalign_main.cpp
-se            make se                 app/tools/tool_main/se_main.cpp
-HwRMSD        make HwRMSD             app/tools/tool_main/hwrmsd_main.cpp
-qTMclust      make qTMclust           app/tools/tool_main/qtmclust_main.cpp
-NWalign       make NWalign            app/tools/tool_main/nwalign_main.cpp
-pdb2xyz       make pdb2xyz            app/tools/tool_main/pdb2xyz_main.cpp
-pdb2fasta     make pdb2fasta          app/tools/tool_main/pdb2fasta_main.cpp
-pdb2ss        make pdb2ss             app/tools/tool_main/pdb2ss_main.cpp
-cif2pdb       make cif2pdb            app/tools/tool_main/cif2pdb_main.cpp
-biounitasym   make biounitasym        app/tools/tool_main/biounitasym_main.cpp
-pdbAtomName   make pdbAtomName        app/tools/tool_main/pdbatomname_main.cpp
-addChainID    make addChainID         app/tools/tool_main/addchainid_main.cpp
+USalign       make                    src/app/usalign/usalign.cpp (default target)
+USFlexalign   make USFlexalign        src/app/tools/tool_main/usflexalign_main.cpp
+TMalign       make TMalign            src/app/tools/tool_main/tmalign_main.cpp
+TMscore       make TMscore            src/app/tools/tool_main/tmscore_main.cpp
+MMalign       make MMalign            src/app/tools/tool_main/mmalign_main.cpp
+se            make se                 src/app/tools/tool_main/se_main.cpp
+HwRMSD        make HwRMSD             src/app/tools/tool_main/hwrmsd_main.cpp
+qTMclust      make qTMclust           src/app/tools/tool_main/qtmclust_main.cpp
+NWalign       make NWalign            src/app/tools/tool_main/nwalign_main.cpp
+pdb2xyz       make pdb2xyz            src/app/tools/tool_main/pdb2xyz_main.cpp
+pdb2fasta     make pdb2fasta          src/app/tools/tool_main/pdb2fasta_main.cpp
+pdb2ss        make pdb2ss             src/app/tools/tool_main/pdb2ss_main.cpp
+cif2pdb       make cif2pdb            src/app/tools/tool_main/cif2pdb_main.cpp
+biounitasym   make biounitasym        src/app/tools/tool_main/biounitasym_main.cpp
+pdbAtomName   make pdbAtomName        src/app/tools/tool_main/pdbatomname_main.cpp
+addChainID    make addChainID         src/app/tools/tool_main/addchainid_main.cpp
 xyz_sfetch    make xyz_sfetch         app/tools/xyz_sfetch_main.cpp
 
 On Windows use "mingw32-make <target>". To compile a program manually, use the
-same command as in the "Install" section but replace "app/usalign/usalign.cpp" with the
-program's source file above, and include only the engine/common/output sources
+same command as in the "Install" section but replace "src/app/usalign/usalign.cpp" with the
+program's source file above, and include only the src/engine/common/output sources
 that the program needs (the Makefile rule for each target lists them).
 
 Run any program without arguments (or with "-h" where supported) to print its
