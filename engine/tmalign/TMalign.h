@@ -8,6 +8,46 @@
 #include <omp.h>
 #endif
 
+struct PairTask {
+    int chain1_idx;
+    int chain2_idx;
+    int order;
+};
+
+struct ChainParseOptions {
+    PdbParseOptions pdb_parse_opts;
+    std::string mol_opt;
+    int infmt_opt;
+    int read_resi;
+    bool mirror_opt;
+    bool retain_pdb_lines;
+};
+
+struct TMalignParams
+{
+    int read_resi;
+    ChainPairAlignOptions align;
+};
+
+void parse_file_into_cache(const std::string& fname,
+    const ChainParseOptions& parse_opts,
+    std::vector<ParsedChain>& all_chains,
+    std::map<std::string, std::vector<int>>& cache,
+    const std::string& key);
+
+int run_batch_parallel(
+    const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
+    const std::vector<std::string>& sequence,
+    const std::string& dir_opt, const std::string& dir1_opt,
+    const std::string& dir2_opt, const std::string& dirpair_opt,
+    const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
+    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts,
+    bool do_opt, int parallel_threads = 1);
+
+void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs);
+
+int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params);
+
 //     1, collect those residues with dis<d;
 //     2, calculate TMscore
 int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, std::vector<int>& i_ali,

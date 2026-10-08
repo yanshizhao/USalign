@@ -1,4 +1,5 @@
 #include "TMalign.h"
+#include "orchestration.h"
 
 int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, std::vector<int>& i_ali,
     double &score1, int score_sum_method, const double Lnorm,
@@ -431,3 +432,372 @@ void find_max_frag(const CoordArray& x, int len, int &start_max,
         }
     }
 }
+void parse_file_into_cache(const std::string& fname,
+    const ChainParseOptions& parse_opts,
+    std::vector<ParsedChain>& all_chains,
+    std::map<std::string, std::vector<int>>& cache,
+    const std::string& key)
+{
+    if (cache.count(key)) return;
+    std::vector<std::vector<std::string>> PDB_lines;
+    std::vector<int> mol_vec;
+    std::vector<std::string> chainID_list;
+    int nchain = get_PDB_lines(fname, PDB_lines, chainID_list, mol_vec, parse_opts.infmt_opt,
+        parse_opts.pdb_parse_opts);
+    if (nchain == 0)
+    {
+        std::cerr << "Warning! Cannot parse file: " << fname
+            << ". Chain number 0." << std::endl;
+        return;
+    }
+    std::vector<int> indices;
+    for (int c = 0; c < nchain; c++) {
+        int len = (int)PDB_lines[c].size();
+        if (parse_opts.mol_opt == "RNA") mol_vec[c] = 1;
+        else if (parse_opts.mol_opt == "protein") mol_vec[c] = -1;
+        if (!len)
+        {
+            std::cerr << "Warning! Cannot parse file: " << fname
+                << ". Chain length 0." << std::endl;
+            indices.push_back(-1);
+            continue;
+        }
+        else if (len < 3)
+        {
+            std::cerr << "Sequence is too short <3!: " << fname << std::endl;
+            indices.push_back(-1);
+            continue;
+        }
+        int idx = (int)all_chains.size();
+        all_chains.emplace_back();
+        auto& chain = all_chains.back();
+        chain.filename = fname; chain.chain_len = len;
+        chain.chain_id = chainID_list[c]; chain.cur_complex_mol_list = mol_vec[c];
+        chain.chain_coords.reserve(len);
+        std::string seq;
+        chain.chain_len = read_PDB(PDB_lines[c], chain.chain_coords, seq,
+            chain.resi_vec, parse_opts.read_resi);
+        if (parse_opts.mirror_opt)
+            for (int r = 0; r < chain.chain_len; r++)
+                chain.chain_coords[r][2] = -chain.chain_coords[r][2];
+        chain.chain_seq = seq;
+        if (mol_vec[c] > 0)
+            make_sec(seq, chain.chain_coords, chain.chain_len, chain.chain_sec, parse_opts.pdb_parse_opts.atom_opt);
+        else
+            make_sec(chain.chain_coords, chain.chain_len, chain.chain_sec);
+        if (parse_opts.retain_pdb_lines) chain.pdb_lines = std::move(PDB_lines[c]);
+        else PDB_lines[c].clear();
+        indices.push_back(idx);
+    }
+    PDB_lines.clear();
+    cache[key] = indices;
+}
+
+// TMalign, RNAalign, CPalign, TMscore
+int run_batch_parallel(
+    const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
+    const std::vector<std::string>& sequence,
+    const std::string& dir_opt, const std::string& dir1_opt,
+    const std::string& dir2_opt, const std::string& dirpair_opt,
+    const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
+    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts,
+    bool do_opt, int parallel_threads)
+{
+    int i, j, chain_i;
+
+// ---- Phase 1: pre-parse all unique files, build task list ----
+    std::vector<ParsedChain> all_chains;
+    std::map<std::string, std::vector<int>> file_to_idx;
+    std::vector<PairTask> tasks;
+
+    auto cache_key = [](const std::string& fname, bool struct1) {
+        return (struct1 ? std::string("1:") : std::string("2:")) + fname;
+    };
+
+    for (i = 0; i < (int)chain1_list.size(); i++) {
+        const std::string key1 = cache_key(chain1_list[i], true);
+        parse_file_into_cache(chain1_list[i], parse_opts1, all_chains, file_to_idx, key1);
+        auto& c1_indices = file_to_idx[key1];
+        for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
+            int c1_idx = c1_indices[chain_i];
+            if (c1_idx < 0) continue;
+            int j_start = (dir_opt.size() > 0) * (i + 1);
+            for (j = j_start; j < (int)chain2_list.size(); j++) {
+                if (dirpair_opt.size() && j != i) continue;
+                const std::string key2 = cache_key(chain2_list[j], false);
+                parse_file_into_cache(chain2_list[j], parse_opts2, all_chains, file_to_idx, key2);
+                auto& c2_indices = file_to_idx[key2];
+                for (int c2_i = 0; c2_i < (int)c2_indices.size(); c2_i++) {
+                    int c2_idx = c2_indices[c2_i];
+                    if (c2_idx < 0) continue;
+                    tasks.push_back({c1_idx, c2_idx, (int)tasks.size()});
+                }
+            }
+        }
+    }
+
+    // ---- Phase 2: parallel pair processing ----
+    std::vector<std::string> out_lines(tasks.size());
+    #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
+    for (int t = 0; t < (int)tasks.size(); t++) {
+        auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
+        auto& c2 = all_chains[task.chain2_idx];
+        CoordArray xa_c = c1.chain_coords; CoordArray ya_c = c2.chain_coords;
+        bool force_fast = (std::min(c1.chain_len, c2.chain_len) > 1500) ? true : align_opts.fast_opt;
+        ChainPairAlignResult chain_align_res = { 0};
+        chain_align_res.d0_out = 5.0;
+        ChainPairAlignOptions pair_align_opts = align_opts;
+        pair_align_opts.fast_opt = force_fast;
+        pair_align_opts.parallel_threads = 1;
+        pair_align_opts.ss_opt = 0;
+        pair_align_opts.mol_type = c1.cur_complex_mol_list + c2.cur_complex_mol_list;
+        align_chain_pair(chain_align_res, xa_c, ya_c, c1.chain_seq, c2.chain_seq,
+            c1.chain_sec, c2.chain_sec, c1.chain_len, c2.chain_len,
+            pair_align_opts, sequence, out_opts.outfmt_opt);
+
+        std::stringstream ss;
+        std::string xname_out = c1.filename.substr(
+            dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
+        std::string yname_out = c2.filename.substr(
+            dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
+
+        if (out_opts.outfmt_opt == 0) print_banner(USALIGN_BANNER, ss);
+
+        int right_num=0;
+        if (align_opts.cp_opt) output_cp(xname_out, yname_out,
+            chain_align_res.seqxA, out_opts.outfmt_opt, right_num, ss);
+
+        output_results(
+            ChainPairDesc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len},
+            chain_align_res, out_opts, c1.resi_vec, c2.resi_vec, ss);
+
+        if (do_opt || (align_opts.cp_opt && out_opts.outfmt_opt <= 0))
+            output_do_distance_table(ss, chain_align_res.seqxA, chain_align_res.seqyA,
+                c1.pdb_lines, c2.pdb_lines, chain_align_res.do_vec, right_num);
+
+        out_lines[task.order] = ss.str();
+    }
+
+    // ---- Phase 3: serial output in original order ----
+    for (int t = 0; t < (int)tasks.size(); t++)
+        std::cout << out_lines[t];
+
+    return 0;
+}
+void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs)
+{
+    const UserOptions& user_opts = common_inputs.user_options;
+
+    params.read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;
+    fill_chain_pair_align_options(params.align, user_opts, common_inputs.control_options);
+}
+
+int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+    ControlOptions& ctrl_opts = common_inputs.control_options;
+
+    // declare previously global variables
+    std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
+    std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
+    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    std::vector<std::string> chainID_list1;      // list of chainID1
+    std::vector<std::string> chainID_list2;      // list of chainID2
+    int    i,j;                // file index
+    int    chain_i,chain_j;    // chain index
+    int    r;                  // residue index
+    int    xlen, ylen;         // chain length
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
+    std::string secx;                // for the secondary structure
+    std::string secy;
+    CoordArray xa;                  // for input vectors xa[0...xlen-1][0..2] and
+    CoordArray ya;                  // ya[0...ylen-1][0..2], in general,
+                               // ya is regarded as native structure
+                               // --> superpose xa onto ya
+    std::vector<std::string> resi_vec1;  // residue index for chain1
+    std::vector<std::string> resi_vec2;  // residue index for chain2
+
+#ifdef _OPENMP
+    // === Parallel batch mode ===
+    if (ctrl_opts.parallel_threads > 1 && (parsed_input.chain1_list.size() > 1 || parsed_input.chain2_list.size() > 1)) {
+        ChainParseOptions parse_opts1;
+        parse_opts1.pdb_parse_opts = PdbParseOptions{
+            user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+            user_opts.split_opt, user_opts.het_opt,
+            user_opts.chain2parse1, user_opts.model2parse1};
+        parse_opts1.infmt_opt = user_opts.infmt1_opt;
+        parse_opts1.mol_opt = user_opts.mol_opt;
+        parse_opts1.read_resi = tm_params.read_resi;
+        parse_opts1.mirror_opt = (user_opts.mirror_opt != 0);
+        parse_opts1.retain_pdb_lines = ctrl_opts.cp_opt;
+
+        ChainParseOptions parse_opts2;
+        parse_opts2.pdb_parse_opts = PdbParseOptions{
+            user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+            user_opts.split_opt, user_opts.het_opt,
+            user_opts.chain2parse2, user_opts.model2parse2};
+        parse_opts2.infmt_opt = user_opts.infmt2_opt;
+        parse_opts2.mol_opt = user_opts.mol_opt;
+        parse_opts2.read_resi = tm_params.read_resi;
+        parse_opts2.mirror_opt = false;
+        parse_opts2.retain_pdb_lines = ctrl_opts.cp_opt;
+
+        ChainPairAlignOptions align_opts = {0};
+        fill_chain_pair_align_options(align_opts, user_opts, ctrl_opts);
+
+        OutputOptions out_opts;
+        fill_out_opts_from_user_opts(out_opts, user_opts);
+
+        return run_batch_parallel(
+            parsed_input.chain1_list, parsed_input.chain2_list,
+            parsed_input.sequence,
+            user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt,
+            parse_opts1, parse_opts2, align_opts, out_opts,
+            false, ctrl_opts.parallel_threads);
+    }
+#endif  // _OPENMP
+
+    const PdbParseOptions pdb_parse_opts1{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse1, user_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse2, user_opts.model2parse2};
+
+    // loop over file names (original serial code)
+    for (i=0;i<parsed_input.chain1_list.size();i++)
+    {
+        // parse chain 1
+        user_opts.xname=parsed_input.chain1_list[i];
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
+            pdb_parse_opts1);
+        if (!xchainnum)
+        {
+            std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                <<". Chain number 0."<<std::endl;
+            continue;
+        }
+        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        {
+            xlen=PDB_lines1[chain_i].size();
+            if (user_opts.mol_opt=="RNA") mol_vec1[chain_i]=1;
+            else if (user_opts.mol_opt=="protein") mol_vec1[chain_i]=-1;
+            if (!xlen)
+            {
+                std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                    <<". Chain length 0."<<std::endl;
+                continue;
+            }
+            else if (xlen<3)
+            {
+                std::cerr<<"Sequence is too short <3!: "<<user_opts.xname<<std::endl;
+                continue;
+            }
+            xa.clear();
+            xa.reserve(xlen);
+            std::string seqx;
+            secx.resize(xlen + 1);
+            xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
+                resi_vec1, tm_params.read_resi);
+            if (user_opts.mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
+            if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, user_opts.atom_opt);
+            else make_sec(xa, xlen, secx); // secondary structure assignment
+
+            int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
+            for (j=j_start;j<parsed_input.chain2_list.size();j++)
+            {
+                if (user_opts.dirpair_opt.size() && j!=i) continue;
+                // parse chain 2
+                if (PDB_lines2.size()==0)
+                {
+                    user_opts.yname=parsed_input.chain2_list[j];
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
+                        pdb_parse_opts2);
+                    if (!ychainnum)
+                    {
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
+                        continue;
+                    }
+                }
+                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                {
+                    ylen=PDB_lines2[chain_j].size();
+                    if (user_opts.mol_opt=="RNA") mol_vec2[chain_j]=1;
+                    else if (user_opts.mol_opt=="protein") mol_vec2[chain_j]=-1;
+                    if (!ylen)
+                    {
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname
+                            <<". Chain length 0."<<std::endl;
+                        continue;
+                    }
+                    else if (ylen<3)
+                    {
+                        std::cerr<<"Sequence is too short <3!: "<<user_opts.yname<<std::endl;
+                        continue;
+                    }
+                    ya.clear();
+                    ya.reserve(ylen);
+                    std::string seqy;
+                    secy.resize(ylen + 1);
+                    ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
+                        resi_vec2, tm_params.read_resi);
+                    if (mol_vec2[chain_j]>0)
+                         make_sec(seqy, ya, ylen, secy, user_opts.atom_opt);
+                    else make_sec(ya, ylen, secy);
+
+                    if (user_opts.byresi_opt) extract_aln_from_resi(parsed_input.sequence,
+                        seqx, seqy, resi_vec1, resi_vec2, user_opts.byresi_opt);
+
+                    // entry function for structure alignment
+                    ChainPairAlignResult chain_align_res = { 0};
+                    chain_align_res.d0_out = 5.0;
+                    ChainPairAlignOptions align_opts = tm_params.align;
+                    align_opts.fast_opt = (getmin(xlen, ylen) > 1500) ? true : user_opts.fast_opt;
+                    align_opts.mol_type = mol_vec1[chain_i] + mol_vec2[chain_j];
+                    align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
+                        xlen, ylen, align_opts, parsed_input.sequence,
+                        user_opts.outfmt_opt);
+
+                    // print chain_align_res
+                    output_pair_alignment(common_inputs,
+                        xlen, ylen, chain_align_res,
+                        PDB_lines1[chain_i], PDB_lines2[chain_j],
+                        chainID_list1[chain_i], chainID_list2[chain_j],
+                        resi_vec1, resi_vec2);
+                } // chain_j
+                if (parsed_input.chain2_list.size()>1)
+                {
+                    user_opts.yname.clear();
+                    PDB_lines2.clear();
+                    chainID_list2.clear();
+                    mol_vec2.clear();
+                }
+            } // j
+            PDB_lines1[chain_i].clear();
+            resi_vec1.clear();
+        } // chain_i
+        user_opts.xname.clear();
+        PDB_lines1.clear();
+        chainID_list1.clear();
+        mol_vec1.clear();
+    } // i
+    if (parsed_input.chain2_list.size()==1)
+    {
+        user_opts.yname.clear();
+    }
+    return 0;
+}
+
+
+
+
+// Output the check warning for the forced molecule type from -mol
+// Params: file_path - structure file path
+//         chain_num - total number of chains
+//         prot_count, na_count - protein / RNA chain counts
+//         filtered_count - number of filtered chains
+//         mol_opt - value of the -mol option (protein / RNA)

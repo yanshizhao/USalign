@@ -22,9 +22,8 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign USFlexalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
-ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
+ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp orchestration/orchestration.cpp
 COMMON_CPP=common/common.cpp
-ORCH_CPP=orchestration/orchestration.cpp
 OUTPUT_CPP=output_funcs/output.cpp
 
 all: USalign
@@ -32,10 +31,10 @@ all: USalign
 qTMclust: app/tools/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP) $(OUTPUT_CPP)
+USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP) $(OUTPUT_CPP)
+USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
 USFlexalign: app/tools/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
