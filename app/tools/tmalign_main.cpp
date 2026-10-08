@@ -321,26 +321,6 @@ void parse_arguments(int argc, char* argv[], TMalignOptions& tmalign_opts)
     }
 }
 
-void check_input_presence(TMalignOptions& tmalign_opts)
-{
-    if(tmalign_opts.xname.size()==0 || (tmalign_opts.yname.size()==0 && tmalign_opts.dir_opt.size()==0) ||
-                          (tmalign_opts.yname.size()    && tmalign_opts.dir_opt.size()))
-    {
-        if (tmalign_opts.h_opt) print_help(tmalign_opts.h_opt);
-        if (tmalign_opts.v_opt)
-        {
-            print_banner(TMALIGN_BANNER);
-            exit(EXIT_FAILURE);
-        }
-        if (tmalign_opts.xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (tmalign_opts.yname.size()==0 && tmalign_opts.dir_opt.size()==0)
-            PrintErrorAndQuit("Please provide structure B");
-        else if (tmalign_opts.yname.size() && tmalign_opts.dir_opt.size())
-            PrintErrorAndQuit("Please provide only one file name if -dir is set");
-    }
-}
-
 void check_byresi_split_cp(TMalignOptions& tmalign_opts)
 {
     if (tmalign_opts.byresi_opt!=0)
@@ -383,7 +363,7 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
     tmalign_opts.outdir_opt = resolve_outdir(tmalign_opts.outdir_opt);
     tmalign_opts.fname_super = join_outdir(tmalign_opts.outdir_opt, tmalign_opts.fname_super);
     tmalign_opts.fname_matrix = join_outdir(tmalign_opts.outdir_opt, tmalign_opts.fname_matrix);
-    check_input_presence(tmalign_opts);
+    check_input_presence(tmalign_opts, TMALIGN_BANNER, print_help);
     check_dir_conflicts(tmalign_opts);
     check_atom_and_mol_type(tmalign_opts);
     check_numeric_conflicts(tmalign_opts);

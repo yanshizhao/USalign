@@ -270,26 +270,6 @@ void parse_arguments(int argc, char* argv[], TMscoreOptions& tmscore_opts)
     }
 }
 
-void check_input_presence(TMscoreOptions& tmscore_opts)
-{
-    if(tmscore_opts.xname.size()==0 || (tmscore_opts.yname.size()==0 && tmscore_opts.dir_opt.size()==0) ||
-                          (tmscore_opts.yname.size()    && tmscore_opts.dir_opt.size()))
-    {
-        if (tmscore_opts.h_opt) print_help(tmscore_opts.h_opt);
-        if (tmscore_opts.v_opt)
-        {
-            print_banner(TMSCORE_BANNER);
-            exit(EXIT_FAILURE);
-        }
-        if (tmscore_opts.xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (tmscore_opts.yname.size()==0 && tmscore_opts.dir_opt.size()==0)
-            PrintErrorAndQuit("Please provide structure B");
-        else if (tmscore_opts.yname.size() && tmscore_opts.dir_opt.size())
-            PrintErrorAndQuit("Please provide only one file name if -dir is set");
-    }
-}
-
 void check_numeric_conflicts(TMscoreOptions& tmscore_opts)
 {
     if (tmscore_opts.u_opt && tmscore_opts.Lnorm_ass<=0)
@@ -307,7 +287,7 @@ void postprocess_arguments(TMscoreOptions& tmscore_opts)
     tmscore_opts.outdir_opt = resolve_outdir(tmscore_opts.outdir_opt);
     tmscore_opts.fname_super = join_outdir(tmscore_opts.outdir_opt, tmscore_opts.fname_super);
     tmscore_opts.fname_matrix = join_outdir(tmscore_opts.outdir_opt, tmscore_opts.fname_matrix);
-    check_input_presence(tmscore_opts);
+    check_input_presence(tmscore_opts, TMSCORE_BANNER, print_help);
     check_dir_conflicts(tmscore_opts);
     check_atom_and_mol_type_norm(tmscore_opts);
     check_numeric_conflicts(tmscore_opts);

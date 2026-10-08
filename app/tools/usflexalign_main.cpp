@@ -327,26 +327,6 @@ void parse_arguments(int argc, char* argv[], USFlexalignOptions& usflexalign_opt
     }
 }
 
-void check_input_presence(USFlexalignOptions& usflexalign_opts)
-{
-    if(usflexalign_opts.xname.size()==0 || (usflexalign_opts.yname.size()==0 && usflexalign_opts.dir_opt.size()==0) ||
-                          (usflexalign_opts.yname.size()    && usflexalign_opts.dir_opt.size()))
-    {
-        if (usflexalign_opts.h_opt) print_help(usflexalign_opts.h_opt);
-        if (usflexalign_opts.v_opt)
-        {
-            print_banner(USFLEXALIGN_BANNER);
-            exit(EXIT_FAILURE);
-        }
-        if (usflexalign_opts.xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (usflexalign_opts.yname.size()==0 && usflexalign_opts.dir_opt.size()==0)
-            PrintErrorAndQuit("Please provide structure B");
-        else if (usflexalign_opts.yname.size() && usflexalign_opts.dir_opt.size())
-            PrintErrorAndQuit("Please provide only one file name if -dir is set");
-    }
-}
-
 void check_dir_conflicts(USFlexalignOptions& usflexalign_opts)
 {
     if (usflexalign_opts.suffix_opt.size() && usflexalign_opts.dir_opt.size()+usflexalign_opts.dir1_opt.size()+usflexalign_opts.dir2_opt.size()==0)
@@ -392,7 +372,7 @@ void postprocess_arguments(USFlexalignOptions& usflexalign_opts)
     usflexalign_opts.outdir_opt = resolve_outdir(usflexalign_opts.outdir_opt);
     usflexalign_opts.fname_super = join_outdir(usflexalign_opts.outdir_opt, usflexalign_opts.fname_super);
     usflexalign_opts.fname_matrix = join_outdir(usflexalign_opts.outdir_opt, usflexalign_opts.fname_matrix);
-    check_input_presence(usflexalign_opts);
+    check_input_presence(usflexalign_opts, USFLEXALIGN_BANNER, print_help);
     check_dir_conflicts(usflexalign_opts);
     check_hinge(usflexalign_opts);
     check_atom_and_mol_type(usflexalign_opts);

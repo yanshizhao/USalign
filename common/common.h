@@ -2070,3 +2070,25 @@ inline void build_file_list(const CliOptions& cli_opts, std::vector<std::string>
         fp.close();
     }
 }
+
+template<class CliOptions>
+inline void check_input_presence(CliOptions& cli_opts, const char* banner,
+    void (*print_help_fn)(bool))
+{
+    if(cli_opts.xname.size()==0 || (cli_opts.yname.size()==0 && cli_opts.dir_opt.size()==0) ||
+                          (cli_opts.yname.size()    && cli_opts.dir_opt.size()))
+    {
+        if (cli_opts.h_opt) print_help_fn(cli_opts.h_opt);
+        if (cli_opts.v_opt)
+        {
+            print_banner(banner);
+            exit(EXIT_FAILURE);
+        }
+        if (cli_opts.xname.size()==0)
+            PrintErrorAndQuit("Please provide input structures");
+        else if (cli_opts.yname.size()==0 && cli_opts.dir_opt.size()==0)
+            PrintErrorAndQuit("Please provide structure B");
+        else if (cli_opts.yname.size() && cli_opts.dir_opt.size())
+            PrintErrorAndQuit("Please provide only one file name if -dir is set");
+    }
+}
