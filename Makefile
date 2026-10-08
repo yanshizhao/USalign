@@ -32,10 +32,10 @@ all: USalign
 qTMclust: app/tools/tool_main/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
-USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+USalign: app/usalign/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
-USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+USalign.exe: app/usalign/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
 
 USFlexalign: app/tools/tool_main/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)

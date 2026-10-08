@@ -22,7 +22,7 @@
                 "-Iorchestration",
                 "-Ioutput",
                 "-Iapp/tools",
-                "app/usalign.cpp",
+                "app/usalign/usalign.cpp",
                 "engine/upgma/UPGMA.cpp",
                 "common/common.cpp",
                 "engine/tmalign/TMalign.cpp",
