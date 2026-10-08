@@ -235,21 +235,6 @@ void parse_arguments(int argc, char* argv[], SeOptions& se_opts)
     }
 }
 
-void check_input_presence(SeOptions& se_opts)
-{
-    if(se_opts.xname.size()==0 || (se_opts.yname.size()==0 && se_opts.dir_opt.size()==0) ||
-                          (se_opts.yname.size()    && se_opts.dir_opt.size()))
-    {
-        if (se_opts.h_opt) print_help(se_opts.h_opt);
-        if (se_opts.xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (se_opts.yname.size()==0 && se_opts.dir_opt.size()==0)
-            PrintErrorAndQuit("Please provide structure B");
-        else if (se_opts.yname.size() && se_opts.dir_opt.size())
-            PrintErrorAndQuit("Please provide only one file name if -dir is set");
-    }
-}
-
 void check_dir_conflicts(SeOptions& se_opts)
 {
     if (se_opts.suffix_opt.size() && se_opts.dir_opt.size()+se_opts.dir1_opt.size()+se_opts.dir2_opt.size()==0)
@@ -288,7 +273,7 @@ void apply_derived_options(SeOptions& se_opts)
 void postprocess_arguments(SeOptions& se_opts)
 {
     se_opts.outdir_opt = resolve_outdir(se_opts.outdir_opt);
-    check_input_presence(se_opts);
+    check_input_presence_no_banner(se_opts, print_help);
     check_dir_conflicts(se_opts);
     check_atom_and_mol_type(se_opts);
     check_numeric_conflicts(se_opts);

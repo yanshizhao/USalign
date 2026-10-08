@@ -2092,3 +2092,20 @@ inline void check_input_presence(CliOptions& cli_opts, const char* banner,
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
 }
+
+template<class CliOptions>
+inline void check_input_presence_no_banner(CliOptions& cli_opts,
+    void (*print_help_fn)(bool))
+{
+    if(cli_opts.xname.size()==0 || (cli_opts.yname.size()==0 && cli_opts.dir_opt.size()==0) ||
+                          (cli_opts.yname.size()    && cli_opts.dir_opt.size()))
+    {
+        if (cli_opts.h_opt) print_help_fn(cli_opts.h_opt);
+        if (cli_opts.xname.size()==0)
+            PrintErrorAndQuit("Please provide input structures");
+        else if (cli_opts.yname.size()==0 && cli_opts.dir_opt.size()==0)
+            PrintErrorAndQuit("Please provide structure B");
+        else if (cli_opts.yname.size() && cli_opts.dir_opt.size())
+            PrintErrorAndQuit("Please provide only one file name if -dir is set");
+    }
+}

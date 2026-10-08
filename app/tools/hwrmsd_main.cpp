@@ -277,21 +277,6 @@ void parse_arguments(int argc, char* argv[], HwRMSDOptions& hwrmsd_opts)
     }
 }
 
-void check_input_presence(HwRMSDOptions& hwrmsd_opts)
-{
-    if(hwrmsd_opts.xname.size()==0 || (hwrmsd_opts.yname.size()==0 && hwrmsd_opts.dir_opt.size()==0) ||
-                          (hwrmsd_opts.yname.size()    && hwrmsd_opts.dir_opt.size()))
-    {
-        if (hwrmsd_opts.h_opt) print_help(hwrmsd_opts.h_opt);
-        if (hwrmsd_opts.xname.size()==0)
-            PrintErrorAndQuit("Please provide input structures");
-        else if (hwrmsd_opts.yname.size()==0 && hwrmsd_opts.dir_opt.size()==0)
-            PrintErrorAndQuit("Please provide structure B");
-        else if (hwrmsd_opts.yname.size() && hwrmsd_opts.dir_opt.size())
-            PrintErrorAndQuit("Please provide only one file name if -dir is set");
-    }
-}
-
 void check_byresi_split_iter_seq(HwRMSDOptions& hwrmsd_opts)
 {
     if (hwrmsd_opts.byresi_opt!=0)
@@ -330,7 +315,7 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
     hwrmsd_opts.outdir_opt = resolve_outdir(hwrmsd_opts.outdir_opt);
     hwrmsd_opts.fname_super = join_outdir(hwrmsd_opts.outdir_opt, hwrmsd_opts.fname_super);
     hwrmsd_opts.fname_matrix = join_outdir(hwrmsd_opts.outdir_opt, hwrmsd_opts.fname_matrix);
-    check_input_presence(hwrmsd_opts);
+    check_input_presence_no_banner(hwrmsd_opts, print_help);
     check_dir_conflicts(hwrmsd_opts);
     check_atom_and_mol_type_norm(hwrmsd_opts);
     check_numeric_conflicts(hwrmsd_opts);
