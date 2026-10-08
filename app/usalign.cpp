@@ -294,14 +294,6 @@ bool is_single_mm1_align(int mm_opt,
 
 
 
-enum OutputFormat
-{
-    OUT_NONE = 0, 
-    OUT_O = 1, 
-    OUT_RASMOL = 2, 
-    OUT_CHIMERAX = 3 
-};
-
 inline void set_output_format(int& o_opt, std::string& fname_super, const int incoming, const std::string& value)
 {
     static const char* format_name[] = {"", "-o", "-rasmol", "-chimerax"};
@@ -319,7 +311,6 @@ inline void set_output_format(int& o_opt, std::string& fname_super, const int in
     o_opt = incoming;
 }
 
-enum AlnInputKind { ALN_NONE = 0, ALN_I = 1, ALN_BIG_I = 3 };
 
 inline void set_user_alignment(std::string& fname_lign, int& i_opt,
                                const int incoming, const std::string& value)
