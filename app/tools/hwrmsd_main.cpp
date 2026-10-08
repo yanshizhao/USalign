@@ -292,19 +292,6 @@ void check_input_presence(HwRMSDOptions& hwrmsd_opts)
     }
 }
 
-void check_dir_conflicts(HwRMSDOptions& hwrmsd_opts)
-{
-    if (hwrmsd_opts.suffix_opt.size() && hwrmsd_opts.dir_opt.size()+hwrmsd_opts.dir1_opt.size()+hwrmsd_opts.dir2_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if ((hwrmsd_opts.dir_opt.size() || hwrmsd_opts.dir1_opt.size() || hwrmsd_opts.dir2_opt.size()))
-    {
-        if (hwrmsd_opts.m_opt || hwrmsd_opts.o_opt)
-            PrintErrorAndQuit("-m or -o cannot be set with -dir, -dir1 or -dir2");
-        else if (hwrmsd_opts.dir_opt.size() && (hwrmsd_opts.dir1_opt.size() || hwrmsd_opts.dir2_opt.size()))
-            PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
-    }
-}
-
 void check_byresi_split_iter_seq(HwRMSDOptions& hwrmsd_opts)
 {
     if (hwrmsd_opts.byresi_opt!=0)

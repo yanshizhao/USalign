@@ -290,19 +290,6 @@ void check_input_presence(TMscoreOptions& tmscore_opts)
     }
 }
 
-void check_dir_conflicts(TMscoreOptions& tmscore_opts)
-{
-    if (tmscore_opts.suffix_opt.size() && tmscore_opts.dir_opt.size()+tmscore_opts.dir1_opt.size()+tmscore_opts.dir2_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if ((tmscore_opts.dir_opt.size() || tmscore_opts.dir1_opt.size() || tmscore_opts.dir2_opt.size()))
-    {
-        if (tmscore_opts.m_opt || tmscore_opts.o_opt)
-            PrintErrorAndQuit("-m or -o cannot be set with -dir, -dir1 or -dir2");
-        else if (tmscore_opts.dir_opt.size() && (tmscore_opts.dir1_opt.size() || tmscore_opts.dir2_opt.size()))
-            PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
-    }
-}
-
 void check_numeric_conflicts(TMscoreOptions& tmscore_opts)
 {
     if (tmscore_opts.u_opt && tmscore_opts.Lnorm_ass<=0)

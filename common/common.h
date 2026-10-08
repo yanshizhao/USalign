@@ -2004,3 +2004,17 @@ inline void check_numeric_conflicts(CliOptions& cli_opts)
     if (cli_opts.outfmt_opt>=2 && (cli_opts.a_opt || cli_opts.u_opt || cli_opts.d_opt))
         PrintErrorAndQuit("-outfmt 2 cannot be used with -a, -u, -L, -d");
 }
+
+template<class CliOptions>
+inline void check_dir_conflicts(CliOptions& cli_opts)
+{
+    if (cli_opts.suffix_opt.size() && cli_opts.dir_opt.size()+cli_opts.dir1_opt.size()+cli_opts.dir2_opt.size()==0)
+        PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
+    if ((cli_opts.dir_opt.size() || cli_opts.dir1_opt.size() || cli_opts.dir2_opt.size()))
+    {
+        if (cli_opts.m_opt || cli_opts.o_opt)
+            PrintErrorAndQuit("-m or -o cannot be set with -dir, -dir1 or -dir2");
+        else if (cli_opts.dir_opt.size() && (cli_opts.dir1_opt.size() || cli_opts.dir2_opt.size()))
+            PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
+    }
+}
