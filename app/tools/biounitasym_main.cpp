@@ -101,11 +101,6 @@ void parse_arguments(int argc, char* argv[], BiounitasymOptions& biounitasym_opt
     }
 }
 
-void check_input_presence(BiounitasymOptions& biounitasym_opts)
-{
-    if(biounitasym_opts.xname.size()==0||biounitasym_opts.xname=="-h") print_help();
-}
-
 void check_atom_name_size(BiounitasymOptions& biounitasym_opts)
 {
     if (biounitasym_opts.atom_opt.size()!=4)
@@ -114,7 +109,7 @@ void check_atom_name_size(BiounitasymOptions& biounitasym_opts)
 
 void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
 {
-    check_input_presence(biounitasym_opts);
+    check_input_presence_help(biounitasym_opts, print_help);
     check_suffix_dir_conflicts(biounitasym_opts);
     check_atom_name_size(biounitasym_opts);
     check_mol_type_atom_default(biounitasym_opts);

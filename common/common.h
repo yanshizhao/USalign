@@ -2109,3 +2109,9 @@ inline void check_input_presence_no_banner(CliOptions& cli_opts,
             PrintErrorAndQuit("Please provide only one file name if -dir is set");
     }
 }
+
+template<class CliOptions>
+inline void check_input_presence_help(CliOptions& cli_opts, void (*print_help_fn)())
+{
+    if(cli_opts.xname.size()==0||cli_opts.xname=="-h") print_help_fn();
+}

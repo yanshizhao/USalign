@@ -112,11 +112,6 @@ void parse_arguments(int argc, char* argv[], Pdb2xyzOptions& pdb2xyz_opts)
     }
 }
 
-void check_input_presence(Pdb2xyzOptions& pdb2xyz_opts)
-{
-    if(pdb2xyz_opts.xname.size()==0||pdb2xyz_opts.xname=="-h") print_help();
-}
-
 void check_atom_name_size(Pdb2xyzOptions& pdb2xyz_opts)
 {
     pdb2xyz_opts.normalize_atom_name=(pdb2xyz_opts.atom_opt=="auto" || pdb2xyz_opts.atom_opt=="PC4'"); // auto re-pad atom name
@@ -134,7 +129,7 @@ void check_split_conflicts(Pdb2xyzOptions& pdb2xyz_opts)
 
 void postprocess_arguments(Pdb2xyzOptions& pdb2xyz_opts)
 {
-    check_input_presence(pdb2xyz_opts);
+    check_input_presence_help(pdb2xyz_opts, print_help);
     check_suffix_dir_conflicts(pdb2xyz_opts);
     check_atom_name_size(pdb2xyz_opts);
     check_split_conflicts(pdb2xyz_opts);

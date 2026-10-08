@@ -125,14 +125,9 @@ void parse_arguments(int argc, char* argv[], Pdb2ssOptions& pdb2ss_opts)
     }
 }
 
-void check_input_presence(Pdb2ssOptions& pdb2ss_opts)
-{
-    if(pdb2ss_opts.xname.size()==0||pdb2ss_opts.xname=="-h") print_help();
-}
-
 void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
 {
-    check_input_presence(pdb2ss_opts);
+    check_input_presence_help(pdb2ss_opts, print_help);
     check_suffix_dir_conflicts(pdb2ss_opts);
     check_atom_and_mol_type_norm(pdb2ss_opts);
     check_split_conflicts(pdb2ss_opts);
