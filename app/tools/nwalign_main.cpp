@@ -188,19 +188,11 @@ void check_input_presence(NWalignOptions& nwalign_opts)
     }
 }
 
-void check_dir_conflicts(NWalignOptions& nwalign_opts)
-{
-    if (nwalign_opts.suffix_opt.size() && nwalign_opts.dir_opt.size()+nwalign_opts.dir1_opt.size()+nwalign_opts.dir2_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if (nwalign_opts.dir_opt.size() && (nwalign_opts.dir1_opt.size() || nwalign_opts.dir2_opt.size()))
-        PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
-}
-
 void postprocess_arguments(NWalignOptions& nwalign_opts)
 {
     nwalign_opts.outdir_opt = resolve_outdir(nwalign_opts.outdir_opt);
     check_input_presence(nwalign_opts);
-    check_dir_conflicts(nwalign_opts);
+    check_dir_conflicts_dir12(nwalign_opts, "-suffix is only valid if -dir, -dir1 or -dir2 is set");
     check_atom_and_mol_type_norm(nwalign_opts);
     check_split_conflicts(nwalign_opts);
 }

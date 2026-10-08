@@ -2124,3 +2124,12 @@ inline void check_atom_name_size(CliOptions& cli_opts, bool set_normalize = fals
     if (cli_opts.atom_opt.size()!=4)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
 }
+
+template<class CliOptions>
+inline void check_dir_conflicts_dir12(CliOptions& cli_opts, const char* suffix_msg)
+{
+    if (cli_opts.suffix_opt.size() && cli_opts.dir_opt.size()+cli_opts.dir1_opt.size()+cli_opts.dir2_opt.size()==0)
+        PrintErrorAndQuit(suffix_msg);
+    if (cli_opts.dir_opt.size() && (cli_opts.dir1_opt.size() || cli_opts.dir2_opt.size()))
+        PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
+}

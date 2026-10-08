@@ -235,14 +235,6 @@ void parse_arguments(int argc, char* argv[], SeOptions& se_opts)
     }
 }
 
-void check_dir_conflicts(SeOptions& se_opts)
-{
-    if (se_opts.suffix_opt.size() && se_opts.dir_opt.size()+se_opts.dir1_opt.size()+se_opts.dir2_opt.size()==0)
-        PrintErrorAndQuit("-suffix is only valid if -dir1 or -dir2 is set");
-    if (se_opts.dir_opt.size() && (se_opts.dir1_opt.size() || se_opts.dir2_opt.size()))
-        PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
-}
-
 void check_byresi_split_conflicts(SeOptions& se_opts)
 {
     if (se_opts.byresi_opt!=0)
@@ -274,7 +266,7 @@ void postprocess_arguments(SeOptions& se_opts)
 {
     se_opts.outdir_opt = resolve_outdir(se_opts.outdir_opt);
     check_input_presence_no_banner(se_opts, print_help);
-    check_dir_conflicts(se_opts);
+    check_dir_conflicts_dir12(se_opts, "-suffix is only valid if -dir1 or -dir2 is set");
     check_atom_and_mol_type(se_opts);
     check_numeric_conflicts(se_opts);
     check_byresi_split_conflicts(se_opts);
