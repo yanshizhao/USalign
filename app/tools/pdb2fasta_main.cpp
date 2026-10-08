@@ -126,12 +126,6 @@ void parse_arguments(int argc, char* argv[], Pdb2fastaOptions& pdb2fasta_opts)
     }
 }
 
-void check_atom_name_size(Pdb2fastaOptions& pdb2fasta_opts)
-{
-    if (pdb2fasta_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-}
-
 void postprocess_arguments(Pdb2fastaOptions& pdb2fasta_opts)
 {
     check_input_presence_help(pdb2fasta_opts, print_help);

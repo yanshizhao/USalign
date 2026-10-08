@@ -112,13 +112,6 @@ void parse_arguments(int argc, char* argv[], Pdb2xyzOptions& pdb2xyz_opts)
     }
 }
 
-void check_atom_name_size(Pdb2xyzOptions& pdb2xyz_opts)
-{
-    pdb2xyz_opts.normalize_atom_name=(pdb2xyz_opts.atom_opt=="auto" || pdb2xyz_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (pdb2xyz_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-}
-
 void check_split_conflicts(Pdb2xyzOptions& pdb2xyz_opts)
 {
     if (pdb2xyz_opts.split_opt==1 && pdb2xyz_opts.ter_opt!=0)
@@ -131,7 +124,7 @@ void postprocess_arguments(Pdb2xyzOptions& pdb2xyz_opts)
 {
     check_input_presence_help(pdb2xyz_opts, print_help);
     check_suffix_dir_conflicts(pdb2xyz_opts);
-    check_atom_name_size(pdb2xyz_opts);
+    check_atom_name_size(pdb2xyz_opts, true);
     check_split_conflicts(pdb2xyz_opts);
 }
 

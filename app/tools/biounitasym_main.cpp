@@ -101,12 +101,6 @@ void parse_arguments(int argc, char* argv[], BiounitasymOptions& biounitasym_opt
     }
 }
 
-void check_atom_name_size(BiounitasymOptions& biounitasym_opts)
-{
-    if (biounitasym_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-}
-
 void postprocess_arguments(BiounitasymOptions& biounitasym_opts)
 {
     check_input_presence_help(biounitasym_opts, print_help);

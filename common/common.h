@@ -2115,3 +2115,12 @@ inline void check_input_presence_help(CliOptions& cli_opts, void (*print_help_fn
 {
     if(cli_opts.xname.size()==0||cli_opts.xname=="-h") print_help_fn();
 }
+
+template<class CliOptions>
+inline void check_atom_name_size(CliOptions& cli_opts, bool set_normalize = false)
+{
+    if (set_normalize)
+        cli_opts.normalize_atom_name=(cli_opts.atom_opt=="auto" || cli_opts.atom_opt=="PC4'"); // auto re-pad atom name
+    if (cli_opts.atom_opt.size()!=4)
+        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
+}
