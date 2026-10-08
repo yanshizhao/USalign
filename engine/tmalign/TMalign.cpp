@@ -1,5 +1,5 @@
 #include "TMalign.h"
-#include "orchestration.h"
+#include "common.h"
 
 int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, std::vector<int>& i_ali,
     double &score1, int score_sum_method, const double Lnorm,

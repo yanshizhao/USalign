@@ -1,6 +1,6 @@
 #include "MMdock.h"
 #include "MMalign.h"
-#include "orchestration.h"
+#include "common.h"
 #include "output.h"
 #include "se.h"
 

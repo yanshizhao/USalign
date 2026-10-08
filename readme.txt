@@ -113,14 +113,15 @@
 ================================
  Source code organization
 ================================
-Sources are organized into five layers, from the bottom up:
+Sources are organized into four layers, from the bottom up:
 
     common/         foundation shared by all other layers (common.h holds the
-                    shared data structures and the CLI helper templates)
+                    shared data structures, the CLI helper templates and the
+                    single chain-pair dispatcher align_chain_pair, implemented
+                    in common/orchestration.cpp)
     engine/         alignment engines (one sub-directory per engine):
                     tmalign/ mmalign/ mmdock/ mtmalign/ soialign/ flexalign/
                     tmscore/ hwrmsd/ se/ upgma/
-    orchestration/  dispatch of a chain-pair alignment to an engine
     output_funcs/   formatting of alignment results into text / PDB / scripts
     app/            the USalign entry point (app/usalign.cpp + app/usalign.h,
                     routing only) and the other standalone programs under
@@ -143,7 +144,7 @@ dispatches to the engine entry point.
        programs).
    1.2 Manual compilation in bash (do not add -static; macOS cannot link
        statically):
-           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp common/orchestration.cpp output_funcs/output.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
@@ -151,7 +152,7 @@ dispatches to the engine entry point.
            mingw32-make
        Same targets as in 1.1: only USalign is built by default.
    2.2 Manual compilation in PowerShell (-static is required on Windows):
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/mtmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/mtmalign/mTMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp common/orchestration.cpp output_funcs/output.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
