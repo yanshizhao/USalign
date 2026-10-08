@@ -2,7 +2,6 @@
 
 #include "usalign.h"
 #include "common.h"
-#include "orchestration.h"
 #include "output.h"
 #include "TMalign.h"
 #include "MMalign.h"
@@ -10,7 +9,6 @@
 #include "mTMalign.h"
 #include "SOIalign.h"
 #include "flexalign.h"
-#include "UPGMA.h"
 
 void print_extra_help()
 {
