@@ -95,27 +95,24 @@
    2026/05/27: Allow both -mm 1 and -dir/-dir1/-dir2
    2026/07/06: Add -threads N to set number of threads for OpenMP parallel
 	       execution. For example, '-threads 4' uses 4 threads.
-   2026/10/07: Output files (-o, -m, -rasmol, -chimerax and the upgma_tree
-               files of -mm 4) now default to a "results" folder created next
-               to the executable. Use '-outdir <dir>' to specify another
-               directory, or '-outdir .' to write to the current directory
-               (the previous behavior). The "make" target now only builds
-               USalign by default; list the other tools explicitly to build
-               them. Source files are organized into common/, engine/,
-               orchestration/, output_funcs/ and app/; example inputs
-               (PDB1.pdb, PDB2.pdb, align.txt) are under the "example" folder.
+   2026/10/07: Output files now default to a "results" folder created next to
+               the executable; change it with '-outdir <dir>' ('-outdir .' for
+               the current directory). Source files reorganized into common/,
+               engine/, orchestration/, output_funcs/ and app/; "make" now
+               builds only USalign by default (list other tools explicitly);
+               example inputs moved to the "example" folder.
 ===============================================================================
 
 ================================
  Source code organization
 ================================
-The source tree is organized into five layers, from the bottom up:
+Sources are organized into five layers, from the bottom up:
 
     common/         foundation shared by all other layers
     engine/         alignment engines (one sub-directory per engine)
     orchestration/  dispatch of a chain-pair alignment to an engine
     output_funcs/   formatting of alignment results into text / PDB / scripts
-    app/            command-line entry points (one main() per program)
+    app/usalign.cpp the USalign entry point; app/tools/ holds the other programs
 
 =========================
  How to install US-align
@@ -124,20 +121,19 @@ The source tree is organized into five layers, from the bottom up:
    1.1 Compile with make (Recommended):
            make clean
            make
-       "make" builds the USalign program by default. Any other tool
-       (TMalign, TMscore, MMalign, se, qTMclust, HwRMSD, NWalign, pdb2ss,
-       pdb2xyz, pdb2fasta, biounitasym, cif2pdb, pdbAtomName, addChainID,
-       xyz_sfetch) is built by listing it explicitly, e.g. "make TMalign".
-       macOS does not support static linking. Remove the -static flag when compiling manually.
-   1.2 Manual compilation in bash:
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp output_funcs/tmalign_output.cpp
+       "make" builds the USalign program by default (see the section
+       "Building the individual programs under app/" below for the other
+       programs).
+   1.2 Manual compilation in bash (do not add -static; macOS cannot link
+       statically):
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp output_funcs/tmalign_output.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
            mingw32-make clean
            mingw32-make
        Same targets as in 1.1: only USalign is built by default.
-   2.2 Manual compilation in PowerShell:
+   2.2 Manual compilation in PowerShell (-static is required on Windows):
            g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools -o USalign app/usalign.cpp engine/upgma/UPGMA.cpp engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp common/common.cpp orchestration/orchestration.cpp output_funcs/output.cpp output_funcs/tmalign_output.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
@@ -146,13 +142,16 @@ Additional note:
 1. The -static flag enables static linking. A statically linked executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
 2. However, on Linux the "make" command does NOT pass -static: the resulting binary is dynamically linked and depends on the system libraries (e.g. libstdc++, libgomp and glibc), so copying it to another machine may fail if those libraries are missing or too old.
 3. On Windows, "mingw32-make" adds -static automatically.
-4. If you need a statically linked Linux binary, use the manual compilation command above (which includes -static).
+4. If you need a statically linked Linux binary, add -static to the command in 1.2.
 5. macOS does not support static linking.
 6. Remove -fopenmp from all manual compilation commands if parallel acceleration is not required.
 
 Compressed file support:
-1. US-align compiled on Linux, Mac OS and Linux Subsystem for Windows (WSL2) on Windows 10 onwards can read both uncompressed files and gz compressed files, provided that the "gunzip" command is available.
-2. Due to the lack of POSIX support on Windows, US-align natively compiled on Windows without WSL2 cannot parse gz compressed files.
+1. On Linux, macOS and WSL2, US-align reads gz and bz2 compressed files in
+   addition to uncompressed files, provided that the "gunzip" and "bzcat"
+   commands are respectively available.
+2. Due to the lack of POSIX support, US-align natively compiled on Windows
+   without WSL2 cannot read compressed files.
 
 Compiler requirements:
 1. US-align requires a compiler with C++11 support. It is known to be compilable by g++ version 6 or later (C++14 is the default standard since g++ 6), clang++ version 12.0.5 or later and mingw-w64 version 9.3 or later.
@@ -195,3 +194,36 @@ created next to the executable. Use
     -outdir .        write output files to the current directory
 
 to change this. Results that are not saved to a file are printed to stdout.
+
+========================================================
+ Building the individual programs under app/
+========================================================
+"make" builds only USalign by default. Every other program has its own main()
+under app/ and is built by listing its target name explicitly:
+
+Target        Build command           Source
+----------    --------------------    ------------------------------------------
+USalign       make                    app/usalign.cpp (default target)
+TMalign       make TMalign            app/tools/tmalign_main.cpp
+TMscore       make TMscore            app/tools/tmscore_main.cpp
+MMalign       make MMalign            app/tools/mmalign_main.cpp
+se            make se                 app/tools/se_main.cpp
+HwRMSD        make HwRMSD             app/tools/hwrmsd_main.cpp
+qTMclust      make qTMclust           app/tools/qtmclust_main.cpp
+NWalign       make NWalign            app/tools/nwalign_main.cpp
+pdb2xyz       make pdb2xyz            app/tools/pdb2xyz_main.cpp
+pdb2fasta     make pdb2fasta          app/tools/pdb2fasta_main.cpp
+pdb2ss        make pdb2ss             app/tools/pdb2ss_main.cpp
+cif2pdb       make cif2pdb            app/tools/cif2pdb_main.cpp
+biounitasym   make biounitasym        app/tools/biounitasym_main.cpp
+pdbAtomName   make pdbAtomName        app/tools/pdbatomname_main.cpp
+addChainID    make addChainID         app/tools/addchainid_main.cpp
+xyz_sfetch    make xyz_sfetch         app/tools/xyz_sfetch_main.cpp
+
+On Windows use "mingw32-make <target>". To compile a program manually, use the
+same command as in the "Install" section but replace "app/usalign.cpp" with the
+program's source file above, and include only the engine/common/output sources
+that the program needs (the Makefile rule for each target lists them).
+
+Run any program without arguments (or with "-h" where supported) to print its
+usage.
