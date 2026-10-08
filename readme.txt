@@ -125,7 +125,8 @@ Sources are organized into four layers, from the bottom up:
     output_funcs/   formatting of alignment results into text / PDB / scripts
     app/            the USalign entry point (app/usalign.cpp + app/usalign.h,
                     routing only) and the other standalone programs under
-                    app/tools/
+                    app/tools/ (implementations in tool_main/, declarations and
+                    the shared tools.h umbrella header in tool_include/)
 
 Each alignment mode (-mm 0/1/2/4/5/6/7) is driven by its engine: the chain
 loop, per-pair alignment and result output live in the engine's own
@@ -229,21 +230,21 @@ under app/ and is built by listing its target name explicitly:
 Target        Build command           Source
 ----------    --------------------    ------------------------------------------
 USalign       make                    app/usalign.cpp (default target)
-USFlexalign   make USFlexalign        app/tools/usflexalign_main.cpp
-TMalign       make TMalign            app/tools/tmalign_main.cpp
-TMscore       make TMscore            app/tools/tmscore_main.cpp
-MMalign       make MMalign            app/tools/mmalign_main.cpp
-se            make se                 app/tools/se_main.cpp
-HwRMSD        make HwRMSD             app/tools/hwrmsd_main.cpp
-qTMclust      make qTMclust           app/tools/qtmclust_main.cpp
-NWalign       make NWalign            app/tools/nwalign_main.cpp
-pdb2xyz       make pdb2xyz            app/tools/pdb2xyz_main.cpp
-pdb2fasta     make pdb2fasta          app/tools/pdb2fasta_main.cpp
-pdb2ss        make pdb2ss             app/tools/pdb2ss_main.cpp
-cif2pdb       make cif2pdb            app/tools/cif2pdb_main.cpp
-biounitasym   make biounitasym        app/tools/biounitasym_main.cpp
-pdbAtomName   make pdbAtomName        app/tools/pdbatomname_main.cpp
-addChainID    make addChainID         app/tools/addchainid_main.cpp
+USFlexalign   make USFlexalign        app/tools/tool_main/usflexalign_main.cpp
+TMalign       make TMalign            app/tools/tool_main/tmalign_main.cpp
+TMscore       make TMscore            app/tools/tool_main/tmscore_main.cpp
+MMalign       make MMalign            app/tools/tool_main/mmalign_main.cpp
+se            make se                 app/tools/tool_main/se_main.cpp
+HwRMSD        make HwRMSD             app/tools/tool_main/hwrmsd_main.cpp
+qTMclust      make qTMclust           app/tools/tool_main/qtmclust_main.cpp
+NWalign       make NWalign            app/tools/tool_main/nwalign_main.cpp
+pdb2xyz       make pdb2xyz            app/tools/tool_main/pdb2xyz_main.cpp
+pdb2fasta     make pdb2fasta          app/tools/tool_main/pdb2fasta_main.cpp
+pdb2ss        make pdb2ss             app/tools/tool_main/pdb2ss_main.cpp
+cif2pdb       make cif2pdb            app/tools/tool_main/cif2pdb_main.cpp
+biounitasym   make biounitasym        app/tools/tool_main/biounitasym_main.cpp
+pdbAtomName   make pdbAtomName        app/tools/tool_main/pdbatomname_main.cpp
+addChainID    make addChainID         app/tools/tool_main/addchainid_main.cpp
 xyz_sfetch    make xyz_sfetch         app/tools/xyz_sfetch_main.cpp
 
 On Windows use "mingw32-make <target>". To compile a program manually, use the

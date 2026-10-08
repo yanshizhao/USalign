@@ -1,0 +1,18 @@
+#pragma once
+
+#include "addchainid_main.h"
+#include "biounitasym_main.h"
+#include "cif2pdb_main.h"
+#include "hwrmsd_main.h"
+#include "mmalign_main.h"
+#include "nwalign_main.h"
+#include "pdb2fasta_main.h"
+#include "pdb2ss_main.h"
+#include "pdb2xyz_main.h"
+#include "pdbatomname_main.h"
+#include "qtmclust_main.h"
+#include "se_main.h"
+#include "tmalign_main.h"
+#include "tmscore_main.h"
+#include "usflexalign_main.h"
+#include "xyz_sfetch_main.h"
