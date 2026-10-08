@@ -1078,3 +1078,18 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
 }
 
 #endif
+
+struct SoiAlignParams
+{
+    int read_resi;
+    int closeK_opt;
+    int mm_opt;
+    ChainPairAlignOptions align;
+};
+
+void fill_soi_params(SoiAlignParams& params, const AlignCommonInput& common_inputs);
+int parse_chain_for_soi(const std::vector<std::string>& pdb_lines, const std::string& chain_name,
+    int& mol, const UserOptions& user_opts, const SoiAlignParams& soi_params,
+    const bool mirror_opt, CoordArray& coords, std::string& seq, std::string& sec,
+    std::vector<std::string>& resi, int& read_resi);
+int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params);
