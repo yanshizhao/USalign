@@ -136,16 +136,6 @@ void check_dir_conflicts(Pdb2ssOptions& pdb2ss_opts)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
 }
 
-void check_split_conflicts(Pdb2ssOptions& pdb2ss_opts)
-{
-    if (pdb2ss_opts.split_opt==1 && pdb2ss_opts.ter_opt!=0)
-        PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (pdb2ss_opts.split_opt==2 && pdb2ss_opts.ter_opt!=0 && pdb2ss_opts.ter_opt!=1)
-        PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (pdb2ss_opts.split_opt<0 || pdb2ss_opts.split_opt>2)
-        PrintErrorAndQuit("-split can only be 0, 1 or 2");
-}
-
 void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
 {
     check_input_presence(pdb2ss_opts);

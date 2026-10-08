@@ -1982,3 +1982,14 @@ inline void check_atom_and_mol_type_norm(CliOptions& cli_opts)
     else if (cli_opts.mol_opt=="RNA" && cli_opts.atom_opt=="auto")
         cli_opts.atom_opt=" C3'";
 }
+
+template<class CliOptions>
+inline void check_split_conflicts(CliOptions& cli_opts)
+{
+    if (cli_opts.split_opt==1 && cli_opts.ter_opt!=0)
+        PrintErrorAndQuit("-split 1 should be used with -ter 0");
+    else if (cli_opts.split_opt==2 && cli_opts.ter_opt!=0 && cli_opts.ter_opt!=1)
+        PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
+    if (cli_opts.split_opt<0 || cli_opts.split_opt>2)
+        PrintErrorAndQuit("-split can only be 0, 1 or 2");
+}

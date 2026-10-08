@@ -196,16 +196,6 @@ void check_dir_conflicts(NWalignOptions& nwalign_opts)
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 }
 
-void check_split_conflicts(NWalignOptions& nwalign_opts)
-{
-    if (nwalign_opts.split_opt==1 && nwalign_opts.ter_opt!=0)
-        PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (nwalign_opts.split_opt==2 && nwalign_opts.ter_opt!=0 && nwalign_opts.ter_opt!=1)
-        PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (nwalign_opts.split_opt<0 || nwalign_opts.split_opt>2)
-        PrintErrorAndQuit("-split can only be 0, 1 or 2");
-}
-
 void postprocess_arguments(NWalignOptions& nwalign_opts)
 {
     nwalign_opts.outdir_opt = resolve_outdir(nwalign_opts.outdir_opt);

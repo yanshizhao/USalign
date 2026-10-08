@@ -143,16 +143,6 @@ void check_atom_name_size(Pdb2fastaOptions& pdb2fasta_opts)
         PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
 }
 
-void check_split_conflicts(Pdb2fastaOptions& pdb2fasta_opts)
-{
-    if (pdb2fasta_opts.split_opt==1 && pdb2fasta_opts.ter_opt!=0)
-        PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (pdb2fasta_opts.split_opt==2 && pdb2fasta_opts.ter_opt!=0 && pdb2fasta_opts.ter_opt!=1)
-        PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (pdb2fasta_opts.split_opt<0 || pdb2fasta_opts.split_opt>2)
-        PrintErrorAndQuit("-split can only be 0, 1 or 2");
-}
-
 void check_mol_type_atom_default(Pdb2fastaOptions& pdb2fasta_opts)
 {
     if (pdb2fasta_opts.mol_opt=="prot") pdb2fasta_opts.mol_opt="protein";

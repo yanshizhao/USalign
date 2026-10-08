@@ -315,16 +315,6 @@ void check_numeric_conflicts(TMscoreOptions& tmscore_opts)
         PrintErrorAndQuit("-c should be used with -ter <=1");
 }
 
-void check_split_conflicts(TMscoreOptions& tmscore_opts)
-{
-    if (tmscore_opts.split_opt==1 && tmscore_opts.ter_opt!=0)
-        PrintErrorAndQuit("-split 1 should be used with -ter 0");
-    else if (tmscore_opts.split_opt==2 && tmscore_opts.ter_opt!=0 && tmscore_opts.ter_opt!=1)
-        PrintErrorAndQuit("-split 2 should be used with -ter 0 or 1");
-    if (tmscore_opts.split_opt<0 || tmscore_opts.split_opt>2)
-        PrintErrorAndQuit("-split can only be 0, 1 or 2");
-}
-
 void check_matrix_file_name(TMscoreOptions& tmscore_opts)
 {
     if (tmscore_opts.m_opt && tmscore_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
