@@ -20,7 +20,7 @@ else
     STATIC_MINGW=-static
 endif
 LDFLAGS=$(STATIC) -lm
-PROGRAM=qTMclust USalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
+PROGRAM=qTMclust USalign USFlexalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
 ENGINE_CPP=engine/tmalign/TMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp
 COMMON_CPP=common/common.cpp
@@ -37,6 +37,9 @@ USalign: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OR
 
 USalign.exe: app/usalign.cpp engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ORCH_CPP) $(OUTPUT_CPP)
 		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
+
+USFlexalign: app/tools/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
+		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
 
 TMalign: app/tools/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}

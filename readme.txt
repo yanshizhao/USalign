@@ -204,6 +204,7 @@ under app/ and is built by listing its target name explicitly:
 Target        Build command           Source
 ----------    --------------------    ------------------------------------------
 USalign       make                    app/usalign.cpp (default target)
+USFlexalign   make USFlexalign        app/tools/usflexalign_main.cpp
 TMalign       make TMalign            app/tools/tmalign_main.cpp
 TMscore       make TMscore            app/tools/tmscore_main.cpp
 MMalign       make MMalign            app/tools/mmalign_main.cpp

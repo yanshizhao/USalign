@@ -436,6 +436,164 @@ void build_file_lists(const USFlexalignOptions& usflexalign_opts, std::vector<st
     else file2chainlist(chain2_list, usflexalign_opts.yname, usflexalign_opts.dir2_opt, usflexalign_opts.suffix_opt);
 }
 
+void fill_flexalign_params(FlexalignParams& flex_params, const USFlexalignOptions& usflexalign_opts)
+{
+    flex_params.mode = usflexalign_opts.usbcat_opt ? FLEX_USBCAT : FLEX_BEST;
+    flex_params.hinge_opt = usflexalign_opts.hinge_opt;
+    flex_params.hinge_set = (flex_params.mode == FLEX_USBCAT) ? usflexalign_opts.hinge_set : false;
+    flex_params.TMpass = (flex_params.mode == FLEX_USBCAT) ? usflexalign_opts.TMpass_opt : 0.85;
+    flex_params.sparse_val = 0;
+}
+
+void fill_common_inputs(AlignCommonInput& common_inputs, const USFlexalignOptions& usflexalign_opts,
+    const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+
+    user_opts.xname        = usflexalign_opts.xname;
+    user_opts.yname        = usflexalign_opts.yname;
+    user_opts.fname_super  = usflexalign_opts.fname_super;
+    user_opts.fname_lign   = usflexalign_opts.fname_lign;
+    user_opts.fname_matrix = usflexalign_opts.fname_matrix;
+    user_opts.outdir_opt   = usflexalign_opts.outdir_opt;
+    user_opts.dir_opt      = usflexalign_opts.dir_opt;
+    user_opts.dir1_opt     = usflexalign_opts.dir1_opt;
+    user_opts.dir2_opt     = usflexalign_opts.dir2_opt;
+    user_opts.infmt1_opt   = usflexalign_opts.infmt1_opt;
+    user_opts.infmt2_opt   = usflexalign_opts.infmt2_opt;
+    user_opts.ter_opt      = usflexalign_opts.ter_opt;
+    user_opts.split_opt    = usflexalign_opts.split_opt;
+    user_opts.het_opt      = usflexalign_opts.het_opt;
+    user_opts.atom_opt     = usflexalign_opts.atom_opt;
+    user_opts.mol_opt      = usflexalign_opts.mol_opt;
+    user_opts.mirror_opt   = usflexalign_opts.mirror_opt;
+    user_opts.chain2parse1 = usflexalign_opts.chain2parse1;
+    user_opts.chain2parse2 = usflexalign_opts.chain2parse2;
+    user_opts.model2parse1 = usflexalign_opts.model2parse1;
+    user_opts.model2parse2 = usflexalign_opts.model2parse2;
+    user_opts.byresi_opt   = usflexalign_opts.byresi_opt;
+    user_opts.fast_opt     = usflexalign_opts.fast_opt;
+    user_opts.i_opt        = usflexalign_opts.i_opt;
+    user_opts.o_opt        = usflexalign_opts.o_opt;
+    user_opts.a_opt        = usflexalign_opts.a_opt;
+    user_opts.m_opt        = usflexalign_opts.m_opt;
+    user_opts.u_opt        = usflexalign_opts.u_opt;
+    user_opts.d_opt        = usflexalign_opts.d_opt;
+    user_opts.outfmt_opt   = usflexalign_opts.outfmt_opt;
+    user_opts.Lnorm_ass    = usflexalign_opts.Lnorm_ass;
+    user_opts.d0_scale     = usflexalign_opts.d0_scale;
+    user_opts.TMcut        = usflexalign_opts.TMcut;
+
+    parsed_input.chain1_list = chain1_list;
+    parsed_input.chain2_list = chain2_list;
+    parsed_input.sequence    = usflexalign_opts.sequence;
+    parsed_input.normalize_atom_name = (usflexalign_opts.atom_opt == "auto" || usflexalign_opts.atom_opt == "PC4'");
+}
+
+void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParams& flex_params)
+{
+    UserOptions& user_opts = common_inputs.user_options;
+    ParsedInput& parsed_input = common_inputs.parsed_input;
+
+    std::vector<std::vector<std::string> > PDB_lines1; // text of chain1
+    std::vector<std::vector<std::string> > PDB_lines2; // text of chain2
+    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
+    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
+    std::vector<std::string> chainID_list1;      // list of chainID1
+    std::vector<std::string> chainID_list2;      // list of chainID2
+    int    i,j;                // file index
+    int    chain_i,chain_j;    // chain index
+    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
+    int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
+
+    const PdbParseOptions pdb_parse_opts1{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse1, user_opts.model2parse1};
+    const PdbParseOptions pdb_parse_opts2{
+        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt,
+        user_opts.chain2parse2, user_opts.model2parse2};
+
+    // loop over file names
+    for (i=0;i<parsed_input.chain1_list.size();i++)
+    {
+        // parse chain 1
+        user_opts.xname=parsed_input.chain1_list[i];
+        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
+            pdb_parse_opts1);
+        if (!xchainnum)
+        {
+            std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
+                <<". Chain number 0."<<std::endl;
+            continue;
+        }
+        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        {
+            ParsedChain chain1_data;
+            if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
+                    chain_i, user_opts.mol_opt, user_opts.mirror_opt, read_resi,
+                    user_opts.atom_opt, chain1_data))
+                continue;
+
+            int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
+            for (j = j_start; j < parsed_input.chain2_list.size(); j++)
+            {
+                // parse chain 2
+                if (PDB_lines2.size() == 0)
+                {
+                    user_opts.yname = parsed_input.chain2_list[j];
+                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
+                        pdb_parse_opts2);
+                    if (!ychainnum)
+                    {
+                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
+                        continue;
+                    }
+                }
+                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                {
+                    ParsedChain chain2_data;
+                    if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,
+                            chain_j, user_opts.mol_opt, 0, read_resi,
+                            user_opts.atom_opt, chain2_data))
+                        continue;
+
+                    if (user_opts.byresi_opt)
+                        extract_aln_from_resi(parsed_input.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
+                            chain1_data.resi_vec, chain2_data.resi_vec, user_opts.byresi_opt);
+
+                    FlexAlignResult flexalign_res;
+                    run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flexalign_res);
+
+                    if (user_opts.outfmt_opt==0) print_banner(USFLEXALIGN_BANNER);
+                    output_flexalign_results(chain1_data, chain2_data, flexalign_res, user_opts, false);
+                } // chain_j
+                if (parsed_input.chain2_list.size()>1)
+                {
+                    user_opts.yname.clear();
+                    PDB_lines2.clear();
+                    chainID_list2.clear();
+                    mol_vec2.clear();
+                }
+            } // j
+
+            PDB_lines1[chain_i].clear();
+        } // chain_i
+
+        user_opts.xname.clear();
+        PDB_lines1.clear();
+        chainID_list1.clear();
+        mol_vec1.clear();
+    } // i
+
+    if (parsed_input.chain2_list.size()==1)
+    {
+        user_opts.yname.clear();
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
@@ -454,6 +612,14 @@ int main(int argc, char *argv[])
     if (usflexalign_opts.outfmt_opt==2)
         std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
             <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
+
+    AlignCommonInput common_inputs;
+    fill_common_inputs(common_inputs, usflexalign_opts, chain1_list, chain2_list);
+
+    FlexalignParams flex_params;
+    fill_flexalign_params(flex_params, usflexalign_opts);
+
+    align_all_chain_pairs(common_inputs, flex_params);
 
     t2 = std::clock();
     float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
