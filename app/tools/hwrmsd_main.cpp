@@ -375,19 +375,6 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
 }
 
 // parse file list
-void build_file_lists(const HwRMSDOptions& hwrmsd_opts, std::vector<std::string>& chain1_list,
-    std::vector<std::string>& chain2_list)
-{
-    if (hwrmsd_opts.dir1_opt.size()+hwrmsd_opts.dir_opt.size()==0) chain1_list.push_back(hwrmsd_opts.xname);
-    else file2chainlist(chain1_list, hwrmsd_opts.xname, hwrmsd_opts.dir_opt+hwrmsd_opts.dir1_opt, hwrmsd_opts.suffix_opt);
-
-    if (hwrmsd_opts.dir_opt.size())
-        for (std::size_t i=0;i<chain1_list.size();i++)
-            chain2_list.push_back(chain1_list[i]);
-    else if (hwrmsd_opts.dir2_opt.size()==0) chain2_list.push_back(hwrmsd_opts.yname);
-    else file2chainlist(chain2_list, hwrmsd_opts.yname, hwrmsd_opts.dir2_opt, hwrmsd_opts.suffix_opt);
-}
-
 void read_chain(const std::vector<std::string>& chain_lines, const std::string& filename,
     const std::string& chain_id, const HwRMSDOptions& hwrmsd_opts, const int mol_type,
     ParsedChain& chain)

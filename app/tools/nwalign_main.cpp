@@ -229,19 +229,6 @@ void postprocess_arguments(NWalignOptions& nwalign_opts)
 }
 
 // parse file list
-void build_file_lists(const NWalignOptions& nwalign_opts, std::vector<std::string>& chain1_list,
-    std::vector<std::string>& chain2_list)
-{
-    if (nwalign_opts.dir1_opt.size()+nwalign_opts.dir_opt.size()==0) chain1_list.push_back(nwalign_opts.xname);
-    else file2chainlist(chain1_list, nwalign_opts.xname, nwalign_opts.dir_opt+nwalign_opts.dir1_opt, nwalign_opts.suffix_opt);
-
-    if (nwalign_opts.dir_opt.size())
-        for (std::size_t i=0;i<chain1_list.size();i++)
-            chain2_list.push_back(chain1_list[i]);
-    else if (nwalign_opts.dir2_opt.size()==0) chain2_list.push_back(nwalign_opts.yname);
-    else file2chainlist(chain2_list, nwalign_opts.yname, nwalign_opts.dir2_opt, nwalign_opts.suffix_opt);
-}
-
 void extract_chain_sequence(const std::vector<std::string>& chain_lines, const int infmt_opt,
     const int xlen, std::string& seq)
 {

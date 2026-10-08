@@ -423,19 +423,6 @@ void postprocess_arguments(USFlexalignOptions& usflexalign_opts)
 }
 
 // parse file list
-void build_file_lists(const USFlexalignOptions& usflexalign_opts, std::vector<std::string>& chain1_list,
-    std::vector<std::string>& chain2_list)
-{
-    if (usflexalign_opts.dir1_opt.size()+usflexalign_opts.dir_opt.size()==0) chain1_list.push_back(usflexalign_opts.xname);
-    else file2chainlist(chain1_list, usflexalign_opts.xname, usflexalign_opts.dir_opt+usflexalign_opts.dir1_opt, usflexalign_opts.suffix_opt);
-
-    if (usflexalign_opts.dir_opt.size())
-        for (std::size_t i=0;i<chain1_list.size();i++)
-            chain2_list.push_back(chain1_list[i]);
-    else if (usflexalign_opts.dir2_opt.size()==0) chain2_list.push_back(usflexalign_opts.yname);
-    else file2chainlist(chain2_list, usflexalign_opts.yname, usflexalign_opts.dir2_opt, usflexalign_opts.suffix_opt);
-}
-
 void fill_flexalign_params(FlexalignParams& flex_params, const USFlexalignOptions& usflexalign_opts)
 {
     flex_params.mode = usflexalign_opts.usbcat_opt ? FLEX_USBCAT : FLEX_BEST;

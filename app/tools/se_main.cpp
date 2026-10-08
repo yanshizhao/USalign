@@ -319,19 +319,6 @@ void postprocess_arguments(SeOptions& se_opts)
 }
 
 // parse file list
-void build_file_lists(const SeOptions& se_opts, std::vector<std::string>& chain1_list,
-    std::vector<std::string>& chain2_list)
-{
-    if (se_opts.dir1_opt.size()+se_opts.dir_opt.size()==0) chain1_list.push_back(se_opts.xname);
-    else file2chainlist(chain1_list, se_opts.xname, se_opts.dir_opt+se_opts.dir1_opt, se_opts.suffix_opt);
-
-    if (se_opts.dir_opt.size())
-        for (std::size_t i=0;i<chain1_list.size();i++)
-            chain2_list.push_back(chain1_list[i]);
-    else if (se_opts.dir2_opt.size()==0) chain2_list.push_back(se_opts.yname);
-    else file2chainlist(chain2_list, se_opts.yname, se_opts.dir2_opt, se_opts.suffix_opt);
-}
-
 void read_chain(const std::vector<std::string>& chain_lines, const std::string& filename,
     const std::string& chain_id, const SeOptions& se_opts, const int mol_type, ParsedChain& chain)
 {

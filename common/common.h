@@ -1941,3 +1941,17 @@ inline std::string join_outdir(const std::string& outdir, const std::string& nam
         return outdir + name;
     return outdir + "/" + name;
 }
+
+template<class CliOptions>
+inline void build_file_lists(const CliOptions& cli_opts, std::vector<std::string>& chain1_list,
+    std::vector<std::string>& chain2_list)
+{
+    if (cli_opts.dir1_opt.size()+cli_opts.dir_opt.size()==0) chain1_list.push_back(cli_opts.xname);
+    else file2chainlist(chain1_list, cli_opts.xname, cli_opts.dir_opt+cli_opts.dir1_opt, cli_opts.suffix_opt);
+
+    if (cli_opts.dir_opt.size())
+        for (std::size_t i=0;i<chain1_list.size();i++)
+            chain2_list.push_back(chain1_list[i]);
+    else if (cli_opts.dir2_opt.size()==0) chain2_list.push_back(cli_opts.yname);
+    else file2chainlist(chain2_list, cli_opts.yname, cli_opts.dir2_opt, cli_opts.suffix_opt);
+}

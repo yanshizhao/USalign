@@ -358,19 +358,6 @@ void postprocess_arguments(TMscoreOptions& tmscore_opts)
 }
 
 // parse file list
-void build_file_lists(const TMscoreOptions& tmscore_opts, std::vector<std::string>& chain1_list,
-    std::vector<std::string>& chain2_list)
-{
-    if (tmscore_opts.dir1_opt.size()+tmscore_opts.dir_opt.size()==0) chain1_list.push_back(tmscore_opts.xname);
-    else file2chainlist(chain1_list, tmscore_opts.xname, tmscore_opts.dir_opt+tmscore_opts.dir1_opt, tmscore_opts.suffix_opt);
-
-    if (tmscore_opts.dir_opt.size())
-        for (std::size_t i=0;i<chain1_list.size();i++)
-            chain2_list.push_back(chain1_list[i]);
-    else if (tmscore_opts.dir2_opt.size()==0) chain2_list.push_back(tmscore_opts.yname);
-    else file2chainlist(chain2_list, tmscore_opts.yname, tmscore_opts.dir2_opt, tmscore_opts.suffix_opt);
-}
-
 void read_chain(const std::vector<std::string>& chain_lines, const std::string& filename,
     const std::string& chain_id, const TMscoreOptions& tmscore_opts, const int mol_type,
     const bool mirror, ParsedChain& chain)

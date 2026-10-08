@@ -427,19 +427,6 @@ void postprocess_arguments(TMalignOptions& tmalign_opts)
 }
 
 // parse file list
-void build_file_lists(const TMalignOptions& tmalign_opts, std::vector<std::string>& chain1_list,
-    std::vector<std::string>& chain2_list)
-{
-    if (tmalign_opts.dir1_opt.size()+tmalign_opts.dir_opt.size()==0) chain1_list.push_back(tmalign_opts.xname);
-    else file2chainlist(chain1_list, tmalign_opts.xname, tmalign_opts.dir_opt+tmalign_opts.dir1_opt, tmalign_opts.suffix_opt);
-
-    if (tmalign_opts.dir_opt.size())
-        for (std::size_t i=0;i<chain1_list.size();i++)
-            chain2_list.push_back(chain1_list[i]);
-    else if (tmalign_opts.dir2_opt.size()==0) chain2_list.push_back(tmalign_opts.yname);
-    else file2chainlist(chain2_list, tmalign_opts.yname, tmalign_opts.dir2_opt, tmalign_opts.suffix_opt);
-}
-
 void read_chain(const std::vector<std::string>& chain_lines, const std::string& filename,
     const std::string& chain_id, const TMalignOptions& tmalign_opts, const int mol_type,
     const bool mirror, ParsedChain& chain)
