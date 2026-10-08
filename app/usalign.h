@@ -12,3 +12,4 @@ bool is_single_mm1_align(int mm_opt,
     const std::string& dir2_opt,
     const std::string& dirpair_opt);
 int MMalign(AlignCommonInput& common_inputs);
+int MMdock(AlignCommonInput& common_inputs);

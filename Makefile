@@ -8,7 +8,7 @@ $(shell mkdir -p $(BUILD_TMP))
 export TMPDIR:=$(BUILD_TMP)
 export TMP:=$(BUILD_TMP)
 export TEMP:=$(BUILD_TMP)
-INC=-Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools
+INC=-Icommon -Iengine/tmalign -Iengine/flexalign -Iengine/mmalign -Iengine/mmdock -Iengine/soialign -Iengine/se -Iengine/tmscore -Iengine/hwrmsd -Iengine/upgma -Iorchestration -Ioutput_funcs -Iapp/tools
 OMPFLAGS=-fopenmp
 ifeq ($(OS),Windows_NT)
     # Windows (MSYS2, MinGW, PowerShell, cmd)
@@ -22,7 +22,7 @@ endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign USFlexalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
 
-ENGINE_CPP=engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp orchestration/orchestration.cpp
+ENGINE_CPP=engine/tmalign/TMalign.cpp engine/mmalign/MMalign.cpp engine/mmdock/MMdock.cpp engine/flexalign/flexalign.cpp engine/tmscore/TMscore.cpp engine/hwrmsd/HwRMSD.cpp engine/soialign/SOIalign.cpp orchestration/orchestration.cpp
 COMMON_CPP=common/common.cpp
 OUTPUT_CPP=output_funcs/output.cpp
 
