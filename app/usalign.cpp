@@ -137,7 +137,7 @@ void print_extra_help()
 
 void print_help()
 {
-    print_banner(USALIGN_BANNER);
+    print_version(USALIGN_VERSION);
     std::cout <<
 "\n"
 "Usage: USalign example/PDB1.pdb example/PDB2.pdb [Options]\n"
@@ -342,7 +342,7 @@ void check_input_presence(UserOptions& user_opts, ControlOptions& control)
         if (control.h_opt) print_help();
         if (control.v_opt)
         {
-            print_banner(USALIGN_BANNER);
+            print_version(USALIGN_VERSION);
             exit(EXIT_FAILURE);
         }
         if (user_opts.xname.size()==0)

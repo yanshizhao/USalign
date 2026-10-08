@@ -127,7 +127,7 @@ void print_extra_help()
 
 void print_help(bool h_opt=false)
 {
-    print_banner(USFLEXALIGN_BANNER);
+    print_version(USFLEXALIGN_BANNER);
     std::cout <<
 "\n"
 "Usage: USFlexalign PDB1.pdb PDB2.pdb [Options]\n"
@@ -512,7 +512,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                     FlexAlignResult flexalign_res;
                     run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flexalign_res);
 
-                    if (user_opts.outfmt_opt==0) print_banner(USFLEXALIGN_BANNER);
+                    if (user_opts.outfmt_opt==0) print_version(USFLEXALIGN_BANNER);
                     output_flexalign_results(chain1_data, chain2_data, flexalign_res, user_opts, false);
                 } // chain_j
                 if (parsed_input.chain2_list.size()>1)

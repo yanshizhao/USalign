@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-extern const char USALIGN_BANNER[];
+extern const char USALIGN_VERSION[];
 
 void output_pair_alignment(const AlignCommonInput& common_inputs,
     int xlen, int ylen,

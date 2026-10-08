@@ -107,7 +107,7 @@ void print_extra_help()
 
 void print_help(bool h_opt=false)
 {
-    print_banner(TMALIGN_BANNER);
+    print_version(TMALIGN_BANNER);
     std::cout <<
 "\n"
 "Usage: TMalign example/PDB1.pdb example/PDB2.pdb [Options]\n"
@@ -426,7 +426,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         xlen, ylen, tmalign_opts.sequence, align_opts);
 
     // print result
-    if (tmalign_opts.outfmt_opt==0) print_banner(TMALIGN_BANNER);
+    if (tmalign_opts.outfmt_opt==0) print_version(TMALIGN_BANNER);
     OutputOptions out_opts;
     out_opts.fname_matrix = (tmalign_opts.m_opt?tmalign_opts.fname_matrix:"");
     out_opts.fname_super = (tmalign_opts.o_opt?tmalign_opts.fname_super:"");

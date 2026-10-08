@@ -694,7 +694,7 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
             common_inputs.user_options.fast_opt, i_opt, 0, 1),
         common_inputs.parsed_input.sequence, common_inputs.user_options.outfmt_opt);
 
-    if (common_inputs.user_options.outfmt_opt == 0) print_banner(USALIGN_BANNER);
+    if (common_inputs.user_options.outfmt_opt == 0) print_version(USALIGN_VERSION);
 
     OutputOptions out_opts;
     fill_out_opts_from_user_opts(out_opts, common_inputs.user_options);
@@ -1568,7 +1568,7 @@ void output_final_results(MMalignContext& mmalign_context,
 {
     if (mmalign_context.common_inputs.user_options.outfmt_opt == 0)
     {
-        print_banner(USALIGN_BANNER);
+        print_version(USALIGN_VERSION);
     }
     
     std::string xname = get_basename(mmalign_context.common_inputs.user_options.xname);

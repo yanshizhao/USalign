@@ -561,7 +561,7 @@ int run_batch_parallel(
         std::string yname_out = c2.filename.substr(
             dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
 
-        if (out_opts.outfmt_opt == 0) print_banner(USALIGN_BANNER, ss);
+        if (out_opts.outfmt_opt == 0) print_version(USALIGN_VERSION, ss);
 
         int right_num=0;
         if (align_opts.cp_opt) output_cp(xname_out, yname_out,

@@ -1140,7 +1140,7 @@ int mTMalign(AlignCommonInput& common_inputs)
     seqM=buf.str();
     seqM=seqM.substr(0,seqM.size()-1);
     buf.str(std::string());
-    if (user_opts.outfmt_opt==0) print_banner(USALIGN_BANNER);
+    if (user_opts.outfmt_opt==0) print_version(USALIGN_VERSION);
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
     state.totals.seqM=seqM;

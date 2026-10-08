@@ -185,7 +185,7 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     enhanced_greedy_search(TMave_mat, assign1_list,
         assign2_list, chain1_num, chain2_num);
 
-    if (user_opts.outfmt_opt==0) print_banner(USALIGN_BANNER);
+    if (user_opts.outfmt_opt==0) print_version(USALIGN_VERSION);
     RotArray ut_mat; // rotation matrices for all-against-all alignment
     ut_mat.resize(chain1_num);
     int ui;

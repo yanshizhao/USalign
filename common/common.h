@@ -1893,7 +1893,7 @@ inline void fill_out_opts_mmalign_final(OutputOptions& out_opts, const MMalignFi
     out_opts.d_opt = params.d_opt;
 }
 
-inline void print_banner(const char* banner, std::ostream& os = std::cout)
+inline void print_version(const char* banner, std::ostream& os = std::cout)
 {
     os << banner << std::endl;
 }
@@ -2081,7 +2081,7 @@ inline void check_input_presence(CliOptions& cli_opts, const char* banner,
         if (cli_opts.h_opt) print_help_fn(cli_opts.h_opt);
         if (cli_opts.v_opt)
         {
-            print_banner(banner);
+            print_version(banner);
             exit(EXIT_FAILURE);
         }
         if (cli_opts.xname.size()==0)

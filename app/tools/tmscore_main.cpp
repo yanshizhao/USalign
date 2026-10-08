@@ -332,7 +332,7 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         GDT_list,maxsub,tmscore_opts.TMcut);
 
     // print result
-    if (tmscore_opts.outfmt_opt==0) print_banner(TMSCORE_BANNER);
+    if (tmscore_opts.outfmt_opt==0) print_version(TMSCORE_BANNER);
     output_TMscore_results(
         chain1.filename.substr(tmscore_opts.dir1_opt.size()+tmscore_opts.dir_opt.size()),
         chain2.filename.substr(tmscore_opts.dir2_opt.size()+tmscore_opts.dir_opt.size()),

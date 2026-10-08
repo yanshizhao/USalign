@@ -78,7 +78,7 @@ void print_extra_help()
 
 void print_help(bool h_opt=false)
 {
-    print_banner(MMALIGN_BANNER);
+    print_version(MMALIGN_BANNER);
     std::cout <<
 "\n"
 "Usage: MMalign complex1.pdb complex2.pdb [Options]\n"
@@ -267,7 +267,7 @@ void check_input_presence(MMalignOptions& mmalign_opts)
         if (mmalign_opts.h_opt) print_help(mmalign_opts.h_opt);
         if (mmalign_opts.v_opt)
         {
-            print_banner(MMALIGN_BANNER);
+            print_version(MMALIGN_BANNER);
             exit(EXIT_FAILURE);
         }
         if (mmalign_opts.xname.size()==0)
@@ -735,7 +735,7 @@ std::vector<int> assign2_init(chain2_num);
     }
 
     // final alignment
-    if (mmalign_opts.outfmt_opt==0) print_banner(MMALIGN_BANNER);
+    if (mmalign_opts.outfmt_opt==0) print_version(MMALIGN_BANNER);
     {
         ComplexData final_complex1 = complex1;
         ComplexData final_complex2 = complex2;

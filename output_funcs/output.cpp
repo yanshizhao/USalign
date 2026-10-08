@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <iostream>
 
-const char USALIGN_BANNER[] =
+const char USALIGN_VERSION[] =
 "\n"
 " ********************************************************************\n"
 " * US-align (Version 20260819)                                      *\n"
@@ -28,7 +28,7 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const UserOptions& user_opts = common_inputs.user_options;
     const ControlOptions& ctrl_opts = common_inputs.control_options;
 
-    if (user_opts.outfmt_opt == 0) print_banner(USALIGN_BANNER);
+    if (user_opts.outfmt_opt == 0) print_version(USALIGN_VERSION);
     int right_num=0;
     if (ctrl_opts.cp_opt) output_cp(
         user_opts.xname.substr(user_opts.dir1_opt.size() + user_opts.dir_opt.size()),

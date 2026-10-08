@@ -181,7 +181,7 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
                     flex_result = FlexAlignResult();
                     run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flex_result);
 
-                    if (user_opts.outfmt_opt==0) print_banner(USALIGN_BANNER);
+                    if (user_opts.outfmt_opt==0) print_version(USALIGN_VERSION);
                     output_flexalign_results(chain1_data, chain2_data, flex_result, user_opts, false);
                 } // chain_j
                 if (parsed_input.chain2_list.size()>1)
