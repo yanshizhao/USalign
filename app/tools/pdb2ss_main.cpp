@@ -136,19 +136,6 @@ void check_dir_conflicts(Pdb2ssOptions& pdb2ss_opts)
         PrintErrorAndQuit("-suffix is only valid if -dir is set");
 }
 
-void check_atom_and_mol_type(Pdb2ssOptions& pdb2ss_opts)
-{
-    pdb2ss_opts.normalize_atom_name=(pdb2ss_opts.atom_opt=="auto" || pdb2ss_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (pdb2ss_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (pdb2ss_opts.mol_opt!="auto" && pdb2ss_opts.mol_opt!="protein" && pdb2ss_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (pdb2ss_opts.mol_opt=="protein" && pdb2ss_opts.atom_opt=="auto")
-        pdb2ss_opts.atom_opt=" CA ";
-    else if (pdb2ss_opts.mol_opt=="RNA" && pdb2ss_opts.atom_opt=="auto")
-        pdb2ss_opts.atom_opt=" C3'";
-}
-
 void check_split_conflicts(Pdb2ssOptions& pdb2ss_opts)
 {
     if (pdb2ss_opts.split_opt==1 && pdb2ss_opts.ter_opt!=0)
@@ -163,7 +150,7 @@ void postprocess_arguments(Pdb2ssOptions& pdb2ss_opts)
 {
     check_input_presence(pdb2ss_opts);
     check_dir_conflicts(pdb2ss_opts);
-    check_atom_and_mol_type(pdb2ss_opts);
+    check_atom_and_mol_type_norm(pdb2ss_opts);
     check_split_conflicts(pdb2ss_opts);
 }
 

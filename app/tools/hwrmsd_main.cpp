@@ -305,19 +305,6 @@ void check_dir_conflicts(HwRMSDOptions& hwrmsd_opts)
     }
 }
 
-void check_atom_and_mol_type(HwRMSDOptions& hwrmsd_opts)
-{
-    hwrmsd_opts.normalize_atom_name=(hwrmsd_opts.atom_opt=="auto" || hwrmsd_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (hwrmsd_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (hwrmsd_opts.mol_opt!="auto" && hwrmsd_opts.mol_opt!="protein" && hwrmsd_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (hwrmsd_opts.mol_opt=="protein" && hwrmsd_opts.atom_opt=="auto")
-        hwrmsd_opts.atom_opt=" CA ";
-    else if (hwrmsd_opts.mol_opt=="RNA" && hwrmsd_opts.atom_opt=="auto")
-        hwrmsd_opts.atom_opt=" C3'";
-}
-
 void check_numeric_conflicts(HwRMSDOptions& hwrmsd_opts)
 {
     if (hwrmsd_opts.u_opt && hwrmsd_opts.Lnorm_ass<=0)
@@ -368,7 +355,7 @@ void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
     hwrmsd_opts.fname_matrix = join_outdir(hwrmsd_opts.outdir_opt, hwrmsd_opts.fname_matrix);
     check_input_presence(hwrmsd_opts);
     check_dir_conflicts(hwrmsd_opts);
-    check_atom_and_mol_type(hwrmsd_opts);
+    check_atom_and_mol_type_norm(hwrmsd_opts);
     check_numeric_conflicts(hwrmsd_opts);
     check_byresi_split_iter_seq(hwrmsd_opts);
     apply_derived_options(hwrmsd_opts);

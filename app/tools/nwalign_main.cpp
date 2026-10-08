@@ -196,19 +196,6 @@ void check_dir_conflicts(NWalignOptions& nwalign_opts)
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 }
 
-void check_atom_and_mol_type(NWalignOptions& nwalign_opts)
-{
-    nwalign_opts.normalize_atom_name=(nwalign_opts.atom_opt=="auto" || nwalign_opts.atom_opt=="PC4'"); // auto re-pad atom name
-    if (nwalign_opts.atom_opt.size()!=4)
-        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
-    if (nwalign_opts.mol_opt!="auto" && nwalign_opts.mol_opt!="protein" && nwalign_opts.mol_opt!="RNA")
-        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
-    else if (nwalign_opts.mol_opt=="protein" && nwalign_opts.atom_opt=="auto")
-        nwalign_opts.atom_opt=" CA ";
-    else if (nwalign_opts.mol_opt=="RNA" && nwalign_opts.atom_opt=="auto")
-        nwalign_opts.atom_opt=" C3'";
-}
-
 void check_split_conflicts(NWalignOptions& nwalign_opts)
 {
     if (nwalign_opts.split_opt==1 && nwalign_opts.ter_opt!=0)
@@ -224,7 +211,7 @@ void postprocess_arguments(NWalignOptions& nwalign_opts)
     nwalign_opts.outdir_opt = resolve_outdir(nwalign_opts.outdir_opt);
     check_input_presence(nwalign_opts);
     check_dir_conflicts(nwalign_opts);
-    check_atom_and_mol_type(nwalign_opts);
+    check_atom_and_mol_type_norm(nwalign_opts);
     check_split_conflicts(nwalign_opts);
 }
 

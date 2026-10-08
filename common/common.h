@@ -1968,3 +1968,17 @@ inline void check_atom_and_mol_type(CliOptions& cli_opts)
     else if (cli_opts.mol_opt=="RNA" && cli_opts.atom_opt=="auto")
         cli_opts.atom_opt=" C3'";
 }
+
+template<class CliOptions>
+inline void check_atom_and_mol_type_norm(CliOptions& cli_opts)
+{
+    cli_opts.normalize_atom_name=(cli_opts.atom_opt=="auto" || cli_opts.atom_opt=="PC4'");
+    if (cli_opts.atom_opt.size()!=4)
+        PrintErrorAndQuit("ERROR! Atom name must have 4 characters, including space.");
+    if (cli_opts.mol_opt!="auto" && cli_opts.mol_opt!="protein" && cli_opts.mol_opt!="RNA")
+        PrintErrorAndQuit("ERROR! Molecule type must be either RNA or protein.");
+    else if (cli_opts.mol_opt=="protein" && cli_opts.atom_opt=="auto")
+        cli_opts.atom_opt=" CA ";
+    else if (cli_opts.mol_opt=="RNA" && cli_opts.atom_opt=="auto")
+        cli_opts.atom_opt=" C3'";
+}
