@@ -297,22 +297,14 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
     D0_var.clear();
     bp.clear();
 }
-bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CharMatrix& path, DoubleMatrix& val,
-    const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN){
-    double GL;
-    double rmsd;
-    Vec3 t;
-    RotMat u;
-
+bool get_initial5(const CoordArray& x, const CoordArray& y, int xlen, int ylen,
+    std::vector<int>& y2x, double d0, double d0_search, const bool fast_opt,
+    const double D0_MIN, int parallel_threads){
     double d01 = d0 + 1.5;
     if (d01 < D0_MIN) d01 = D0_MIN;
     double d02 = d01 * d01;
 
-    double GLmax = 0;
     int aL = getmin(xlen, ylen);
-    std::vector<int> invmap(ylen + 1);
 
     // jump on sequence1
     int n_jump1 = 0;
@@ -354,11 +346,7 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
         n_jump2 *= 5;
     }
 
-    std::vector<double*> xv(xlen), yv(ylen);
-    for (int _i = 0; _i < xlen; _i++) xv[_i] = (double*)x[_i].data();
-    for (int _j = 0; _j < ylen; _j++) yv[_j] = (double*)y[_j].data();
-
-    bool flag = false;
+    std::vector<std::array<int, 3> > frag_tasks;
     for (int i_frag = 0; i_frag < 2; i_frag++)
     {
         int m1 = xlen - n_frag[i_frag] + 1;
@@ -368,36 +356,86 @@ bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& 
         {
             for (int j = 0; j < m2; j += n_jump2)
             {
-                // extract fragment
-                for (int k = 0; k < n_frag[i_frag]; k++)
-                {
-                    r1[k][0] = x[k + i][0];
-                    r1[k][1] = x[k + i][1];
-                    r1[k][2] = x[k + i][2];
-
-                    r2[k][0] = y[k + j][0];
-                    r2[k][1] = y[k + j][1];
-                    r2[k][2] = y[k + j][2];
-                }
-
-                // superpose the two structures and rotate it
-                Kabsch(r1, r2, n_frag[i_frag], 1, rmsd, t, u);
-
-                double gap_open = 0.0;
-                NWDP_TM(path, val, x, y, xlen, ylen,
-                    t, u, d02, gap_open, invmap);
-                GL = get_score_fast(r1, r2, xtm, ytm, x, y, ylen,
-                    invmap, d0, d0_search, t, u);
-                if (GL > GLmax)
-                {
-                    GLmax = GL;
-                    for (int ii = 0; ii < ylen; ii++) y2x[ii] = invmap[ii];
-                    flag = true;
-                }
+                std::array<int, 3> task = { {i_frag, i, j} };
+                frag_tasks.push_back(task);
             }
         }
     }
+    const int n_tasks = static_cast<int>(frag_tasks.size());
 
+    double GLmax = 0;
+    bool flag = false;
+    int best_idx = INT_MAX;
+    std::vector<int> best_inv(ylen + 1);
+
+#ifdef _OPENMP
+    #pragma omp parallel num_threads(parallel_threads) if(parallel_threads>1)
+#endif
+    {
+        CoordArray r1(aL), r2(aL), xtm(aL), ytm(aL);
+        std::vector<int> invmap(ylen + 1);
+        CharMatrix path(xlen + 1, std::vector<char>(ylen + 1, 0));
+        DoubleMatrix val(xlen + 1, std::vector<double>(ylen + 1, 0));
+        Vec3 t;
+        RotMat u;
+        double rmsd;
+        double GLmax_l = 0;
+        int best_idx_l = INT_MAX;
+        std::vector<int> best_inv_l(ylen + 1);
+
+#ifdef _OPENMP
+        #pragma omp for schedule(static)
+#endif
+        for (int task = 0; task < n_tasks; task++)
+        {
+            int i_frag = frag_tasks[task][0];
+            int i = frag_tasks[task][1];
+            int j = frag_tasks[task][2];
+
+            // extract fragment
+            for (int k = 0; k < n_frag[i_frag]; k++)
+            {
+                r1[k][0] = x[k + i][0];
+                r1[k][1] = x[k + i][1];
+                r1[k][2] = x[k + i][2];
+
+                r2[k][0] = y[k + j][0];
+                r2[k][1] = y[k + j][1];
+                r2[k][2] = y[k + j][2];
+            }
+
+            // superpose the two structures and rotate it
+            Kabsch(r1, r2, n_frag[i_frag], 1, rmsd, t, u);
+
+            double gap_open = 0.0;
+            NWDP_TM(path, val, x, y, xlen, ylen,
+                t, u, d02, gap_open, invmap);
+            double GL = get_score_fast(r1, r2, xtm, ytm, x, y, ylen,
+                invmap, d0, d0_search, t, u);
+            if (GL > GLmax_l ||
+                (GL == GLmax_l && best_idx_l != INT_MAX && task < best_idx_l))
+            {
+                GLmax_l = GL;
+                best_idx_l = task;
+                for (int ii = 0; ii < ylen; ii++) best_inv_l[ii] = invmap[ii];
+            }
+        }
+
+#ifdef _OPENMP
+        #pragma omp critical
+#endif
+        if (GLmax_l > GLmax ||
+            (GLmax_l == GLmax && best_idx != INT_MAX && best_idx_l != INT_MAX && best_idx_l < best_idx))
+        {
+            GLmax = GLmax_l;
+            best_idx = best_idx_l;
+            for (int ii = 0; ii < ylen; ii++) best_inv[ii] = best_inv_l[ii];
+            flag = true;
+        }
+    }
+
+    if (flag)
+        for (int ii = 0; ii < ylen; ii++) y2x[ii] = best_inv[ii];
     return flag;
 }
 void find_max_frag(const CoordArray& x, int len, int &start_max,

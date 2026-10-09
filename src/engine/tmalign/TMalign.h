@@ -514,10 +514,9 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
 
 // get_initial5 in TMalign fortran, get_initial_local in TMalign c by yangji
 //get initial alignment of local structure superposition
-bool get_initial5( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
-    CharMatrix& path, DoubleMatrix& val,
-    const CoordArray& x, const CoordArray& y, int xlen, int ylen, std::vector<int>& y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN);
+bool get_initial5(const CoordArray& x, const CoordArray& y, int xlen, int ylen,
+    std::vector<int>& y2x, double d0, double d0_search, const bool fast_opt,
+    const double D0_MIN, int parallel_threads = 1);
 
 
 
@@ -1000,7 +999,7 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
     CoordArray& r1, CoordArray& r2,
     double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0, const int ss_opt = 0)
+    Vec3& t0, RotMat& u0, const int ss_opt = 0, int parallel_threads = 1)
 {
     int i;
     double TM;
@@ -1067,8 +1066,8 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     // ---- Strategy 3: local superposition ----
     if (ss_opt != 1)
     {
-        if (get_initial5(r1, r2, xtm, ytm, path, val, xa_c, ya_c, xlen, ylen,
-            invmap, d0, d0_search, fast_opt, D0_MIN))
+        if (get_initial5(xa_c, ya_c, xlen, ylen,
+            invmap, d0, d0_search, fast_opt, D0_MIN, parallel_threads))
         {
             TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
                 invmap, t, u, simplify_step, score_sum_method, local_d0_search,
@@ -1166,204 +1165,6 @@ inline int initial_strategies_serial(CoordArray& xa_c, CoordArray& ya_c,
     return 0;
 }
 
-
-#ifdef _OPENMP
-// ---------------------------------------------------------------------------
-// OpenMP parallel version: 3+2 split
-//   Phase 1 : Strategy 1 (serial)
-//   Phase 2a: Strategies 2-3 (2 threads)
-//   Phase 2b: Strategies 4-5 (2 threads, Strategy 4 reads best from 1-3)
-// Returns: 0=continue, 7=early TMcut exit
-// ---------------------------------------------------------------------------
-inline int initial_strategies_parallel(CoordArray& xa_c, CoordArray& ya_c,
-    const std::string& secx, const std::string& secy,
-    int xlen, int ylen, int minlen,
-    double d0, double d0_search, double dcu0,
-    double D0_MIN, double Lnorm, double score_d8,
-    int simplify_step, int score_sum_method, double local_d0_search,
-    bool fast_opt, int a_opt, int mol_type,
-    double TMcut,
-    std::vector<int>& invmap0, std::vector<int>& invmap,
-    Vec3& t, RotMat& u, double& TMmax,
-    CharMatrix& path, DoubleMatrix& val,
-    CoordArray& xtm, CoordArray& ytm, CoordArray& xt,
-    CoordArray& r1, CoordArray& r2,
-    double& TM1, double& TM2, double& TM3, double& TM4, double& TM5,
-    Vec3& t0, RotMat& u0, int parallel_threads = 1)
-{
-    double TM;
-
-    // ================================================================
-    // Phase 1: Strategy 1 — gapless threading (serial)
-    // ================================================================
-    get_initial(r1, r2, xtm, ytm, xa_c, ya_c, xlen, ylen, invmap0, d0,
-        d0_search, fast_opt, t, u);
-    TM = detailed_search(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen, invmap0,
-        t, u, simplify_step, score_sum_method, local_d0_search, Lnorm,
-        score_d8, d0);
-    if (TM > TMmax) TMmax = TM;
-    if (TMcut > 0) copy_t_u(t, u, t0, u0);
-    TM = DP_iter(r1, r2, xtm, ytm, xt, path, val, xa_c, ya_c, xlen, ylen,
-        t, u, invmap, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-        Lnorm, d0, score_d8);
-    if (TM > TMmax) {
-        TMmax = TM;
-        for (int i = 0; i < ylen; i++) invmap0[i] = invmap[i];
-        if (TMcut > 0) copy_t_u(t, u, t0, u0);
-    }
-    if (TMcut > 0) {
-        double TMtmp = approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0, mol_type);
-        if (TMtmp < 0.5 * TMcut) {
-            TM1 = TM2 = TM3 = TM4 = TM5 = TMtmp;
-            return 2;
-        }
-    }
-
-    // ================================================================
-    // Phase 2a: Strategies 2-3 (parallel, 2 threads)
-    // ================================================================
-    double best_TM = TMmax;
-    std::vector<int> best_inv(ylen + 1);
-    for (int i = 0; i < ylen; i++) best_inv[i] = invmap0[i];
-    Vec3 best_t = t;
-    RotMat best_u = u;
-    int minlen2 = minlen;
-
-    #pragma omp parallel for num_threads(std::min(parallel_threads, 2)) schedule(static,1)
-    for (int sid = 1; sid < 3; sid++) {
-        std::vector<int> inv_l(ylen + 1, -1);
-        Vec3 t_l = {0, 0, 0};
-        RotMat u_l = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
-        CharMatrix path_l(xlen + 1, std::vector<char>(ylen + 1, 0));
-        DoubleMatrix val_l(xlen + 1, std::vector<double>(ylen + 1, 0));
-        CoordArray r1_l(minlen2), r2_l(minlen2),
-            xtm_l(minlen2), ytm_l(minlen2), xt_l(xlen);
-        double local_best = -1;
-
-        if (sid == 1) {
-            // Strategy 2: secondary structure
-            get_initial_ss(path_l, val_l, secx, secy, xlen, ylen, inv_l);
-            local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                xa_c, ya_c, ylen, inv_l, t_l, u_l,
-                simplify_step, score_sum_method, local_d0_search,
-                Lnorm, score_d8, d0);
-            double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
-                inv_l, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-                Lnorm, d0, score_d8);
-            if (dp > local_best) local_best = dp;
-        } else if (sid == 2) {
-            // Strategy 3: local superposition
-            if (get_initial5(r1_l, r2_l, xtm_l, ytm_l, path_l, val_l,
-                xa_c, ya_c, xlen, ylen, inv_l, d0, d0_search,
-                fast_opt, D0_MIN))
-            {
-                local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                    xa_c, ya_c, ylen, inv_l, t_l, u_l,
-                    simplify_step, score_sum_method, local_d0_search,
-                    Lnorm, score_d8, d0);
-                double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                    path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
-                    inv_l, 0, 2, 2, local_d0_search,
-                    Lnorm, d0, score_d8);
-                if (dp > local_best) local_best = dp;
-            }
-        }
-
-        #pragma omp critical
-        if (local_best > best_TM) {
-            best_TM = local_best;
-            best_t = t_l;
-            best_u = u_l;
-            for (int k = 0; k < ylen; k++) best_inv[k] = inv_l[k];
-        }
-    }
-
-    // ================================================================
-    // Phase 2b: Strategies 4-5 (parallel, 2 threads)
-    //   Strategy 4 reads best_inv (best from Phase 1 + Phase 2a)
-    // ================================================================
-    std::vector<int> best_inv_snapshot(ylen + 1);
-    for (int i = 0; i < ylen; i++) best_inv_snapshot[i] = best_inv[i];
-    #pragma omp parallel for num_threads(std::min(parallel_threads, 2)) schedule(static,1)
-    for (int sid = 3; sid < 5; sid++) {
-        std::vector<int> inv_l(ylen + 1, -1);
-        Vec3 t_l = {0, 0, 0};
-        RotMat u_l = {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
-        CharMatrix path_l(xlen + 1, std::vector<char>(ylen + 1, 0));
-        DoubleMatrix val_l(xlen + 1, std::vector<double>(ylen + 1, 0));
-        CoordArray r1_l(minlen2), r2_l(minlen2),
-            xtm_l(minlen2), ytm_l(minlen2), xt_l(xlen);
-        double local_best = -1;
-
-        if (sid == 3) {
-            // Strategy 4: SS + distance — reads best alignment so far
-            {
-                DoubleMatrix score_l(xlen + 1, std::vector<double>(ylen + 1, 0));
-                std::vector<int> inv_input(ylen + 1, -1);
-                for (int i = 0; i < ylen; i++) inv_input[i] = best_inv_snapshot[i];
-                get_initial_ssplus(r1_l, r2_l, score_l, path_l, val_l,
-                    secx, secy, xa_c, ya_c, xlen, ylen,
-                    inv_input, inv_l, D0_MIN, d0);
-            }
-            local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                xa_c, ya_c, ylen, inv_l, t_l, u_l,
-                simplify_step, score_sum_method, local_d0_search,
-                Lnorm, score_d8, d0);
-            double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
-                inv_l, 0, 2, (fast_opt) ? 2 : 30, local_d0_search,
-                Lnorm, d0, score_d8);
-            if (dp > local_best) local_best = dp;
-        } else if (sid == 4) {
-            // Strategy 5: fragment gapless threading
-            get_initial_fgt(r1_l, r2_l, xtm_l, ytm_l, xa_c, ya_c,
-                xlen, ylen, inv_l, d0, d0_search, dcu0, fast_opt,
-                t_l, u_l);
-            local_best = detailed_search(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                xa_c, ya_c, ylen, inv_l, t_l, u_l,
-                simplify_step, score_sum_method, local_d0_search,
-                Lnorm, score_d8, d0);
-            double dp = DP_iter(r1_l, r2_l, xtm_l, ytm_l, xt_l,
-                path_l, val_l, xa_c, ya_c, xlen, ylen, t_l, u_l,
-                inv_l, 1, 2, 2, local_d0_search,
-                Lnorm, d0, score_d8);
-            if (dp > local_best) local_best = dp;
-        }
-
-        #pragma omp critical
-        if (local_best > best_TM) {
-            best_TM = local_best;
-            best_t = t_l;
-            best_u = u_l;
-            for (int k = 0; k < ylen; k++) best_inv[k] = inv_l[k];
-        }
-    }
-
-    // Merge into global state
-    if (best_TM > TMmax) {
-        TMmax = best_TM;
-        for (int i = 0; i < ylen; i++) invmap0[i] = best_inv[i];
-        t = best_t; u = best_u;
-    }
-    if (TMcut > 0) { copy_t_u(t, u, t0, u0); }
-
-
-    if (TMcut > 0) {
-        double TMtmp = approx_TM(xlen, ylen, a_opt,
-            xa_c, ya_c, t0, u0, invmap0, mol_type);
-        if (TMtmp < 0.58 * TMcut) {
-            TM1 = TM2 = TM3 = TM4 = TM5 = TMtmp;
-            return 7;
-        }
-    }
-
-    return 0; // continue
-}
-#endif // _OPENMP
-
-
 struct AlignCoords
 {
     CoordArray xtm;
@@ -1415,7 +1216,7 @@ struct TMscoreAlignContext
 
 inline int tmalign_build_initial(CoordArray& xa_c, CoordArray& ya_c,
     const std::string& secx, const std::string& secy,
-    int xlen, int ylen, int minlen,
+    int xlen, int ylen,
     const std::vector<std::string>& sequence,
     const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
 {
@@ -1513,32 +1314,16 @@ inline int tmalign_build_initial(CoordArray& xa_c, CoordArray& ya_c,
 	/******************************************************/
 	if (i_opt<=1)
 	{
-#ifdef _OPENMP
-	    if (parallel_threads > 1) {
-	        int ret = initial_strategies_parallel(
-	            xa_c, ya_c, secx, secy, xlen, ylen, minlen,
-	            d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
-	            simplify_step, score_sum_method, local_d0_search,
-	            fast_opt, a_opt, mol_type, TMcut,
-	            invmap0, invmap, t, u, TMmax,
-	            path, val, xtm, ytm, xt, r1, r2,
-	            TM1, TM2, TM3, TM4, TM5, t0, u0,
-	            parallel_threads);
-	        if (ret) { return ret; }
-	    } else
-#endif
-	    {
-	        int ret = initial_strategies_serial(
-	            xa_c, ya_c, secx, secy, xlen, ylen,
-	            d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
-	            simplify_step, score_sum_method, local_d0_search,
-	            fast_opt, a_opt, mol_type, TMcut, ddcc,
-	            invmap0, invmap, t, u, TMmax,
-	            score, path, val, xtm, ytm, xt, r1, r2,
-	            TM1, TM2, TM3, TM4, TM5, t0, u0,
-	            ss_opt);
-	        if (ret) { return ret; }
-	    }
+	    int ret = initial_strategies_serial(
+	        xa_c, ya_c, secx, secy, xlen, ylen,
+	        d0, d0_search, dcu0, D0_MIN, Lnorm, score_d8,
+	        simplify_step, score_sum_method, local_d0_search,
+	        fast_opt, a_opt, mol_type, TMcut, ddcc,
+	        invmap0, invmap, t, u, TMmax,
+	        score, path, val, xtm, ytm, xt, r1, r2,
+	        TM1, TM2, TM3, TM4, TM5, t0, u0,
+	        ss_opt, parallel_threads);
+	    if (ret) { return ret; }
 	}
     //************************************************//
     //    get initial alignment from user's input:    //
@@ -1921,7 +1706,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     align_context.search_params.local_d0_search = align_context.search_params.d0_search;
 
     int rc = tmalign_build_initial(xa_c, ya_c, secx, secy,
-        xlen, ylen, minlen, sequence, align_opts, align_context, chain_align_res);
+        xlen, ylen, sequence, align_opts, align_context, chain_align_res);
     if (rc) return rc;
 
     //*******************************************************************//
