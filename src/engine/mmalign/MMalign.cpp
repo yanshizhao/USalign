@@ -658,7 +658,8 @@ void update_best_pair(AllChainPairsResult& pairwise,
 
 // ---- Monomer alignment ----
 int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_params,
-    const ComplexData& complex1, const ComplexData& complex2)
+    const ComplexData& complex1, const ComplexData& complex2,
+    std::ostream& os = std::cout)
 {
     int chain1_len = complex1.lengths[0];
     int chain2_len = complex2.lengths[0];
@@ -694,7 +695,7 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
             common_inputs.user_options.fast_opt, i_opt, 0, 1),
         common_inputs.parsed_input.sequence, common_inputs.user_options.outfmt_opt);
 
-    if (common_inputs.user_options.outfmt_opt == 0) print_version(USALIGN_VERSION);
+    if (common_inputs.user_options.outfmt_opt == 0) print_version(USALIGN_VERSION, os);
 
     OutputOptions out_opts;
     fill_out_opts_from_user_opts(out_opts, common_inputs.user_options);
@@ -706,7 +707,7 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
         mm_params.dir2_opt.size());
     output_results(
         ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], chain1_len, chain2_len},
-        chain_align_res, out_opts, complex1.resi, complex2.resi);
+        chain_align_res, out_opts, complex1.resi, complex2.resi, os);
     return 0;
 }
 
@@ -1207,7 +1208,8 @@ adopt only if the result is better
 */
 void run_cross_chain_alignment(MMalignContext& mmalign_context,
     int chain1_num,
-    int chain2_num)
+    int chain2_num,
+    std::ostream& os = std::cout)
 {
     // mask constrains intra-chain pairing to prevent cross-pairing between chains of homodimers (usually a significant improvement)
     int iter_pair_num = count_assigned_pairs(mmalign_context.assign_result);
@@ -1231,7 +1233,7 @@ void run_cross_chain_alignment(MMalignContext& mmalign_context,
             mmalign_context.pair_result_origin.aligned_seq2,
             mmalign_context.assign_result_origin.chain2_of_chain1, mmalign_context.assign_result_origin.chain1_of_chain2,
             mmalign_context.sequence_origin, mmalign_context.common_inputs.user_options.d0_scale, mmalign_context.fast_opt,
-            mmalign_context.parsed.chain_pair_map);
+            mmalign_context.parsed.chain_pair_map, os);
         if (cross_score > mmalign_context.iteration_score)
         {
             mmalign_context.iteration_score = cross_score;
@@ -1411,33 +1413,34 @@ PairingCounts calc_paired_pairs_count(const MMalignContext& mmalign_context,
 void out_pairing_counts(const MMalignContext& mmalign_context,
     const std::string& name1,
     const std::string& name2,
-    const PairingCounts& counts)
+    const PairingCounts& counts,
+    std::ostream& os = std::cout)
 {
     // summary header
     if (mmalign_context.common_inputs.user_options.outfmt_opt == 2)
     {
-        std::cout << std::endl;
+        os << std::endl;
     }
-    std::cout << "# Chain pairing summary: " << name1 << " (structure 1) vs "
+    os << "# Chain pairing summary: " << name1 << " (structure 1) vs "
          << name2 << " (structure 2)" << std::endl;
 
     // Chainmap statistics (only when chainmap was specified)
     if (mmalign_context.common_inputs.control_options.chainmapfile.size() > 0)
     {
-        std::cout << "#   Chainmap: " << mmalign_context.parsed.chain_map_num
+        os << "#   Chainmap: " << mmalign_context.parsed.chain_map_num
              << " entries specified, " << counts.mapped_pair_num
              << " mapped, " << counts.free_pair_num
              << " free-matching; total " << (counts.mapped_pair_num + counts.free_pair_num)
              << " pair(s) aligned" << std::endl;
         for (size_t k = 0; k < mmalign_context.parsed.invalid_mappings.size(); k++)
         {
-            std::cout << "#   Invalid mappings: " << mmalign_context.parsed.invalid_mappings[k] << std::endl;
+            os << "#   Invalid mappings: " << mmalign_context.parsed.invalid_mappings[k] << std::endl;
         }
     }
 
     // paired-pair counts by molecule type
-    std::cout << "#   Protein: " << counts.prot_pair_num << " pair(s) aligned" << std::endl;
-    std::cout << "#   RNA: " << counts.na_pair_num << " pair(s) aligned" << std::endl;
+    os << "#   Protein: " << counts.prot_pair_num << " pair(s) aligned" << std::endl;
+    os << "#   RNA: " << counts.na_pair_num << " pair(s) aligned" << std::endl;
 }
 
 // ---- Unpaired-chain group: chains sharing the same (file, type, reason) ----
@@ -1499,31 +1502,32 @@ void collect_unpaired_chains(const MMalignContext& mmalign_context,
 }
 
 // ---- Print the Unpaired block grouped by (file, type, reason) ----
-void out_unpaired_chain_info(const std::map<std::string, std::vector<std::string> >& unpaired_groups, const std::map<std::string, UnpairedGroup>& group_info)
+void out_unpaired_chain_info(const std::map<std::string, std::vector<std::string> >& unpaired_groups, const std::map<std::string, UnpairedGroup>& group_info, std::ostream& os = std::cout)
 {
     if (unpaired_groups.empty()) return;
 
-    std::cout << "# Unpaired:" << std::endl;
+    os << "# Unpaired:" << std::endl;
     for (std::map<std::string, std::vector<std::string> >::const_iterator group = unpaired_groups.begin(); group != unpaired_groups.end(); ++group)
     {
         const UnpairedGroup& info = group_info.find(group->first)->second;
-        std::cout << "#   " << info.file << ": ";
+        os << "#   " << info.file << ": ";
         for (size_t k = 0; k < group->second.size(); k++)
         {
             if (k > 0)
             {
-                std::cout << ", ";
+                os << ", ";
             }
-            std::cout << group->second[k];
+            os << group->second[k];
         }
-        std::cout << " (" << info.type << ") - " << info.reason << std::endl;
+        os << " (" << info.type << ") - " << info.reason << std::endl;
     }
 }
 
 // ---- Print chain pairing summary: mapping stats + invalid mappings + paired/unpaired counts ----
 void output_chain_pairing_summary(const MMalignContext& mmalign_context,
     int chain1_num,
-    int chain2_num)
+    int chain2_num,
+    std::ostream& os = std::cout)
 {
     // Pairing statistics
     PairingCounts counts = calc_paired_pairs_count(mmalign_context, chain1_num);
@@ -1531,17 +1535,17 @@ void output_chain_pairing_summary(const MMalignContext& mmalign_context,
     // File names
     std::string name1 = get_basename(mmalign_context.common_inputs.user_options.xname);
     std::string name2 = get_basename(mmalign_context.common_inputs.user_options.yname);
-    
+
     // Summary header + Chainmap statistics + paired counts by molecule type
-    out_pairing_counts(mmalign_context, name1, name2, counts);
+    out_pairing_counts(mmalign_context, name1, name2, counts, os);
 
     // Collect unpaired-chain groups
     std::map<std::string, std::vector<std::string> > unpaired_groups;
     std::map<std::string, UnpairedGroup> group_info;
     collect_unpaired_chains(mmalign_context, chain1_num, chain2_num, name1, name2, unpaired_groups, group_info);
-    
+
     // Print the Unpaired block
-    out_unpaired_chain_info(unpaired_groups, group_info);
+    out_unpaired_chain_info(unpaired_groups, group_info, os);
 }
 
 void fill_mmalign_final_params(MMalignFinalParams& params, const AlignCommonInput& common_inputs)
@@ -1564,13 +1568,14 @@ void fill_mmalign_final_params(MMalignFinalParams& params, const AlignCommonInpu
 
 void output_final_results(MMalignContext& mmalign_context,
     int chain1_num,
-    int chain2_num)
+    int chain2_num,
+    std::ostream& os = std::cout)
 {
     if (mmalign_context.common_inputs.user_options.outfmt_opt == 0)
     {
-        print_version(USALIGN_VERSION);
+        print_version(USALIGN_VERSION, os);
     }
-    
+
     std::string xname = get_basename(mmalign_context.common_inputs.user_options.xname);
     std::string yname = get_basename(mmalign_context.common_inputs.user_options.yname);
     MMalignFinalParams final_params;
@@ -1587,10 +1592,10 @@ void output_final_results(MMalignContext& mmalign_context,
     MMalign_final(mmalign_context.parsed.complex1, mmalign_context.parsed.complex2,
         mmalign_context.pair_result, mmalign_context.assign_result, final_params,
         mmalign_context.common_inputs.parsed_input.sequence,
-        mmalign_context.common_inputs.control_options.se_opt);
+        mmalign_context.common_inputs.control_options.se_opt, os);
 
     // Print the chain pairing summary
-    output_chain_pairing_summary(mmalign_context, chain1_num, chain2_num);
+    output_chain_pairing_summary(mmalign_context, chain1_num, chain2_num, os);
 }
 
 void fill_mmalign_params(MMalignParams& params,
@@ -1605,7 +1610,7 @@ void fill_mmalign_params(MMalignParams& params,
 }
 
 // MMalign if more than two chains. TMalign if only one chain
-int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params)
+int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params, std::ostream& os = std::cout)
 {
 
     MMalignContext mmalign_context(common_inputs, mm_params);
@@ -1620,8 +1625,8 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
         && mmalign_context.mm_params.dir1_opt.size() == 0
         && mmalign_context.mm_params.dir2_opt.size() == 0)
     {
-        std::cout << std::endl;
-        std::cout << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
+        os << std::endl;
+        os << "#PDBchain1\tPDBchain2\tTM1\tTM2\t"
              << "RMSD\tID1\tID2\tIDali\tL1\tL2\tLali" << std::endl;
     }
 
@@ -1631,7 +1636,7 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
     bool monomer = is_monomer(struct1_chain_num) && is_monomer(struct2_chain_num);
     if (monomer)
     {
-        return align_monomers(mmalign_context.common_inputs, mmalign_context.mm_params, mmalign_context.parsed.complex1, mmalign_context.parsed.complex2);
+        return align_monomers(mmalign_context.common_inputs, mmalign_context.mm_params, mmalign_context.parsed.complex1, mmalign_context.parsed.complex2, os);
     }
 
     // ---- All-vs-all chain scoring (force fast mode for large complexes) ----
@@ -1693,7 +1698,7 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
             final_params.full_opt = true;
             MMalign_final(mmalign_context.parsed.complex1, mmalign_context.parsed.complex2,
                 mmalign_context.pair_result, mmalign_context.assign_result, final_params,
-                mmalign_context.common_inputs.parsed_input.sequence, false);
+                mmalign_context.common_inputs.parsed_input.sequence, false, os);
 
                 // extract centroid coordinates
                 CoordArray xcentroids;
@@ -1724,10 +1729,10 @@ int MMalign_main(AlignCommonInput& common_inputs, const MMalignParams& mm_params
     }
 
     // ---- Cross-chain alignment (mask-constrained intra-chain pairing, homodimer improvement) ----
-    run_cross_chain_alignment(mmalign_context, struct1_chain_num, struct2_chain_num);
+    run_cross_chain_alignment(mmalign_context, struct1_chain_num, struct2_chain_num, os);
 
     // ---- Final output (MMalign_final / MMalign_se_final) ----
-    output_final_results(mmalign_context, struct1_chain_num, struct2_chain_num);
+    output_final_results(mmalign_context, struct1_chain_num, struct2_chain_num, os);
 
     return 1;
 }

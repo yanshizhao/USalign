@@ -1454,7 +1454,7 @@ inline void mmalign_output_chain_aligns(
     const ComplexData& complex1, const ComplexData& complex2,
     AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
-    const Vec3& t0, const RotMat& u0)
+    const Vec3& t0, const RotMat& u0, std::ostream& os = std::cout)
 {
     int i;
     int j;
@@ -1588,7 +1588,7 @@ inline void mmalign_output_chain_aligns(
                 const std::string structure2_display = final_params.yname;
                 output_results(
                     ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
-                    print_align_res, out_opts, complex1.resi, complex2.resi);
+                    print_align_res, out_opts, complex1.resi, complex2.resi, os);
             }
 
             // clean up
@@ -1602,7 +1602,7 @@ inline void MMalign_final(
     const ComplexData& complex1, const ComplexData& complex2,
     AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
-    const bool se_opt)
+    const bool se_opt, std::ostream& os = std::cout)
 {
     int i;
     int j;
@@ -1727,7 +1727,7 @@ inline void MMalign_final(
     const std::string structure2_display = final_params.yname;
     output_results(
         ChainPairDesc{structure1_display, structure2_display, chainID1, chainID2, xlen, ylen},
-        print_align_res, out_opts, complex1.resi, complex2.resi);
+        print_align_res, out_opts, complex1.resi, complex2.resi, os);
 
     // clean up
     sequence[0].clear();
@@ -1736,10 +1736,10 @@ inline void MMalign_final(
 
     if (!final_params.full_opt) return;
 
-    if (final_params.outfmt_opt<=2) std::cout<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
+    if (final_params.outfmt_opt<=2) os<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
 
     mmalign_output_chain_aligns(complex1, complex2, pair_result, assign_result,
-        final_params, sequence, t0, u0);
+        final_params, sequence, t0, u0, os);
     sequence.clear();
     return;
 }
@@ -2714,7 +2714,8 @@ inline void dimer_final_tmscore(const int xlen, const int ylen, const ChainPairA
  * 2-7 - pre-terminated due to low TM-score */
 inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
-    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts)
+    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts,
+    std::ostream& os = std::cout)
 {
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
@@ -2804,7 +2805,7 @@ inline int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::str
     }
     if(!flag)
     {
-        std::cout << "There is no alignment between the two structures! "
+        os << "There is no alignment between the two structures! "
              << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
         return 1;
@@ -2841,7 +2842,8 @@ inline void MMalign_dimer(double & total_score,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
     double d0_scale, bool fast_opt,
-    const std::map<int,int>& chain_pair_map = std::map<int,int>())
+    const std::map<int,int>& chain_pair_map = std::map<int,int>(),
+    std::ostream& os = std::cout)
 {
     const DoubleCube& xa_vec = complex1.coords;
     const DoubleCube& ya_vec = complex2.coords;
@@ -2934,7 +2936,7 @@ inline void MMalign_dimer(double & total_score,
     align_opts.mol_type = mol_type;
 
     if (TMalign_dimer_main(xa, ya, seqx, seqy, secx, secy, chain_align_res, xlen,
-        ylen, mask, sequence, align_opts) != 0)
+        ylen, mask, sequence, align_opts, os) != 0)
     {
         return;   // no alignment: skip re-scoring, keep total_score unchanged
     }
