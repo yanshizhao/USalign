@@ -32,7 +32,7 @@ inline void tu2t_u(std::vector<double> tu_tmp, Vec3& t0, RotMat& u0)
 
 // extract rotation matrix based on TMscore8
 inline void output_flexalign_matrix(const std::string& fname_matrix,
-    const DoubleMatrix&tu_vec)
+    const DoubleMatrix&tu_vec, std::ostream& os = std::cout)
 {
     Vec3 t; RotMat u;
     std::stringstream ss;
@@ -54,7 +54,7 @@ inline void output_flexalign_matrix(const std::string& fname_matrix,
             "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
             "}\n";
     if (fname_matrix == "-")
-       std::cout<<ss.str();
+       os<<ss.str();
     else
     {
         std::fstream fout;
@@ -64,7 +64,7 @@ inline void output_flexalign_matrix(const std::string& fname_matrix,
             fout<<ss.str();
             fout.close();
         }
-        else std::cout << "Open file to output rotation matrix fail.\n";
+        else os << "Open file to output rotation matrix fail.\n";
     }
     ss.str(std::string());
 }
@@ -1250,7 +1250,7 @@ inline void output_flexalign_results(
     const ParsedChain& chain1_data, const ParsedChain& chain2_data,
     const FlexAlignResult& flexalign_res,
     const UserOptions& opts,
-    const int mm_opt)
+    const int mm_opt, std::ostream& os = std::cout)
 {
     const std::string xname = opts.xname.substr(opts.dir1_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
     const std::string yname = opts.yname.substr(opts.dir2_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
@@ -1264,70 +1264,70 @@ inline void output_flexalign_results(
 
     if (opts.outfmt_opt<=0)
     {
-        fcout("\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
+        fcout(os, "\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
             xname, chainID1);
-        fcout("Name of Structure_2: %s%s\n", yname, chainID2);
-        fcout("Length of Structure_1: %d residues\n", xlen);
-        fcout("Length of Structure_2: %d residues\n\n", ylen);
+        fcout(os, "Name of Structure_2: %s%s\n", yname, chainID2);
+        fcout(os, "Length of Structure_1: %d residues\n", xlen);
+        fcout(os, "Length of Structure_2: %d residues\n\n", ylen);
 
         if (opts.i_opt)
-            fcout("User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
+            fcout(os, "User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
 
-        fcout("Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
-        fcout("TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", flexalign_res.TM2, xlen, flexalign_res.d0B);
-        fcout("TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", flexalign_res.TM1, ylen, flexalign_res.d0A);
+        fcout(os, "Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
+        fcout(os, "TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", flexalign_res.TM2, xlen, flexalign_res.d0B);
+        fcout(os, "TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", flexalign_res.TM1, ylen, flexalign_res.d0A);
 
         if (opts.a_opt==1)
-            fcout("TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
+            fcout(os, "TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
         if (opts.u_opt)
-            fcout("TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
+            fcout(os, "TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
         if (opts.d_opt)
-            fcout("TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
-        std::cout << "(You should use TM-score normalized by length of the reference structure)\n";
-    
+            fcout(os, "TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
+        os << "(You should use TM-score normalized by length of the reference structure)\n";
+
         //output alignment
-        std::cout << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
-        std::cout << flexalign_res.seqxA << "\n";
-        std::cout << flexalign_res.seqM << "\n";
-        std::cout << flexalign_res.seqyA << "\n";
+        os << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
+        os << flexalign_res.seqxA << "\n";
+        os << flexalign_res.seqM << "\n";
+        os << flexalign_res.seqyA << "\n";
     }
     else if (opts.outfmt_opt==1)
     {
-        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+        fcout(os, ">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             xname, chainID1, xlen, flexalign_res.d0B, flexalign_res.Liden/xlen, flexalign_res.TM2);
-        std::cout << flexalign_res.seqxA << "\n";
-        fcout(">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+        os << flexalign_res.seqxA << "\n";
+        fcout(os, ">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
             yname, chainID2, ylen, flexalign_res.d0A, flexalign_res.Liden/ylen, flexalign_res.TM1);
-        std::cout << flexalign_res.seqyA << "\n";
+        os << flexalign_res.seqyA << "\n";
 
-        fcout("# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
+        fcout(os, "# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
             flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
 
         if (opts.i_opt)
-            fcout("# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
+            fcout(os, "# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
 
         if(opts.a_opt)
-            fcout("# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
+            fcout(os, "# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
 
         if(opts.u_opt)
-            fcout("# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
+            fcout(os, "# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
 
         if(opts.d_opt)
-            fcout("# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
+            fcout(os, "# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
 
-        std::cout << "$$$$\n";
+        os << "$$$$\n";
     }
     else if (opts.outfmt_opt==2)
     {
-        fcout("%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
+        fcout(os, "%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
             xname, chainID1, yname, chainID2,
             flexalign_res.TM2, flexalign_res.TM1, flexalign_res.rmsd0, flexalign_res.Liden/xlen, flexalign_res.Liden/ylen, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0,
             xlen, ylen, flexalign_res.n_ali8);
     }
-    std::cout << std::endl;
+    os << std::endl;
 
     if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_matrix(
-            opts.fname_matrix, flexalign_res.tu_vec);
+            opts.fname_matrix, flexalign_res.tu_vec, os);
 
     if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
             opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
