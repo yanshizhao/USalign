@@ -1747,6 +1747,69 @@ void normalize_dir_options(const std::string& dir_opt,
     out_dir2_opt = dir_opt + dir2_opt;
 }
 
+struct MMalignPairTask
+{
+    int chain1_idx;
+    int chain2_idx;
+    int order;
+};
+
+void build_mmalign_pair_tasks(const std::vector<std::string>& chain1_list,
+    const std::vector<std::string>& chain2_list,
+    bool upper_triangular,
+    bool dirpair,
+    std::vector<MMalignPairTask>& tasks)
+{
+    for (int chain1_idx = 0; chain1_idx < (int)chain1_list.size(); chain1_idx++)
+    {
+        if (dirpair)
+        {
+            tasks.push_back({chain1_idx, chain1_idx, (int)tasks.size()});
+            continue;
+        }
+        int j_start = upper_triangular ? (chain1_idx + 1) : 0;
+        for (int chain2_idx = j_start; chain2_idx < (int)chain2_list.size(); chain2_idx++)
+        {
+            tasks.push_back({chain1_idx, chain2_idx, (int)tasks.size()});
+        }
+    }
+}
+
+void run_mmalign_batch(AlignCommonInput& common_inputs,
+    const std::string& dir1_opt,
+    const std::string& dir2_opt,
+    bool upper_triangular,
+    bool dirpair)
+{
+    const ParsedInput& parsed_input = common_inputs.parsed_input;
+    std::vector<MMalignPairTask> tasks;
+    build_mmalign_pair_tasks(parsed_input.chain1_list, parsed_input.chain2_list,
+        upper_triangular, dirpair, tasks);
+
+    int task_num = (int)tasks.size();
+    std::vector<std::string> out_lines(task_num);
+
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads)
+    for (int task_idx = 0; task_idx < task_num; task_idx++)
+    {
+        const MMalignPairTask& task = tasks[task_idx];
+        AlignCommonInput task_input = common_inputs;
+        task_input.user_options.xname = parsed_input.chain1_list[task.chain1_idx];
+        task_input.user_options.yname = parsed_input.chain2_list[task.chain2_idx];
+        task_input.control_options.parallel_threads = 1;
+        std::vector<std::string> chain1_files(1, task_input.user_options.xname);
+        std::vector<std::string> chain2_files(1, task_input.user_options.yname);
+        MMalignParams mm_params;
+        fill_mmalign_params(mm_params, dir1_opt, dir2_opt, chain1_files, chain2_files);
+        std::stringstream out_stream;
+        MMalign_main(task_input, mm_params, out_stream);
+        out_lines[task.order] = out_stream.str();
+    }
+
+    for (int task_idx = 0; task_idx < task_num; task_idx++)
+        std::cout << out_lines[task_idx];
+}
+
 int MMalign(AlignCommonInput& common_inputs)
 {
     UserOptions& user_opts = common_inputs.user_options;
@@ -1758,20 +1821,7 @@ int MMalign(AlignCommonInput& common_inputs)
         std::string norm_dir1;
         std::string norm_dir2;
         normalize_dir_options(user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, norm_dir1, norm_dir2);
-        for (int chain1_idx=0; chain1_idx<(int)parsed_input.chain1_list.size(); chain1_idx++)
-        {
-            user_opts.xname = parsed_input.chain1_list[chain1_idx];
-            std::vector<std::string> tmp_vec1(1, user_opts.xname);
-            int j_start = (user_opts.dir_opt.size() > 0) * (chain1_idx + 1);
-            for (int chain2_idx=j_start; chain2_idx<(int)parsed_input.chain2_list.size(); chain2_idx++)
-            {
-                user_opts.yname = parsed_input.chain2_list[chain2_idx];
-                std::vector<std::string> tmp_vec2(1, user_opts.yname);
-                MMalignParams mm_params;
-                fill_mmalign_params(mm_params, norm_dir1, norm_dir2, tmp_vec1, tmp_vec2);
-                MMalign_main(common_inputs, mm_params);
-            }
-        }
+        run_mmalign_batch(common_inputs, norm_dir1, norm_dir2, user_opts.dir_opt.size() > 0, false);
     }
     else if (user_opts.dirpair_opt.size()==0)
     {
@@ -1782,16 +1832,7 @@ int MMalign(AlignCommonInput& common_inputs)
     }
     else
     {
-        for (int i=0;i<parsed_input.chain1_list.size();i++)
-        {
-            user_opts.xname=parsed_input.chain1_list[i];
-            user_opts.yname=parsed_input.chain2_list[i];
-            std::vector<std::string> tmp_vec1(1, user_opts.xname);
-            std::vector<std::string> tmp_vec2(1, user_opts.yname);
-            MMalignParams mm_params;
-            fill_mmalign_params(mm_params, user_opts.dirpair_opt, user_opts.dirpair_opt, tmp_vec1, tmp_vec2);
-            MMalign_main(common_inputs, mm_params);
-        }
+        run_mmalign_batch(common_inputs, user_opts.dirpair_opt, user_opts.dirpair_opt, false, true);
     }
     ctrl_opts.chainmapfile.clear();
     return 0;
