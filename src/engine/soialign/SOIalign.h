@@ -285,7 +285,8 @@ inline void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
     const std::string &secx, const std::string &secy,
     int xlen, int ylen, const std::vector<std::string> sequence,
     const ChainPairAlignOptions& align_opts, SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    std::ostream& os = std::cout)
 {
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
@@ -314,7 +315,7 @@ inline void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
     int j;
     CPalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
         chain_align_res,
-        xlen, ylen, sequence, align_opts);
+        xlen, ylen, sequence, align_opts, os);
     chain_align_res.do_vec.clear();
     if (mm_opt==6)
     {
@@ -745,7 +746,8 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     const std::vector<std::string> sequence,
     const ChainPairAlignOptions& align_opts,
     std::vector<double>& dist_list,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    std::ostream& os = std::cout)
 {
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
@@ -792,7 +794,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     soi_search_state.iteration_max=(fast_opt)?2:30;
 
     soi_align_initial_seq(xa_c, ya_c, seqx, seqy, secx, secy,
-        xlen, ylen, sequence, align_opts, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt);
+        xlen, ylen, sequence, align_opts, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt, os);
     soi_align_initial_closek(xa_c, ya_c, xk, yk, closeK_opt,
         xlen, ylen, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt);
 
@@ -814,7 +816,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     if(!flag)
     {
-        std::cout << "There is no alignment between the two structures! "
+        os << "There is no alignment between the two structures! "
              << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
         init_rt_mat(t0, u0);
@@ -1050,7 +1052,7 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
     const std::vector<std::string>& sequence,
     std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
-    int outfmt_opt)
+    int outfmt_opt, std::ostream& os = std::cout)
 {
     chain_align_res.invmap.assign(ylen + 1, 0);
     if (align_opts.se_opt)
@@ -1074,7 +1076,7 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
     }
     else SOIalign_main(xa, ya, xk, yk, closeK_opt,
         seqx, seqy, secx, secy, chain_align_res,
-        xlen, ylen, sequence, align_opts, dist_list, secx_bond, secy_bond, mm_opt);
+        xlen, ylen, sequence, align_opts, dist_list, secx_bond, secy_bond, mm_opt, os);
 }
 
 #endif

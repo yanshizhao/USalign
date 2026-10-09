@@ -1879,7 +1879,8 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     ChainPairAlignResult& chain_align_res,
     const int xlen, const int ylen,
     const std::vector<std::string> sequence,
-    const ChainPairAlignOptions& align_opts)
+    const ChainPairAlignOptions& align_opts,
+    std::ostream& os = std::cout)
 {
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
@@ -1938,7 +1939,7 @@ inline int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
     }
     if(!flag)
     {
-        std::cout << "There is no alignment between the two structures! "
+        os << "There is no alignment between the two structures! "
              << "Program stop with no result!" << std::endl;
         TM1=TM2=TM3=TM4=TM5=0;
         init_rt_mat(t0, u0);
@@ -2073,7 +2074,8 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     ChainPairAlignResult& chain_align_res,
     const int xlen, const int ylen,
     const std::vector<std::string>& sequence,
-    const ChainPairAlignOptions& align_opts)
+    const ChainPairAlignOptions& align_opts,
+    std::ostream& os = std::cout)
 {
     Vec3& t0 = chain_align_res.t0;
     RotMat& u0 = chain_align_res.u0;
@@ -2127,7 +2129,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
 
     ChainPairAlignResult cp_trial_res = chain_align_res;
     TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        cp_trial_res, xlen*2, ylen, sequence, cp_trial_opts);
+        cp_trial_res, xlen*2, ylen, sequence, cp_trial_opts, os);
     t0 = cp_trial_res.t0;
     u0 = cp_trial_res.u0;
     TM3 = cp_trial_res.TM3;
@@ -2163,7 +2165,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     rmsd0=Liden=n_ali=n_ali8=0;
 
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
-        chain_align_res, xlen, ylen, sequence, cp_trial_opts);
+        chain_align_res, xlen, ylen, sequence, cp_trial_opts, os);
     seqxA_cp = chain_align_res.seqxA;
     seqyA_cp = chain_align_res.seqyA;
 
@@ -2182,7 +2184,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
         ChainPairAlignResult cp_best_res = chain_align_res;
         cp_best_res.n_ali8 = cp_aln_best;
         TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-            cp_best_res, xlen, ylen, sequence, cp_trial_opts);
+            cp_best_res, xlen, ylen, sequence, cp_trial_opts, os);
         t0 = cp_best_res.t0;
         u0 = cp_best_res.u0;
         TM3 = cp_best_res.TM3;
@@ -2214,7 +2216,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     }
 
     TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        chain_align_res, xlen, ylen, sequence, align_opts);
+        chain_align_res, xlen, ylen, sequence, align_opts, os);
     seqxA_cp = chain_align_res.seqxA;
     seqyA_cp = chain_align_res.seqyA;
 

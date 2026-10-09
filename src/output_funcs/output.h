@@ -16,7 +16,8 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
     const std::string& chain_id1, const std::string& chain_id2,
     const std::vector<std::string>& resi_vec1,
     const std::vector<std::string>& resi_vec2,
-    const std::vector<double>* dist_arg = NULL);
+    const std::vector<double>* dist_arg = NULL,
+    std::ostream& os = std::cout);
 
 void output_do_distance_table(std::ostream& os,
     const std::string& seqxA, const std::string& seqyA,
