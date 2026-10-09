@@ -20,9 +20,10 @@ void run_flexalign_main(
     const std::string &secx, const std::string &secy,
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
-    const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &flexalign_res){
+    const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &flexalign_res,
+    std::ostream& os){
     flexalign_res.hingeNum = flexalign_main(
-        xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, flexalign_res);
+        xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, flexalign_res, os);
 
     bool refine_fallback = (hinge_opt) && (flexalign_res.hingeNum <= 1) && (flexalign_res.n_ali8 < 0.6 * getmin(xlen, ylen));
     if (refine_fallback)
@@ -32,7 +33,7 @@ void run_flexalign_main(
         tu2t_u(flexalign_res.tu_vec[0], refine_res.t0, refine_res.u0);
 
         refine_res.hingeNum = flexalign_main(
-            xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, refine_res);
+            xa, ya, seqx, seqy, secx, secy, xlen, ylen, common_inputs, mol_type, hinge_opt, ss_opt, refine_res, os);
 
         double TM = (flexalign_res.TM1 > flexalign_res.TM2) ? flexalign_res.TM1 : flexalign_res.TM2;
         double TM_h = (refine_res.TM1 > refine_res.TM2) ? refine_res.TM1 : refine_res.TM2;
@@ -56,7 +57,8 @@ void flexalign_usbcat_main(
     int mol_type, double best_global_max_TM,
     int sparse_val,
     const FlexalignParams& flex_params,
-    FlexAlignResult& flexalign_res){
+    FlexAlignResult& flexalign_res,
+    std::ostream& os){
     FlexAlignResult global_best_align = flexalign_main_res;
 
     USBCATParams usb_cat_para;
@@ -82,7 +84,7 @@ void flexalign_usbcat_main(
         flex_params.hinge_opt, usb_cat_para, xa, 
         ya, seqx, seqy, secx, secy, common_inputs, 
         mol_type, xlen, ylen, flexalign_res.d0_out,
-        global_best_align, best_global_max_TM);
+        global_best_align, best_global_max_TM, os);
 
     if (best_global_max_TM < 0)
     {
@@ -104,20 +106,109 @@ void fill_flexalign_params(
     flex_params.sparse_val = 0;
 }
 
+struct FlexalignFileData
+{
+    std::vector<std::vector<std::string> > pdb_lines;
+    std::vector<std::string> chain_ids;
+    std::vector<int> mol_types;
+    int chain_num;
+};
+
+struct FlexalignPairTask
+{
+    int file1_idx;
+    int chain1_idx;
+    int file2_idx;
+    int chain2_idx;
+    int order;
+};
+
+const FlexalignFileData* load_flexalign_file_cache(std::map<std::string, FlexalignFileData>& cache,
+    const std::string& name, int infmt_opt, const PdbParseOptions& pdb_parse_opts)
+{
+    std::map<std::string, FlexalignFileData>::iterator cached = cache.find(name);
+    if (cached != cache.end()) return &cached->second;
+    FlexalignFileData& file_data = cache[name];
+    file_data.chain_num = (int)get_PDB_lines(name, file_data.pdb_lines, file_data.chain_ids,
+        file_data.mol_types, infmt_opt, pdb_parse_opts);
+    return &file_data;
+}
+
+void run_flexalign_task(const FlexalignPairTask& task,
+    const AlignCommonInput& common_inputs, const FlexalignParams& flex_params,
+    const FlexalignFileData& file1, const FlexalignFileData& file2,
+    const std::string& xname, const std::string& yname,
+    int read_resi, std::ostream& os)
+{
+    UserOptions task_user_opts = common_inputs.user_options;
+    task_user_opts.xname = xname;
+    task_user_opts.yname = yname;
+
+    ParsedChain chain1_data;
+    if (!parse_chain(xname, file1.pdb_lines, file1.chain_ids, file1.mol_types,
+            task.chain1_idx, task_user_opts.mol_opt, task_user_opts.mirror_opt, read_resi,
+            task_user_opts.atom_opt, chain1_data))
+        return;
+
+    ParsedChain chain2_data;
+    if (!parse_chain(yname, file2.pdb_lines, file2.chain_ids, file2.mol_types,
+            task.chain2_idx, task_user_opts.mol_opt, 0, read_resi,
+            task_user_opts.atom_opt, chain2_data))
+        return;
+
+    AlignCommonInput task_input = common_inputs;
+    task_input.user_options = task_user_opts;
+    if (task_user_opts.byresi_opt)
+        extract_aln_from_resi(task_input.parsed_input.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
+            chain1_data.resi_vec, chain2_data.resi_vec, task_user_opts.byresi_opt);
+
+    FlexAlignResult task_result;
+    run_flexalign(chain1_data, chain2_data, task_input, flex_params, task_result, os);
+
+    if (task_user_opts.outfmt_opt==0) print_version(USALIGN_VERSION, os);
+    output_flexalign_results(chain1_data, chain2_data, task_result, task_user_opts, false, os);
+}
+
+void build_flexalign_pair_tasks(const std::vector<std::string>& chain1_list,
+    const std::vector<std::string>& chain2_list,
+    const std::vector<const FlexalignFileData*>& files1,
+    const std::vector<const FlexalignFileData*>& files2,
+    bool upper_triangular, bool dirpair, std::vector<FlexalignPairTask>& tasks)
+{
+    for (int file1_idx = 0; file1_idx < (int)chain1_list.size(); file1_idx++)
+    {
+        const FlexalignFileData& file1 = *files1[file1_idx];
+        if (!file1.chain_num)
+        {
+            std::cerr<<"Warning! Cannot parse file: "<<chain1_list[file1_idx]
+                <<". Chain number 0."<<std::endl;
+            continue;
+        }
+        for (int chain1_idx = 0; chain1_idx < file1.chain_num; chain1_idx++)
+        {
+            int file2_start = upper_triangular ? (file1_idx + 1) : 0;
+            for (int file2_idx = file2_start; file2_idx < (int)chain2_list.size(); file2_idx++)
+            {
+                if (dirpair && file1_idx!=file2_idx) continue;
+                const FlexalignFileData& file2 = *files2[file2_idx];
+                if (!file2.chain_num)
+                {
+                    std::cerr<<"Warning! Cannot parse file: "<<chain2_list[file2_idx]
+                        <<". Chain number 0."<<std::endl;
+                    continue;
+                }
+                for (int chain2_idx = 0; chain2_idx < file2.chain_num; chain2_idx++)
+                    tasks.push_back({file1_idx, chain1_idx, file2_idx, chain2_idx, (int)tasks.size()});
+            }
+        }
+    }
+}
+
 int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_params, FlexAlignResult& flex_result)
 {
-    UserOptions& user_opts = common_inputs.user_options;
-    ParsedInput& parsed_input = common_inputs.parsed_input;
+    const UserOptions& user_opts = common_inputs.user_options;
+    const ParsedInput& parsed_input = common_inputs.parsed_input;
 
-    std::vector<std::vector<std::string> > PDB_lines1; // text of chain1
-    std::vector<std::vector<std::string> > PDB_lines2; // text of chain2
-    std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
-    std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
-    std::vector<std::string> chainID_list1;      // list of chainID1
-    std::vector<std::string> chainID_list2;      // list of chainID2
-    int    i,j;                // file index
-    int    chain_i,chain_j;    // chain index
-    int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
     const PdbParseOptions pdb_parse_opts1{
@@ -129,83 +220,40 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
         user_opts.split_opt, user_opts.het_opt,
         user_opts.chain2parse2, user_opts.model2parse2};
 
-    // loop over file names
-    for (i=0;i<parsed_input.chain1_list.size();i++)
+    std::map<std::string, FlexalignFileData> file1_cache;
+    std::map<std::string, FlexalignFileData> file2_cache;
+    std::vector<const FlexalignFileData*> files1(parsed_input.chain1_list.size());
+    std::vector<const FlexalignFileData*> files2(parsed_input.chain2_list.size());
+    for (int i=0;i<(int)parsed_input.chain1_list.size();i++)
+        files1[i] = load_flexalign_file_cache(file1_cache, parsed_input.chain1_list[i],
+            user_opts.infmt1_opt, pdb_parse_opts1);
+    for (int j=0;j<(int)parsed_input.chain2_list.size();j++)
+        files2[j] = load_flexalign_file_cache(file2_cache, parsed_input.chain2_list[j],
+            user_opts.infmt2_opt, pdb_parse_opts2);
+
+    std::vector<FlexalignPairTask> tasks;
+    build_flexalign_pair_tasks(parsed_input.chain1_list, parsed_input.chain2_list,
+        files1, files2, user_opts.dir_opt.size() > 0, user_opts.dirpair_opt.size() != 0, tasks);
+
+    int task_num = (int)tasks.size();
+    std::vector<std::string> out_lines(task_num);
+
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads)
+    for (int task_idx = 0; task_idx < task_num; task_idx++)
     {
-        // parse chain 1
-        user_opts.xname=parsed_input.chain1_list[i];
-        xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
-            pdb_parse_opts1);
-        if (!xchainnum)
-        {
-            std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
-                <<". Chain number 0."<<std::endl;
-            continue;
-        }
-        for (chain_i=0;chain_i<xchainnum;chain_i++)
-        {
-            ParsedChain chain1_data;
-            if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
-                    chain_i, user_opts.mol_opt, user_opts.mirror_opt, read_resi,
-                    user_opts.atom_opt, chain1_data))
-                continue;
-
-            int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
-            for (j = j_start; j < parsed_input.chain2_list.size(); j++)
-            {
-                if (user_opts.dirpair_opt.size() && i!=j) continue;
-                // parse chain 2
-                if (PDB_lines2.size() == 0)
-                {
-                    user_opts.yname = parsed_input.chain2_list[j];
-                    ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
-                        pdb_parse_opts2);
-                    if (!ychainnum)
-                    {
-                        std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
-                        continue;
-                    }
-                }
-                for (chain_j=0;chain_j<ychainnum;chain_j++)
-                {
-                    ParsedChain chain2_data;
-                    if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,
-                            chain_j, user_opts.mol_opt, 0, read_resi,
-                            user_opts.atom_opt, chain2_data))
-                        continue;
-
-                    if (user_opts.byresi_opt)
-                        extract_aln_from_resi(parsed_input.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
-                            chain1_data.resi_vec, chain2_data.resi_vec, user_opts.byresi_opt);
-
-                    flex_result = FlexAlignResult();
-                    run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flex_result);
-
-                    if (user_opts.outfmt_opt==0) print_version(USALIGN_VERSION);
-                    output_flexalign_results(chain1_data, chain2_data, flex_result, user_opts, false);
-                } // chain_j
-                if (parsed_input.chain2_list.size()>1)
-                {
-                    user_opts.yname.clear();
-                    PDB_lines2.clear();
-                    chainID_list2.clear();
-                    mol_vec2.clear();
-                }
-            } // j
-
-            PDB_lines1[chain_i].clear();
-        } // chain_i
-
-        user_opts.xname.clear();
-        PDB_lines1.clear();
-        chainID_list1.clear();
-        mol_vec1.clear();
-    } // i
-
-    if (parsed_input.chain2_list.size()==1)
-    {
-        user_opts.yname.clear();
+        const FlexalignPairTask& task = tasks[task_idx];
+        std::stringstream out_stream;
+        run_flexalign_task(task, common_inputs, flex_params,
+            *files1[task.file1_idx], *files2[task.file2_idx],
+            parsed_input.chain1_list[task.file1_idx], parsed_input.chain2_list[task.file2_idx],
+            read_resi, out_stream);
+        out_lines[task.order] = out_stream.str();
     }
+
+    for (int task_idx = 0; task_idx < task_num; task_idx++)
+        std::cout << out_lines[task_idx];
+
+    flex_result = FlexAlignResult();
     return 0;
 }
 

@@ -1727,7 +1727,8 @@ inline void score_split_substruct(
         const std::vector<std::string> &sequence,
         const ChainPairAlignOptions& align_opts,
         Vec3& t0, RotMat& u0,
-        SubstructAlignRes& sub_align_res)
+        SubstructAlignRes& sub_align_res,
+        std::ostream& os = std::cout)
 {
     ChainPairAlignResult chain_align_res = { 0};
     chain_align_res.d0_out = 5.0;
@@ -1736,7 +1737,7 @@ inline void score_split_substruct(
     chain_align_res.invmap.assign(ylen + 1, -1);
     chain_align_res.do_vec = do_vec;
     TMalign_main(sub.xa_hinge_trimmed, sub.ya_hinge_trimmed, sub.seqx_hinge_trimmed, sub.seqy_hinge_trimmed, sub.secx_hinge_trimmed, sub.secy_hinge_trimmed,
-        chain_align_res, sub.xlen_hinge_trimmed, sub.ylen_hinge_trimmed, sequence, align_opts);
+        chain_align_res, sub.xlen_hinge_trimmed, sub.ylen_hinge_trimmed, sequence, align_opts, os);
     t0 = chain_align_res.t0;
     u0 = chain_align_res.u0;
     do_vec = chain_align_res.do_vec;
@@ -1830,7 +1831,8 @@ inline void refine_via_split_alignment(
         const int ylen,
         const std::vector<std::string> &sequence,
         const ChainPairAlignOptions& align_opts,
-        ChainPairAlignResult& chain_align_res)
+        ChainPairAlignResult& chain_align_res,
+        std::ostream& os = std::cout)
 {
     AlignSubstruct sub_struct[NUM_SPLIT_VARIANTS];
     extract_split_substruct(xa, ya, seqx, seqy, secx, secy,
@@ -1838,10 +1840,10 @@ inline void refine_via_split_alignment(
     SubstructAlignRes sub_align_res[NUM_SPLIT_VARIANTS];
     score_split_substruct(sub_struct[0], xa, ya, seqx, seqy, chain_align_res.do_vec,
         xlen, ylen, sequence, align_opts,
-        chain_align_res.t0, chain_align_res.u0, sub_align_res[0]);
+        chain_align_res.t0, chain_align_res.u0, sub_align_res[0], os);
     score_split_substruct(sub_struct[1], xa, ya, seqx, seqy, chain_align_res.do_vec,
         xlen, ylen, sequence, align_opts,
-        chain_align_res.t0, chain_align_res.u0, sub_align_res[1]);
+        chain_align_res.t0, chain_align_res.u0, sub_align_res[1], os);
     fill_sub_struct_align_result(sub_align_res, tu_vec, chain_align_res);
 }
 
@@ -1943,7 +1945,8 @@ inline void search_hinge_regions(
         const std::string &secy,
         const int xlen, const int ylen, const int hinge_opt, const std::vector<std::string> &sequence,
         const ChainPairAlignOptions& align_opts,
-        ChainPairAlignResult& chain_align_res)
+        ChainPairAlignResult& chain_align_res,
+        std::ostream& os = std::cout)
 {
     int r;
     for (int r2=0;r2<chain_align_res.seqM.size();r2++)
@@ -1973,7 +1976,7 @@ inline void search_hinge_regions(
         cur_hing_res.tmalign_res.do_vec = chain_align_res.do_vec;
         TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed,
             secx_hinge_trimmed, secy_hinge_trimmed, cur_hing_res.tmalign_res,
-            xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts);
+            xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts, os);
         chain_align_res.t0 = cur_hing_res.tmalign_res.t0;
         chain_align_res.u0 = cur_hing_res.tmalign_res.u0;
         chain_align_res.do_vec = cur_hing_res.tmalign_res.do_vec;
@@ -2047,7 +2050,8 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
     int mol_type, int hinge_opt, int ss_opt,
-    FlexAlignResult& flexalign_res)
+    FlexAlignResult& flexalign_res,
+    std::ostream& os = std::cout)
 {
     const UserOptions& user_opts = common_inputs.user_options;
     const ParsedInput& parsed_input = common_inputs.parsed_input;
@@ -2068,7 +2072,7 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     if (round2==0)
     {
         TMalign_main(xa, ya, seqx, seqy, secx, secy, flexalign_res,
-            xlen, ylen, parsed_input.sequence, align_opts);
+            xlen, ylen, parsed_input.sequence, align_opts, os);
 
         t_u2tu(flexalign_res.t0,flexalign_res.u0,tu_tmp);
         flexalign_res.tu_vec.push_back(tu_tmp);
@@ -2091,11 +2095,11 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     if (round2) refine_via_split_alignment(
         xa, ya, flexalign_res.tu_vec, seqx, seqy, secx, secy,
         xlen, ylen, parsed_input.sequence, align_opts,
-        flexalign_res);
+        flexalign_res, os);
     search_hinge_regions(
         xa, ya, xt, flexalign_res.tu_vec, seqx, seqy, secx, secy,
         xlen, ylen, hinge_opt, parsed_input.sequence, align_opts,
-        flexalign_res);
+        flexalign_res, os);
 
     if (flexalign_res.tu_vec.size()<=1)
     {
@@ -2171,7 +2175,8 @@ void run_flexalign_main(
     const std::string &secx, const std::string &secy,
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
-    const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &flexalign_res);
+    const int mol_type, const int hinge_opt, const int ss_opt, FlexAlignResult &flexalign_res,
+    std::ostream& os = std::cout);
 
 
 inline void align_with_flexalign_main(
@@ -2181,14 +2186,15 @@ inline void align_with_flexalign_main(
     int xlen, int ylen,
     const AlignCommonInput& common_inputs,
     int mol_type, int hinge_opt,
-    FlexAlignResult& flexalign_res)
+    FlexAlignResult& flexalign_res,
+    std::ostream& os = std::cout)
 {
     double TM_best_max = -1.0;
     for (int cur_ss_opt = 0; cur_ss_opt <= MAX_SEC_STRUCT_OPT; cur_ss_opt++)
     {
         FlexAlignResult cur_flexalign_res;
         run_flexalign_main(xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, common_inputs, mol_type, hinge_opt, cur_ss_opt, cur_flexalign_res);
+            xlen, ylen, common_inputs, mol_type, hinge_opt, cur_ss_opt, cur_flexalign_res, os);
         double cur_max_TM = (cur_flexalign_res.TM1 > cur_flexalign_res.TM2) ? cur_flexalign_res.TM1 : cur_flexalign_res.TM2;
         if (cur_max_TM > TM_best_max)
         {
@@ -2213,7 +2219,8 @@ void flexalign_usbcat_main(
     int mol_type, double best_global_max_TM, // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
     int sparse_val,
     const FlexalignParams& flex_params,
-    FlexAlignResult& flexalign_res);
+    FlexAlignResult& flexalign_res,
+    std::ostream& os = std::cout);
 
 
 
@@ -2224,7 +2231,8 @@ inline void run_flexalign(
     const ParsedChain& chain2_data,
     const AlignCommonInput& common_inputs,
     const FlexalignParams& flex_params,
-    FlexAlignResult& flexalign_res)
+    FlexAlignResult& flexalign_res,
+    std::ostream& os = std::cout)
 {
     CoordArray xa = chain1_data.chain_coords;
     CoordArray ya = chain2_data.chain_coords;
@@ -2239,7 +2247,7 @@ inline void run_flexalign(
     FlexAlignResult flexalign_main_res;
     align_with_flexalign_main(
         xa, ya, seqx, seqy, secx, secy, xa_len, ya_len,
-        common_inputs, mol_type, flex_params.hinge_opt, flexalign_main_res);
+        common_inputs, mol_type, flex_params.hinge_opt, flexalign_main_res, os);
     double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
 
     switch (flex_params.mode)
@@ -2255,7 +2263,7 @@ inline void run_flexalign(
                 flexalign_usbcat_main(
                     xa, ya, seqx, seqy, secx, secy, xa_len, ya_len, common_inputs,
                     flexalign_main_res, mol_type, best_global_max_TM, flex_params.sparse_val,
-                    flex_params, flexalign_res);
+                    flex_params, flexalign_res, os);
             }
             break;
         case FLEX_BEST:
@@ -3326,7 +3334,8 @@ inline void align_cur_region(
     const AlignCommonInput& common_inputs,
     const int mol_type,
     bool& valid,
-    FlexAlignResult& cur_region_align_res)
+    FlexAlignResult& cur_region_align_res,
+    std::ostream& os = std::cout)
 {
     const RegionMeta& region_meta = bounds.region_meta[region_indx];
     int orig_region_idx = region_meta.original_region_idx;
@@ -3346,7 +3355,7 @@ inline void align_cur_region(
 
     align_with_flexalign_main(
         cur_reg_data.xa, cur_reg_data.ya, cur_reg_data.seqx, cur_reg_data.seqy, cur_reg_data.secx, cur_reg_data.secy,
-        region_x_len, region_y_len, common_inputs, mol_type, local_hinge_opt, cur_region_align_res);
+        region_x_len, region_y_len, common_inputs, mol_type, local_hinge_opt, cur_region_align_res, os);
 }
 
 inline void run_region_align(
@@ -3363,7 +3372,8 @@ inline void run_region_align(
     const std::string& secx,
     const std::string& secy,
     const AlignCommonInput& common_inputs,
-    const int mol_type)
+    const int mol_type,
+    std::ostream& os = std::cout)
 {
     for (int region_indx = 0; region_indx < region_num; region_indx++)
     {
@@ -3372,7 +3382,7 @@ inline void run_region_align(
         align_cur_region(
             cur_bound_pool, region_indx, hinge_set, remaining_hinges,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            common_inputs, mol_type, region_valid, cur_align_res);
+            common_inputs, mol_type, region_valid, cur_align_res, os);
 
         int orig_region_idx = cur_bound_pool.region_meta[region_indx].original_region_idx;
         if (!region_valid) continue;
@@ -3641,7 +3651,8 @@ inline void update_global_best_align(
     const int ylen,
     const double d0_out,
     FlexAlignResult& best_res,
-    double& best_global_max_TM)
+    double& best_global_max_TM,
+    std::ostream& os = std::cout)
 {
     for (size_t pool_idx = 0; pool_idx < region_bound_pool.region_bounds.size(); pool_idx++)
     {
@@ -3662,7 +3673,7 @@ inline void update_global_best_align(
             region_align_res, remaining_hinges,
             cur_bound_pool, region_num, hinge_set,
             usb_cat_para, xa, ya, seqx, seqy, secx, secy,
-            common_inputs, mol_type);
+            common_inputs, mol_type, os);
 
         GlobalAlignResult global_align_res;
         global_align_res.res_tu.assign(xlen, -1);
@@ -3695,7 +3706,8 @@ void flexalign_usbcat_main(
     int mol_type, double best_global_max_TM,
     int sparse_val,
     const FlexalignParams& flex_params,
-    FlexAlignResult& flexalign_res);
+    FlexAlignResult& flexalign_res,
+    std::ostream& os);
 
 void fill_flexalign_params(
     FlexalignParams& flex_params,
