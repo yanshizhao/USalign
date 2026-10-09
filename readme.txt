@@ -146,7 +146,7 @@ dispatches to the engine entry point.
        programs).
    1.2 Manual compilation in bash (do not add -static; macOS cannot link
        statically):
-           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/common/orchestration.cpp src/output_funcs/output.cpp
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/output_funcs/output.cpp
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
@@ -154,7 +154,7 @@ dispatches to the engine entry point.
            mingw32-make
        Same targets as in 1.1: only USalign is built by default.
    2.2 Manual compilation in PowerShell (-static is required on Windows):
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/common/orchestration.cpp src/output_funcs/output.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/output_funcs/output.cpp
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
