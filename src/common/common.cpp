@@ -1,5 +1,5 @@
 #include "common.h"
-#include "se.h
+#include "se.h"
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -1479,7 +1479,7 @@ std::string get_default_outdir()
 std::string resolve_outdir(const std::string& given_outdir)
 {
     return given_outdir.empty() ? get_default_outdir() : given_outdir;
-}"
+}
 
 void align_chain_pair(ChainPairAlignResult& chain_align_res,
     CoordArray& xa, CoordArray& ya,
