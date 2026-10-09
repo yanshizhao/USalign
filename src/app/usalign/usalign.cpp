@@ -10,6 +10,10 @@
 #include "SOIalign.h"
 #include "flexalign.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 void print_extra_help()
 {
     std::cout <<
@@ -820,6 +824,15 @@ int main(int argc, char *argv[])
     parse_arguments(argc, argv, common_inputs);
 
     postprocess_arguments(common_inputs);
+
+#ifdef _OPENMP
+    if (ctrl_opts.parallel_threads > 1)
+    {
+        omp_set_max_active_levels(1);
+        omp_set_nested(0);
+        omp_set_dynamic(0);
+    }
+#endif
 
     bool single_mm1_align = is_single_mm1_align(ctrl_opts.mm_opt, user_opts.dir_opt, user_opts.dir1_opt, user_opts.dir2_opt, user_opts.dirpair_opt);
     if (user_opts.outfmt_opt == 2 && !single_mm1_align)
