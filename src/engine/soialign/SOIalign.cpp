@@ -39,7 +39,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
 #ifdef _OPENMP
             SOIEgsMaxCell best = {0, -1, -1};
             #pragma omp parallel for schedule(static) num_threads(parallel_threads) \
-                reduction(soiegsmax:best)
+                reduction(soiegsmax:best) private(j)
             for (i=0;i<xlen;i++)
             {
                 if (fwdmap[i]>=0) continue;
