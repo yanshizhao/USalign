@@ -38,12 +38,9 @@ void parse_file_into_cache(const std::string& fname,
 #ifdef _OPENMP
 int run_batch_parallel(
     const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
-    const std::vector<std::string>& sequence,
-    const std::string& dir_opt, const std::string& dir1_opt,
-    const std::string& dir2_opt, const std::string& dirpair_opt,
-    const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
-    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts,
-    bool do_opt, int parallel_threads = 1);
+    const std::vector<std::string>& sequence, const std::string& dir_opt, const std::string& dir1_opt,
+    const std::string& dir2_opt, const std::string& dirpair_opt, const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
+    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts, bool do_opt, int parallel_threads = 1);
 #endif
 
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs);
