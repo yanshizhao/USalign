@@ -534,16 +534,13 @@ void parse_file_into_cache(const std::string& fname,
 // TMalign, RNAalign, CPalign, TMscore
 int run_batch_parallel(
     const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
-    const std::vector<std::string>& sequence,
-    const std::string& dir_opt, const std::string& dir1_opt,
-    const std::string& dir2_opt, const std::string& dirpair_opt,
-    const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
-    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts,
-    bool do_opt, int parallel_threads)
+    const std::vector<std::string>& sequence, const std::string& dir_opt, const std::string& dir1_opt,
+    const std::string& dir2_opt, const std::string& dirpair_opt, const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
+    const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts, bool do_opt, int parallel_threads)
 {
     int i, j, chain_i;
 
-// ---- Phase 1: pre-parse all unique files, build task list ----
+    // ---- Phase 1: pre-parse all unique files, build task list ----
     std::vector<ParsedChain> all_chains;
     std::map<std::string, std::vector<int>> file_to_idx;
     std::vector<PairTask> tasks;
@@ -555,20 +552,25 @@ int run_batch_parallel(
     for (i = 0; i < (int)chain1_list.size(); i++) {
         const std::string key1 = cache_key(chain1_list[i], true);
         parse_file_into_cache(chain1_list[i], parse_opts1, all_chains, file_to_idx, key1);
+
         auto& c1_indices = file_to_idx[key1];
         for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
             int c1_idx = c1_indices[chain_i];
             if (c1_idx < 0) continue;
             int j_start = (dir_opt.size() > 0) * (i + 1);
+
             for (j = j_start; j < (int)chain2_list.size(); j++) {
                 if (dirpair_opt.size() && j != i) continue;
                 const std::string key2 = cache_key(chain2_list[j], false);
+
                 parse_file_into_cache(chain2_list[j], parse_opts2, all_chains, file_to_idx, key2);
                 auto& c2_indices = file_to_idx[key2];
+
                 for (int c2_i = 0; c2_i < (int)c2_indices.size(); c2_i++) {
                     int c2_idx = c2_indices[c2_i];
                     if (c2_idx < 0) continue;
                     tasks.push_back({c1_idx, c2_idx, (int)tasks.size()});
+
                 }
             }
         }
@@ -578,32 +580,34 @@ int run_batch_parallel(
     std::vector<std::string> out_lines(tasks.size());
     #pragma omp parallel for schedule(dynamic, 8) num_threads(parallel_threads)
     for (int t = 0; t < (int)tasks.size(); t++) {
-        auto& task = tasks[t]; auto& c1 = all_chains[task.chain1_idx];
+        auto& task = tasks[t];
+        auto& c1 = all_chains[task.chain1_idx];
         auto& c2 = all_chains[task.chain2_idx];
-        CoordArray xa_c = c1.chain_coords; CoordArray ya_c = c2.chain_coords;
+        CoordArray xa_c = c1.chain_coords;
+        CoordArray ya_c = c2.chain_coords;
+
         bool force_fast = (std::min(c1.chain_len, c2.chain_len) > 1500) ? true : align_opts.fast_opt;
         ChainPairAlignResult chain_align_res = { 0};
         chain_align_res.d0_out = 5.0;
+
         ChainPairAlignOptions pair_align_opts = align_opts;
         pair_align_opts.fast_opt = force_fast;
         pair_align_opts.parallel_threads = 1;
         pair_align_opts.ss_opt = 0;
         pair_align_opts.mol_type = c1.cur_complex_mol_list + c2.cur_complex_mol_list;
+
         align_chain_pair(chain_align_res, xa_c, ya_c, c1.chain_seq, c2.chain_seq,
             c1.chain_sec, c2.chain_sec, c1.chain_len, c2.chain_len,
             pair_align_opts, sequence, out_opts.outfmt_opt);
 
         std::stringstream ss;
-        std::string xname_out = c1.filename.substr(
-            dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
-        std::string yname_out = c2.filename.substr(
-            dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
+        std::string xname_out = c1.filename.substr( dir1_opt.size() + dir_opt.size() + dirpair_opt.size());
+        std::string yname_out = c2.filename.substr(dir2_opt.size() + dir_opt.size() + dirpair_opt.size());
 
         if (out_opts.outfmt_opt == 0) print_version(USALIGN_VERSION, ss);
 
         int right_num=0;
-        if (align_opts.cp_opt) output_cp(xname_out, yname_out,
-            chain_align_res.seqxA, out_opts.outfmt_opt, right_num, ss);
+        if (align_opts.cp_opt) output_cp(xname_out, yname_out, chain_align_res.seqxA, out_opts.outfmt_opt, right_num, ss);
 
         output_results(
             ChainPairDesc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len},
@@ -622,6 +626,7 @@ int run_batch_parallel(
 
     return 0;
 }
+
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs)
 {
     const UserOptions& user_opts = common_inputs.user_options;
