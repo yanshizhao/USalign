@@ -234,6 +234,9 @@ void run_soi_task(const SoiAlignPairTask& task,
     ChainPairAlignOptions soi_align_opts = soi_params.align;
     soi_align_opts.fast_opt = (getmin(xlen,ylen)>1500)?true:task_user_opts.fast_opt;
     soi_align_opts.mol_type = mol1+mol2;
+#ifdef _OPENMP
+    if (omp_get_active_level()>0) soi_align_opts.parallel_threads = 1;
+#endif
     soi_context.pair_distances.assign(ylen+1, 0.0);
 
     soi_align_pair(chain_align_res, xa, ya, soi_context.k_nearest1, soi_context.k_nearest2, soi_params.closeK_opt,
@@ -318,7 +321,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     int task_num = (int)tasks.size();
     std::vector<std::string> out_lines(task_num);
 
-#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) if(task_num>1)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) if(common_inputs.control_options.parallel_threads>1 && task_num>1)
     for (int task_idx = 0; task_idx < task_num; task_idx++)
     {
         const SoiAlignPairTask& task = tasks[task_idx];
