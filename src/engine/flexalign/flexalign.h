@@ -2064,6 +2064,10 @@ inline int flexalign_main(CoordArray& xa, CoordArray& ya,
     align_opts.cp_opt = false;
     align_opts.TMcut = -1;
     align_opts.parallel_threads = 1;
+#ifdef _OPENMP
+    if (omp_get_active_level()==0)
+        align_opts.parallel_threads = common_inputs.control_options.parallel_threads;
+#endif
     align_opts.ss_opt = ss_opt;
     align_opts.mol_type = mol_type;
 
