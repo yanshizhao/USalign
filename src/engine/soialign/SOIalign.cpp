@@ -1,7 +1,17 @@
 #include "SOIalign.h"
 
+#ifdef _OPENMP
+struct SOIEgsMaxCell { double score; int i; int j; };
+#pragma omp declare reduction(soiegsmax : SOIEgsMaxCell : \
+    omp_out = (omp_in.score > omp_out.score || \
+        (omp_in.score == omp_out.score && (omp_in.i < omp_out.i || \
+            (omp_in.i == omp_out.i && omp_in.j < omp_out.j)))) ? omp_in : omp_out) \
+    initializer(omp_priv = SOIEgsMaxCell{0, -1, -1})
+#endif
+
 void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<int>& invmap,
-    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt){
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads){
     int i;
     int j;
     std::vector<int> fwdmap(xlen, -1); // j=fwdmap[i];
@@ -16,21 +26,52 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
     double max_score;
     int maxi;
     int maxj;
+    bool omp_active = false;
+#ifdef _OPENMP
+    omp_active = (parallel_threads>1 && omp_get_active_level()==0);
+#endif
     while(1)
     {
         max_score=0;
         maxi=maxj=-1;
-        for (i=0;i<xlen;i++)
+        if (omp_active)
         {
-            if (fwdmap[i]>=0) continue;
-            for (j=0;j<ylen;j++)
+#ifdef _OPENMP
+            SOIEgsMaxCell best = {0, -1, -1};
+            #pragma omp parallel for schedule(static) num_threads(parallel_threads) \
+                reduction(soiegsmax:best)
+            for (i=0;i<xlen;i++)
             {
-                if (invmap[j]>=0 || score[i+1][j+1]<=max_score) continue;
-                if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,
-                    fwdmap,invmap)) continue;
-                maxi=i;
-                maxj=j;
-                max_score=score[i+1][j+1];
+                if (fwdmap[i]>=0) continue;
+                for (j=0;j<ylen;j++)
+                {
+                    if (invmap[j]>=0 || score[i+1][j+1]<=best.score) continue;
+                    if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,
+                        fwdmap,invmap)) continue;
+                    best.score=score[i+1][j+1];
+                    best.i=i;
+                    best.j=j;
+                }
+            }
+            max_score=best.score;
+            maxi=best.i;
+            maxj=best.j;
+#endif
+        }
+        else
+        {
+            for (i=0;i<xlen;i++)
+            {
+                if (fwdmap[i]>=0) continue;
+                for (j=0;j<ylen;j++)
+                {
+                    if (invmap[j]>=0 || score[i+1][j+1]<=max_score) continue;
+                    if (mm_opt==6 && !sec2sq(i,j,secx_bond,secy_bond,
+                        fwdmap,invmap)) continue;
+                    maxi=i;
+                    maxj=j;
+                    max_score=score[i+1][j+1];
+                }
             }
         }
         if (maxi<0) break; // no assignment;
@@ -277,7 +318,7 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     int task_num = (int)tasks.size();
     std::vector<std::string> out_lines(task_num);
 
-#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) if(task_num>1)
     for (int task_idx = 0; task_idx < task_num; task_idx++)
     {
         const SoiAlignPairTask& task = tasks[task_idx];

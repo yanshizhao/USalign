@@ -62,7 +62,8 @@ inline bool sec2sq(const int i, const int j,
 }
 
 void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<int>& invmap,
-    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt);
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads = 1);
 
 
 /* entry function for se
@@ -102,7 +103,8 @@ inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     int xlen, int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap0,
     int iteration_max, double local_d0_search,
     double Lnorm, double d0, double score_d8,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt, const bool init_invmap=false)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads = 1, const bool init_invmap=false)
 {
     double rmsd;
     std::vector<int> invmap(ylen+1);
@@ -125,7 +127,7 @@ inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
             for (j=0; j<ylen; j++) invmap[j]=-1;
             if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
         }
-        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+        soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt, parallel_threads);
 
         k=0;
         for (j=0; j<ylen; j++)
@@ -164,7 +166,8 @@ inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int clo
     DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, const int xlen, const int ylen,
     Vec3& t, RotMat& u, std::vector<int>& invmap,
     double d0, double score_d8,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads = 1)
 {
     int i;
     int j;
@@ -210,7 +213,7 @@ inline void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int clo
     for (j=0;j<ylen;j++) invmap[j]=-1;
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
     for (j=0; j<ylen;j++) i=invmap[j];
-    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt, parallel_threads);
 
 }
 
@@ -286,6 +289,7 @@ inline void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
     int xlen, int ylen, const std::vector<std::string> sequence,
     const ChainPairAlignOptions& align_opts, SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads,
     std::ostream& os = std::cout)
 {
     Vec3& t0 = chain_align_res.t0;
@@ -348,10 +352,10 @@ inline void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
     for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
     TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
         xlen, ylen, t0, u0, invmap0, iteration_max,
-        local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, true);
+        local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, parallel_threads, true);
     TM   =SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c,
         ylen, xlen, t0, u0, fwdmap0, iteration_max,
-        local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, true);
+        local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, parallel_threads, true);
     if (TM>TMmax)
     {
         TMmax = TM;
@@ -367,7 +371,8 @@ inline void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
 inline void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
     CoordArray& xk, CoordArray& yk, const int closeK_opt,
     int xlen, int ylen, SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt)
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads)
 {
     std::vector<int> &invmap = chain_align_res.invmap;
     Vec3 &t = soi_search_state.t;
@@ -400,14 +405,14 @@ inline void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
     {
         get_SOI_initial_assign(xk, yk, closeK_opt, score, path, val,
             xlen, ylen, t, u, invmap, d0, score_d8,
-            secx_bond, secy_bond, mm_opt);
+            secx_bond, secy_bond, mm_opt, parallel_threads);
         for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
 
         SOI_assign2super(r1, r2, xtm, ytm, xt, xa_c, ya_c,
             xlen, ylen, t, u, invmap, local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
             xlen, ylen, t, u, invmap, iteration_max,
-            local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt);
+            local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, parallel_threads);
         if (TM>TMmax)
         {
             TMmax = TM;
@@ -416,11 +421,11 @@ inline void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
 
         for (i=0;i<xlen;i++) fwdmap0[i]=-1;
         if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0);
-        soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt);
+        soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt, parallel_threads);
         SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
             ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
         TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c, ylen, xlen, t, u,
-            fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt);
+            fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt, parallel_threads);
         if (TM>TMmax)
         {
             TMmax = TM;
@@ -794,9 +799,11 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     soi_search_state.iteration_max=(fast_opt)?2:30;
 
     soi_align_initial_seq(xa_c, ya_c, seqx, seqy, secx, secy,
-        xlen, ylen, sequence, align_opts, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt, os);
+        xlen, ylen, sequence, align_opts, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt,
+        align_opts.parallel_threads, os);
     soi_align_initial_closek(xa_c, ya_c, xk, yk, closeK_opt,
-        xlen, ylen, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt);
+        xlen, ylen, soi_search_state, chain_align_res, secx_bond, secy_bond, mm_opt,
+        align_opts.parallel_threads);
 
     //*******************************************************************//
     //    The alignment will not be changed any more in the following    //
@@ -835,7 +842,7 @@ inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
 inline void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
     int xlen, int ylen, const ChainPairAlignOptions& align_opts,
     ChainPairAlignResult& chain_align_res, IntPairArray& secx_bond, IntPairArray& secy_bond,
-    const int mm_opt, DoubleMatrix& score)
+    const int mm_opt, DoubleMatrix& score, const int parallel_threads)
 {
     double &d0A = chain_align_res.d0A;
     double &d0B = chain_align_res.d0B;
@@ -899,7 +906,7 @@ inline void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
     }
     if (mm_opt==6) NWDP_TM(score, path, val, xlen, ylen, -0.6, invmap);
 
-    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt);
+    soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt, parallel_threads);
 }
 
 inline bool soi_se_score_alignment(CoordArray& xa, CoordArray& ya,
@@ -1034,7 +1041,7 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
 {
     DoubleMatrix score;
     soi_build_score_seed_invmap(xa, ya, xlen, ylen, align_opts, chain_align_res,
-        secx_bond, secy_bond, mm_opt, score);
+        secx_bond, secy_bond, mm_opt, score, align_opts.parallel_threads);
     if (soi_se_score_alignment(xa, ya, xlen, ylen, align_opts, outfmt_opt,
         score, chain_align_res, dist_list)) return 0;
     soi_se_extract_strings(xa, ya, seqx, seqy, xlen, ylen, chain_align_res);
