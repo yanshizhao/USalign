@@ -532,6 +532,7 @@ void parse_file_into_cache(const std::string& fname,
 }
 
 // TMalign, RNAalign, CPalign, TMscore
+#ifdef _OPENMP
 int run_batch_parallel(
     const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list,
     const std::vector<std::string>& sequence, const std::string& dir_opt, const std::string& dir1_opt,
@@ -626,6 +627,7 @@ int run_batch_parallel(
 
     return 0;
 }
+#endif
 
 void fill_tmalign_params(TMalignParams& params, const AlignCommonInput& common_inputs)
 {
