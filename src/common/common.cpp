@@ -1490,17 +1490,16 @@ void align_chain_pair(ChainPairAlignResult& chain_align_res,
     const std::vector<std::string>& sequence,
     int outfmt_opt)
 {
-    if (align_opts.cp_opt) CPalign_main(
-        xa, ya, seqx, seqy, secx, secy,
-        chain_align_res,
-        xlen, ylen, sequence, align_opts);
+    if (align_opts.cp_opt)
+    {
+        CPalign_main(xa, ya, seqx, seqy, secx, secy, chain_align_res, xlen, ylen, sequence, align_opts);
+    }
     else if (align_opts.se_opt)
     {
         chain_align_res.invmap.assign(ylen + 1, 0);
         init_rt_mat(chain_align_res.t0, chain_align_res.u0);
-        se_main(xa, ya, seqx, seqy,
-            chain_align_res,
-            xlen, ylen, sequence, align_opts, outfmt_opt);
+
+        se_main(xa, ya, seqx, seqy, chain_align_res, xlen, ylen, sequence, align_opts, outfmt_opt);
         if (outfmt_opt >= 2)
         {
             chain_align_res.Liden=chain_align_res.L_ali=0;
@@ -1515,8 +1514,8 @@ void align_chain_pair(ChainPairAlignResult& chain_align_res,
             }
         }
     }
-    else TMalign_main(
-        xa, ya, seqx, seqy, secx, secy,
-        chain_align_res,
-        xlen, ylen, sequence, align_opts);
+    else
+    {
+        TMalign_main(xa, ya, seqx, seqy, secx, secy, chain_align_res, xlen, ylen, sequence, align_opts);
+    }
 }

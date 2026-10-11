@@ -69,15 +69,10 @@ inline void run_mmdock_parallel(
     const CharMatrix& secx_vec, const CharMatrix& secy_vec,
     const std::vector<int>& xlen_vec, const std::vector<int>& ylen_vec,
     const std::vector<int>& mol_vec1, const std::vector<int>& mol_vec2,
-    DoubleMatrix& TMave_mat,
-    std::vector<std::vector<std::string>>& seqxA_mat,
-    std::vector<std::vector<std::string>>& seqyA_mat,
-    int chain1_num, int chain2_num,
-    int len_aa, int len_na,
-    int outfmt_opt, double TMcut, double d0_scale,
-    bool fast_opt,
-    const TrimmedComplex& trimmed,
-    int parallel_threads = 1)
+    DoubleMatrix& TMave_mat, std::vector<std::vector<std::string>>& seqxA_mat,
+    std::vector<std::vector<std::string>>& seqyA_mat, int chain1_num, int chain2_num,
+    int len_aa, int len_na, int outfmt_opt, double TMcut, double d0_scale,
+    bool fast_opt, const TrimmedComplex& trimmed, int parallel_threads = 1)
 {
     #pragma omp parallel for schedule(dynamic, 1) num_threads(parallel_threads)
     for (int i = 0; i < chain1_num; i++)
@@ -130,9 +125,8 @@ inline void run_mmdock_parallel(
             if (trimmed.chain_count && trimmed.lengths[j] < ylen)
             {
                 mmdock_align_trimmed(chain_align_res, xa, ya, seqx, seqy, secx, secy,
-                    xlen, ylen, trimmed, j,
-                    mol_vec1[i] + mol_vec2[j], Lnorm_pair, d0_scale, TMcut,
-                    fast_opt, 1, pair_sequence);
+                    xlen, ylen, trimmed, j, mol_vec1[i] + mol_vec2[j],
+                    Lnorm_pair, d0_scale, TMcut, fast_opt, 1, pair_sequence);
             }
             else
             {    // ---- no trimComplex branch ----
@@ -150,8 +144,8 @@ inline void run_mmdock_parallel(
                 align_opts.parallel_threads = 1;
                 align_opts.ss_opt = 0;
                 align_opts.mol_type = mol_vec1[i] + mol_vec2[j];
-                align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
-                    xlen, ylen, align_opts, pair_sequence, outfmt_opt);
+
+                align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy, xlen, ylen, align_opts, pair_sequence, outfmt_opt);
             }
 
             // Store chain_align_res (rectangular matrix, no symmetric write)
@@ -165,9 +159,8 @@ inline void run_mmdock_parallel(
 
 void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     const ComplexData& complex1, const ComplexData& complex2,
-    DoubleMatrix& TMave_mat,
-    std::vector<std::vector<std::string> >& seqxA_mat, std::vector<std::vector<std::string> >& seqyA_mat,
-    int chain1_num, int chain2_num, bool fast_opt)
+    DoubleMatrix& TMave_mat, std::vector<std::vector<std::string> >& seqxA_mat,
+    std::vector<std::vector<std::string> >& seqyA_mat, int chain1_num, int chain2_num, bool fast_opt)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
@@ -312,13 +305,10 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
         run_mmdock_parallel(
             complex1.coords, complex2.coords, complex1.seqs, complex2.seqs,
             complex1.secs, complex2.secs, complex1.lengths, complex2.lengths,
-            complex1.mol_types, complex2.mol_types,
-            TMave_mat,
-            seqxA_mat, seqyA_mat,
-            chain1_num, chain2_num, len_aa, len_na,
+            complex1.mol_types, complex2.mol_types, TMave_mat,
+            seqxA_mat, seqyA_mat, chain1_num, chain2_num, len_aa, len_na,
             user_opts.outfmt_opt, user_opts.TMcut, user_opts.d0_scale, fast_opt,
-            trimmed,
-            ctrl_opts.parallel_threads);
+            trimmed, ctrl_opts.parallel_threads);
         mmdock_parallel_done = true;
     }
 #endif
@@ -367,9 +357,9 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                 if (trimmed.chain_count && trimmed.lengths[j]<ylen)
                 {
                     mmdock_align_trimmed(chain_align_res, xa, ya, seqx, seqy, secx, secy,
-                        xlen, ylen, trimmed, j,
-                        complex1.mol_types[i]+complex2.mol_types[j], Lnorm_pair, user_opts.d0_scale, user_opts.TMcut,
-                        fast_opt, ctrl_opts.parallel_threads, parsed_input.sequence);
+                        xlen, ylen, trimmed, j, complex1.mol_types[i]+complex2.mol_types[j],
+                        Lnorm_pair, user_opts.d0_scale, user_opts.TMcut, fast_opt,
+                        ctrl_opts.parallel_threads, parsed_input.sequence);
                 }
                 else
                 {
@@ -423,12 +413,13 @@ int MMdock(AlignCommonInput& common_inputs)
         user_opts.atom_opt, parsed_input.normalize_atom_name, user_opts.mirror_opt, user_opts.het_opt,
         user_opts.chain2parse1, user_opts.model2parse1);
     if (complex1.coords.size()==0) PrintErrorAndQuit("ERROR! 0 individual chain");
+
     parse_chain_list(parsed_input.chain2_list, complex2,
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt2_opt,
         user_opts.atom_opt, parsed_input.normalize_atom_name, 0, user_opts.het_opt,
         user_opts.chain2parse2, user_opts.model2parse2);
-    if (complex1.coords.size()>complex2.coords.size()) 
-        PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
+    if (complex1.coords.size()>complex2.coords.size())  PrintErrorAndQuit("ERROR! more individual chains to align than number of chains in complex template");
+
     int len_aa=getmin(complex1.total_len_aa,complex2.total_len_aa);
     int len_na=getmin(complex1.total_len_na,complex2.total_len_na);
     if (user_opts.a_opt)
@@ -463,14 +454,14 @@ int MMdock(AlignCommonInput& common_inputs)
         align_opts.mol_type = complex1.mol_types[0]+complex2.mol_types[0];
 
         // entry function for structure alignment
-        align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
-            xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
+        align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy, xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
 
         // print chain_align_res
         OutputOptions out_opts;
         fill_out_opts_from_user_opts(out_opts, user_opts);
         out_opts.outfmt_opt = (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3);
         out_opts.mm_opt = true;
+
         const std::string structure1_display = user_opts.xname.substr(user_opts.dir1_opt.size());
         const std::string structure2_display = user_opts.yname.substr(user_opts.dir2_opt.size());
         output_results(

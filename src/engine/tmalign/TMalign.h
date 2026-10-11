@@ -494,12 +494,6 @@ void make_sec(const CoordArray& x, int len, std::string& sec);
 void sec_str(int len, const std::vector<std::vector<bool> >&bp,
     int a, int b,int &c, int &d);
 
-//get initial alignment from secondary structure alignment
-//input: x, y, xlen, ylen
-//output: y2x stores the best alignment: e.g., 
-//y2x[j]=i means:
-//the jth element in y is aligned to the ith element in x if i>=0
-//the jth element in y is aligned to a gap in x if i==-1
 
 inline void get_initial_ss(CharMatrix& path, DoubleMatrix& val,
     const std::string& secx, const std::string& secy, int xlen, int ylen, std::vector<int>& y2x)
@@ -516,8 +510,6 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
 bool get_initial5(const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& y2x, double d0, double d0_search, const bool fast_opt,
     const double D0_MIN, int parallel_threads = 1);
-
-
 
 
 inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix& score,
@@ -566,13 +558,6 @@ inline void score_matrix_rmsd_sec( CoordArray& r1, CoordArray& r2, DoubleMatrix&
     }
 }
 
-//get initial alignment from secondary structure and previous alignments
-//input: x, y, xlen, ylen
-//output: y2x stores the best alignment: e.g.,
-//y2x[j]=i means:
-//the jth element in y is aligned to the ith element in x if i>=0
-//the jth element in y is aligned to a gap in x if i==-1
-
 inline void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, const std::string& secx, const std::string& secy, const CoordArray& x, const CoordArray& y,
     int xlen, int ylen, std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
@@ -585,12 +570,6 @@ inline void get_initial_ssplus(CoordArray& r1, CoordArray& r2, DoubleMatrix& sco
 void find_max_frag(const CoordArray& x, int len, int &start_max,
     int &end_max, double dcu0, const bool fast_opt);
 
-//perform fragment gapless threading to find the best initial alignment
-//input: x, y, xlen, ylen
-//output: y2x0 stores the best alignment: e.g., 
-//y2x0[j]=i means:
-//the jth element in y is aligned to the ith element in x if i>=0 
-//the jth element in y is aligned to a gap in x if i==-1
 inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     const CoordArray& x, const CoordArray& y, int xlen, int ylen,
     std::vector<int>& y2x, double d0, double d0_search,
@@ -614,10 +593,6 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
     int L_fr=getmin(Lx, Ly);
     std::vector<int> ifr(L_fr);
     std::vector<int> y2x_(ylen+1);
-
-    //select what piece will be used. The original implement may cause 
-    //asymetry, but only when xlen==ylen and Lx==Ly
-    //if L1=Lfr1 and L2=Lfr2 (normal proteins), it will be the same as initial1
 
     if(Lx<Ly || (Lx==Ly && xlen<ylen))
     {        
@@ -831,10 +806,6 @@ inline double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
 }
 
 
-//heuristic run of dynamic programing iteratively to find the best alignment
-//input: initial rotation matrix t, u
-//       vectors x and y, d0
-//output: best alignment that maximizes the TMscore, will be stored in invmap
 inline double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, Vec3& t, RotMat& u, std::vector<int>& invmap0,
@@ -1268,8 +1239,6 @@ inline int tmalign_build_initial(CoordArray& xa_c, CoordArray& ya_c,
     //************************************************//
     if (i_opt==3)// if input has set parameter for "-I"
     {
-        // In the original code, this loop starts from 1, which is
-        // incorrect. Fortran starts from 1 but C++ should starts from 0.
         for (int j = 0; j < ylen; j++)// Set aligned position to be "-1"
             invmap[j] = -1;
 
@@ -1308,7 +1277,7 @@ inline int tmalign_build_initial(CoordArray& xa_c, CoordArray& ya_c,
         }
     }
 
-    	/******************************************************/
+    /******************************************************/
 	//    get initial alignment (serial or OpenMP parallel)
 	/******************************************************/
 	if (i_opt<=1)
@@ -1381,8 +1350,8 @@ inline int tmalign_build_initial(CoordArray& xa_c, CoordArray& ya_c,
     return 0;
 }
 
-inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
-    int xlen, int ylen,
+inline void tmalign_select_aligned_pairs(
+    CoordArray& xa_c, CoordArray& ya_c,int xlen, int ylen,
     const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
 {
     double &score_d8 = align_context.search_params.score_d8;
@@ -1411,8 +1380,6 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     //********************************************************************//
     //    Detailed TMscore search engine --> prepare for final TMscore    //
     //********************************************************************//
-    //run detailed TMscore search engine for the best alignment, and
-    //extract the best rotation matrix (t, u) for the best alignment
     simplify_step=1;
     if (fast_opt) simplify_step=40;
     score_sum_method=8;
@@ -1464,8 +1431,9 @@ inline void tmalign_select_aligned_pairs(CoordArray& xa_c, CoordArray& ya_c,
     rmsd0 = sqrt(rmsd0 / n_ali8);
 }
 
-inline void tmalign_final_tmscore(int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context, ChainPairAlignResult& chain_align_res)
+inline void tmalign_final_tmscore(
+    int xlen, int ylen, const ChainPairAlignOptions& align_opts, TMscoreAlignContext& align_context,
+    ChainPairAlignResult& chain_align_res)
 {
     double &D0_MIN = align_context.search_params.D0_MIN;
     double &Lnorm = align_context.search_params.Lnorm;
@@ -1912,8 +1880,8 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     build_cp_doubled_template(xa, seqx, secx, xlen, xa_cp, seqx_cp, secx_cp);
 
     ChainPairAlignResult cp_trial_res = chain_align_res;
-    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        cp_trial_res, xlen*2, ylen, sequence, cp_trial_opts, os);
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy, cp_trial_res, xlen*2, ylen, sequence, cp_trial_opts, os);
+
     t0 = cp_trial_res.t0;
     u0 = cp_trial_res.u0;
     TM3 = cp_trial_res.TM3;
@@ -1948,8 +1916,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
     seqyA_cp.clear();
     rmsd0=Liden=n_ali=n_ali8=0;
 
-    TMalign_main(xa, ya, seqx, seqy, secx, secy,
-        chain_align_res, xlen, ylen, sequence, cp_trial_opts, os);
+    TMalign_main(xa, ya, seqx, seqy, secx, secy, chain_align_res, xlen, ylen, sequence, cp_trial_opts, os);
     seqxA_cp = chain_align_res.seqxA;
     seqyA_cp = chain_align_res.seqyA;
 
@@ -1999,8 +1966,7 @@ inline int CPalign_main(CoordArray& xa, CoordArray& ya,
         }
     }
 
-    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy,
-        chain_align_res, xlen, ylen, sequence, align_opts, os);
+    TMalign_main(xa_cp, ya, seqx_cp, seqy, secx_cp, secy, chain_align_res, xlen, ylen, sequence, align_opts, os);
     seqxA_cp = chain_align_res.seqxA;
     seqyA_cp = chain_align_res.seqyA;
 
