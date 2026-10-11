@@ -307,16 +307,15 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     std::map<std::string, SoiAlignFileData> file2_cache;
     std::vector<const SoiAlignFileData*> files1(parsed_input.chain1_list.size());
     std::vector<const SoiAlignFileData*> files2(parsed_input.chain2_list.size());
+
     for (int i=0;i<(int)parsed_input.chain1_list.size();i++)
-        files1[i] = load_soi_file_cache(file1_cache, parsed_input.chain1_list[i],
-            user_opts.infmt1_opt, pdb_parse_opts1);
+        files1[i] = load_soi_file_cache(file1_cache, parsed_input.chain1_list[i], user_opts.infmt1_opt, pdb_parse_opts1);
+
     for (int j=0;j<(int)parsed_input.chain2_list.size();j++)
-        files2[j] = load_soi_file_cache(file2_cache, parsed_input.chain2_list[j],
-            user_opts.infmt2_opt, pdb_parse_opts2);
+        files2[j] = load_soi_file_cache(file2_cache, parsed_input.chain2_list[j], user_opts.infmt2_opt, pdb_parse_opts2);
 
     std::vector<SoiAlignPairTask> tasks;
-    build_soi_pair_tasks(parsed_input.chain1_list, parsed_input.chain2_list,
-        files1, files2, user_opts.dir_opt.size() > 0, user_opts.dirpair_opt.size() != 0, tasks);
+    build_soi_pair_tasks(parsed_input.chain1_list, parsed_input.chain2_list, files1, files2, user_opts.dir_opt.size() > 0, user_opts.dirpair_opt.size() != 0, tasks);
 
     int task_num = (int)tasks.size();
     std::vector<std::string> out_lines(task_num);
@@ -326,10 +325,8 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     {
         const SoiAlignPairTask& task = tasks[task_idx];
         std::stringstream out_stream;
-        run_soi_task(task, common_inputs, soi_params,
-            *files1[task.file1_idx], *files2[task.file2_idx],
-            parsed_input.chain1_list[task.file1_idx], parsed_input.chain2_list[task.file2_idx],
-            out_stream);
+        run_soi_task(task, common_inputs, soi_params, *files1[task.file1_idx], *files2[task.file2_idx],
+            parsed_input.chain1_list[task.file1_idx], parsed_input.chain2_list[task.file2_idx], out_stream);
         out_lines[task.order] = out_stream.str();
     }
 

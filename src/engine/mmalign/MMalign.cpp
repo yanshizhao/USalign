@@ -1788,7 +1788,7 @@ void run_mmalign_batch(AlignCommonInput& common_inputs,
     int task_num = (int)tasks.size();
     std::vector<std::string> out_lines(task_num);
 
-#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) if(common_inputs.control_options.parallel_threads>1)
+#pragma omp parallel for schedule(dynamic, 1) num_threads(common_inputs.control_options.parallel_threads) if(common_inputs.control_options.parallel_threads>1 && task_num>1)
     for (int task_idx = 0; task_idx < task_num; task_idx++)
     {
         const MMalignPairTask& task = tasks[task_idx];
