@@ -98,6 +98,11 @@
                between chain j and i from complex A and B
    2026/08/14: Implement flexible structure alignment by -mm 7
    2026/08/19: Print version for -mm 1 when aligning monomers
+   2026/08/26: color different regions by different colors in -mm 7 -o
+   2026/09/08: fix bug in secondary structure-based initial alignment in 
+               flexible structure alignment. use .spt for -rasmol output
+   2026/09/11: allow alignment of chains not specified by -chainmap
+   2026/09/20: fix bug in -mm 1 -se -outfmt 2
 ===============================================================================
 
 =========================
