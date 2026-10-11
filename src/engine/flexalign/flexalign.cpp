@@ -145,15 +145,13 @@ void run_flexalign_task(const FlexalignPairTask& task,
     task_user_opts.yname = yname;
 
     ParsedChain chain1_data;
-    if (!parse_chain(xname, file1.pdb_lines, file1.chain_ids, file1.mol_types,
-            task.chain1_idx, task_user_opts.mol_opt, task_user_opts.mirror_opt, read_resi,
-            task_user_opts.atom_opt, chain1_data))
+    if (!parse_chain(xname, file1.pdb_lines, file1.chain_ids, file1.mol_types, task.chain1_idx,
+        task_user_opts.mol_opt, task_user_opts.mirror_opt, read_resi, task_user_opts.atom_opt, chain1_data))
         return;
 
     ParsedChain chain2_data;
-    if (!parse_chain(yname, file2.pdb_lines, file2.chain_ids, file2.mol_types,
-            task.chain2_idx, task_user_opts.mol_opt, 0, read_resi,
-            task_user_opts.atom_opt, chain2_data))
+    if (!parse_chain(yname, file2.pdb_lines, file2.chain_ids, file2.mol_types, task.chain2_idx,
+        task_user_opts.mol_opt, 0, read_resi, task_user_opts.atom_opt, chain2_data))
         return;
 
     AlignCommonInput task_input = common_inputs;
@@ -213,23 +211,21 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
 
     const PdbParseOptions pdb_parse_opts1{
         user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-        user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse1, user_opts.model2parse1};
+        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1};
     const PdbParseOptions pdb_parse_opts2{
         user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-        user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse2, user_opts.model2parse2};
+        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2};
 
     std::map<std::string, FlexalignFileData> file1_cache;
     std::map<std::string, FlexalignFileData> file2_cache;
     std::vector<const FlexalignFileData*> files1(parsed_input.chain1_list.size());
     std::vector<const FlexalignFileData*> files2(parsed_input.chain2_list.size());
+
     for (int i=0;i<(int)parsed_input.chain1_list.size();i++)
-        files1[i] = load_flexalign_file_cache(file1_cache, parsed_input.chain1_list[i],
-            user_opts.infmt1_opt, pdb_parse_opts1);
+        files1[i] = load_flexalign_file_cache(file1_cache, parsed_input.chain1_list[i], user_opts.infmt1_opt, pdb_parse_opts1);
+
     for (int j=0;j<(int)parsed_input.chain2_list.size();j++)
-        files2[j] = load_flexalign_file_cache(file2_cache, parsed_input.chain2_list[j],
-            user_opts.infmt2_opt, pdb_parse_opts2);
+        files2[j] = load_flexalign_file_cache(file2_cache, parsed_input.chain2_list[j], user_opts.infmt2_opt, pdb_parse_opts2);
 
     std::vector<FlexalignPairTask> tasks;
     build_flexalign_pair_tasks(parsed_input.chain1_list, parsed_input.chain2_list,
@@ -243,10 +239,9 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
     {
         const FlexalignPairTask& task = tasks[task_idx];
         std::stringstream out_stream;
-        run_flexalign_task(task, common_inputs, flex_params,
-            *files1[task.file1_idx], *files2[task.file2_idx],
-            parsed_input.chain1_list[task.file1_idx], parsed_input.chain2_list[task.file2_idx],
-            read_resi, out_stream);
+
+        run_flexalign_task(task, common_inputs, flex_params, *files1[task.file1_idx], *files2[task.file2_idx],
+            parsed_input.chain1_list[task.file1_idx], parsed_input.chain2_list[task.file2_idx], read_resi, out_stream);
         out_lines[task.order] = out_stream.str();
     }
 

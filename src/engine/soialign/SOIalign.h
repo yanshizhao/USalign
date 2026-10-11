@@ -62,22 +62,11 @@ inline bool sec2sq(const int i, const int j,
 }
 
 void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<int>& invmap,
-    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt,
-    const int parallel_threads = 1);
+    const IntPairArray& secx_bond, const IntPairArray& secy_bond, const int mm_opt, const int parallel_threads = 1);
 
-
-/* entry function for se
- * u_opt corresponds to option -L
- *       if u_opt==2, use d0 from Lnorm_ass for alignment
- * */
-
-
-inline int soi_se_main(CoordArray& xa, CoordArray& ya,
-    const std::string &seqx, const std::string &seqy,
-    ChainPairAlignResult& chain_align_res,
-    const int xlen, const int ylen,
-    const ChainPairAlignOptions& align_opts, const int outfmt_opt,
-    std::vector<double>& dist_list,
+inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& chain_align_res, const int xlen, const int ylen,
+    const ChainPairAlignOptions& align_opts, const int outfmt_opt, std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt);
 
 
@@ -91,12 +80,6 @@ inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const in
         if(d2>score_d82)score[i+1][j+1]=0;else score[i+1][j+1]=1./(1+d2/d02);
     }
 }
-
-//heuristic run of dynamic programing iteratively to find the best alignment
-//input: initial rotation matrix t, u
-//       vectors x and y, d0
-//output: best alignment that maximizes the TMscore, will be stored in invmap
-
 
 inline double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, DoubleMatrix& score, CharMatrix& path, DoubleMatrix& val, CoordArray& xa, CoordArray& ya,
