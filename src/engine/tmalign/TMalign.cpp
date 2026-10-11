@@ -101,7 +101,13 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     double d002t=d002;
     std::vector<double> dis_vec(dis.begin(), dis.begin()+n_ali);
     std::sort(dis_vec.begin(), dis_vec.end());
-    if (d002t<dis_vec[2]) d002t=dis_vec[2];
+    if (dis_vec.size()>2)
+    {
+        if (d002t < dis_vec[2])
+            d002t = dis_vec[2];
+    }
+    else if (d002t < dis_vec.back())
+        d002t = dis_vec.back();
     dis_vec.clear();
     while(1) {
         j=0;
@@ -127,7 +133,13 @@ double get_score_fast( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
         d002t=d002+1;
         std::vector<double> dis_vec2(dis.begin(), dis.begin()+n_ali);
         std::sort(dis_vec2.begin(), dis_vec2.end());
-        if (d002t<dis_vec2[2]) d002t=dis_vec2[2];
+        if (dis_vec2.size()>2)
+        {
+            if (d002t < dis_vec2[2])
+                d002t = dis_vec2[2];
+        }
+        else if (d002t < dis_vec2.back())
+            d002t = dis_vec2.back();
         dis_vec2.clear();
         while(1) {
             j=0;
