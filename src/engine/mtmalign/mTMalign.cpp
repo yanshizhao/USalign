@@ -286,17 +286,13 @@ double calc_ccTM_score(
 
 // Parallel all-against-all pairwise alignment for MSTA (mTMalign)
 static void run_mTMalign_pairwise_parallel(
-    const DoubleCube& a_vec, const CharMatrix& seq_vec, const CharMatrix& sec_vec,
-    const std::vector<int>& len_vec,
+    const DoubleCube& a_vec, const CharMatrix& seq_vec, const CharMatrix& sec_vec, const std::vector<int>& len_vec,
     const std::vector<std::string>& chain_list, const std::vector<std::string>& chainID_list,
     std::vector<std::vector<std::string>>& seqxA_mat, std::vector<std::vector<std::string>>& seqyA_mat,
-    DoubleMatrix& TMave_mat, const std::vector<std::string>& resi_vec,
-    int chain_num, double Lnorm_ass, double d0_scale,
-    bool u_opt, int cur_complex_mol_list, int outfmt_opt, bool fast_opt, double TMcut,
-    bool full_opt, bool se_opt, int ter_opt, int split_opt, int o_opt, int a_opt, bool d_opt,
-    int parallel_threads)
+    DoubleMatrix& TMave_mat, const std::vector<std::string>& resi_vec, int chain_num, double Lnorm_ass,
+    double d0_scale, bool u_opt, int cur_complex_mol_list, int outfmt_opt, bool fast_opt, double TMcut,
+    bool full_opt, bool se_opt, int ter_opt, int split_opt, int o_opt, int a_opt, bool d_opt, int parallel_threads)
 {
-
     std::vector<std::string> full_out(chain_num * chain_num);
 
     #pragma omp parallel for schedule(dynamic, 1) num_threads(parallel_threads)
@@ -309,6 +305,7 @@ static void run_mTMalign_pairwise_parallel(
         secx.resize(xlen + 1);
         copy_chain_data(a_vec[chain_i], seq_vec[chain_i], sec_vec[chain_i], xlen, xa, seqx, secx);
         seqxA_mat[chain_i][chain_i] = seqyA_mat[chain_i][chain_i] = seqx;
+
         for (int chain_j = chain_i + 1; chain_j < chain_num; chain_j++)
         {
             int ylen = len_vec[chain_j];
@@ -323,6 +320,7 @@ static void run_mTMalign_pairwise_parallel(
             std::vector<std::string> local_seq(2);
             local_seq[0] = seqxA_mat[chain_i][chain_j];
             local_seq[1] = seqyA_mat[chain_i][chain_j];
+
             ChainPairAlignOptions align_opts;
             align_opts.i_opt = 0;
             align_opts.a_opt = 0;
@@ -337,12 +335,13 @@ static void run_mTMalign_pairwise_parallel(
             align_opts.parallel_threads = 1;
             align_opts.ss_opt = 0;
             align_opts.mol_type = cur_complex_mol_list;
-            align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
-                xlen, ylen, align_opts, local_seq, outfmt_opt);
+
+            align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy, xlen, ylen, align_opts, local_seq, outfmt_opt);
 
             TMave_mat[chain_i][chain_j] = chain_align_res.TM4; TMave_mat[chain_j][chain_i] = chain_align_res.TM4;
             seqxA_mat[chain_i][chain_j] = seqyA_mat[chain_j][chain_i] = chain_align_res.seqxA;
             seqyA_mat[chain_i][chain_j] = seqxA_mat[chain_j][chain_i] = chain_align_res.seqyA;
+
             if (full_opt)
             {
                 std::stringstream ss;
@@ -361,6 +360,7 @@ static void run_mTMalign_pairwise_parallel(
                 out_opts.mirror_opt = 0;
                 out_opts.u_opt = false;
                 out_opts.d_opt = d_opt;
+
                 const std::string structure1_display = chain_list[chain_i];
                 const std::string structure2_display = chain_list[chain_j];
                 output_results(
@@ -905,8 +905,7 @@ void msta_iterate(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter
 void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexData& complex,
     const DoubleCube& a_vec, const int chain_num, const double Lnorm_ass, const bool u_opt,
     const bool fast_opt, const int cur_complex_mol_list, DoubleMatrix& TMave_mat,
-    std::vector<std::vector<std::string> >& seqxA_mat,
-    std::vector<std::vector<std::string> >& seqyA_mat)
+    std::vector<std::vector<std::string> >& seqxA_mat, std::vector<std::vector<std::string> >& seqyA_mat)
 {
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
@@ -925,15 +924,14 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
     std::string secx;
     std::string secy;
     bool pair_parallel_done = false;
+
 #ifdef _OPENMP
     if (ctrl_opts.parallel_threads > 1) {
         run_mTMalign_pairwise_parallel(
-            a_vec, seq_vec, sec_vec, len_vec,
-            parsed_input.chain1_list, chainID_list, seqxA_mat, seqyA_mat,
-            TMave_mat, resi_vec, chain_num, Lnorm_ass, user_opts.d0_scale,
-            u_opt, cur_complex_mol_list, user_opts.outfmt_opt, fast_opt, user_opts.TMcut,
-            ctrl_opts.full_opt, ctrl_opts.se_opt, user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt,
-            ctrl_opts.parallel_threads);
+            a_vec, seq_vec, sec_vec, len_vec, parsed_input.chain1_list, chainID_list, seqxA_mat, seqyA_mat,
+            TMave_mat, resi_vec, chain_num, Lnorm_ass, user_opts.d0_scale, u_opt, cur_complex_mol_list,
+            user_opts.outfmt_opt, fast_opt, user_opts.TMcut, ctrl_opts.full_opt, ctrl_opts.se_opt,
+            user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt, ctrl_opts.parallel_threads);
         pair_parallel_done = true;
     }
 #endif
@@ -950,6 +948,7 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
             xa.reserve(xlen);
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
             seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
+
             for (j=i+1;j<chain_num;j++)
             {
                 ylen=len_vec[j];
@@ -976,15 +975,16 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 align_opts.parallel_threads = 1;
                 align_opts.ss_opt = 0;
                 align_opts.mol_type = cur_complex_mol_list;
+
                 // entry function for structure alignment
                 align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
-                    xlen, ylen, align_opts, parsed_input.sequence,
-                    user_opts.outfmt_opt);
+                    xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
 
                 // store chain_align_res
                 TMave_mat[i][j]=chain_align_res.TM4; TMave_mat[j][i]=chain_align_res.TM4;
                 seqxA_mat[i][j]=seqyA_mat[j][i]=chain_align_res.seqxA;
                 seqyA_mat[i][j]=seqxA_mat[j][i]=chain_align_res.seqyA;
+
                 OutputOptions out_opts;
                 out_opts.fname_matrix = "";
                 out_opts.fname_super = "";
@@ -1000,6 +1000,7 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 out_opts.mirror_opt = 0;
                 out_opts.u_opt = false;
                 out_opts.d_opt = user_opts.d_opt;
+
                 const std::string structure1_display = parsed_input.chain1_list[i];
                 const std::string structure2_display = parsed_input.chain1_list[j];
                 if (ctrl_opts.full_opt) output_results(
@@ -1030,6 +1031,7 @@ int mTMalign(AlignCommonInput& common_inputs)
         user_opts.ter_opt, user_opts.split_opt, user_opts.mol_opt, user_opts.infmt1_opt,
         user_opts.atom_opt, parsed_input.normalize_atom_name, false, user_opts.het_opt,
         user_opts.chain2parse1, user_opts.model2parse1);
+
     int chain_num=complex.coords.size();
     if (chain_num<=1) PrintErrorAndQuit("ERROR! <2 chains for multiple alignment");
     DoubleCube a_vec = complex.coords;
@@ -1053,22 +1055,19 @@ int mTMalign(AlignCommonInput& common_inputs)
     if (total_len>750) fast_opt=true;
 
     // get all-against-all alignment
-    DoubleMatrix TMave_mat;
-    TMave_mat.assign(chain_num,std::vector<double>(chain_num));
     std::vector<std::string> tmp_str_vec(chain_num,"");
     std::vector<std::vector<std::string> >seqxA_mat(chain_num,tmp_str_vec);
     std::vector<std::vector<std::string> >seqyA_mat(chain_num,tmp_str_vec);
+
+    DoubleMatrix TMave_mat;
+    TMave_mat.assign(chain_num,std::vector<double>(chain_num));
     for (i=0;i<chain_num;i++) for (j=0;j<chain_num;j++) TMave_mat[i][j]=0;
+
     mTMalign_pairwise_alignment(common_inputs, complex, a_vec, chain_num,
-        Lnorm_ass, u_opt, fast_opt, cur_complex_mol_list,
-        TMave_mat, seqxA_mat, seqyA_mat);
-    // representative related variables
-    int r;
+        Lnorm_ass, u_opt, fast_opt, cur_complex_mol_list, TMave_mat, seqxA_mat, seqyA_mat);
+
     MstaIterationState state;
-    // Empty until rebuilt inside the iteration loop (msa.assign(ylen,"")),
-    // so it does not depend on stale xlen/ylen left by the pairwise loop.
-    for (i=0;i<chain_num;i++) state.xname_vec.push_back(
-        parsed_input.chain1_list[i].substr(user_opts.dir_opt.size())+chainID_list[i]);
+    for (i=0;i<chain_num;i++) state.xname_vec.push_back(parsed_input.chain1_list[i].substr(user_opts.dir_opt.size()) + chainID_list[i]);
 
     // build and output UPGMA phylogenetic tree
     output_upgma_tree(state.xname_vec, TMave_mat, chain_num, user_opts.outdir_opt);
@@ -1079,14 +1078,17 @@ int mTMalign(AlignCommonInput& common_inputs)
 
     state.max_iter=5-static_cast<int>(total_len/200);
     if (state.max_iter<2) state.max_iter=2;
+
     state.TM_vec.assign(chain_num,0);
     state.d0_vec.assign(chain_num,0);
     state.seqID_vec.assign(chain_num,0);
     state.TM_mat.assign(chain_num,state.TM_vec);
     state.d0_mat.assign(chain_num,state.d0_vec);
     state.seqID_mat.assign(chain_num,state.seqID_vec);
+
     MstaIterParams msta_iter_params(common_inputs, complex, a_vec, TMave_mat, seqxA_mat,
         seqyA_mat, chain_num, Lnorm_ass, u_opt, fast_opt, cur_complex_mol_list);
+
     msta_iterate(state, msta_iter_params);
     for (i=0;i<chain_num;i++)
     {
@@ -1123,10 +1125,12 @@ int mTMalign(AlignCommonInput& common_inputs)
     state.totals.n_ali8  /=state.compare_num;
     user_opts.xname="shorter";
     user_opts.yname="longer";
+
     std::string seqM="";
     std::string seqxA="";
     std::string seqyA="";
     std::stringstream buf;
+
     for (i=0; i<chain_num; i++)
     {
         if (state.assign_list[i]<0) continue;
@@ -1141,17 +1145,17 @@ int mTMalign(AlignCommonInput& common_inputs)
     seqM=seqM.substr(0,seqM.size()-1);
     buf.str(std::string());
     if (user_opts.outfmt_opt==0) print_version(USALIGN_VERSION);
+
     // calculate ccTM-score
     double ccTM_score = calc_ccTM_score(ua_vec, seqxA_mat, chain_num, len_vec, cur_complex_mol_list);
+
     state.totals.seqM=seqM;
     state.totals.seqxA=seqxA;
     state.totals.seqyA=seqyA;
     output_mTMalign_results( user_opts.xname,user_opts.yname, "","",
-        state.xlen_total, state.ylen_total, state.totals,
-        Lnorm_ass, user_opts.d0_scale,
+        state.xlen_total, state.ylen_total, state.totals, Lnorm_ass, user_opts.d0_scale,
         "", user_opts.outfmt_opt, user_opts.ter_opt, 0, user_opts.split_opt, false,
-        "", false, user_opts.a_opt, u_opt, user_opts.d_opt, false,
-        resi_vec, resi_vec, ccTM_score );
+        "", false, user_opts.a_opt, u_opt, user_opts.d_opt, false, resi_vec, resi_vec, ccTM_score );
 
     if (user_opts.m_opt || user_opts.o_opt)
     {
@@ -1169,7 +1173,7 @@ int mTMalign(AlignCommonInput& common_inputs)
             xa.resize(xlen);
             ya.clear();
             ya.resize(ylen);
-            for (r=0;r<xlen;r++)
+            for (int r=0;r<xlen;r++)
             {
                 xa[r][0]=ua_vec[i][r][0];
                 xa[r][1]=ua_vec[i][r][1];
