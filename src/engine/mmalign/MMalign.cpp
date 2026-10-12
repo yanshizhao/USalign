@@ -1044,7 +1044,15 @@ void optimize_oligomer_assign(const ComplexData& complex1,
     }
     else
     {
-        hetero_refined_greedy_search(pairwise.tm_matrix,
+        DoubleMatrix tm_matrix_transposed(chain2_num, std::vector<double>(chain1_num));
+        for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+        {
+            for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+            {
+                tm_matrix_transposed[chain2_idx][chain1_idx] = pairwise.tm_matrix[chain1_idx][chain2_idx];
+            }
+        }
+        hetero_refined_greedy_search(tm_matrix_transposed,
             assign_result.chain1_of_chain2, assign_result.chain2_of_chain1,
             chain2_num, chain1_num, ycentroids, xcentroids,
             d0MM, len_aa + len_na);

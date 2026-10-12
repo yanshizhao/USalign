@@ -548,9 +548,22 @@ std::vector<int> assign2_list(chain2_num);
         homo_refined_greedy_search(TMave_mat, assign1_list,
             assign2_list, chain1_num, chain2_num, xcentroids,
             ycentroids, d0MM, len_aa+len_na, ut_mat);
-        hetero_refined_greedy_search(TMave_mat, assign1_list,
-            assign2_list, chain1_num, chain2_num, xcentroids,
-            ycentroids, d0MM, len_aa+len_na);
+        if (chain1_num <= chain2_num)
+        {
+            hetero_refined_greedy_search(TMave_mat, assign1_list,
+                assign2_list, chain1_num, chain2_num, xcentroids,
+                ycentroids, d0MM, len_aa+len_na);
+        }
+        else
+        {
+            DoubleMatrix TMave_mat_transposed(chain2_num, std::vector<double>(chain1_num));
+            for (int ti = 0; ti < chain1_num; ti++)
+                for (int tj = 0; tj < chain2_num; tj++)
+                    TMave_mat_transposed[tj][ti] = TMave_mat[ti][tj];
+            hetero_refined_greedy_search(TMave_mat_transposed, assign2_list,
+                assign1_list, chain2_num, chain1_num, ycentroids,
+                xcentroids, d0MM, len_aa+len_na);
+        }
 
     }
 
