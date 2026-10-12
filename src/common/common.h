@@ -718,7 +718,7 @@ inline std::stringstream read_file_to_memory(const std::string& filename)
 }
 
 // ============================================================
-// detect_format — detect file format from first non-empty line.
+// detect_format — detect file format by scanning for a mmCIF marker.
 // Returns: 0=PDB, 1=SPICKER, 2=xyz, 3=mmCIF
 // Returns FORMAT_PDB, FORMAT_SPICKER, FORMAT_XYZ, or FORMAT_MMCIF.
 // If infmt_opt != FORMAT_AUTO, returns infmt_opt directly.
@@ -729,15 +729,14 @@ inline int detect_format(std::stringstream& buf, int infmt_opt)
     if (buf.bad()) return FORMAT_UNKNOWN;
     int fmt = infmt_opt;
     if (fmt == FORMAT_AUTO) {
-        std::string first_line;
-        while (std::getline(buf, first_line)) {
-            if (first_line.find_first_not_of(" \t\r") != std::string::npos)
+        std::string line;
+        fmt = FORMAT_PDB;
+        while (std::getline(buf, line)) {
+            if (line.compare(0, 5, "loop_") == 0 || line.compare(0, 1, "#") == 0) {
+                fmt = FORMAT_MMCIF;
                 break;
+            }
         }
-        if (first_line.compare(0, 5, "loop_") == 0 || first_line[0] == '#')
-            fmt = FORMAT_MMCIF;
-        else
-            fmt = FORMAT_PDB;
     }
     buf.clear();
     buf.seekg(0);
