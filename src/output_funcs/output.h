@@ -31,6 +31,55 @@ void output_soi_dist_table(std::ostream& os, int ylen,
     const std::vector<std::string>& pdb_lines1,
     const std::vector<std::string>& pdb_lines2);
 
+inline std::string basename_of_path(const std::string& path)
+{
+    const std::string::size_type sep = path.find_last_of("/\\");
+    if (sep == std::string::npos) return path;
+    return path.substr(sep + 1);
+}
+
+inline void copy_structure2_to_outdir(const std::string& yname,
+    const std::string& fname_super, std::string& struct2_basename)
+{
+    int compress_type = 0;
+    std::ifstream fin;
+#ifndef REDI_PSTREAM_H_SEEN
+    std::ifstream fin_gz;
+#else
+    redi::ipstream fin_gz;
+    if (yname.size() >= 3 && yname.substr(yname.size() - 3, 3) == ".gz") {
+        fin_gz.open("gunzip -c " + yname);
+        compress_type = 1;
+    }
+    else if (yname.size() >= 4 && yname.substr(yname.size() - 4, 4) == ".bz2") {
+        fin_gz.open("bzcat " + yname);
+        compress_type = 2;
+    }
+    else
+#endif
+        fin.open(yname.c_str());
+
+    std::stringstream buf;
+    std::string line;
+    while (compress_type ? fin_gz.good() : fin.good()) {
+        if (compress_type) std::getline(fin_gz, line);
+        else               std::getline(fin, line);
+        buf << line << '\n';
+    }
+    if (compress_type) fin_gz.close();
+    else               fin.close();
+
+    std::string struct2_path = fname_super + "_structure2";
+    if (detect_format(buf, FORMAT_AUTO) == FORMAT_MMCIF) struct2_path += ".cif";
+    else                                                 struct2_path += ".pdb";
+
+    std::ofstream fp;
+    fp.open(struct2_path.c_str());
+    fp << buf.str();
+    fp.close();
+    struct2_basename = basename_of_path(struct2_path);
+}
+
 // script format: 0 - no script; 1 - pymol; 3 - chimerax
 void output_pymol(const std::string xname, const std::string yname,
     const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
