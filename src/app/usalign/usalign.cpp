@@ -130,7 +130,7 @@ void print_extra_help()
 "          $ USalign -dir chain_folder/ chain_list -threads 4\n"
 "\n"
 "Advanced usage 1 (generate an image for a pair of superposed structures):\n"
-"    USalign 1cpc.pdb 1mba.pdb -o sup\n"
+"    USalign 1cpc.pdb 1mba.pdb -pymol sup\n"
 "    pymol -c -d @sup_all_atm.pml -g sup_all_atm.png\n"
 "\n"
 "Advanced usage 2 (a quick search of query.pdb against I-TASSER PDB library):\n"
@@ -232,8 +232,8 @@ void print_help()
 "      -u  TM-score normalized by an assigned length. It should be >= length\n"
 "          of protein to avoid TM-score >1. -u does not change final alignment.\n"
 "\n"
-"      -o  Output superposed structure1 to sup.* for PyMOL viewing.\n"
-"          $ USalign structure1.pdb structure2.pdb -o sup\n"
+"  -pymol  Output superposed structure1 to sup.* for PyMOL viewing.\n"
+"          $ USalign structure1.pdb structure2.pdb -pymol sup\n"
 "          $ pymol -d @sup.pml                # C-alpha trace aligned region\n"
 "          $ pymol -d @sup_all.pml            # C-alpha trace whole chain\n"
 "          $ pymol -d @sup_atm.pml            # full-atom aligned region\n"
@@ -301,7 +301,7 @@ bool is_single_mm1_align(int mm_opt,
 
 inline void set_output_format(int& o_opt, std::string& fname_super, const int incoming, const std::string& value)
 {
-    static const char* format_name[] = {"", "-o", "-rasmol", "-chimerax"};
+    static const char* format_name[] = {"", "-pymol", "-rasmol", "-chimerax"};
     for (int other = OUT_O; other <= OUT_CHIMERAX; other++)
     {
         if (other == incoming) continue;
@@ -350,7 +350,7 @@ void check_input_presence(UserOptions& user_opts, ControlOptions& control)
     }
 
     if (user_opts.o_opt && (user_opts.infmt1_opt!=-1 && user_opts.infmt1_opt!=0 && user_opts.infmt1_opt!=3))
-        PrintErrorAndQuit("-o can only be used with -infmt1 -1, 0 or 3");
+        PrintErrorAndQuit("-pymol can only be used with -infmt1 -1, 0 or 3");
 }
 
 void check_dir_option_limits(UserOptions& user_opts, ControlOptions& control)
@@ -366,7 +366,7 @@ void check_dir_option_limits(UserOptions& user_opts, ControlOptions& control)
         if (control.mm_opt!=2 && control.mm_opt!=4)
         {
             if (user_opts.o_opt)
-                PrintErrorAndQuit("-o cannot be set with -dir, -dir1 or -dir2");
+                PrintErrorAndQuit("-pymol cannot be set with -dir, -dir1 or -dir2");
             if (user_opts.m_opt && user_opts.fname_matrix!="-")
                 PrintErrorAndQuit("-m can only be - or unset when using -dir, -dir1 or -dir2");
         }
@@ -462,7 +462,7 @@ void check_mm_conflicts(UserOptions& user_opts, ControlOptions& control)
     {
         if (control.mm_opt && user_opts.o_opt==2) std::cerr<<"WARNING! -mm may generate incorrect"
             <<" RasMol output due to limitations in PDB file format. "
-            <<"When -mm is used, -o is recommended over -rasmol"<<std::endl;
+            <<"When -mm is used, -pymol is recommended over -rasmol"<<std::endl;
         else if (control.mm_opt==0) std::cerr<<"WARNING! Only the superposition of the"
             <<" last aligned structure pair will be generated"<<std::endl;
     }
@@ -522,9 +522,9 @@ void build_file_lists(UserOptions& user_opts, ParsedInput& parsed, ControlOption
 bool parse_file_option(int argc, char* argv[], int& i, AlignCommonInput& common_inputs)
 {
     UserOptions& user_opts = common_inputs.user_options;
-    if ( std::string(argv[i]) == "-o" )
+    if ( std::string(argv[i]) == "-pymol" )
     {
-        const std::string val = get_argv_value(argc, argv, i, "-o");
+        const std::string val = get_argv_value(argc, argv, i, "-pymol");
         set_output_format(user_opts.o_opt, user_opts.fname_super, OUT_O, val);
     }
     else if ( std::string(argv[i]) == "-rasmol" )
