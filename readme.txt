@@ -213,14 +213,51 @@ Flexible (hinge) alignment can also be run as a standalone program:
 which is equivalent to "./USalign ... -mm 7" plus the flexible-alignment
 options (-hinge / -afp / -TMpass).
 
-Output files: by default, the files written by the program (-o, -m, -rasmol,
--chimerax and the upgma_tree files of -mm 4) are placed in a "results" folder
-created next to the executable. Use
+Output files: by default, the files written by the program (-pymol, -m,
+-rasmol, -chimerax and the upgma_tree files of -mm 4) are placed in a "results"
+folder created next to the executable. Use
 
     -outdir <dir>    write output files to the given directory
     -outdir .        write output files to the current directory
 
 to change this. Results that are not saved to a file are printed to stdout.
+
+=========================
+ How to view the results
+=========================
+The PyMOL (.pml), ChimeraX (.cxc) and RasMol scripts reference the structure
+files by file name only, so enter the output directory before launching the
+viewer:
+
+    cd results
+    pymol sup.pml
+    chimerax sup_all_atm.cxc
+    rasmol -script sup
+
+Within an already-running PyMOL session, enter the output directory first and
+then load the script:
+
+    cd results
+    @sup.pml
+
+The scripts differ in the region and representation they display:
+
+    sup              C-alpha trace of the aligned region
+    sup_atm          full-atom representation of the aligned region
+    sup_all          C-alpha trace of the whole chain
+    sup_all_atm      full-atom representation of the whole chain
+    sup_all_atm_lig  full-atom representation including all molecules and ligands
+
+Note:
+1. The option that outputs the superposed structure and PyMOL scripts, formerly
+   "-o", is now named "-pymol". This is a backward-incompatible change.
+2. With "-mm 2" on a multi-chain structure, "-pymol" writes the superposed
+   structure of each chain to a separate file (e.g. "sup.0.pdb", "sup.1.pdb")
+   and generates no scene script.
+3. Structure 2 is written to a copy named "<name>_structure2.<ext>" in the
+   output directory (decompressed first if it is a ".gz" or ".bz2" file), and
+   the scripts reference this copy so that the superposition can be loaded
+   directly.
 
 ========================================================
  Building the individual programs under app/
