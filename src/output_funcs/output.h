@@ -60,12 +60,8 @@ inline void copy_structure2_to_outdir(const std::string& yname,
         fin.open(yname.c_str());
 
     std::stringstream buf;
-    std::string line;
-    while (compress_type ? fin_gz.good() : fin.good()) {
-        if (compress_type) std::getline(fin_gz, line);
-        else               std::getline(fin, line);
-        buf << line << '\n';
-    }
+    if (compress_type) buf << fin_gz.rdbuf();
+    else               buf << fin.rdbuf();
     if (compress_type) fin_gz.close();
     else               fin.close();
 
