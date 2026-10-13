@@ -31,13 +31,6 @@ void output_soi_dist_table(std::ostream& os, int ylen,
     const std::vector<std::string>& pdb_lines1,
     const std::vector<std::string>& pdb_lines2);
 
-inline std::string basename_of_path(const std::string& path)
-{
-    const std::string::size_type sep = path.find_last_of("/\\");
-    if (sep == std::string::npos) return path;
-    return path.substr(sep + 1);
-}
-
 inline void copy_structure2_to_outdir(const std::string& yname,
     const std::string& fname_super, std::string& struct2_basename)
 {
@@ -73,7 +66,7 @@ inline void copy_structure2_to_outdir(const std::string& yname,
     fp.open(struct2_path.c_str());
     fp << buf.str();
     fp.close();
-    struct2_basename = basename_of_path(struct2_path);
+    struct2_basename = get_basename(struct2_path);
 }
 
 // script format: 0 - no script; 1 - pymol; 3 - chimerax

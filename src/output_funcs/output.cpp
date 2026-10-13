@@ -265,7 +265,7 @@ void output_pymol(const std::string xname, const std::string yname,
     std::string fname_super_full=fname_super;
     if (infmt==0)      fname_super_full+=".pdb";
     else if (infmt==3) fname_super_full+=".cif";
-    const std::string struct1_basename=basename_of_path(fname_super_full);
+    const std::string struct1_basename=get_basename(fname_super_full);
     std::string struct2_basename;
     copy_structure2_to_outdir(yname, fname_super, struct2_basename);
     std::ofstream fp;
@@ -533,7 +533,7 @@ void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
 
         read_mTMalign_chain_pdb(name, fname_super, m, ut_mat, compress_type, filename);
 
-        const std::string struct_basename = basename_of_path(filename);
+        const std::string struct_basename = get_basename(filename);
         if (o_opt==1) buf_pymol
             <<"cmd.load(\""<<struct_basename<<"\",\"structure"<<m<<"\")\n"
             <<"color "<<mTMalign_color_list[m%mTMalign_color_list.size()]<<", structure"<<m<<"\n";
