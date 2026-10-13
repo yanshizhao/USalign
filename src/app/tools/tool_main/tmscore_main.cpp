@@ -89,6 +89,8 @@ void print_help(bool h_opt)
 "\n"
 " Brief instruction for running TM-score program:\n"
 " (For detail: Zhang & Skolnick, Proteins, 2004 57:702-10)\n"
+" model.pdb is superimposed onto native.pdb, which is kept fixed as the\n"
+" reference. List the file you want as the reference second.\n"
 "\n"
 " 1. Run TM-score to compare 'model' and 'native':\n"
 "     $ TMscore model.pdb native.pdb\n"

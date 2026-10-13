@@ -79,6 +79,9 @@ void print_help(bool h_opt)
     std::cout <<
 "\n"
 "Usage: MMalign complex1.pdb complex2.pdb [Options]\n"
+"complex1 (the first file) is superimposed onto complex2 (the second file),\n"
+"which is kept fixed as the reference. List the structure you want as the\n"
+"reference second.\n"
 "\n"
 "Options:\n"
 "    -a    TM-score normalized by the average length of two structures\n"

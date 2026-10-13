@@ -108,6 +108,9 @@ void print_help(bool h_opt)
     std::cout <<
 "\n"
 "Usage: TMalign example/PDB1.pdb example/PDB2.pdb [Options]\n"
+"PDB1 (the first file) is superimposed onto PDB2 (the second file), which\n"
+"is kept fixed as the reference. List the structure you want as the\n"
+"reference second.\n"
 "\n"
 "Options:\n"
 "    -u    TM-score normalized by user assigned length (the same as -L)\n"

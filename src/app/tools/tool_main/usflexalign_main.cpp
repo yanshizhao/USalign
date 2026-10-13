@@ -128,6 +128,9 @@ void print_help(bool h_opt)
     std::cout <<
 "\n"
 "Usage: USFlexalign PDB1.pdb PDB2.pdb [Options]\n"
+"PDB1 (the first file) is superimposed onto PDB2 (the second file), which\n"
+"is kept fixed as the reference. List the structure you want as the\n"
+"reference second.\n"
 "\n"
 "Options:\n"
 "  -hinge  Maximum number of hinge allowed in flexible alignment.\n"

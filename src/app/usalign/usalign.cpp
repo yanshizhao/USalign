@@ -146,6 +146,9 @@ void print_help()
     std::cout <<
 "\n"
 "Usage: USalign example/PDB1.pdb example/PDB2.pdb [Options]\n"
+"Structure_1 (the first file) is superimposed onto Structure_2 (the\n"
+"second file), which is kept fixed as the reference. List the structure\n"
+"you want as the reference second.\n"
 "\n"
 "Options:\n"
 "    -mol  Type of molecule(s) to align.\n"
