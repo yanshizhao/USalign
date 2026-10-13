@@ -533,11 +533,12 @@ void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
 
         read_mTMalign_chain_pdb(name, fname_super, m, ut_mat, compress_type, filename);
 
+        const std::string struct_basename = basename_of_path(filename);
         if (o_opt==1) buf_pymol
-            <<"cmd.load(\""<<filename<<"\",\"structure"<<m<<"\")\n"
+            <<"cmd.load(\""<<struct_basename<<"\",\"structure"<<m<<"\")\n"
             <<"color "<<mTMalign_color_list[m%mTMalign_color_list.size()]<<", structure"<<m<<"\n";
         else if (o_opt==3) buf_pymol
-            <<"open \""<<filename<<"\" name structure"<<m<<"\n"
+            <<"open \""<<struct_basename<<"\" name structure"<<m<<"\n"
             <<"color #"<<m+1<<" "<<mTMalign_color_list[m%mTMalign_color_list.size()]<<"\n";
 
     }
