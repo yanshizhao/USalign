@@ -33,6 +33,7 @@ struct HwRMSDOptions
     int    outfmt_opt=0;     // set -outfmt to full output
     int    het_opt=0;        // do not read HETATM residues
     int    byresi_opt=0;     // set -byresi to 0
+    int    read_resi =0;     // whether to read residue index
     int    glocal    =0;
     int    iter_opt  =10;
     int    seq_opt   =3;

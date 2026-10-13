@@ -265,6 +265,9 @@ void apply_derived_options(HwRMSDOptions& hwrmsd_opts)
 
     if (hwrmsd_opts.m_opt && hwrmsd_opts.fname_matrix == "") // Output rotation matrix: matrix.txt
         PrintErrorAndQuit("ERROR! Please provide a file name for option -m!");
+
+    hwrmsd_opts.read_resi = hwrmsd_opts.byresi_opt;  // whether to read residue index
+    if (hwrmsd_opts.byresi_opt == 0 && hwrmsd_opts.o_opt) hwrmsd_opts.read_resi = 2;
 }
 
 void postprocess_arguments(HwRMSDOptions& hwrmsd_opts)
@@ -288,7 +291,7 @@ void read_chain(const std::vector<std::string>& chain_lines, const std::string& 
     chain.chain_id = chain_id;
     chain.cur_complex_mol_list = mol_type;
     chain.chain_len = read_PDB(chain_lines, chain.chain_coords, chain.chain_seq,
-        chain.resi_vec, hwrmsd_opts.byresi_opt);
+        chain.resi_vec, hwrmsd_opts.read_resi);
     if (hwrmsd_opts.seq_opt==2 || (hwrmsd_opts.seq_opt==3 && hwrmsd_opts.iter_opt>=2))  // SS assignment
     {
         chain.chain_sec.resize(chain.chain_len+1);
