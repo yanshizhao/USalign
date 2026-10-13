@@ -415,6 +415,8 @@ int main(int argc, char *argv[])
                                // --> superpose xa onto ya
     vector<string> resi_vec1;  // residue index for chain1
     vector<string> resi_vec2;  // residue index for chain2
+    int read_resi = byresi_opt;
+    if (byresi_opt == 0 && o_opt) read_resi = 2;
 
     /* loop over file names */
     for (int i=0;i<chain1_list.size();i++)
@@ -444,7 +446,7 @@ int main(int argc, char *argv[])
             NewArray(&xa, xlen, 3);
             seqx = new char[xlen + 1];
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx, 
-                resi_vec1, byresi_opt);
+                resi_vec1, read_resi);
             if (seq_opt==2 || (seq_opt==3 && iter_opt>=2))  // SS assignment
             {
                 secx = new char[xlen+1];
@@ -483,7 +485,7 @@ int main(int argc, char *argv[])
                     NewArray(&ya, ylen, 3);
                     seqy = new char[ylen + 1];
                     ylen = read_PDB(PDB_lines2[chain_j], ya, seqy,
-                        resi_vec2, byresi_opt);
+                        resi_vec2, read_resi);
                     if (seq_opt==2 || (seq_opt==3 && iter_opt>=2))  // SS assignment
                     {
                         secy = new char[ylen+1];
