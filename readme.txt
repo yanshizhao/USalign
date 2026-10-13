@@ -225,9 +225,10 @@ to change this. Results that are not saved to a file are printed to stdout.
 =========================
  How to view the results
 =========================
-The PyMOL (.pml), ChimeraX (.cxc) and RasMol scripts reference the structure
-files by file name only, so enter the output directory before launching the
-viewer:
+The PyMOL (.pml) and ChimeraX (.cxc) scripts reference the structure files
+by file name only, so enter the output directory before launching the viewer.
+(The RasMol script embeds the coordinates inline and can be run from any
+directory.)
 
     cd results
     pymol sup.pml
