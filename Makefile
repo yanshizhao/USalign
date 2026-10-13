@@ -1,6 +1,7 @@
 CC=g++
 MINGW=x86_64-w64-mingw32-g++
 CFLAGS=-O3 -ffast-math -std=gnu++11
+OUT_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 # Keep compiler temporaries inside the tree so the build does not depend on a
 # writable system temp dir (e.g. C:\Windows\ when TEMP is unset under MSYS make).
 BUILD_TMP:=$(CURDIR)/.build_tmp
@@ -30,59 +31,59 @@ OUTPUT_CPP=src/output_funcs/output.cpp
 all: USalign
 
 qTMclust: src/app/tools/tool_main/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 USalign: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 USalign.exe: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $@ ${LDFLAGS}
+		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 USFlexalign: src/app/tools/tool_main/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 TMalign: src/app/tools/tool_main/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 TMscore: src/app/tools/tool_main/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 MMalign: src/app/tools/tool_main/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 se: src/app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 pdb2ss: src/app/tools/tool_main/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 pdb2xyz: src/app/tools/tool_main/pdb2xyz_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 xyz_sfetch: src/app/tools/tool_main/xyz_sfetch_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 pdb2fasta: src/app/tools/tool_main/pdb2fasta_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 biounitasym: src/app/tools/tool_main/biounitasym_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 NWalign: src/app/tools/tool_main/nwalign_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 HwRMSD: src/app/tools/tool_main/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 cif2pdb: src/app/tools/tool_main/cif2pdb_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 pdbAtomName: src/app/tools/tool_main/pdbatomname_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 addChainID: src/app/tools/tool_main/addchainid_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $@ ${LDFLAGS}
+		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 clean:
-		rm -f ${PROGRAM}
+		rm -f $(addprefix $(OUT_DIR),${PROGRAM})
 		rm -rf $(BUILD_TMP)
