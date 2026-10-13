@@ -1112,6 +1112,9 @@ inline void write_pymol_to_file(const FlexalignPymolState& pymol_state,
         fname_super_full += ".pdb";
     else if (pymol_state.infmt == 3)
         fname_super_full += ".cif";
+    const std::string struct1_basename = basename_of_path(fname_super_full);
+    std::string struct2_basename;
+    copy_structure2_to_outdir(yname, fname_super, struct2_basename);
     std::ofstream fp;
     fp.open(fname_super_full.c_str());
     fp << pymol_state.buf.str();
@@ -1137,8 +1140,8 @@ inline void write_pymol_to_file(const FlexalignPymolState& pymol_state,
             continue;
         buf_pymol
             << "#!/usr/bin/env pymol\n"
-            << "cmd.load(\"" << fname_super_full << "\", \"structure1\")\n"
-            << "cmd.load(\"" << yname << "\", \"structure2\")\n"
+            << "cmd.load(\"" << struct1_basename << "\", \"structure1\")\n"
+            << "cmd.load(\"" << struct2_basename << "\", \"structure2\")\n"
             << "hide all\n"
             << "set all_states, " << ((ter_opt == 0) ? "on" : "off") << '\n';
         if (p == 0) // .pml
