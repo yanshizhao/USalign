@@ -265,6 +265,7 @@ void output_pymol(const std::string xname, const std::string yname,
     std::string fname_super_full=fname_super;
     if (infmt==0)      fname_super_full+=".pdb";
     else if (infmt==3) fname_super_full+=".cif";
+    const std::string struct1_basename=basename_of_path(fname_super_full);
     std::ofstream fp;
     fp.open(fname_super_full.c_str());
     fp<<buf.str();
@@ -379,13 +380,13 @@ void output_pymol(const std::string xname, const std::string yname,
         if (mm_opt && p<=1) continue;
         if (o_opt==1) buf_pymol
             <<"#!/usr/bin/env pymol\n"
-            <<"cmd.load(\""<<fname_super_full<<"\", \"structure1\")\n"
+            <<"cmd.load(\""<<struct1_basename<<"\", \"structure1\")\n"
             <<"cmd.load(\""<<yname<<"\", \"structure2\")\n"
             <<"hide all\n"
             <<"set all_states, "<<((ter_opt==0)?"on":"off")<<'\n';
         else if (o_opt==3) buf_pymol
             <<"#!/usr/bin/env chimerax --script\n"
-            <<"open \""<<fname_super_full<<"\" name structure1\n"
+            <<"open \""<<struct1_basename<<"\" name structure1\n"
             <<"open \""<<yname<<"\" name structure2\n";
         if (p==0) // .pml
         {
