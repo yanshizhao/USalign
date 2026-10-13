@@ -88,8 +88,8 @@ void print_help(bool h_opt)
 "\n"
 "    -d    TM-score scaled by an assigned d0, e.g. 5 Angstroms\n"
 "\n"
-"    -o    Output the superposition of complex1.pdb to MM_sup.pdb\n"
-"          $ MMalign complex1.pdb complex2.pdb -o MM_sup.pdb\n"
+"    -pymol Output the superposition of complex1.pdb to MM_sup.pdb\n"
+"          $ MMalign complex1.pdb complex2.pdb -pymol MM_sup.pdb\n"
 "          To view superposed full-atom structures:\n"
 "          $ pymol MM_sup.pdb complex2.pdb\n"
 "\n"
@@ -106,11 +106,11 @@ void print_help(bool h_opt)
 "\n"
 "    -h    Print the full help message\n"
 "\n"
-"    (Options -a, -d, -m, -o won't change the final structure alignment)\n\n"
+"    (Options -a, -d, -m, -pymol won't change the final structure alignment)\n\n"
 "Example usages:\n"
 "    MMalign complex1.pdb complex2.pdb\n"
 "    MMalign complex1.pdb complex2.pdb -d 5.0\n"
-"    MMalign complex1.pdb complex2.pdb -a T -o complex1.sup\n"
+"    MMalign complex1.pdb complex2.pdb -a T -pymol complex1.sup\n"
 "    MMalign complex1.pdb complex2.pdb -m matrix.txt\n"
 "\n"
 "    -outdir  Directory for output files. Defaults to the 'results' folder\n"
@@ -125,7 +125,7 @@ void print_help(bool h_opt)
 bool parse_file_option(int argc, char* argv[], int& i, MMalignOptions& mmalign_opts)
 {
     if (i + 1 >= argc) return false;
-    if (std::string(argv[i]) == "-o")
+    if (std::string(argv[i]) == "-pymol")
     {
         mmalign_opts.fname_super = argv[i + 1];     mmalign_opts.o_opt = true;   i++;
     }
@@ -242,7 +242,7 @@ void check_dir_conflicts(MMalignOptions& mmalign_opts)
     if (mmalign_opts.suffix_opt.size() && mmalign_opts.dir1_opt.size()+mmalign_opts.dir2_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir1 or -dir2 is set");
     if ((mmalign_opts.dir1_opt.size() || mmalign_opts.dir2_opt.size()) && (mmalign_opts.m_opt || mmalign_opts.o_opt))
-        PrintErrorAndQuit("-m or -o cannot be set with -dir1 or -dir2");
+        PrintErrorAndQuit("-m or -pymol cannot be set with -dir1 or -dir2");
 }
 
 void check_numeric_conflicts(MMalignOptions& mmalign_opts)

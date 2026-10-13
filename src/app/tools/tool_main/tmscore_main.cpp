@@ -103,7 +103,7 @@ void print_help(bool h_opt)
 "     $ TMscore model.pdb native.pdb -l 120\n"
 "\n"
 " 4. TM-score with superposition output, e.g. 'TM_sup.pdb':\n"
-"     $ TMscore model.pdb native.pdb -o TM_sup.pdb\n"
+"     $ TMscore model.pdb native.pdb -pymol TM_sup.pdb\n"
 "    To view superimposed atomic model by PyMOL:\n"
 "     $ pymol TM_sup.pdb native.pdb\n"
 "\n"
@@ -127,7 +127,7 @@ void print_help(bool h_opt)
 bool parse_file_option(int argc, char* argv[], int& i, TMscoreOptions& tmscore_opts)
 {
     if (i + 1 >= argc) return false;
-    if (std::string(argv[i]) == "-o")
+    if (std::string(argv[i]) == "-pymol")
     {
         tmscore_opts.fname_super = argv[i + 1];     tmscore_opts.o_opt = true;   i++;
     }

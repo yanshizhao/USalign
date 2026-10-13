@@ -125,8 +125,8 @@ void print_help(bool h_opt)
 "\n"
 "    -d    TM-score scaled by an assigned d0, e.g. 5 Angstroms\n"
 "\n"
-"    -o    Output the superposition of example/PDB1.pdb to TM_sup.pdb\n"
-"          $ TMalign example/PDB1.pdb example/PDB2.pdb -o TM_sup.pdb\n"
+"    -pymol Output the superposition of example/PDB1.pdb to TM_sup.pdb\n"
+"          $ TMalign example/PDB1.pdb example/PDB2.pdb -pymol TM_sup.pdb\n"
 "          To view superposed full-atom structures:\n"
 "          $ pymol TM_sup.pdb example/PDB2.pdb\n"
 "\n"
@@ -135,11 +135,11 @@ void print_help(bool h_opt)
 "    -h    Print the full help message, including options not available\n"
 "          in standard TM-align program\n"
 "\n"
-"    (Options -u, -a, -d, -o won't change the final structure alignment)\n\n"
+"    (Options -u, -a, -d, -pymol won't change the final structure alignment)\n\n"
 "Example usages:\n"
 "    TMalign example/PDB1.pdb example/PDB2.pdb\n"
 "    TMalign example/PDB1.pdb example/PDB2.pdb -u 100 -d 5.0\n"
-"    TMalign example/PDB1.pdb example/PDB2.pdb -a T -o PDB1.sup\n"
+"    TMalign example/PDB1.pdb example/PDB2.pdb -a T -pymol PDB1.sup\n"
 "    TMalign example/PDB1.pdb example/PDB2.pdb -i example/align.txt\n"
 "    TMalign example/PDB1.pdb example/PDB2.pdb -m matrix.txt\n"
 "\n"
@@ -155,7 +155,7 @@ void print_help(bool h_opt)
 bool parse_file_option(int argc, char* argv[], int& i, TMalignOptions& tmalign_opts)
 {
     if (i + 1 >= argc) return false;
-    if (std::string(argv[i]) == "-o")
+    if (std::string(argv[i]) == "-pymol")
     {
         tmalign_opts.fname_super = argv[i + 1];     tmalign_opts.o_opt = true;   i++;
     }

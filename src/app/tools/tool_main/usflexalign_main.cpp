@@ -38,8 +38,8 @@ void print_extra_help()
 "      -u  TM-score normalized by an assigned length. It should be >= length\n"
 "          of protein to avoid TM-score >1. -u does not change final alignment.\n"
 "\n"
-"      -o  Output superposed structure1 to sup.* for PyMOL viewing.\n"
-"          $ USFlexalign structure1.pdb structure2.pdb -o sup\n"
+"  -pymol  Output superposed structure1 to sup.* for PyMOL viewing.\n"
+"          $ USFlexalign structure1.pdb structure2.pdb -pymol sup\n"
 "          $ pymol -d @sup.pml                # C-alpha trace aligned region\n"
 "          $ pymol -d @sup_all.pml            # C-alpha trace whole chain\n"
 "          $ pymol -d @sup_atm.pml            # full-atom aligned region\n"
@@ -151,7 +151,7 @@ void print_help(bool h_opt)
 
 inline void set_output_format(int& o_opt, std::string& fname_super, const int incoming, const std::string& value)
 {
-    static const char* format_name[] = {"", "-o", "-rasmol"};
+    static const char* format_name[] = {"", "-pymol", "-rasmol"};
     for (int other = 1; other <= 2; other++)
     {
         if (other == incoming) continue;
@@ -169,7 +169,7 @@ inline void set_output_format(int& o_opt, std::string& fname_super, const int in
 bool parse_file_option(int argc, char* argv[], int& i, USFlexalignOptions& usflexalign_opts)
 {
     if (i + 1 >= argc) return false;
-    if (std::string(argv[i]) == "-o")
+    if (std::string(argv[i]) == "-pymol")
     {
         set_output_format(usflexalign_opts.o_opt, usflexalign_opts.fname_super, 1, argv[i + 1]); i++;
     }
@@ -285,14 +285,14 @@ void check_dir_conflicts(USFlexalignOptions& usflexalign_opts)
     if ((usflexalign_opts.dir_opt.size() || usflexalign_opts.dir1_opt.size() || usflexalign_opts.dir2_opt.size()))
     {
         if (usflexalign_opts.o_opt)
-            PrintErrorAndQuit("-o or -rasmol cannot be set with -dir, -dir1 or -dir2");
+            PrintErrorAndQuit("-pymol or -rasmol cannot be set with -dir, -dir1 or -dir2");
         if (usflexalign_opts.m_opt && usflexalign_opts.fname_matrix != "-")
             PrintErrorAndQuit("-m can only be - or unset when using -dir, -dir1 or -dir2");
         else if (usflexalign_opts.dir_opt.size() && (usflexalign_opts.dir1_opt.size() || usflexalign_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
     if (usflexalign_opts.o_opt && (usflexalign_opts.infmt1_opt != -1 && usflexalign_opts.infmt1_opt != 0 && usflexalign_opts.infmt1_opt != 3))
-        PrintErrorAndQuit("-o can only be used with -infmt1 -1, 0 or 3");
+        PrintErrorAndQuit("-pymol can only be used with -infmt1 -1, 0 or 3");
 }
 
 void check_hinge(USFlexalignOptions& usflexalign_opts)
