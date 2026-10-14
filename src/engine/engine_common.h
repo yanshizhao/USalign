@@ -1,6 +1,8 @@
 #pragma once
 #include "common.h"
 
+struct FlexAlignResult;
+
 // These functions implement d0 normalization. The d0 for final TM-score
 // output is implemented by parameter_set4final. For both RNA alignment
 // and protein alignment, using d0 set by parameter_set4search yields
@@ -98,3 +100,10 @@ void align_chain_pair(ChainPairAlignResult& chain_align_res,
     const ChainPairAlignOptions& align_opts,
     const std::vector<std::string>& sequence,
     int outfmt_opt);
+
+int se_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    ChainPairAlignResult& chain_align_res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& align_opts, const int outfmt_opt, const int hinge=0);
