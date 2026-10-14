@@ -283,19 +283,30 @@ double calc_ccTM_score(
     return TM_sum / tot_num_pair;
 }
 
+struct MTMalignPairwiseParams
+{
+    double Lnorm_ass;
+    int chain_num;
+    int cur_complex_mol_list;
+    int parallel_threads;
+    bool u_opt;
+    bool fast_opt;
+    bool full_opt;
+    bool se_opt;
+};
+
 // Parallel all-against-all pairwise alignment for MSTA (mTMalign)
 static void run_mTMalign_pairwise_parallel(
     const DoubleCube& a_vec, const CharMatrix& seq_vec, const CharMatrix& sec_vec, const std::vector<int>& len_vec,
     const std::vector<std::string>& chain_list, const std::vector<std::string>& chainID_list,
     std::vector<std::vector<std::string>>& seqxA_mat, std::vector<std::vector<std::string>>& seqyA_mat,
-    DoubleMatrix& TMave_mat, const std::vector<std::string>& resi_vec, int chain_num, double Lnorm_ass,
-    double d0_scale, bool u_opt, int cur_complex_mol_list, int outfmt_opt, bool fast_opt, double TMcut,
-    bool full_opt, bool se_opt, int ter_opt, int split_opt, int o_opt, int a_opt, bool d_opt, int parallel_threads)
+    DoubleMatrix& TMave_mat, const std::vector<std::string>& resi_vec, const UserOptions& user_opts,
+    const MTMalignPairwiseParams& params)
 {
-    std::vector<std::string> full_out(chain_num * chain_num);
+    std::vector<std::string> full_out(params.chain_num * params.chain_num);
 
-    #pragma omp parallel for schedule(dynamic, 1) num_threads(parallel_threads)
-    for (int chain_i = 0; chain_i < chain_num; chain_i++)
+    #pragma omp parallel for schedule(dynamic, 1) num_threads(params.parallel_threads)
+    for (int chain_i = 0; chain_i < params.chain_num; chain_i++)
     {
         int xlen = len_vec[chain_i];
         if (xlen < 3) continue;
@@ -305,7 +316,7 @@ static void run_mTMalign_pairwise_parallel(
         copy_chain_data(a_vec[chain_i], seq_vec[chain_i], sec_vec[chain_i], xlen, xa, seqx, secx);
         seqxA_mat[chain_i][chain_i] = seqyA_mat[chain_i][chain_i] = seqx;
 
-        for (int chain_j = chain_i + 1; chain_j < chain_num; chain_j++)
+        for (int chain_j = chain_i + 1; chain_j < params.chain_num; chain_j++)
         {
             int ylen = len_vec[chain_j];
             if (ylen < 3) continue;
@@ -323,60 +334,60 @@ static void run_mTMalign_pairwise_parallel(
             ChainPairAlignOptions align_opts;
             align_opts.i_opt = 0;
             align_opts.a_opt = 0;
-            align_opts.u_opt = u_opt;
+            align_opts.u_opt = params.u_opt;
             align_opts.d_opt = false;
-            align_opts.fast_opt = fast_opt;
-            align_opts.se_opt = se_opt;
+            align_opts.fast_opt = params.fast_opt;
+            align_opts.se_opt = params.se_opt;
             align_opts.cp_opt = false;
-            align_opts.Lnorm = Lnorm_ass;
-            align_opts.d0_scale = d0_scale;
-            align_opts.TMcut = TMcut;
+            align_opts.Lnorm = params.Lnorm_ass;
+            align_opts.d0_scale = user_opts.d0_scale;
+            align_opts.TMcut = user_opts.TMcut;
             align_opts.parallel_threads = 1;
             align_opts.ss_opt = 0;
-            align_opts.mol_type = cur_complex_mol_list;
+            align_opts.mol_type = params.cur_complex_mol_list;
 
-            align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy, xlen, ylen, align_opts, local_seq, outfmt_opt);
+            align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy, xlen, ylen, align_opts, local_seq, user_opts.outfmt_opt);
 
             TMave_mat[chain_i][chain_j] = chain_align_res.TM4; TMave_mat[chain_j][chain_i] = chain_align_res.TM4;
             seqxA_mat[chain_i][chain_j] = seqyA_mat[chain_j][chain_i] = chain_align_res.seqxA;
             seqyA_mat[chain_i][chain_j] = seqxA_mat[chain_j][chain_i] = chain_align_res.seqyA;
 
-            if (full_opt)
+            if (params.full_opt)
             {
                 std::stringstream ss;
                 OutputOptions out_opts;
                 out_opts.fname_matrix = "";
                 out_opts.fname_super = "";
-                out_opts.Lnorm_ass = Lnorm_ass;
-                out_opts.d0_scale = d0_scale;
-                out_opts.outfmt_opt = outfmt_opt;
-                out_opts.ter_opt = ter_opt;
+                out_opts.Lnorm_ass = params.Lnorm_ass;
+                out_opts.d0_scale = user_opts.d0_scale;
+                out_opts.outfmt_opt = user_opts.outfmt_opt;
+                out_opts.ter_opt = user_opts.ter_opt;
                 out_opts.mm_opt = true;
-                out_opts.split_opt = split_opt;
-                out_opts.o_opt = o_opt;
+                out_opts.split_opt = user_opts.split_opt;
+                out_opts.o_opt = user_opts.o_opt;
                 out_opts.i_opt = 0;
-                out_opts.a_opt = a_opt;
+                out_opts.a_opt = user_opts.a_opt;
                 out_opts.mirror_opt = 0;
                 out_opts.u_opt = false;
-                out_opts.d_opt = d_opt;
+                out_opts.d_opt = user_opts.d_opt;
 
                 const std::string structure1_display = chain_list[chain_i];
                 const std::string structure2_display = chain_list[chain_j];
                 const ChainPairDesc pair_desc{structure1_display, structure2_display, chainID_list[chain_i], chainID_list[chain_j], xlen, ylen};
                 output_results(
                     pair_desc, chain_align_res, out_opts, resi_vec, resi_vec, ss);
-                full_out[chain_i * chain_num + chain_j] = ss.str();
+                full_out[chain_i * params.chain_num + chain_j] = ss.str();
             }
         }
     }
 
     // Serial output in (chain_i, chain_j) order, matching the serial path
-    if (full_opt)
+    if (params.full_opt)
     {
-        for (int chain_i = 0; chain_i < chain_num; chain_i++)
-            for (int chain_j = chain_i + 1; chain_j < chain_num; chain_j++)
-                if (!full_out[chain_i * chain_num + chain_j].empty())
-                    std::cout << full_out[chain_i * chain_num + chain_j];
+        for (int chain_i = 0; chain_i < params.chain_num; chain_i++)
+            for (int chain_j = chain_i + 1; chain_j < params.chain_num; chain_j++)
+                if (!full_out[chain_i * params.chain_num + chain_j].empty())
+                    std::cout << full_out[chain_i * params.chain_num + chain_j];
     }
 }
 
@@ -920,11 +931,18 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
 
 #ifdef _OPENMP
     if (ctrl_opts.parallel_threads > 1) {
+        MTMalignPairwiseParams mt_pairwise_params;
+        mt_pairwise_params.Lnorm_ass = Lnorm_ass;
+        mt_pairwise_params.chain_num = chain_num;
+        mt_pairwise_params.cur_complex_mol_list = cur_complex_mol_list;
+        mt_pairwise_params.parallel_threads = ctrl_opts.parallel_threads;
+        mt_pairwise_params.u_opt = u_opt;
+        mt_pairwise_params.fast_opt = fast_opt;
+        mt_pairwise_params.full_opt = ctrl_opts.full_opt;
+        mt_pairwise_params.se_opt = ctrl_opts.se_opt;
         run_mTMalign_pairwise_parallel(
             a_vec, seq_vec, sec_vec, len_vec, parsed_input.chain1_list, chainID_list, seqxA_mat, seqyA_mat,
-            TMave_mat, resi_vec, chain_num, Lnorm_ass, user_opts.d0_scale, u_opt, cur_complex_mol_list,
-            user_opts.outfmt_opt, fast_opt, user_opts.TMcut, ctrl_opts.full_opt, ctrl_opts.se_opt,
-            user_opts.ter_opt, user_opts.split_opt, user_opts.o_opt, user_opts.a_opt, user_opts.d_opt, ctrl_opts.parallel_threads);
+            TMave_mat, resi_vec, user_opts, mt_pairwise_params);
         pair_parallel_done = true;
     }
 #endif
