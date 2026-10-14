@@ -107,3 +107,21 @@ int se_main(CoordArray& xa, CoordArray& ya,
     const int xlen, const int ylen,
     const std::vector<std::string>& sequence,
     const ChainPairAlignOptions& align_opts, const int outfmt_opt, const int hinge=0);
+
+int TMalign_main(CoordArray& xa_c, CoordArray& ya_c,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    ChainPairAlignResult& chain_align_res,
+    const int xlen, const int ylen,
+    const std::vector<std::string> sequence,
+    const ChainPairAlignOptions& align_opts,
+    std::ostream& os = std::cout);
+
+int CPalign_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    ChainPairAlignResult& chain_align_res,
+    const int xlen, const int ylen,
+    const std::vector<std::string>& sequence,
+    const ChainPairAlignOptions& align_opts,
+    std::ostream& os = std::cout);
