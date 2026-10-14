@@ -1009,240 +1009,30 @@ const std::array<std::array<int, 128>, 128> BLOSUM = {{
 #define PATH_LEFT  3   // left:     gap aligns with residue j
 
 // Forward declarations
-inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
+void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
     DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i);
 
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
+void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     const CoordArray& x, const CoordArray& y,
     int len1, int len2, const Vec3& t, const RotMat& u,
     double d02, double gap_open, std::vector<int>& j2i);
 
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
+void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
     const std::string& secx, const std::string& secy,
     const int len1, const int len2, const double gap_open, std::vector<int>& j2i);
 
-inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
+void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
     CoordArray& x, CoordArray& y,
     int len1, int len2, double d02, double gap_open,
     std::vector<int>& j2i, const int hinge);
 
 
-inline void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
-    DoubleMatrix& val, int len1, int len2, double gap_open, std::vector<int>& j2i)
-{
-    int    i, j;
-    double h, v, d;
-
-    for (i = 0; i <= len1; i++) { val[i][0] = 0; path[i][0] = 0; }
-    for (j = 0; j <= len2; j++) { val[0][j] = 0; path[0][j] = 0; j2i[j] = -1; }
-
-    for (i = 1; i <= len1; i++) {
-        for (j = 1; j <= len2; j++) {
-            d = val[i - 1][j - 1] + score[i][j];
-            h = val[i - 1][j];
-            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
-            v = val[i][j - 1];
-            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
-
-            if (d >= h && d >= v) {
-                path[i][j] = PATH_DIAG;// diagonal
-                val[i][j] = d;
-            } else if (v >= h) {
-                path[i][j] = PATH_LEFT;// left
-                val[i][j] = v;
-            } else {
-                path[i][j] = PATH_UP;// up
-                val[i][j] = h;
-            }
-        }
-    }
-
-    // Fast backtrack using stored path codes
-    i = len1; j = len2;
-    while (i > 0 && j > 0) {
-        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == PATH_UP) { i--; }
-        else { j--; }  // path[i][j] == PATH_LEFT(left)
-    }
-}
 
 
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
-    const CoordArray& x, const CoordArray& y,
-    int len1, int len2, const Vec3& t, const RotMat& u,
-    double d02, double gap_open, std::vector<int>& j2i)
-{
-    int    i, j;
-    double h, v, d;
-    Vec3   xx;
-    double dij;
-
-    for (i = 0; i <= len1; i++) { val[i][0] = 0; path[i][0] = 0; }
-    for (j = 0; j <= len2; j++) { val[0][j] = 0; path[0][j] = 0; j2i[j] = -1; }
-
-    for (i = 1; i <= len1; i++) {
-        transform(t, u, x[i - 1], xx);
-
-        for (j = 1; j <= len2; j++) {
-            dij = dist(xx, y[j - 1]);
-            d   = val[i - 1][j - 1] + 1.0 / (1.0 + dij / d02);
-            h   = val[i - 1][j];
-            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
-            v = val[i][j - 1];
-            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
-
-            if (d >= h && d >= v) {
-                path[i][j] = PATH_DIAG;// diagonal
-                val[i][j] = d;
-            } else if (v >= h) {
-                path[i][j] = PATH_LEFT;// left
-                val[i][j] = v;
-            } else {
-                path[i][j] = PATH_UP;// up
-                val[i][j] = h;
-            }
-        }
-    }
-
-    // Fast backtrack – no need to re-read val[] just to decide direction
-    i = len1; j = len2;
-    while (i > 0 && j > 0) {
-        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == PATH_UP) { i--; }
-        else { j--; }
-    }
-}
 
 
-inline void NWDP_TM(CharMatrix& path, DoubleMatrix& val,
-    const std::string& secx, const std::string& secy,
-    const int len1, const int len2, const double gap_open, std::vector<int>& j2i)
-{
-    int    i, j;
-    double h, v, d;
-
-    for (i = 0; i <= len1; i++) { val[i][0] = 0; path[i][0] = 0; }
-    for (j = 0; j <= len2; j++) { val[0][j] = 0; path[0][j] = 0; j2i[j] = -1; }
-
-    for (i = 1; i <= len1; i++) {
-        for (j = 1; j <= len2; j++) {
-            d = val[i - 1][j - 1] + 1.0 * (secx[i - 1] == secy[j - 1]);
-            h = val[i - 1][j];
-            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
-            v = val[i][j - 1];
-            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
-
-            if (d >= h && d >= v) {
-                path[i][j] = PATH_DIAG;// diagonal
-                val[i][j] = d;
-            } else if (v >= h) {
-                path[i][j] = PATH_LEFT;// left
-                val[i][j] = v;
-            } else {
-                path[i][j] = PATH_UP;// up
-                val[i][j] = h;
-            }
-        }
-    }
-
-    i = len1; j = len2;
-    while (i > 0 && j > 0) {
-        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == PATH_UP) { i--; }
-        else { j--; }
-    }
-}
 
 
-inline void NWDP_SE(CharMatrix& path, DoubleMatrix& val,
-    CoordArray& x, CoordArray& y,
-    int len1, int len2, double d02, double gap_open,
-    std::vector<int>& j2i, const int hinge)
-{
-    int    i, j;
-    double h, v, d;
-    double dij;
-
-    if (hinge == 0) {
-        for (i = 0; i <= len1; i++) { val[i][0] = 0; path[i][0] = 0; }
-        for (j = 0; j <= len2; j++) { val[0][j] = 0; path[0][j] = 0; j2i[j] = -1; }
-
-        for (i = 1; i <= len1; i++) {
-            for (j = 1; j <= len2; j++) {
-                dij = dist(x[i - 1], y[j - 1]);
-                d   = val[i - 1][j - 1] + 1.0 / (1.0 + dij / d02);
-                h   = val[i - 1][j];
-                if (path[i - 1][j] == PATH_DIAG) h += gap_open;
-                v = val[i][j - 1];
-                if (path[i][j - 1] == PATH_DIAG) v += gap_open;
-
-                if (d >= h && d >= v) {
-                    path[i][j] = PATH_DIAG;// diagonal
-                    val[i][j] = d;
-                } else if (v >= h) {
-                    path[i][j] = PATH_LEFT;// left
-                    val[i][j] = v;
-                } else {
-                    path[i][j] = PATH_UP;// up
-                    val[i][j] = h;
-                }
-            }
-        }
-
-        i = len1; j = len2;
-        while (i > 0 && j > 0) {
-            if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
-            else if (path[i][j] == PATH_UP) { i--; }
-            else { j--; }
-        }
-        return;
-    }
-
-    for (i = 0; i <= len1; i++)
-        for (j = 0; j <= len2; j++)
-            val[i][j] = 0, path[i][j] = 0;
-
-    for (j = 0; j < len2; j++) {
-        i = j2i[j];
-        if (i < 0) continue;
-        path[i + 1][j + 1] = PATH_DIAG;// diagonal
-        val[i + 1][j + 1] = 0;
-    }
-
-    for (i = 1; i <= len1; i++) {
-        for (j = 1; j <= len2; j++) {
-            dij = 0;
-            if (path[i][j] == 0)
-                dij = dist(x[i - 1], y[j - 1]);
-
-            d = val[i - 1][j - 1] + 1.0 / (1.0 + dij / d02);
-            h = val[i - 1][j];
-            if (path[i - 1][j] == PATH_DIAG) h += gap_open;
-            v = val[i][j - 1];
-            if (path[i][j - 1] == PATH_DIAG) v += gap_open;
-
-            if (d >= h && d >= v && val[i][j] == 0) {
-                path[i][j] = PATH_DIAG;// diagonal
-                val[i][j] = d;
-            } else if (v >= h) {
-                path[i][j] = PATH_LEFT;// left
-                val[i][j] = v;
-            } else {
-                path[i][j] = PATH_UP;// up
-                val[i][j] = h;
-            }
-        }
-    }
-
-    for (j = 0; j <= len2; j++) j2i[j] = -1;
-
-    i = len1; j = len2;
-    while (i > 0 && j > 0) {
-        if (path[i][j] == PATH_DIAG) { j2i[j - 1] = i - 1;  i--;  j--; }
-        else if (path[i][j] == PATH_UP) { i--; }
-        else { j--; }
-    }
-}
 
 const int gapopen_blosum62=-11;
 const int gapext_blosum62=-1;
@@ -1270,176 +1060,14 @@ struct GotohMatrix
     }
 };
 
-inline void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
+void trace_back_gotoh(const std::string& seqx, const std::string& seqy,
     const GotohMatrix& m, std::string& seqxA, std::string& seqyA,
-    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
-{
-    const IntMatrix& JumpH = m.JumpH;
-    const IntMatrix& JumpV = m.JumpV;
-    const IntMatrix& P = m.P;
-    int i;
-    int j;
-    int gaplen;
-    std::string buf;
-
-    if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf.resize(std::max(xlen,ylen)+1);
-
-    i=xlen;
-    j=ylen;
-    while(i+j)
-    {
-        gaplen=0;
-        if (P[i][j]>=4)
-        {
-            gaplen=JumpH[i][j];
-            j-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqy[j],gaplen);
-            seqyA=buf+seqyA;
-
-            buf.assign(gaplen,'-');
-            seqxA=buf+seqxA;
-        }
-        else if (P[i][j] % 4 >= 2)
-        {
-            gaplen=JumpV[i][j];
-            i-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqx[i],gaplen);
-            seqxA=buf+seqxA;
-
-            buf.assign(gaplen,'-');
-            seqyA=buf+seqyA;
-        }
-        else
-        {
-            if (i==0 && j!=0)
-            {
-                buf.assign(seqy.data(),j);
-                seqyA=buf+seqyA;
-                buf.assign(j,'-');
-                seqxA=buf+seqxA;
-                break;
-            }
-            if (i!=0 && j==0)
-            {
-                buf.assign(seqx.data(),i);
-                seqxA=buf+seqxA;
-                buf.assign(i,'-');
-                seqyA=buf+seqyA;
-                break;
-            }
-            i--;
-            j--;
-            if (invmap_only) invmap[j]=i;
-            if (invmap_only!=1)
-            {
-                seqxA=seqx[i]+seqxA;
-                seqyA=seqy[j]+seqyA;
-            }
-        }
-    }
-}
+    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1);
 
 
-inline void trace_back_sw(const std::string& seqx, const std::string& seqy,
+void trace_back_sw(const std::string& seqx, const std::string& seqy,
     const GotohMatrix& m, std::string& seqxA, std::string& seqyA,
-    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1)
-{
-    const IntMatrix& JumpH = m.JumpH;
-    const IntMatrix& JumpV = m.JumpV;
-    const IntMatrix& P = m.P;
-    int i;
-    int j;
-    int gaplen;
-    bool found_start_cell=false;
-    std::string buf;
-
-    if (invmap_only) for (j = 0; j < ylen; j++) invmap[j] = -1;
-    if (invmap_only!=1) buf.resize(std::max(xlen,ylen)+1);
-
-    i=xlen;
-    j=ylen;
-    for (i=xlen;i>=0;i--)
-    {
-        for (j=ylen;j>=0;j--)
-        {
-            if (P[i][j]!=0)
-            {
-                found_start_cell=true;
-                break;
-            }
-        }
-        if (found_start_cell) break;
-    }
-
-    // copy C terminal sequence
-    if (invmap_only!=1)
-    {
-        buf.assign(ylen-j,'-');
-        seqxA=buf;
-        buf.assign(&seqx[i],xlen-i);
-        seqxA+=buf;
-
-        buf.assign(&seqy[j],ylen-j);
-        seqyA+=buf;
-        buf.assign(xlen-i,'-');
-        seqyA+=buf;
-    }
-
-    if (i<0||j<0) return;
-
-    // traceback aligned sequences
-    while(P[i][j]!=0)
-    {
-        gaplen=0;
-        if (P[i][j]>=4)
-        {
-            gaplen=JumpH[i][j];
-            j-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqy[j],gaplen);
-            seqyA=buf+seqyA;
-
-            buf.assign(gaplen,'-');
-            seqxA=buf+seqxA;
-        }
-        else if (P[i][j] % 4 >= 2)
-        {
-            gaplen=JumpV[i][j];
-            i-=gaplen;
-            if (invmap_only==1) continue;
-            buf.assign(&seqx[i],gaplen);
-            seqxA=buf+seqxA;
-
-            buf.assign(gaplen,'-');
-            seqyA=buf+seqyA;
-        }
-        else
-        {
-            i--;
-            j--;
-            if (invmap_only) invmap[j]=i;
-            if (invmap_only!=1)
-            {
-                seqxA=seqx[i]+seqxA;
-                seqyA=seqy[j]+seqyA;
-            }
-        }
-    }
-    // copy N terminal sequence
-    if (invmap_only!=1)
-    {
-        buf.assign(j,'-');
-        buf.append(seqx.data(),i);
-        seqxA=buf+seqxA;
-
-        buf.assign(seqy.data(),j);
-        buf.append(i,'-');
-        seqyA=buf+seqyA;
-    }
-}
+    const int xlen, const int ylen, std::vector<int>& invmap, const int invmap_only=1);
 
 
 // ---- single-chain parse result (used by mm0/mm5-6/mm7) ----
