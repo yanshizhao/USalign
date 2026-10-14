@@ -223,7 +223,7 @@ void run_soi_task(const SoiAlignPairTask& task,
     soi_align_opts.fast_opt = (getmin(xlen,ylen)>1500)?true:task_user_opts.fast_opt;
     soi_align_opts.mol_type = mol1+mol2;
 #ifdef _OPENMP
-    if (omp_get_active_level()>0) soi_align_opts.parallel_threads = 1;
+    soi_align_opts.parallel_threads = 1;
 #endif
     soi_context.pair_distances.assign(ylen+1, 0.0);
 
@@ -234,6 +234,7 @@ void run_soi_task(const SoiAlignPairTask& task,
 
     AlignCommonInput task_input = common_inputs;
     task_input.user_options = task_user_opts;
+    task_input.control_options.parallel_threads = 1;
     output_pair_alignment(task_input, xlen, ylen, chain_align_res,
         file1.pdb_lines[task.chain1_idx], file2.pdb_lines[task.chain2_idx],
         file1.chain_ids[task.chain1_idx], file2.chain_ids[task.chain2_idx],
