@@ -136,3 +136,11 @@ int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     std::vector<double>& dist_list,
     IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
     std::ostream& os = std::cout);
+
+int flexalign_main(CoordArray& xa, CoordArray& ya,
+    const std::string &seqx, const std::string &seqy, const std::string &secx, const std::string &secy,
+    int xlen, int ylen,
+    const AlignCommonInput& common_inputs,
+    int mol_type, int hinge_opt, int ss_opt,
+    FlexAlignResult& flexalign_res,
+    std::ostream& os = std::cout);
