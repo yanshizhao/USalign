@@ -405,14 +405,14 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
-    const PdbParseOptions pdb_parse_opts1{
+    const PdbParseOptions pdb_parse_opts1 = make_pdb_parse_opts(
         user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse1, user_opts.model2parse1};
-    const PdbParseOptions pdb_parse_opts2{
+        user_opts.chain2parse1, user_opts.model2parse1);
+    const PdbParseOptions pdb_parse_opts2 = make_pdb_parse_opts(
         user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse2, user_opts.model2parse2};
+        user_opts.chain2parse2, user_opts.model2parse2);
 
     for (i=0;i<parsed_input.chain1_list.size();i++)
     {
