@@ -414,7 +414,6 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
         user_opts.split_opt, user_opts.het_opt,
         user_opts.chain2parse2, user_opts.model2parse2};
 
-    // loop over file names
     for (i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1

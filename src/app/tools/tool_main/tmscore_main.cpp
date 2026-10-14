@@ -274,7 +274,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     const int xlen = chain1.chain_len;
     const int ylen = chain2.chain_len;
 
-    // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
 
@@ -282,7 +281,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     double GDT_list[5]={0,0,0,0,0}; // 0.5, 1, 2, 4, 8
     double maxsub=0;
 
-    // entry function for structure alignment
     TMscore_main(
         chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
         chain_align_res,
@@ -291,7 +289,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         chain1.cur_complex_mol_list+chain2.cur_complex_mol_list,
         GDT_list,maxsub,tmscore_opts.TMcut);
 
-    // print result
     if (tmscore_opts.outfmt_opt==0) print_version(TMSCORE_BANNER);
     output_TMscore_results(
         chain1.filename.substr(tmscore_opts.dir1_opt.size()+tmscore_opts.dir_opt.size()),
@@ -336,7 +333,6 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
         tmscore_opts.split_opt, tmscore_opts.het_opt,
         tmscore_opts.chain2parse2, tmscore_opts.model2parse2};
 
-    // loop over file names
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1

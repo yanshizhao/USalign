@@ -322,7 +322,6 @@ void align_monomer_pair(const ComplexData& complex1, const ComplexData& complex2
     copy_chain_data(complex1.coords[0],complex1.seqs[0],complex1.secs[0], xlen,xa,seqx,secx);
     copy_chain_data(complex2.coords[0],complex2.seqs[0],complex2.secs[0], ylen,ya,seqy,secy);
 
-    // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
 
@@ -341,12 +340,10 @@ void align_monomer_pair(const ComplexData& complex1, const ComplexData& complex2
     align_opts.ss_opt = 0;
     align_opts.mol_type = complex1.mol_types[0]+complex2.mol_types[0];
 
-    // entry function for structure alignment
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
         chain_align_res,
         xlen, ylen, sequence, align_opts);
 
-    // print result
     OutputOptions out_opts;
     out_opts.fname_matrix = (mmalign_opts.m_opt?mmalign_opts.fname_matrix:"");
     out_opts.fname_super = mmalign_opts.fname_super;
@@ -456,7 +453,6 @@ void align_oligomer_pairs(const ComplexData& complex1, const ComplexData& comple
             copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
                 ylen,ya,seqy,secy);
 
-            // declare variable specific to this pair of TMalign
             ChainPairAlignResult chain_align_res = {};
             chain_align_res.d0_out = 5.0;
             int Lnorm_pair=len_aa;
@@ -477,7 +473,6 @@ void align_oligomer_pairs(const ComplexData& complex1, const ComplexData& comple
             align_opts.ss_opt = 0;
             align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
 
-            // entry function for structure alignment
             TMalign_main(xa, ya, seqx, seqy, secx, secy,
                 chain_align_res,
                 xlen, ylen, sequence, align_opts);
@@ -497,8 +492,7 @@ void align_oligomer_pairs(const ComplexData& complex1, const ComplexData& comple
             }
 
             }
-
-
+
     }
 
     // calculate initial chain-chain assignment
@@ -572,8 +566,7 @@ std::vector<int> assign2_list(chain2_num);
 
     // store initial assignment
     int init_pair_num=count_assign_pair(assign1_list,chain1_num);
-
-
+
 std::vector<int> assign1_init(chain1_num);
 std::vector<int> assign2_init(chain2_num);
     DoubleMatrix TMave_init;

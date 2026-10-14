@@ -167,7 +167,6 @@ int main(int argc, char *argv[])
     std::vector<std::string> chain_list;
     build_file_list(pdb2xyz_opts, chain_list);
 
-    // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
         convert_file_to_xyz(chain_list[i], pdb2xyz_opts);
 

@@ -332,14 +332,12 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     hwrmsd_params.u_opt = hwrmsd_opts.u_opt;
     hwrmsd_params.d_opt = hwrmsd_opts.d_opt;
 
-    // entry function for structure alignment
     HwRMSD_main(chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
         chain1.chain_sec, chain2.chain_sec, chain_align_res, invmap, hwrmsd_params);
 
     if (hwrmsd_opts.outfmt_opt>=2)
         get_seqID(invmap, chain1.chain_seq, chain2.chain_seq, ylen, Liden, n_ali8);
 
-    // print result
     OutputOptions out_opts;
     out_opts.fname_matrix = (hwrmsd_opts.m_opt?hwrmsd_opts.fname_matrix+chain1.chain_id:"");
     out_opts.fname_super = (hwrmsd_opts.o_opt?hwrmsd_opts.fname_super+chain1.chain_id:"");
@@ -385,7 +383,6 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
         hwrmsd_opts.split_opt, hwrmsd_opts.het_opt,
         hwrmsd_opts.chain2parse2, hwrmsd_opts.model2parse2};
 
-    // loop over file names
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1

@@ -368,7 +368,6 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
         {
             if (line.compare(0, 5, "loop_") != 0) continue;
 
-            // read field definition lines
             while (true) {
                 if (!std::getline(in, line))
                     PrintErrorAndQuit("ERROR! Unexpected end of input");
@@ -416,7 +415,6 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
         if (!is_mmcif_atom_record(line_vec, _atom_site, het_opt))
             continue;
 
-        // extract atom name and fix format
         atom = line_vec[_atom_site["label_atom_id"]];
         if (atom[0] == '"') atom = atom.substr(1);
         if (!atom.empty() && atom.back() == '"')
@@ -1251,7 +1249,6 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
         NWalign_main(seqx, seqy, xlen, ylen, sequence[0],sequence[1],
             mol_type, invmap, 0, glocal);
     }
-
 
     std::map<std::string,std::string> chainID_map1;
     std::map<std::string,std::string> chainID_map2;

@@ -168,7 +168,6 @@ int main(int argc, char *argv[])
     std::vector<std::string> chain_list;
     build_file_list(pdb2fasta_opts, chain_list);
 
-    // loop over file names
     for (std::size_t i=0;i<chain_list.size();i++)
         convert_file_to_fasta(chain_list[i], pdb2fasta_opts);
 

@@ -81,7 +81,6 @@ int main(int argc, char *argv[])
         }
         fin.close();
         fp.close();
-        // clean up
         line.clear();
         filename.clear();
         list_opt.clear();
@@ -141,7 +140,6 @@ int main(int argc, char *argv[])
     fp.close();
     fin.close();
 
-    // clean up
     /* No need to flush, because any input from cin, output to cerr, or
      * or program termination forces cout.flush() */
     filename.clear();

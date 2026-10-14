@@ -204,7 +204,6 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
         nwalign_opts.split_opt, nwalign_opts.het_opt,
         nwalign_opts.chain2parse2, nwalign_opts.model2parse2};
 
-    // loop over file names
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1

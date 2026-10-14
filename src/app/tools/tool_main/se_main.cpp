@@ -254,7 +254,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     const int xlen = chain1.chain_len;
     const int ylen = chain2.chain_len;
 
-    // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
     chain_align_res.invmap.assign(ylen+1, 0);
@@ -274,7 +273,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
     align_opts.ss_opt = 0;
     align_opts.mol_type = chain1.cur_complex_mol_list+chain2.cur_complex_mol_list;
 
-    // entry function for structure alignment
     se_main(chain1.chain_coords, chain2.chain_coords, chain1.chain_seq, chain2.chain_seq,
         chain_align_res, xlen, ylen, se_opts.sequence, align_opts, se_opts.outfmt_opt);
 
@@ -282,7 +280,6 @@ void align_one_chain_pair(ParsedChain& chain1, ParsedChain& chain2,
         get_seqID(chain_align_res.invmap, chain1.chain_seq, chain2.chain_seq, ylen,
             chain_align_res.Liden, chain_align_res.n_ali);
 
-    // print result
     OutputOptions out_opts;
     out_opts.fname_matrix = "";
     out_opts.fname_super = "";
@@ -332,7 +329,6 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
         se_opts.split_opt, se_opts.het_opt,
         se_opts.chain2parse2, se_opts.model2parse2};
 
-    // loop over file names
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
         // parse chain 1

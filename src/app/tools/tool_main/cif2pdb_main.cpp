@@ -178,7 +178,6 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
     if (changed_chains)
         std::cerr<<"WARNING! Changed "<<changed_chains<<" chain ID(s)"<<std::endl;
 
-    // clean up
     return changed_chains;
 }
 
@@ -565,7 +564,6 @@ int main(int argc, char *argv[])
     if (!split_opt) resolve_chainID_for_mmcif(PDB_lines,chainID_list);
     write_mmcif_to_pdb(yname, PDB_lines, chainID_list, split_opt);
     
-    // clean up
     chain_opt.clear();
     return 0;
 }

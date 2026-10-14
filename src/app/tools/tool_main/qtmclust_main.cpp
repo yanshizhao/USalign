@@ -474,7 +474,6 @@ void run_hwrmsd_prefilter_stage(QTMclustRun& run)
         double& TM3 = chain_align_res.TM3;
         std::vector<int> invmap(ylen+1);
 
-        // entry function for structure alignment
         {
         std::string seqx_str(&seq_vec[chain_i][0], xlen);
         std::string seqy_str(&seq_vec[chain_j][0], ylen);
@@ -616,7 +615,6 @@ bool run_tmalign_refine_stage(QTMclustRun& run)
         Lave=sqrt(xlen*ylen); // geometry average because O(L1*L2)
         bool overwrite_fast_opt=(qtmclust_opts.fast_opt==true || Lave>=fast_ub);
 
-        // declare variable specific to this pair of TMalign
         ChainPairAlignResult chain_align_res = {};
         chain_align_res.d0_out = 5.0;
         double& TM1 = chain_align_res.TM1;
@@ -627,7 +625,6 @@ bool run_tmalign_refine_stage(QTMclustRun& run)
         fill_qtmclust_align_options(align_opts, qtmclust_opts, overwrite_fast_opt,
             mol_vec[chain_i]+mol_vec[chain_j]);
 
-        // entry function for structure alignment
         int status=TMalign_main(
             xa, ya, &seq_vec[chain_i][0], &seq_vec[chain_j][0],
             &sec_vec[chain_i][0], &sec_vec[chain_j][0],
@@ -719,8 +716,7 @@ void report_clusters(const std::vector<size_t>& clust_repr_vec,
 int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
-
-
+
     std::clock_t t1, t2;
     t1 = std::clock();
 
@@ -735,7 +731,6 @@ int main(int argc, char *argv[])
     postprocess_arguments(qtmclust_opts);
 
     build_file_lists(qtmclust_opts, chain_list);
-    // declare previously global variables
     std::vector<int>    mol_vec;           // molecule type of chain1, RNA if >0
     std::vector<std::string> chainID_list;      // list of chainID
     int    xlen;                // chain length
@@ -791,7 +786,6 @@ int main(int argc, char *argv[])
     clust_mem_vec[chain_i]=0;
     std::map<size_t,size_t> clust_repr_map;
 
-    // perform alignment
     const double fast_lb=50.;  // proteins shorter than fast_lb never use -fast
     const double fast_ub=1000.;// proteins longer than fast_ub always use -fast
     size_t sizePROT;           // number of representatives for current chain
@@ -852,7 +846,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // clean up
     mol_vec.clear();
     xyz_vec.clear();
     seq_vec.clear();
@@ -860,7 +853,6 @@ int main(int argc, char *argv[])
 
     report_clusters(clust_repr_vec, clust_mem_vec, chainID_list, qtmclust_opts.fname_clust);
 
-    // clean up
     clust_repr_vec.clear();
     clust_mem_vec.clear();
     chainID_list.clear();
