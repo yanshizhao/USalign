@@ -112,12 +112,10 @@ inline void read_mTMalign_chain_pdb(const std::string& name, const std::string& 
         for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[chain_idx][ui*3+uj];
         for (uj=0;uj<3;uj++) t[uj]=ut_mat[chain_idx][9+uj];
 
-
         std::string line;
         Vec3 x;  // before transform
         Vec3 x1; // after transform
 
-        // for PDBx/mmCIF only
         std::map<std::string,int> _atom_site;
         size_t atom_site_pos;
         std::vector<std::string> line_vec;
@@ -330,7 +328,6 @@ inline void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
 {
     int i;
     std::ifstream fin;
-    // read first file
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
     fin.open(xname.c_str());
@@ -541,7 +538,6 @@ inline void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
 {
     int i;
     std::ifstream fin;
-    // read second file
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
     fin.open(yname.c_str());
@@ -744,7 +740,6 @@ void output_rotation_matrix(const std::string& fname_matrix,
     const Vec3& t, const RotMat& u,
     std::ostream& os = std::cout);
 
-//output the final results
 void output_results(const ChainPairDesc& chain_pair,
     const ChainPairAlignResult& chain_align_res,
     const OutputOptions& out_opts,
@@ -769,7 +764,6 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     const double ccTM_score,
     std::ostream& os = std::cout);
-
 
 void output_mTMalign_results(const std::string xname, const std::string yname,
     const std::string chainID1, const std::string chainID2,

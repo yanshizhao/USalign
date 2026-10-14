@@ -327,7 +327,6 @@ static void read_superposed_structure1(const std::string& xname,
     Vec3 x;  // before transform
     Vec3 x1; // after transform
 
-    // for PDBx/mmCIF only
     std::map<std::string,int> _atom_site;
     size_t atom_site_pos;
     std::vector<std::string> line_vec;
@@ -503,7 +502,6 @@ static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
     std::string& resi1_sele, std::string& resi2_sele,
     std::string& resi1_bond, std::string& resi2_bond)
 {
-    // extract aligned region
     int i;
     int i1=-1;
     int i2=-1;
@@ -652,7 +650,6 @@ void output_rasmol(const std::string xname, const std::string yname, const std::
     rasmol_state.i1=-1;
     rasmol_state.i2=-1;
 
-
     rasmol_state.buf_tm<<"REMARK US-align"
         <<"\nREMARK Structure 1:"<<std::setw(11)<<std::left<<xname+chainID1<<" Size= "<<xlen
         <<"\nREMARK Structure 2:"<<std::setw(11)<<yname+chainID2<<std::right<<" Size= "<<ylen
@@ -671,7 +668,6 @@ void output_rasmol(const std::string xname, const std::string yname, const std::
     rasmol_state.buf_all_atm<<rasmol_cartoon_header;
     rasmol_state.buf_all_atm_lig<<rasmol_cartoon_header;
 
-    // selecting chains for -mol
     int i;
     if (!mm_opt)
     {
@@ -689,14 +685,6 @@ void output_rasmol(const std::string xname, const std::string yname, const std::
         }
     }
 
-
-    // for PDBx/mmCIF only
-
-    // used for CONECT record of chain1
-
-    // used for CONECT record of chain2
-
-    // extract aligned region
     if (!mm_opt)
     {
         for (i=0;i<seqM.size();i++)
@@ -719,7 +707,6 @@ void output_rasmol(const std::string xname, const std::string yname, const std::
     read_rasmol_structure1(rasmol_state, xname, t, u, ter_opt, mm_opt, mirror_opt);
 
     read_rasmol_structure2(rasmol_state, yname, ter_opt, mm_opt);
-
 
     write_rasmol_to_file(rasmol_state, fname_super, mm_opt);
 }
