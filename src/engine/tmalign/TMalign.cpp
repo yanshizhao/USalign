@@ -543,6 +543,11 @@ void parse_file_into_cache(const std::string& fname,
     cache[key] = indices;
 }
 
+static inline std::string make_cache_key(const std::string& fname, bool struct1)
+{
+    return (struct1 ? std::string("1:") : std::string("2:")) + fname;
+}
+
 // TMalign, RNAalign, CPalign, TMscore
 #ifdef _OPENMP
 int run_batch_parallel(
@@ -558,12 +563,8 @@ int run_batch_parallel(
     std::map<std::string, std::vector<int>> file_to_idx;
     std::vector<PairTask> tasks;
 
-    auto cache_key = [](const std::string& fname, bool struct1) {
-        return (struct1 ? std::string("1:") : std::string("2:")) + fname;
-    };
-
     for (i = 0; i < (int)chain1_list.size(); i++) {
-        const std::string key1 = cache_key(chain1_list[i], true);
+        const std::string key1 = make_cache_key(chain1_list[i], true);
         parse_file_into_cache(chain1_list[i], parse_opts1, all_chains, file_to_idx, key1);
 
         auto& c1_indices = file_to_idx[key1];
@@ -574,7 +575,7 @@ int run_batch_parallel(
 
             for (j = j_start; j < (int)chain2_list.size(); j++) {
                 if (dirpair_opt.size() && j != i) continue;
-                const std::string key2 = cache_key(chain2_list[j], false);
+                const std::string key2 = make_cache_key(chain2_list[j], false);
 
                 parse_file_into_cache(chain2_list[j], parse_opts2, all_chains, file_to_idx, key2);
                 auto& c2_indices = file_to_idx[key2];
