@@ -41,9 +41,9 @@ void output_pair_alignment(const AlignCommonInput& common_inputs,
         user_opts.dir1_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size());
     const std::string structure2_display = user_opts.yname.substr(
         user_opts.dir2_opt.size() + user_opts.dir_opt.size() + user_opts.dirpair_opt.size());
+    const ChainPairDesc pair_desc{structure1_display, structure2_display, chain_id1, chain_id2, xlen, ylen};
     output_results(
-        ChainPairDesc{structure1_display, structure2_display, chain_id1, chain_id2, xlen, ylen},
-        chain_align_res, out_opts, resi_vec1, resi_vec2, os);
+        pair_desc, chain_align_res, out_opts, resi_vec1, resi_vec2, os);
     if (dist_arg) output_soi_dist_table(os, ylen,
         chain_align_res.invmap, *dist_arg, pdb_lines1, pdb_lines2);
     else if (ctrl_opts.do_opt || (ctrl_opts.cp_opt && user_opts.outfmt_opt <= 0))
