@@ -322,7 +322,7 @@ static void read_superposed_structure1(const std::string& xname,
 #endif
         fin.open(xname.c_str());
 
-    std::stringstream buf_pymol;
+    std::stringstream buf;
     std::string line;
     Vec3 x;  // before transform
     Vec3 x1; // after transform
@@ -345,7 +345,7 @@ static void read_superposed_structure1(const std::string& xname,
             x[2]=safe_stod(line.substr(46,8).c_str());
             if (mirror_opt) x[2]=-x[2];
             transform(t, u, x, x1);
-            buf_pymol<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+            buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
                 <<std::setprecision(3)
                 <<std::setw(8)<<x1[0] <<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]
                 <<line.substr(54)<<'\n';
@@ -353,7 +353,7 @@ static void read_superposed_structure1(const std::string& xname,
         else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
         {
             infmt=3;
-            buf_pymol<<line<<'\n';
+            buf<<line<<'\n';
             while(1)
             {
                 if (compress_type) 
@@ -368,7 +368,7 @@ static void read_superposed_structure1(const std::string& xname,
                 }
                 if (line.size()) break;
             }
-            buf_pymol<<line<<'\n';
+            buf<<line<<'\n';
             if (line.compare(0,11,"_atom_site.")) continue;
             _atom_site.clear();
             atom_site_pos=0;
@@ -391,7 +391,7 @@ static void read_superposed_structure1(const std::string& xname,
                 }
                 if (line.compare(0,11,"_atom_site.")) break;
                 _atom_site[Trim(line.substr(11))]=++atom_site_pos;
-                buf_pymol<<line<<'\n';
+                buf<<line<<'\n';
             }
 
             if (_atom_site.count("group_PDB")*
@@ -399,7 +399,7 @@ static void read_superposed_structure1(const std::string& xname,
                 _atom_site.count("Cartn_y")*
                 _atom_site.count("Cartn_z")==0)
             {
-                buf_pymol<<line<<'\n';
+                buf<<line<<'\n';
                 std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
                 continue;
             }
@@ -420,33 +420,33 @@ static void read_superposed_structure1(const std::string& xname,
                 for (atom_site_pos=0; atom_site_pos<_atom_site.size(); atom_site_pos++)
                 {
                     if (atom_site_pos==_atom_site["Cartn_x"])
-                        buf_pymol<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                            <<std::setw(8)<<x1[0]<<' ';
                     else if (atom_site_pos==_atom_site["Cartn_y"])
-                        buf_pymol<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                            <<std::setw(8)<<x1[1]<<' ';
                     else if (atom_site_pos==_atom_site["Cartn_z"])
-                        buf_pymol<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                            <<std::setw(8)<<x1[2]<<' ';
-                    else buf_pymol<<line_vec[atom_site_pos]<<' ';
+                    else buf<<line_vec[atom_site_pos]<<' ';
                 }
-                buf_pymol<<'\n';
+                buf<<'\n';
 
                 if (compress_type && fin_gz.good()) std::getline(fin_gz, line);
                 else if (!compress_type && fin.good()) std::getline(fin, line);
                 else break;
             }
-            if (compress_type?fin_gz.good():fin.good()) buf_pymol<<line<<'\n';
+            if (compress_type?fin_gz.good():fin.good()) buf<<line<<'\n';
         }
         else if (line.size())
         {
-            buf_pymol<<line<<'\n';
+            buf<<line<<'\n';
             if (ter_opt>=1 && line.compare(0,3,"END")==0) break;
         }
     }
     if (compress_type) fin_gz.close();
     else               fin.close();
-    superposed_pdb_block=buf_pymol.str();
+    superposed_pdb_block=buf.str();
 }
 
 static void write_superposed_structure1(const std::string& yname,
