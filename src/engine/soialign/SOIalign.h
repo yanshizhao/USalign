@@ -39,10 +39,6 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
     }
 }
 
-// check if pairing i to j conform to sequantiality within the SSE
-
-
-
 inline bool sec2sq(const int i, const int j,
     const IntPairArray& secx_bond, const IntPairArray& secy_bond, const std::vector<int>& fwdmap, const std::vector<int>& invmap)
 {
@@ -722,8 +718,6 @@ inline void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
         k++;
     }
 
-    // clean up
-
 }
 
 inline int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
@@ -851,8 +845,6 @@ inline void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
     path.assign( xlen+1, std::vector<char>(ylen+1));
     val.assign(  xlen+1, std::vector<double>(ylen+1));
 
-
-    // set d0
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
         score_d8, d0, d0_search, dcu0); // set score_d8
     parameter_set4final(xlen, D0_MIN, Lnorm,
@@ -873,7 +865,6 @@ inline void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
         }
     }
 
-    // perform alignment
     for(j=0; j<ylen; j++) invmap[j]=-1;
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
@@ -984,7 +975,6 @@ inline void soi_se_extract_strings(CoordArray& xa, CoordArray& ya,
     int k = chain_align_res.n_ali8;
     double d;
 
-    // extract aligned sequence
     int ali_len=xlen+ylen;
     for (j=0;j<ylen;j++) ali_len-=(invmap[j]>=0);
     seqxA.assign(ali_len,'-');

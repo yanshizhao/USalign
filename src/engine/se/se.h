@@ -34,7 +34,6 @@ inline void se_prepare_search_parameters(int xlen, int ylen,
     const bool a_opt = align_opts.a_opt;
     const int u_opt = align_opts.u_opt;
     const double Lnorm_ass = align_opts.Lnorm;
-    // set d0
     parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
         score_d8, d0, d0_search, dcu0); // set score_d8
     parameter_set4final(xlen, D0_MIN, Lnorm,
@@ -66,7 +65,6 @@ inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
     const bool i_opt = align_opts.i_opt;
     std::vector<int> &invmap = chain_align_res.invmap;
     int j;
-    // perform alignment
     if (hinge==0) for(j=0; j<ylen; j++) invmap[j]=-1;
     if (!i_opt) NWDP_SE(path, val, xa, ya, xlen, ylen, d0*d0, 0, invmap, hinge);
     else
@@ -179,7 +177,6 @@ inline void se_extract_alignment_strings(CoordArray& xa, CoordArray& ya,
     const int n_ali8 = chain_align_res.n_ali8;
     int j;
     double d;
-    // extract aligned sequence
     int ali_len=xlen+ylen; //maximum length of alignment
     seqxA.assign(ali_len,'-');
     seqM.assign( ali_len,' ');

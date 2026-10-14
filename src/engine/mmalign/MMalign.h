@@ -225,7 +225,6 @@ inline bool adjust_dimer_assignment(
         assign2_list[j2]=i1;
     }
 
-    // clean up
     return total_score1<total_score2;
 }
 
@@ -1105,7 +1104,6 @@ inline void parse_chain_list(const std::vector<std::string>&chain_list,
             sec_vec.push_back(tmp_sec_array);
             len_vec.push_back(len);
 
-            // clean up
             tmp_chain_array.clear();
             tmp_seq_array.clear();
             tmp_sec_array.clear();
@@ -1245,7 +1243,6 @@ inline double MMalign_search(
         xa, ya, seqx, seqy, secx, secy, chain1_num,
         seqxA_mat, seqyA_mat, assign1_list, sequence);
 
-    // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
     Vec3& t0 = chain_align_res.t0;
@@ -1275,12 +1272,10 @@ inline double MMalign_search(
     align_opts.ss_opt = 0;
     align_opts.mol_type = mol_type;
 
-    // entry function for structure alignment
     TMalign_main(xa, ya, seqx, seqy, secx, secy,
         chain_align_res,
         xlen, ylen, sequence, align_opts);
 
-    // clean up
     chain_align_res.do_vec.clear();
 
     // re-compute chain level alignment
@@ -1326,7 +1321,6 @@ inline double MMalign_search(
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
-            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             seqM.clear();
             seqxA.clear();
@@ -1344,7 +1338,6 @@ inline double MMalign_search(
                 sequence_tmp.push_back(seqyA_mat[i][j]);
             }
 
-            // entry function for structure alignment
             ChainPairAlignOptions se_opts = align_opts;
             se_opts.i_opt = byresi_opt;
             se_opts.u_opt = 2;
@@ -1354,14 +1347,12 @@ inline double MMalign_search(
             se_main(xt, ya, seqx, seqy, chain_align_res,
                 xlen, ylen, sequence_tmp, se_opts, 1);
 
-            // print result
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
 
             TMave_mat[i][j]=TM4*Lnorm_ass;
             if (assign1_list[i]==j) total_score+=TMave_mat[i][j];
 
-            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();
@@ -1516,7 +1507,6 @@ inline void mmalign_output_chain_aligns(
             copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
                 ylen,ya,seqy,secy);
 
-            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             rmsd0 = 0.0;
             Liden=0;
@@ -1529,7 +1519,6 @@ inline void mmalign_output_chain_aligns(
             sequence[0]=pair_result.aligned_seq1[i][j];
             sequence[1]=pair_result.aligned_seq2[i][j];
 
-            // entry function for structure alignment
             ChainPairAlignOptions se_opts;
             se_opts.i_opt = 1;
             se_opts.a_opt = final_params.a_opt;
@@ -1550,7 +1539,6 @@ inline void mmalign_output_chain_aligns(
 
             pair_result.tm_matrix[i][j]=TM4*Lnorm_ass;
 
-            // print result
             if (j==assign_result.chain2_of_chain1[i])
             {
                 ChainPairAlignResult print_align_res = { 0};
@@ -1591,7 +1579,6 @@ inline void mmalign_output_chain_aligns(
                     print_align_res, out_opts, complex1.resi, complex2.resi, os);
             }
 
-            // clean up
             sequence[0].clear();
             sequence[1].clear();
         }
@@ -1629,7 +1616,6 @@ inline void MMalign_final(
     seqx.resize(xlen+1);
     seqy.resize(ylen+1);
 
-    // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
     Vec3& t0 = chain_align_res.t0;
@@ -1675,7 +1661,6 @@ inline void MMalign_final(
     final_align_opts.ss_opt = 0;
     final_align_opts.mol_type = mol_type;
 
-    // entry function for structure alignment
     if (se_opt)
     {
         final_align_opts.u_opt = 2;
@@ -1729,7 +1714,6 @@ inline void MMalign_final(
         ChainPairDesc{structure1_display, structure2_display, chainID1, chainID2, xlen, ylen},
         print_align_res, out_opts, complex1.resi, complex2.resi, os);
 
-    // clean up
     sequence[0].clear();
     sequence[1].clear();
     sequence[2].clear();
@@ -2907,7 +2891,6 @@ inline void MMalign_dimer(double & total_score,
         xa, ya, seqx, seqy, secx, secy, chain1_num,
         seqxA_mat, seqyA_mat, assign1_list, sequence);
 
-    // declare variable specific to this pair of TMalign
     ChainPairAlignResult chain_align_res = {};
     chain_align_res.d0_out = 5.0;
     Vec3& t0 = chain_align_res.t0;
@@ -2940,8 +2923,6 @@ inline void MMalign_dimer(double & total_score,
     {
         return;   // no alignment: skip re-scoring, keep total_score unchanged
     }
-
-    // clean up TM-align
 
     // re-compute chain level alignment
     total_score=0;
@@ -2988,7 +2969,6 @@ inline void MMalign_dimer(double & total_score,
             copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
                 ylen,ya,seqy,secy);
 
-            // declare variable specific to this pair of TMalign
             d0_out=5.0;
             seqM.clear();
             seqxA.clear();
@@ -2999,7 +2979,6 @@ inline void MMalign_dimer(double & total_score,
             double Lnorm_ass=len_aa;
             if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
 
-            // entry function for structure alignment
             ChainPairAlignOptions se_opts = align_opts;
             se_opts.i_opt = 0;
             se_opts.u_opt = 2;
@@ -3010,7 +2989,6 @@ inline void MMalign_dimer(double & total_score,
             se_main(xt, ya, seqx, seqy, chain_align_res,
                 xlen, ylen, sequence, se_opts, 1);
 
-            // print result
             seqxA_mat[i][j]=seqxA;
             seqyA_mat[i][j]=seqyA;
 
@@ -3029,7 +3007,6 @@ inline void MMalign_dimer(double & total_score,
                 }
             }
 
-            // clean up
             seqM.clear();
             seqxA.clear();
             seqyA.clear();

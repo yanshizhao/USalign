@@ -729,7 +729,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
     build_rasmol_headers(rasmol_state, xname, yname, chainID1, chainID2,
         xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden, mm_opt);
 
-    // selecting chains for -mol
     if (!mm_opt)
     {
         if (split_opt==2 && ter_opt>=1) // align one chain from model 1
@@ -750,9 +749,6 @@ inline void output_flexalign_rasmol(const std::string xname, const std::string y
 
     rasmol_state.is_mmcif=false;
 
-
-
-    // extract aligned region
     extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
 
     read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
@@ -903,7 +899,6 @@ inline void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
     buf << read_state.line << '\n';
     if (read_state.line.compare(0, 11, "_atom_site."))
         return;
-    /* for PDBx/mmCIF only */
     std::map<std::string, int> atom_site;
     size_t atom_site_pos = 0;
     atom_site[Trim(read_state.line.substr(11))] = atom_site_pos;
@@ -1213,7 +1208,6 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
                             const std::string chainID1, const std::string chainID2);
 
-//output the final results
 struct FlexAlignResult : ChainPairAlignResult
 {
     std::vector<std::vector<double> > tu_vec;
