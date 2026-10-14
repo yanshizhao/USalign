@@ -1227,10 +1227,7 @@ struct FlexAlignResult : ChainPairAlignResult
         rmsd0 = Liden = TM_ali = rmsd_ali = 0.0;
         L_ali = n_ali = n_ali8 = 0;
         hingeNum = 0;
-        t0[0] = t0[1] = t0[2] = 0.0;
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                u0[i][j] = (i == j) ? 1.0 : 0.0;
+        init_rt_mat(t0, u0);
     }
 };
 
