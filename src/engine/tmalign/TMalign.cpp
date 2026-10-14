@@ -715,14 +715,12 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     }
 #endif  // _OPENMP
 
-    const PdbParseOptions pdb_parse_opts1{
-        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+    const PdbParseOptions pdb_parse_opts1 = make_pdb_parse_opts(user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse1, user_opts.model2parse1};
-    const PdbParseOptions pdb_parse_opts2{
-        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.chain2parse1, user_opts.model2parse1);
+    const PdbParseOptions pdb_parse_opts2 = make_pdb_parse_opts(user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse2, user_opts.model2parse2};
+        user_opts.chain2parse2, user_opts.model2parse2);
 
     // loop over file names (original serial code)
     for (i=0;i<parsed_input.chain1_list.size();i++)

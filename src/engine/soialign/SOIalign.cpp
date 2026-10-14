@@ -282,14 +282,14 @@ int SOIalign(AlignCommonInput& common_inputs, const SoiAlignParams& soi_params)
     const UserOptions& user_opts = common_inputs.user_options;
     const ParsedInput& parsed_input = common_inputs.parsed_input;
 
-    const PdbParseOptions pdb_parse_opts1{
+    const PdbParseOptions pdb_parse_opts1 = make_pdb_parse_opts(
         user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse1, user_opts.model2parse1};
-    const PdbParseOptions pdb_parse_opts2{
+        user_opts.chain2parse1, user_opts.model2parse1);
+    const PdbParseOptions pdb_parse_opts2 = make_pdb_parse_opts(
         user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
         user_opts.split_opt, user_opts.het_opt,
-        user_opts.chain2parse2, user_opts.model2parse2};
+        user_opts.chain2parse2, user_opts.model2parse2);
 
     std::map<std::string, SoiAlignFileData> file1_cache;
     std::map<std::string, SoiAlignFileData> file2_cache;

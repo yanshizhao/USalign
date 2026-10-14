@@ -209,12 +209,10 @@ int Flexalign(AlignCommonInput& common_inputs, const FlexalignParams& flex_param
 
     int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
-    const PdbParseOptions pdb_parse_opts1{
-        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1};
-    const PdbParseOptions pdb_parse_opts2{
-        user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
-        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2};
+    const PdbParseOptions pdb_parse_opts1 = make_pdb_parse_opts(user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse1, user_opts.model2parse1);
+    const PdbParseOptions pdb_parse_opts2 = make_pdb_parse_opts(user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        user_opts.split_opt, user_opts.het_opt, user_opts.chain2parse2, user_opts.model2parse2);
 
     std::map<std::string, FlexalignFileData> file1_cache;
     std::map<std::string, FlexalignFileData> file2_cache;
