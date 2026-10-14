@@ -679,10 +679,9 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     // === Parallel batch mode ===
     if (ctrl_opts.parallel_threads > 1 && (parsed_input.chain1_list.size() > 1 || parsed_input.chain2_list.size() > 1)) {
         ChainParseOptions parse_opts1;
-        parse_opts1.pdb_parse_opts = PdbParseOptions{
-            user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        parse_opts1.pdb_parse_opts = make_pdb_parse_opts(user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
             user_opts.split_opt, user_opts.het_opt,
-            user_opts.chain2parse1, user_opts.model2parse1};
+            user_opts.chain2parse1, user_opts.model2parse1);
         parse_opts1.infmt_opt = user_opts.infmt1_opt;
         parse_opts1.mol_opt = user_opts.mol_opt;
         parse_opts1.read_resi = tm_params.read_resi;
@@ -690,10 +689,9 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
         parse_opts1.retain_pdb_lines = ctrl_opts.cp_opt;
 
         ChainParseOptions parse_opts2;
-        parse_opts2.pdb_parse_opts = PdbParseOptions{
-            user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
+        parse_opts2.pdb_parse_opts = make_pdb_parse_opts(user_opts.ter_opt, user_opts.atom_opt, parsed_input.normalize_atom_name,
             user_opts.split_opt, user_opts.het_opt,
-            user_opts.chain2parse2, user_opts.model2parse2};
+            user_opts.chain2parse2, user_opts.model2parse2);
         parse_opts2.infmt_opt = user_opts.infmt2_opt;
         parse_opts2.mol_opt = user_opts.mol_opt;
         parse_opts2.read_resi = tm_params.read_resi;
