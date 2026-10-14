@@ -49,7 +49,7 @@ TMalign: src/app/tools/tool_main/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(
 TMscore: src/app/tools/tool_main/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-MMalign: src/app/tools/tool_main/mmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+MMalign: src/app/tools/tool_main/mmalign_main.cpp src/engine/mmalign/MMalign.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 se: src/app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)

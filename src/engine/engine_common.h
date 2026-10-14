@@ -144,3 +144,8 @@ int flexalign_main(CoordArray& xa, CoordArray& ya,
     int mol_type, int hinge_opt, int ss_opt,
     FlexAlignResult& flexalign_res,
     std::ostream& os = std::cout);
+
+int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
+    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts,
+    std::ostream& os = std::cout);

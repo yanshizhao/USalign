@@ -1844,4 +1844,128 @@ int MMalign(AlignCommonInput& common_inputs)
     return 0;
 }
 
+int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& seqx, const std::string& seqy,
+    const std::string& secx, const std::string& secy, ChainPairAlignResult& chain_align_res, const int xlen,
+    const int ylen, CharMatrix& mask, const std::vector<std::string> sequence, const ChainPairAlignOptions& align_opts,
+    std::ostream& os)
+{
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& Liden = chain_align_res.Liden;
+    int& n_ali8 = chain_align_res.n_ali8;
+    const int a_opt = align_opts.a_opt;
+    const int mol_type = align_opts.mol_type;
+    const double TMcut = align_opts.TMcut;
+    TMscoreAlignContext align_context;
+    double& D0_MIN = align_context.search_params.D0_MIN;
+    double& Lnorm = align_context.search_params.Lnorm;
+    double& score_d8 = align_context.search_params.score_d8;
+    double& d0 = align_context.search_params.d0;
+    double& d0_search = align_context.search_params.d0_search;
+    double& dcu0 = align_context.search_params.dcu0;
+    double& local_d0_search = align_context.search_params.local_d0_search;
+    int& simplify_step = align_context.search_params.simplify_step;
+    int& score_sum_method = align_context.search_params.score_sum_method;
+    double& ddcc = align_context.ddcc;
+    DoubleMatrix& score = align_context.score;
+    CharMatrix& path = align_context.path;
+    DoubleMatrix& val = align_context.val;
+    CoordArray& xtm = align_context.coords.xtm;
+    CoordArray& ytm = align_context.coords.ytm;
+    CoordArray& xt = align_context.coords.xt;
+    CoordArray& r1 = align_context.coords.r1;
+    CoordArray& r2 = align_context.coords.r2;
+    std::vector<int>& invmap0 = align_context.res_map.invmap0;
+    std::vector<int>& invmap = align_context.res_map.invmap;
+    double& TMmax = align_context.transform.TMmax;
+
+    /***********************/
+    // allocate memory
+    /***********************/
+    int minlen = std::min(xlen, ylen);
+    score.assign(xlen+1, std::vector<double>(ylen+1));
+    path.assign( xlen+1, std::vector<char>(ylen+1));
+    val.assign(  xlen+1, std::vector<double>(ylen+1));
+    xtm.resize(minlen);
+    ytm.resize(minlen);
+    xt.resize(xlen);
+    r1.resize(minlen);
+    r2.resize(minlen);
+
+    /***********************/
+    //    parameter set
+    /***********************/
+    parameter_set4search(xlen, ylen, D0_MIN, Lnorm,
+        score_d8, d0, d0_search, dcu0);
+    simplify_step    = 40; //for simplified search engine
+    score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
+
+    int i;
+    invmap0.assign(ylen+1, -1);
+    invmap.assign(ylen+1, 0);
+    TMmax=-1;
+
+    ddcc=0.4;
+    if (Lnorm <= 40) ddcc=0.1;   //Lnorm was setted in parameter_set4search
+    local_d0_search = d0_search;
+
+    int rc = dimer_build_initial_alignment(xa_c, ya_c, secx, secy, xlen, ylen, mask, sequence,
+        align_opts, align_context, chain_align_res);
+    if (rc) return rc;
+
+    //*******************************************************************//
+    //    The alignment will not be changed any more in the following    //
+    //*******************************************************************//
+    //check if the initial alignment is generated appropriately
+    bool flag=false;
+    for(i=0; i<ylen; i++)
+    {
+        if(invmap0[i]>=0)
+        {
+            flag=true;
+            break;
+        }
+    }
+    if(!flag)
+    {
+        os << "There is no alignment between the two structures! "
+             << "Program stop with no result!" << std::endl;
+        TM1=TM2=TM3=TM4=TM5=0;
+        return 1;
+    }
+
+    // last TM-score pre-termination
+    if (TMcut>0)
+    {
+        double TMtmp=approx_TM(xlen, ylen, a_opt,
+            xa_c, ya_c, t0, u0, invmap0, mol_type);
+
+        if (TMtmp<0.6*TMcut)
+        {
+            TM1=TM2=TM3=TM4=TM5=TMtmp;
+
+
+            return 7;
+        }
+    }
+
+    dimer_select_aligned_pairs(xa_c, ya_c, xlen, ylen, align_opts, align_context, chain_align_res);
+
+
+    dimer_final_tmscore(xlen, ylen, align_opts, align_context, chain_align_res);
+
+    derive_dimer_alignment(xa_c, ya_c, xt, seqx, seqy, align_context.res_map.m1, align_context.res_map.m2, n_ali8, d0_out, xlen, ylen,
+        t0, u0, Liden, seqxA, seqyA, seqM);
+    return 0; // zero for no exception
+}
+
 
