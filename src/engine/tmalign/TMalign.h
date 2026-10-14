@@ -3,6 +3,7 @@
  * TMalign_main */
 
 #include "common.h"
+#include "engine_common.h"
 #include "output.h"
 #ifdef _OPENMP
 #include <omp.h>

@@ -2147,12 +2147,3 @@ inline void check_dir_conflicts_dir12(CliOptions& cli_opts, const char* suffix_m
     if (cli_opts.dir_opt.size() && (cli_opts.dir1_opt.size() || cli_opts.dir2_opt.size()))
         PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
 }
-
-void align_chain_pair(ChainPairAlignResult& chain_align_res,
-    CoordArray& xa, CoordArray& ya,
-    const std::string& seqx, const std::string& seqy,
-    const std::string& secx, const std::string& secy,
-    int xlen, int ylen,
-    const ChainPairAlignOptions& align_opts,
-    const std::vector<std::string>& sequence,
-    int outfmt_opt);

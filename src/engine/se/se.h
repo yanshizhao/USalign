@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "engine_common.h"
 #include "TMalign.h"
 
 /* entry function for se

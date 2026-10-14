@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "engine_common.h"
 
 struct NWalignOptions
 {
