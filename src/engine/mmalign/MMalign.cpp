@@ -3,9 +3,9 @@
 #include "output.h"
 #include "se.h"
 
-int count_assigned_pairs(const ChainAssignResult& assign_result)
 #define MINI_RESIDUES_NUM   (3)
 
+int count_assigned_pairs(const ChainAssignResult& assign_result)
 {
     int pair_num = 0;
     for (int i = 0; i < (int)assign_result.chain2_of_chain1.size(); i++)
