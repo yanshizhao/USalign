@@ -363,8 +363,9 @@ void align_monomer_pair(const ComplexData& complex1, const ComplexData& complex2
         mmalign_opts.dir1_opt.size());
     const std::string structure2_display = mmalign_opts.yname.substr(
         mmalign_opts.dir2_opt.size());
+    const ChainPairDesc pair_desc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen};
     output_results(
-        ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen},
+        pair_desc,
         chain_align_res, out_opts, complex1.resi, complex2.resi);
 }
 
