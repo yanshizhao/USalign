@@ -375,14 +375,14 @@ void align_all_chain_pairs(std::vector<std::string>& chain1_list,
     int xchainnum=0, ychainnum=0;// number of chains in a PDB file
     std::string yname;
 
-    const PdbParseOptions pdb_parse_opts1{
+    const PdbParseOptions pdb_parse_opts1 = make_pdb_parse_opts(
         hwrmsd_opts.ter_opt, hwrmsd_opts.atom_opt, hwrmsd_opts.normalize_atom_name,
         hwrmsd_opts.split_opt, hwrmsd_opts.het_opt,
-        hwrmsd_opts.chain2parse1, hwrmsd_opts.model2parse1};
-    const PdbParseOptions pdb_parse_opts2{
+        hwrmsd_opts.chain2parse1, hwrmsd_opts.model2parse1);
+    const PdbParseOptions pdb_parse_opts2 = make_pdb_parse_opts(
         hwrmsd_opts.ter_opt, hwrmsd_opts.atom_opt, hwrmsd_opts.normalize_atom_name,
         hwrmsd_opts.split_opt, hwrmsd_opts.het_opt,
-        hwrmsd_opts.chain2parse2, hwrmsd_opts.model2parse2};
+        hwrmsd_opts.chain2parse2, hwrmsd_opts.model2parse2);
 
     for (std::size_t i=0;i<chain1_list.size();i++)
     {
