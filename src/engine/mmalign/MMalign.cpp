@@ -702,9 +702,9 @@ int align_monomers(AlignCommonInput& common_inputs, const MMalignParams& mm_para
         mm_params.dir1_opt.size());
     const std::string structure2_display = common_inputs.user_options.yname.substr(
         mm_params.dir2_opt.size());
+    const ChainPairDesc pair_desc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], chain1_len, chain2_len};
     output_results(
-        ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], chain1_len, chain2_len},
-        chain_align_res, out_opts, complex1.resi, complex2.resi, os);
+        pair_desc, chain_align_res, out_opts, complex1.resi, complex2.resi, os);
     return 0;
 }
 

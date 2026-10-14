@@ -362,9 +362,9 @@ static void run_mTMalign_pairwise_parallel(
 
                 const std::string structure1_display = chain_list[chain_i];
                 const std::string structure2_display = chain_list[chain_j];
+                const ChainPairDesc pair_desc{structure1_display, structure2_display, chainID_list[chain_i], chainID_list[chain_j], xlen, ylen};
                 output_results(
-                    ChainPairDesc{structure1_display, structure2_display, chainID_list[chain_i], chainID_list[chain_j], xlen, ylen},
-                    chain_align_res, out_opts, resi_vec, resi_vec, ss);
+                    pair_desc, chain_align_res, out_opts, resi_vec, resi_vec, ss);
                 full_out[chain_i * chain_num + chain_j] = ss.str();
             }
         }
@@ -566,9 +566,9 @@ void msta_superpose_to_rep(MstaIterationState& msta_iter_state, MstaIterParams& 
             out_opts.d_opt = user_opts.d_opt;
             const std::string structure1_display = msta_iter_state.xname_vec[i];
             const std::string structure2_display = msta_iter_state.xname_vec[j];
+            const ChainPairDesc pair_desc{structure1_display, structure2_display, "", "", xlen, ylen};
             if (user_opts.outfmt_opt<0) output_results(
-                ChainPairDesc{structure1_display, structure2_display, "", "", xlen, ylen},
-                chain_align_res, out_opts, resi_vec, resi_vec);
+                pair_desc, chain_align_res, out_opts, resi_vec, resi_vec);
          
             xt.resize(xlen);
             do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
@@ -994,9 +994,9 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
 
                 const std::string structure1_display = parsed_input.chain1_list[i];
                 const std::string structure2_display = parsed_input.chain1_list[j];
+                const ChainPairDesc pair_desc{structure1_display, structure2_display, chainID_list[i], chainID_list[j], xlen, ylen};
                 if (ctrl_opts.full_opt) output_results(
-                    ChainPairDesc{structure1_display, structure2_display, chainID_list[i], chainID_list[j], xlen, ylen},
-                    chain_align_res, out_opts, resi_vec, resi_vec);
+                    pair_desc, chain_align_res, out_opts, resi_vec, resi_vec);
             }
         }
     }

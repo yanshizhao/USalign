@@ -247,9 +247,9 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         out_opts.o_opt = 0;
         const std::string structure1_display = user_opts.xname;
         const std::string structure2_display = user_opts.yname;
+        const ChainPairDesc pair_desc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen};
         if (user_opts.outfmt_opt<2) output_results(
-            ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen},
-            chain_align_res, out_opts, complex1.resi, complex2.resi);
+            pair_desc, chain_align_res, out_opts, complex1.resi, complex2.resi);
         
         }
     if (user_opts.outfmt_opt==2)
@@ -456,9 +456,9 @@ int MMdock(AlignCommonInput& common_inputs)
 
         const std::string structure1_display = user_opts.xname.substr(user_opts.dir1_opt.size());
         const std::string structure2_display = user_opts.yname.substr(user_opts.dir2_opt.size());
+        const ChainPairDesc pair_desc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen};
         output_results(
-            ChainPairDesc{structure1_display, structure2_display, complex1.chain_ids[0], complex2.chain_ids[0], xlen, ylen},
-            chain_align_res, out_opts, complex1.resi, complex2.resi);
+            pair_desc, chain_align_res, out_opts, complex1.resi, complex2.resi);
         if (user_opts.outfmt_opt==2) fcout("%s%s\t%s%s\t%.4f\n",
             user_opts.xname.substr(user_opts.dir1_opt.size()), complex1.chain_ids[0],
             user_opts.yname.substr(user_opts.dir2_opt.size()), complex2.chain_ids[0],

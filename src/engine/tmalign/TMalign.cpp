@@ -622,9 +622,9 @@ int run_batch_parallel(
         int right_num=0;
         if (align_opts.cp_opt) output_cp(xname_out, yname_out, chain_align_res.seqxA, out_opts.outfmt_opt, right_num, ss);
 
+        const ChainPairDesc pair_desc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len};
         output_results(
-            ChainPairDesc{xname_out, yname_out, c1.chain_id, c2.chain_id, c1.chain_len, c2.chain_len},
-            chain_align_res, out_opts, c1.resi_vec, c2.resi_vec, ss);
+            pair_desc, chain_align_res, out_opts, c1.resi_vec, c2.resi_vec, ss);
 
         if (do_opt || (align_opts.cp_opt && out_opts.outfmt_opt <= 0))
             output_do_distance_table(ss, chain_align_res.seqxA, chain_align_res.seqyA,
