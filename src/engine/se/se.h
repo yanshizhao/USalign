@@ -310,8 +310,6 @@ inline int se_main(CoordArray& xa, CoordArray& ya,
 
     se_extract_alignment_strings(xa, ya, seqx, seqy, xlen, ylen, m1, m2, seqM_char, chain_align_res, hinge);
     return 0; // zero for no exception
-    se_extract_alignment_strings(xa, ya, seqx, seqy, xlen, ylen, m1, m2, seqM_char, chain_align_res, hinge);
-    return 0; // zero for no exception
 }
 
 
