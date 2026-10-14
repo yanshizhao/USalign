@@ -853,7 +853,7 @@ void output_results(const ChainPairDesc& chain_pair,
             xlen, ylen, d0A, n_ali8,
             rmsd, TM1, Liden);
 }
-void output_mTMalign_results(const std::string xname, const std::string yname,
+static void output_mTMalign_results(const std::string xname, const std::string yname,
     const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const Vec3& t, const RotMat& u,
     const double TM1, const double TM2,
