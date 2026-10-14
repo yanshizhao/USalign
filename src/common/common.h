@@ -1874,6 +1874,21 @@ inline void fill_out_opts_from_user_opts(OutputOptions& out_opts, const UserOpti
     out_opts.d_opt = user_opts.d_opt;
 }
 
+inline PdbParseOptions make_pdb_parse_opts(const int ter_opt, const std::string& atom_opt,
+    const bool normalize_atom_name, const int split_opt, const int het_opt,
+    const std::vector<std::string>& chain2parse, const std::vector<std::string>& model2parse)
+{
+    PdbParseOptions parse_opts;
+    parse_opts.ter_opt = ter_opt;
+    parse_opts.atom_opt = atom_opt;
+    parse_opts.normalize_atom_name = normalize_atom_name;
+    parse_opts.split_opt = split_opt;
+    parse_opts.het_opt = het_opt;
+    parse_opts.chain2parse = chain2parse;
+    parse_opts.model2parse = model2parse;
+    return parse_opts;
+}
+
 inline void fill_out_opts_mmalign_final(OutputOptions& out_opts, const MMalignFinalParams& params)
 {
     out_opts.fname_matrix = params.m_opt ? params.fname_matrix : "";
