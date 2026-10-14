@@ -283,7 +283,6 @@ double calc_ccTM_score(
     return TM_sum / tot_num_pair;
 }
 
-
 // Parallel all-against-all pairwise alignment for MSTA (mTMalign)
 static void run_mTMalign_pairwise_parallel(
     const DoubleCube& a_vec, const CharMatrix& seq_vec, const CharMatrix& sec_vec, const std::vector<int>& len_vec,
@@ -455,7 +454,6 @@ struct MstaIterParams
           mol_type_sum(cur_complex_mol_list_in) {}
 };
 
-
 void msta_superpose_to_rep(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
     UserOptions& user_opts = msta_iter_params.user_opts;
@@ -547,7 +545,6 @@ void msta_superpose_to_rep(MstaIterationState& msta_iter_state, MstaIterParams& 
             align_opts.cp_opt = false;
             align_opts.Lnorm = Lnorm_ass;
             align_opts.mol_type = cur_complex_mol_list;
-            // entry function for structure alignment
             align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
                 xlen, ylen, align_opts, parsed_input.sequence,
                 user_opts.outfmt_opt);
@@ -586,7 +583,6 @@ void msta_superpose_to_rep(MstaIterationState& msta_iter_state, MstaIterParams& 
             parsed_input.sequence[1].clear();
         }
 }
-
 
 void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
@@ -693,7 +689,6 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& msta_it
 
             // copy ya_ext to ya
 
-
             ylen=ylen_ext;
             ya.resize(ylen);
             seqy.assign(seqy_ext, 0, ylen);
@@ -711,7 +706,6 @@ void msta_build_msa(MstaIterationState& msta_iter_state, MstaIterParams& msta_it
                 else msta_iter_state.msa.push_back(msa_ext[r]);
             }
 
-            // clean up
             tmp_gap.clear();
         }
         std::vector<std::string>().swap(msa_ext);
@@ -883,7 +877,6 @@ bool msta_accumulate_stats(MstaIterationState& msta_iter_state, MstaIterParams& 
         return true;
 }
 
-
 void msta_iterate(MstaIterationState& msta_iter_state, MstaIterParams& msta_iter_params)
 {
     const DoubleMatrix& TMave_mat = msta_iter_params.TMave_mat;
@@ -976,11 +969,9 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
                 align_opts.ss_opt = 0;
                 align_opts.mol_type = cur_complex_mol_list;
 
-                // entry function for structure alignment
                 align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
                     xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
 
-                // store chain_align_res
                 TMave_mat[i][j]=chain_align_res.TM4; TMave_mat[j][i]=chain_align_res.TM4;
                 seqxA_mat[i][j]=seqyA_mat[j][i]=chain_align_res.seqxA;
                 seqyA_mat[i][j]=seqxA_mat[j][i]=chain_align_res.seqyA;
@@ -1019,7 +1010,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     bool u_opt = user_opts.u_opt;
     bool fast_opt = user_opts.fast_opt;
 
-    // declare previously global variables
     int    i,j;                    // chain index
     int    xlen=0, ylen=0;         // chain length (serial path updates them in pair loop)
     CoordArray xa;                     // structure of single chain
@@ -1195,14 +1185,11 @@ int mTMalign(AlignCommonInput& common_inputs)
                 state.xname_vec,state.yname_vec, ut_mat, state.assign_list);
         }
 
-        
-        
         if (user_opts.o_opt) output_mTMalign_pymol(parsed_input.chain1_list,
             ut_mat, user_opts.fname_super, user_opts.o_opt);
 
     }
 
-    // clean up
     return 1;
 }
 

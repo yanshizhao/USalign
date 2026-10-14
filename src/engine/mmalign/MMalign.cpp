@@ -224,7 +224,6 @@ void run_mmalign_parallel(AlignCommonInput& common_inputs,
                 save_pair_result(chain_align_res, pairwise,
                     chain1_idx, chain2_idx, chain2_num, norm_len);
 
-
             }   
     }
 }
@@ -425,7 +424,6 @@ int find_chain_map_key(const std::map<int,int>& chain_pair_map, int complex2_cha
     return -1;
 }
 
-
 // Check the chainmap file and extract the valid chain pairs separately
 // Params: inputs - MMalign input parameters
 //         parsed - parsing result (contains the mapping table and invalid mapping details)
@@ -466,7 +464,6 @@ void check_chain_map(AlignCommonInput& common_inputs,
         parsed.chain_pair_map[complex1_chain_idx] = complex2_chain_idx;
     }
 }
-
 
 // ---- Read the chain mapping file ----
 void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
@@ -783,7 +780,6 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
                 continue;
             }
 
-            // entry function for structure alignment
             int i_opt = (common_inputs.user_options.byresi_opt ? 3 : 0);
             ChainPairAlignResult chain_align_res = { 0};
             chain_align_res.d0_out = 5.0;   // TMalign_main overrides d0_out only with -d
@@ -795,7 +791,6 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
                     i_opt, 1, 1),
                 common_inputs.parsed_input.sequence, 1);
 
-            // save chain_align_res
             save_pair_result(chain_align_res, pairwise,
                 chain1_idx, chain2_idx, chain2_num, norm_len);
         }

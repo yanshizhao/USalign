@@ -302,7 +302,6 @@ void make_sec(const std::string& seq, const CoordArray& x, int len, std::string&
             sec[D0_var[i]+j]='>';
         }
     }
-    // clean up
     A0_var.clear();
     B0_var.clear();
     C0_var.clear();
@@ -656,7 +655,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
 
-    // declare previously global variables
     std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
     std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
     std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
@@ -810,7 +808,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                     if (user_opts.byresi_opt) extract_aln_from_resi(parsed_input.sequence,
                         seqx, seqy, resi_vec1, resi_vec2, user_opts.byresi_opt);
 
-                    // entry function for structure alignment
                     ChainPairAlignResult chain_align_res = { 0};
                     chain_align_res.d0_out = 5.0;
                     ChainPairAlignOptions align_opts = tm_params.align;
@@ -820,7 +817,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                         xlen, ylen, align_opts, parsed_input.sequence,
                         user_opts.outfmt_opt);
 
-                    // print chain_align_res
                     output_pair_alignment(common_inputs,
                         xlen, ylen, chain_align_res,
                         PDB_lines1[chain_i], PDB_lines2[chain_j],
@@ -849,9 +845,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     }
     return 0;
 }
-
-
-
 
 // Output the check warning for the forced molecule type from -mol
 // Params: file_path - structure file path

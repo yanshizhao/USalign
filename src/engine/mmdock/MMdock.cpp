@@ -121,7 +121,6 @@ inline void run_mmdock_parallel(
             ChainPairAlignResult chain_align_res = { 0};
             chain_align_res.d0_out = 5.0;
 
-            // entry function for structure alignment
             if (trimmed.chain_count && trimmed.lengths[j] < ylen)
             {
                 mmdock_align_trimmed(chain_align_res, xa, ya, seqx, seqy, secx, secy,
@@ -155,7 +154,6 @@ inline void run_mmdock_parallel(
         }
     }
 }
-
 
 void mmdock_assign_and_output(AlignCommonInput& common_inputs,
     const ComplexData& complex1, const ComplexData& complex2,
@@ -233,7 +231,6 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         parsed_input.sequence.push_back(seqxA_mat[i][j]);
         parsed_input.sequence.push_back(seqyA_mat[i][j]);
             
-        // entry function for structure alignment
         align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy,
             xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
         
@@ -353,7 +350,6 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                 int Lnorm_pair=len_aa;
                 if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_pair=len_na;
 
-                // entry function for structure alignment
                 if (trimmed.chain_count && trimmed.lengths[j]<ylen)
                 {
                     mmdock_align_trimmed(chain_align_res, xa, ya, seqx, seqy, secx, secy,
@@ -381,7 +377,6 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
                         xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
                 }
 
-                // store chain_align_res
                 seqxA_mat[i][j]=chain_align_res.seqxA;
                 seqyA_mat[i][j]=chain_align_res.seqyA;
                 TMave_mat[i][j]=chain_align_res.TM4*Lnorm_pair;
@@ -396,7 +391,6 @@ int MMdock(AlignCommonInput& common_inputs)
     ParsedInput& parsed_input = common_inputs.parsed_input;
     bool fast_opt = user_opts.fast_opt;
 
-    // declare previously global variables
     ComplexData complex1;
     ComplexData complex2;
     int    i;                    // chain index
@@ -453,10 +447,8 @@ int MMdock(AlignCommonInput& common_inputs)
         align_opts.parallel_threads = 1;
         align_opts.mol_type = complex1.mol_types[0]+complex2.mol_types[0];
 
-        // entry function for structure alignment
         align_chain_pair(chain_align_res, xa, ya, seqx, seqy, secx, secy, xlen, ylen, align_opts, parsed_input.sequence, user_opts.outfmt_opt);
 
-        // print chain_align_res
         OutputOptions out_opts;
         fill_out_opts_from_user_opts(out_opts, user_opts);
         out_opts.outfmt_opt = (user_opts.outfmt_opt==2?user_opts.outfmt_opt:3);
@@ -471,8 +463,6 @@ int MMdock(AlignCommonInput& common_inputs)
             user_opts.xname.substr(user_opts.dir1_opt.size()), complex1.chain_ids[0],
             user_opts.yname.substr(user_opts.dir2_opt.size()), complex2.chain_ids[0],
             sqrt((chain_align_res.TM1*chain_align_res.TM1+chain_align_res.TM2*chain_align_res.TM2)/2));
-
-        // clean up
 
         return 0;
     }
@@ -513,8 +503,6 @@ int MMdock(AlignCommonInput& common_inputs)
 
     mmdock_assign_and_output(common_inputs, complex1, complex2, TMave_mat,
         seqxA_mat, seqyA_mat, chain1_num, chain2_num, fast_opt);
-
-
 
     std::vector<std::vector<std::string> >().swap(seqxA_mat);
     std::vector<std::vector<std::string> >().swap(seqM_mat);
