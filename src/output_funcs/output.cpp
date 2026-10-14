@@ -123,6 +123,11 @@ static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
     std::string& resi1_sele, std::string& resi2_sele,
     std::string& resi1_bond, std::string& resi2_bond);
+static void write_pymol_scripts(const std::string& fname_super, const int o_opt,
+    const int mm_opt, const int ter_opt, const std::string& struct1_basename, const std::string& struct2_basename,
+    const std::string& chain1_sele, const std::string& chain2_sele,
+    const std::string& resi1_sele, const std::string& resi2_sele,
+    const std::string& resi1_bond, const std::string& resi2_bond);
 
 void output_pymol(const std::string xname, const std::string yname,
     const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
@@ -130,7 +135,6 @@ void output_pymol(const std::string xname, const std::string yname,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     const std::string chainID1, const std::string chainID2, const int o_opt){
-    std::stringstream buf_pymol;
     int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
     std::string superposed_pdb_block;
     std::string struct1_basename;
@@ -141,7 +145,6 @@ void output_pymol(const std::string xname, const std::string yname,
     std::string resi2_sele;
     std::string resi1_bond;
     std::string resi2_bond;
-    std::ofstream fp;
 
     read_superposed_structure1(xname, t, u, ter_opt, mirror_opt,
         infmt, superposed_pdb_block);
@@ -151,7 +154,18 @@ void output_pymol(const std::string xname, const std::string yname,
         chain1_sele, chain2_sele);
     extract_pymol_aligned_region(mm_opt, o_opt, seqM, seqxA, seqyA, resi_vec1, resi_vec2,
         resi1_sele, resi2_sele, resi1_bond, resi2_bond);
+    write_pymol_scripts(fname_super, o_opt, mm_opt, ter_opt, struct1_basename, struct2_basename,
+        chain1_sele, chain2_sele, resi1_sele, resi2_sele, resi1_bond, resi2_bond);
+}
 
+static void write_pymol_scripts(const std::string& fname_super, const int o_opt,
+    const int mm_opt, const int ter_opt, const std::string& struct1_basename, const std::string& struct2_basename,
+    const std::string& chain1_sele, const std::string& chain2_sele,
+    const std::string& resi1_sele, const std::string& resi2_sele,
+    const std::string& resi1_bond, const std::string& resi2_bond)
+{
+    std::stringstream buf_pymol;
+    std::ofstream fp;
     // write pymol script
     std::vector<std::string> pml_list;
     pml_list.push_back(fname_super+"");
