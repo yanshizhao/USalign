@@ -58,16 +58,16 @@ se: src/app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COM
 pdb2ss: src/app/tools/tool_main/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-pdb2xyz: src/app/tools/tool_main/pdb2xyz_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+pdb2xyz: src/app/tools/tool_main/pdb2xyz_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-xyz_sfetch: src/app/tools/tool_main/xyz_sfetch_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+xyz_sfetch: src/app/tools/tool_main/xyz_sfetch_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-pdb2fasta: src/app/tools/tool_main/pdb2fasta_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+pdb2fasta: src/app/tools/tool_main/pdb2fasta_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-biounitasym: src/app/tools/tool_main/biounitasym_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+biounitasym: src/app/tools/tool_main/biounitasym_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 NWalign: src/app/tools/tool_main/nwalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
@@ -76,13 +76,13 @@ NWalign: src/app/tools/tool_main/nwalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(
 HwRMSD: src/app/tools/tool_main/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-cif2pdb: src/app/tools/tool_main/cif2pdb_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+cif2pdb: src/app/tools/tool_main/cif2pdb_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-pdbAtomName: src/app/tools/tool_main/pdbatomname_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+pdbAtomName: src/app/tools/tool_main/pdbatomname_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
-addChainID: src/app/tools/tool_main/addchainid_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
+addChainID: src/app/tools/tool_main/addchainid_main.cpp $(COMMON_CPP)
 		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
 
 clean:
