@@ -496,24 +496,6 @@ void output_pymol(const std::string xname, const std::string yname,
         fp.close();
         buf_pymol.str(std::string());
     }
-
-    // clean up
-    pml_list.clear();
-    
-    resi1_sele.clear();
-    resi2_sele.clear();
-    
-    resi1_bond.clear();
-    resi2_bond.clear();
-    
-    prev_resi1.clear();
-    prev_resi2.clear();
-
-    curr_resi1.clear();
-    curr_resi2.clear();
-
-    chain1_sele.clear();
-    chain2_sele.clear();
 }
 void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
     const RotArray& ut_mat, const std::string& fname_super, const int o_opt){
