@@ -107,267 +107,50 @@ void output_soi_dist_table(std::ostream& os, int ylen,
     os << "###############\t###############\t#########\n";
 }
 
+static void read_superposed_structure1(const std::string& xname,
+    const Vec3& t, const RotMat& u,
+    const int ter_opt, const int mirror_opt,
+    int& infmt, std::string& superposed_pdb_block);
+static void write_superposed_structure1(const std::string& yname,
+    const std::string& fname_super, const int infmt,
+    const std::string& superposed_pdb_block,
+    std::string& struct1_basename, std::string& struct2_basename);
+static void build_pymol_chain_selection(const int mm_opt, const int split_opt,
+    const int ter_opt, const int o_opt, const std::string& chainID1, const std::string& chainID2,
+    std::string& chain1_sele, std::string& chain2_sele);
+static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
+    std::string& resi1_sele, std::string& resi2_sele,
+    std::string& resi1_bond, std::string& resi2_bond);
+
 void output_pymol(const std::string xname, const std::string yname,
     const std::string fname_super, const Vec3& t, const RotMat& u, const int ter_opt,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
     const std::string chainID1, const std::string chainID2, const int o_opt){
-    int compress_type=0; // uncompressed file
-    std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz; // if file is compressed
-    if (xname.size()>=3 && 
-        xname.substr(xname.size()-3,3)==".gz")
-    {
-        fin_gz.open("gunzip -c "+xname);
-        compress_type=1;
-    }
-    else if (xname.size()>=4 && 
-        xname.substr(xname.size()-4,4)==".bz2")
-    {
-        fin_gz.open("bzcat "+xname);
-        compress_type=2;
-    }
-    else
-#endif
-        fin.open(xname.c_str());
-
-    std::stringstream buf;
     std::stringstream buf_pymol;
-    std::string line;
-    Vec3 x;  // before transform
-    Vec3 x1; // after transform
-
-    // for PDBx/mmCIF only
-    std::map<std::string,int> _atom_site;
-    size_t atom_site_pos;
-    std::vector<std::string> line_vec;
     int infmt=-1; // 0 - PDB, 3 - PDBx/mmCIF
-
-    while (compress_type?fin_gz.good():fin.good())
-    {
-        if (compress_type) std::getline(fin_gz, line);
-        else               std::getline(fin, line);
-        if (line.compare(0, 6, "ATOM  ")==0 || 
-            line.compare(0, 6, "HETATM")==0) // PDB format
-        {
-            infmt=0;
-            x[0]=safe_stod(line.substr(30,8).c_str());
-            x[1]=safe_stod(line.substr(38,8).c_str());
-            x[2]=safe_stod(line.substr(46,8).c_str());
-            if (mirror_opt) x[2]=-x[2];
-            transform(t, u, x, x1);
-            buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
-                <<std::setprecision(3)
-                <<std::setw(8)<<x1[0] <<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]
-                <<line.substr(54)<<'\n';
-        }
-        else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
-        {
-            infmt=3;
-            buf<<line<<'\n';
-            while(1)
-            {
-                if (compress_type) 
-                {
-                    if (fin_gz.good()) std::getline(fin_gz, line);
-                    else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
-                }
-                else
-                {
-                    if (fin.good()) std::getline(fin, line);
-                    else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
-                }
-                if (line.size()) break;
-            }
-            buf<<line<<'\n';
-            if (line.compare(0,11,"_atom_site.")) continue;
-            _atom_site.clear();
-            atom_site_pos=0;
-            _atom_site[Trim(line.substr(11))]=atom_site_pos;
-            while(1)
-            {
-                while(1)
-                {
-                    if (compress_type) 
-                    {
-                        if (fin_gz.good()) std::getline(fin_gz, line);
-                        else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
-                    }
-                    else
-                    {
-                        if (fin.good()) std::getline(fin, line);
-                        else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
-                    }
-                    if (line.size()) break;
-                }
-                if (line.compare(0,11,"_atom_site.")) break;
-                _atom_site[Trim(line.substr(11))]=++atom_site_pos;
-                buf<<line<<'\n';
-            }
-
-            if (_atom_site.count("group_PDB")*
-                _atom_site.count("Cartn_x")*
-                _atom_site.count("Cartn_y")*
-                _atom_site.count("Cartn_z")==0)
-            {
-                buf<<line<<'\n';
-                std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
-                continue;
-            }
-
-            while(1)
-            {
-                line_vec.clear();
-                split(line,line_vec);
-                if (line_vec[_atom_site["group_PDB"]]!="ATOM" &&
-                    line_vec[_atom_site["group_PDB"]]!="HETATM") break;
-
-                x[0]=safe_stod(line_vec[_atom_site["Cartn_x"]].c_str());
-                x[1]=safe_stod(line_vec[_atom_site["Cartn_y"]].c_str());
-                x[2]=safe_stod(line_vec[_atom_site["Cartn_z"]].c_str());
-                if (mirror_opt) x[2]=-x[2];
-                transform(t, u, x, x1);
-
-                for (atom_site_pos=0; atom_site_pos<_atom_site.size(); atom_site_pos++)
-                {
-                    if (atom_site_pos==_atom_site["Cartn_x"])
-                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
-                           <<std::setw(8)<<x1[0]<<' ';
-                    else if (atom_site_pos==_atom_site["Cartn_y"])
-                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
-                           <<std::setw(8)<<x1[1]<<' ';
-                    else if (atom_site_pos==_atom_site["Cartn_z"])
-                        buf<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
-                           <<std::setw(8)<<x1[2]<<' ';
-                    else buf<<line_vec[atom_site_pos]<<' ';
-                }
-                buf<<'\n';
-
-                if (compress_type && fin_gz.good()) std::getline(fin_gz, line);
-                else if (!compress_type && fin.good()) std::getline(fin, line);
-                else break;
-            }
-            if (compress_type?fin_gz.good():fin.good()) buf<<line<<'\n';
-        }
-        else if (line.size())
-        {
-            buf<<line<<'\n';
-            if (ter_opt>=1 && line.compare(0,3,"END")==0) break;
-        }
-    }
-    if (compress_type) fin_gz.close();
-    else               fin.close();
-
-    std::string fname_super_full=fname_super;
-    if (infmt==0)      fname_super_full+=".pdb";
-    else if (infmt==3) fname_super_full+=".cif";
-    const std::string struct1_basename=get_basename(fname_super_full);
+    std::string superposed_pdb_block;
+    std::string struct1_basename;
     std::string struct2_basename;
-    copy_structure2_to_outdir(yname, fname_super, struct2_basename);
-    std::ofstream fp;
-    fp.open(fname_super_full.c_str());
-    fp<<buf.str();
-    fp.close();
-    buf.str(std::string()); // clear stream
-
     std::string chain1_sele;
     std::string chain2_sele;
-    int i;
-    if (!mm_opt)
-    {
-        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
-        {
-            if (o_opt==1)
-            {
-                chain1_sele=" and c. "+chainID1.substr(1);
-                chain2_sele=" and c. "+chainID2.substr(1);
-            }
-            else if (o_opt==3)
-            {
-                chain1_sele="/"+chainID1.substr(1);
-                chain2_sele="/"+chainID2.substr(1);
-            }
-        }
-        else if (split_opt==2 && ter_opt==0) // align one chain from each model
-        {
-            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
-            if (o_opt==1) chain1_sele=" and c. "+chainID1.substr(i+1);
-            else if (o_opt==3) chain1_sele="/"+chainID1.substr(i+1);
-            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
-            if (o_opt==1) chain2_sele=" and c. "+chainID2.substr(i+1);
-            else if (o_opt==3) chain2_sele="/"+chainID2.substr(i+1);
-        }
-    }
-
-    // extract aligned region
-    int i1=-1;
-    int i2=-1;
     std::string resi1_sele;
     std::string resi2_sele;
     std::string resi1_bond;
     std::string resi2_bond;
-    std::string prev_resi1;
-    std::string prev_resi2;
-    std::string curr_resi1;
-    std::string curr_resi2;
-    if (mm_opt)
-    {
-        ;
-    }
-    else
-    {
-        for (i=0;i<seqM.size();i++)
-        {
-            i1+=(seqxA[i]!='-' && seqxA[i]!='*');
-            i2+=(seqyA[i]!='-');
-            if (seqM[i]==' ' || seqxA[i]=='*') continue;
-            curr_resi1=resi_vec1[i1].substr(0,4);
-            curr_resi2=resi_vec2[i2].substr(0,4);
-            if (resi1_sele.size()==0)
-            {
-                if (o_opt==1) resi1_sele =    "i. "+curr_resi1;
-                else if (o_opt==3) resi1_sele=":"+Trim(curr_resi1);
-            }
-            else
-            {
-                if (o_opt==1)
-                {
-                    resi1_sele+=" or i. "+curr_resi1;
-                    resi1_bond+="bond structure1 and i. "+prev_resi1+
-                               ", structure1 and i. "+curr_resi1+"\n";
-                }
-                else if (o_opt==3)
-                    resi1_sele+=","+Trim(curr_resi1);
-            }
-            if (resi2_sele.size()==0)
-            {
-                if (o_opt==1) resi2_sele =    "i. "+curr_resi2;
-                else if (o_opt==3) resi2_sele=":"+Trim(curr_resi2);
-            }
-            else
-            {
-                if (o_opt==1)
-                {
-                    resi2_sele+=" or i. "+curr_resi2;
-                    resi2_bond+="bond structure2 and i. "+prev_resi2+
-                                   ", structure2 and i. "+curr_resi2+"\n";
-                }
-                else if (o_opt==3)
-                    resi2_sele+=","+Trim(curr_resi2);
-            }
-            prev_resi1=curr_resi1;
-            prev_resi2=curr_resi2;
-        }
-        if (o_opt==1)
-        {
-            if (resi1_sele.size()) resi1_sele=" and ( "+resi1_sele+")";
-            if (resi2_sele.size()) resi2_sele=" and ( "+resi2_sele+")";
-        }
-    }
+    std::ofstream fp;
+
+    read_superposed_structure1(xname, t, u, ter_opt, mirror_opt,
+        infmt, superposed_pdb_block);
+    write_superposed_structure1(yname, fname_super, infmt, superposed_pdb_block,
+        struct1_basename, struct2_basename);
+    build_pymol_chain_selection(mm_opt, split_opt, ter_opt, o_opt, chainID1, chainID2,
+        chain1_sele, chain2_sele);
+    extract_pymol_aligned_region(mm_opt, o_opt, seqM, seqxA, seqyA, resi_vec1, resi_vec2,
+        resi1_sele, resi2_sele, resi1_bond, resi2_bond);
 
     // write pymol script
     std::vector<std::string> pml_list;
@@ -495,6 +278,278 @@ void output_pymol(const std::string xname, const std::string yname,
         fp<<buf_pymol.str();
         fp.close();
         buf_pymol.str(std::string());
+    }
+}
+
+static void read_superposed_structure1(const std::string& xname,
+    const Vec3& t, const RotMat& u,
+    const int ter_opt, const int mirror_opt,
+    int& infmt, std::string& superposed_pdb_block)
+{
+    int compress_type=0; // uncompressed file
+    std::ifstream fin;
+#ifndef REDI_PSTREAM_H_SEEN
+    std::ifstream fin_gz;
+#else
+    redi::ipstream fin_gz; // if file is compressed
+    if (xname.size()>=3 && 
+        xname.substr(xname.size()-3,3)==".gz")
+    {
+        fin_gz.open("gunzip -c "+xname);
+        compress_type=1;
+    }
+    else if (xname.size()>=4 && 
+        xname.substr(xname.size()-4,4)==".bz2")
+    {
+        fin_gz.open("bzcat "+xname);
+        compress_type=2;
+    }
+    else
+#endif
+        fin.open(xname.c_str());
+
+    std::stringstream buf_pymol;
+    std::string line;
+    Vec3 x;  // before transform
+    Vec3 x1; // after transform
+
+    // for PDBx/mmCIF only
+    std::map<std::string,int> _atom_site;
+    size_t atom_site_pos;
+    std::vector<std::string> line_vec;
+
+    while (compress_type?fin_gz.good():fin.good())
+    {
+        if (compress_type) std::getline(fin_gz, line);
+        else               std::getline(fin, line);
+        if (line.compare(0, 6, "ATOM  ")==0 || 
+            line.compare(0, 6, "HETATM")==0) // PDB format
+        {
+            infmt=0;
+            x[0]=safe_stod(line.substr(30,8).c_str());
+            x[1]=safe_stod(line.substr(38,8).c_str());
+            x[2]=safe_stod(line.substr(46,8).c_str());
+            if (mirror_opt) x[2]=-x[2];
+            transform(t, u, x, x1);
+            buf_pymol<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+                <<std::setprecision(3)
+                <<std::setw(8)<<x1[0] <<std::setw(8)<<x1[1] <<std::setw(8)<<x1[2]
+                <<line.substr(54)<<'\n';
+        }
+        else if (line.compare(0,5,"loop_")==0) // PDBx/mmCIF
+        {
+            infmt=3;
+            buf_pymol<<line<<'\n';
+            while(1)
+            {
+                if (compress_type) 
+                {
+                    if (fin_gz.good()) std::getline(fin_gz, line);
+                    else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                }
+                else
+                {
+                    if (fin.good()) std::getline(fin, line);
+                    else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                }
+                if (line.size()) break;
+            }
+            buf_pymol<<line<<'\n';
+            if (line.compare(0,11,"_atom_site.")) continue;
+            _atom_site.clear();
+            atom_site_pos=0;
+            _atom_site[Trim(line.substr(11))]=atom_site_pos;
+            while(1)
+            {
+                while(1)
+                {
+                    if (compress_type) 
+                    {
+                        if (fin_gz.good()) std::getline(fin_gz, line);
+                        else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                    }
+                    else
+                    {
+                        if (fin.good()) std::getline(fin, line);
+                        else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                    }
+                    if (line.size()) break;
+                }
+                if (line.compare(0,11,"_atom_site.")) break;
+                _atom_site[Trim(line.substr(11))]=++atom_site_pos;
+                buf_pymol<<line<<'\n';
+            }
+
+            if (_atom_site.count("group_PDB")*
+                _atom_site.count("Cartn_x")*
+                _atom_site.count("Cartn_y")*
+                _atom_site.count("Cartn_z")==0)
+            {
+                buf_pymol<<line<<'\n';
+                std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
+                continue;
+            }
+
+            while(1)
+            {
+                line_vec.clear();
+                split(line,line_vec);
+                if (line_vec[_atom_site["group_PDB"]]!="ATOM" &&
+                    line_vec[_atom_site["group_PDB"]]!="HETATM") break;
+
+                x[0]=safe_stod(line_vec[_atom_site["Cartn_x"]].c_str());
+                x[1]=safe_stod(line_vec[_atom_site["Cartn_y"]].c_str());
+                x[2]=safe_stod(line_vec[_atom_site["Cartn_z"]].c_str());
+                if (mirror_opt) x[2]=-x[2];
+                transform(t, u, x, x1);
+
+                for (atom_site_pos=0; atom_site_pos<_atom_site.size(); atom_site_pos++)
+                {
+                    if (atom_site_pos==_atom_site["Cartn_x"])
+                        buf_pymol<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[0]<<' ';
+                    else if (atom_site_pos==_atom_site["Cartn_y"])
+                        buf_pymol<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[1]<<' ';
+                    else if (atom_site_pos==_atom_site["Cartn_z"])
+                        buf_pymol<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                           <<std::setw(8)<<x1[2]<<' ';
+                    else buf_pymol<<line_vec[atom_site_pos]<<' ';
+                }
+                buf_pymol<<'\n';
+
+                if (compress_type && fin_gz.good()) std::getline(fin_gz, line);
+                else if (!compress_type && fin.good()) std::getline(fin, line);
+                else break;
+            }
+            if (compress_type?fin_gz.good():fin.good()) buf_pymol<<line<<'\n';
+        }
+        else if (line.size())
+        {
+            buf_pymol<<line<<'\n';
+            if (ter_opt>=1 && line.compare(0,3,"END")==0) break;
+        }
+    }
+    if (compress_type) fin_gz.close();
+    else               fin.close();
+    superposed_pdb_block=buf_pymol.str();
+}
+
+static void write_superposed_structure1(const std::string& yname,
+    const std::string& fname_super, const int infmt,
+    const std::string& superposed_pdb_block,
+    std::string& struct1_basename, std::string& struct2_basename)
+{
+    std::string fname_super_full=fname_super;
+    if (infmt==0)      fname_super_full+=".pdb";
+    else if (infmt==3) fname_super_full+=".cif";
+    struct1_basename=get_basename(fname_super_full);
+    copy_structure2_to_outdir(yname, fname_super, struct2_basename);
+    std::ofstream fp;
+    fp.open(fname_super_full.c_str());
+    fp<<superposed_pdb_block;
+    fp.close();
+}
+
+static void build_pymol_chain_selection(const int mm_opt, const int split_opt,
+    const int ter_opt, const int o_opt, const std::string& chainID1, const std::string& chainID2,
+    std::string& chain1_sele, std::string& chain2_sele)
+{
+    int i;
+    if (!mm_opt)
+    {
+        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
+        {
+            if (o_opt==1)
+            {
+                chain1_sele=" and c. "+chainID1.substr(1);
+                chain2_sele=" and c. "+chainID2.substr(1);
+            }
+            else if (o_opt==3)
+            {
+                chain1_sele="/"+chainID1.substr(1);
+                chain2_sele="/"+chainID2.substr(1);
+            }
+        }
+        else if (split_opt==2 && ter_opt==0) // align one chain from each model
+        {
+            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
+            if (o_opt==1) chain1_sele=" and c. "+chainID1.substr(i+1);
+            else if (o_opt==3) chain1_sele="/"+chainID1.substr(i+1);
+            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
+            if (o_opt==1) chain2_sele=" and c. "+chainID2.substr(i+1);
+            else if (o_opt==3) chain2_sele="/"+chainID2.substr(i+1);
+        }
+    }
+}
+
+static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
+    std::string& resi1_sele, std::string& resi2_sele,
+    std::string& resi1_bond, std::string& resi2_bond)
+{
+    // extract aligned region
+    int i;
+    int i1=-1;
+    int i2=-1;
+    std::string prev_resi1;
+    std::string prev_resi2;
+    std::string curr_resi1;
+    std::string curr_resi2;
+    if (mm_opt)
+    {
+        ;
+    }
+    else
+    {
+        for (i=0;i<seqM.size();i++)
+        {
+            i1+=(seqxA[i]!='-' && seqxA[i]!='*');
+            i2+=(seqyA[i]!='-');
+            if (seqM[i]==' ' || seqxA[i]=='*') continue;
+            curr_resi1=resi_vec1[i1].substr(0,4);
+            curr_resi2=resi_vec2[i2].substr(0,4);
+            if (resi1_sele.size()==0)
+            {
+                if (o_opt==1) resi1_sele =    "i. "+curr_resi1;
+                else if (o_opt==3) resi1_sele=":"+Trim(curr_resi1);
+            }
+            else
+            {
+                if (o_opt==1)
+                {
+                    resi1_sele+=" or i. "+curr_resi1;
+                    resi1_bond+="bond structure1 and i. "+prev_resi1+
+                               ", structure1 and i. "+curr_resi1+"\n";
+                }
+                else if (o_opt==3)
+                    resi1_sele+=","+Trim(curr_resi1);
+            }
+            if (resi2_sele.size()==0)
+            {
+                if (o_opt==1) resi2_sele =    "i. "+curr_resi2;
+                else if (o_opt==3) resi2_sele=":"+Trim(curr_resi2);
+            }
+            else
+            {
+                if (o_opt==1)
+                {
+                    resi2_sele+=" or i. "+curr_resi2;
+                    resi2_bond+="bond structure2 and i. "+prev_resi2+
+                                   ", structure2 and i. "+curr_resi2+"\n";
+                }
+                else if (o_opt==3)
+                    resi2_sele+=","+Trim(curr_resi2);
+            }
+            prev_resi1=curr_resi1;
+            prev_resi2=curr_resi2;
+        }
+        if (o_opt==1)
+        {
+            if (resi1_sele.size()) resi1_sele=" and ( "+resi1_sele+")";
+            if (resi2_sele.size()) resi2_sele=" and ( "+resi2_sele+")";
+        }
     }
 }
 void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
