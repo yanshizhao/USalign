@@ -276,8 +276,8 @@ bool detect_filtered_chains(const std::vector<std::string>& pdb_file_list,
     }
     
     int total_mol_opt_chain = 0;
-    const PdbParseOptions pdb_parse_opts{
-        ter_opt, "auto", normalize_atom_name, split_opt, het_opt, chain2parse, model2parse};
+    const PdbParseOptions pdb_parse_opts = make_pdb_parse_opts(
+        ter_opt, "auto", normalize_atom_name, split_opt, het_opt, chain2parse, model2parse);
     for (size_t file_idx = 0; file_idx < pdb_file_list.size(); file_idx++)
     {
         std::vector<std::vector<std::string> > chain_atom_lines;   // atom lines of every chain in the current PDB file
