@@ -227,9 +227,9 @@ void run_soi_task(const SoiAlignPairTask& task,
 #endif
     soi_context.pair_distances.assign(ylen+1, 0.0);
 
-    soi_align_pair(chain_align_res, xa, ya, soi_context.k_nearest1, soi_context.k_nearest2, soi_params.closeK_opt,
+    soi_align_pair(chain_align_res, xa, ya, soi_params.closeK_opt,
         seqx, seqy, secx, secy, xlen, ylen, soi_align_opts,
-        common_inputs.parsed_input.sequence, soi_context.pair_distances, soi_context.chain1_bonds, soi_context.chain2_bonds,
+        common_inputs.parsed_input.sequence, soi_context,
         soi_params.mm_opt, task_user_opts.outfmt_opt, out_stream);
 
     AlignCommonInput task_input = common_inputs;

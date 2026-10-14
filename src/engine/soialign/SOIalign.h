@@ -1023,15 +1023,13 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya,
 
 
 inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
-    CoordArray& xa, CoordArray& ya,
-    CoordArray& xk, CoordArray& yk, const int closeK_opt,
+    CoordArray& xa, CoordArray& ya, const int closeK_opt,
     const std::string& seqx, const std::string& seqy,
     const std::string& secx, const std::string& secy,
     int xlen, int ylen,
     const ChainPairAlignOptions& align_opts,
     const std::vector<std::string>& sequence,
-    std::vector<double>& dist_list,
-    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    SoiAlignContext& soi_context, const int mm_opt,
     int outfmt_opt, std::ostream& os = std::cout)
 {
     chain_align_res.invmap.assign(ylen + 1, 0);
@@ -1039,7 +1037,8 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
     {
         init_rt_mat(chain_align_res.t0, chain_align_res.u0);
         soi_se_main(xa, ya, seqx, seqy, chain_align_res,
-            xlen, ylen, align_opts, outfmt_opt, dist_list, secx_bond, secy_bond, mm_opt);
+            xlen, ylen, align_opts, outfmt_opt, soi_context.pair_distances,
+            soi_context.chain1_bonds, soi_context.chain2_bonds, mm_opt);
         if (outfmt_opt >= 2)
         {
             chain_align_res.Liden=chain_align_res.L_ali=0;
@@ -1054,9 +1053,10 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
             }
         }
     }
-    else SOIalign_main(xa, ya, xk, yk, closeK_opt,
+    else SOIalign_main(xa, ya, soi_context.k_nearest1, soi_context.k_nearest2, closeK_opt,
         seqx, seqy, secx, secy, chain_align_res,
-        xlen, ylen, sequence, align_opts, dist_list, secx_bond, secy_bond, mm_opt, os);
+        xlen, ylen, sequence, align_opts, soi_context.pair_distances,
+        soi_context.chain1_bonds, soi_context.chain2_bonds, mm_opt, os);
 }
 
 #endif
