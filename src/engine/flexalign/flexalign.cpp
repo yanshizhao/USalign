@@ -903,3 +903,384 @@ void output_flexalign_rasmol(const std::string xname, const std::string yname,
     write_rasmol_to_file(rasmol_state, fname_super, mm_opt);
 }
 
+void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
+    const std::string& xname,
+    const DoubleMatrix& tu_vec, const int mirror_opt)
+{
+    std::stringstream& buf = read_state.buf;
+    read_state.infmt = 3;
+    buf << read_state.line << '\n';
+    read_pymol_line_or_quit(read_state, xname);
+    while (!read_state.line.size())
+        read_pymol_line_or_quit(read_state, xname);
+    buf << read_state.line << '\n';
+    if (read_state.line.compare(0, 11, "_atom_site."))
+        return;
+    std::map<std::string, int> atom_site;
+    size_t atom_site_pos = 0;
+    atom_site[Trim(read_state.line.substr(11))] = atom_site_pos;
+    while (1)
+    {
+        read_pymol_line_or_quit(read_state, xname);
+        while (!read_state.line.size())
+            read_pymol_line_or_quit(read_state, xname);
+        if (read_state.line.compare(0, 11, "_atom_site."))
+            break;
+        atom_site[Trim(read_state.line.substr(11))] = ++atom_site_pos;
+        buf << read_state.line << '\n';
+    }
+
+    if (atom_site.count("group_PDB") *
+            atom_site.count("Cartn_x") *
+            atom_site.count("Cartn_y") *
+            atom_site.count("Cartn_z") ==
+        0)
+    {
+        buf << read_state.line << '\n';
+        std::cerr << "Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z" << std::endl;
+        return;
+    }
+
+    std::vector<std::string> line_vec;
+    while (1)
+    {
+        line_vec.clear();
+        split(read_state.line, line_vec);
+        if (line_vec[atom_site["group_PDB"]] != "ATOM" &&
+            line_vec[atom_site["group_PDB"]] != "HETATM")
+            break;
+
+        Vec3 x;
+        x[0] = atof(line_vec[atom_site["Cartn_x"]].c_str());
+        x[1] = atof(line_vec[atom_site["Cartn_y"]].c_str());
+        x[2] = atof(line_vec[atom_site["Cartn_z"]].c_str());
+        if (mirror_opt)
+            x[2] = -x[2];
+
+        if (atom_site.count("auth_seq_id"))
+            read_state.resi = line_vec[atom_site["auth_seq_id"]];
+        else
+            read_state.resi = line_vec[atom_site["label_seq_id"]];
+        if (atom_site.count("pdbx_PDB_ins_code") &&
+            line_vec[atom_site["pdbx_PDB_ins_code"]] != "?")
+            read_state.resi += line_vec[atom_site["pdbx_PDB_ins_code"]][0];
+        else
+            read_state.resi += " ";
+        if (read_state.read_resi >= 2)
+        {
+            if (atom_site.count("auth_asym_id"))
+                read_state.asym_id = line_vec[atom_site["auth_asym_id"]];
+            else
+                read_state.asym_id = line_vec[atom_site["label_asym_id"]];
+            if (read_state.asym_id == ".")
+                read_state.asym_id = " ";
+            read_state.resi += read_state.asym_id[0];
+        }
+        int hinge = 0;
+        if (read_state.resi2hinge_dict.count(read_state.resi))
+            hinge = read_state.resi2hinge_dict[read_state.resi];
+        tu2t_u(tu_vec[hinge], read_state.t, read_state.u);
+        Vec3 x1;
+        transform(read_state.t, read_state.u, x, x1);
+
+        for (atom_site_pos = 0; atom_site_pos < atom_site.size(); atom_site_pos++)
+        {
+            if (atom_site_pos == atom_site["Cartn_x"])
+                buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                    << std::setw(8) << x1[0] << ' ';
+            else if (atom_site_pos == atom_site["Cartn_y"])
+                buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                    << std::setw(8) << x1[1] << ' ';
+            else if (atom_site_pos == atom_site["Cartn_z"])
+                buf << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                    << std::setw(8) << x1[2] << ' ';
+            else
+                buf << line_vec[atom_site_pos] << ' ';
+        }
+        buf << '\n';
+
+        if (!read_pymol_line(read_state))
+            break;
+    }
+    if (read_state.compress_type ? read_state.fin_gz.good() : read_state.fin.good())
+        buf << read_state.line << '\n';
+}
+
+void read_pymol_structure(FlexalignPymolState& pymol_state,
+    const std::string& xname, const std::vector<std::string>& resi_vec1,
+    const DoubleMatrix& tu_vec, const int mirror_opt, const int ter_opt)
+{
+    std::stringstream& buf = pymol_state.buf;
+    FlexalignPymolReadState read_state(pymol_state);
+    read_state.compress_type = COMPRESS_FILE;
+    open_file_for_read(xname, read_state.fin, read_state.fin_gz, read_state.compress_type);
+    read_state.resi = resi_vec1[0];
+    read_state.read_resi = read_state.resi.size() - 4;
+    read_state.infmt = -1; // 0 - PDB, 3 - PDBx/mmCIF
+    while (read_pymol_line(read_state))
+    {
+        const std::string& line = read_state.line;
+        if (line.compare(0, 6, "ATOM  ") == 0 ||
+            line.compare(0, 6, "HETATM") == 0) // PDB format
+        {
+            read_pymol_pdb_atom_line(read_state, tu_vec, mirror_opt);
+        }
+        else if (line.compare(0, 5, "loop_") == 0) // PDBx/mmCIF
+        {
+            read_pymol_mmcif_loop(read_state, xname, tu_vec, mirror_opt);
+        }
+        else if (line.size())
+        {
+            buf << line << '\n';
+            if (ter_opt >= 1 && line.compare(0, 3, "END") == 0)
+                break;
+        }
+    }
+    if (read_state.compress_type)
+        read_state.fin_gz.close();
+    else
+        read_state.fin.close();
+    pymol_state.infmt = read_state.infmt;
+}
+
+void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
+    const int mm_opt)
+{
+    int i;
+    int i1 = -1;
+    int i2 = -1;
+    std::string prev_resi1;
+    std::string prev_resi2;
+    if (!mm_opt)
+    {
+        for (i = 0; i < seqM.size(); i++)
+        {
+            i1 += (seqxA[i] != '-' && seqxA[i] != '*');
+            i2 += (seqyA[i] != '-');
+            if (seqM[i] == ' ' || seqxA[i] == '*')
+                continue;
+            std::string curr_resi1 = resi_vec1[i1].substr(0, 4);
+            std::string curr_resi2 = resi_vec2[i2].substr(0, 4);
+            if (pymol_state.resi1_sele.size() == 0)
+                pymol_state.resi1_sele = "i. " + curr_resi1;
+            else
+            {
+                pymol_state.resi1_sele += " or i. " + curr_resi1;
+                pymol_state.resi1_bond += "bond structure1 and i. " + prev_resi1 +
+                              ", i. " + curr_resi1 + "\n";
+            }
+            if (pymol_state.resi2_sele.size() == 0)
+                pymol_state.resi2_sele = "i. " + curr_resi2;
+            else
+            {
+                pymol_state.resi2_sele += " or i. " + curr_resi2;
+                pymol_state.resi2_bond += "bond structure2 and i. " + prev_resi2 +
+                              ", i. " + curr_resi2 + "\n";
+            }
+            prev_resi1 = curr_resi1;
+            prev_resi2 = curr_resi2;
+        }
+        if (pymol_state.resi1_sele.size())
+            pymol_state.resi1_sele = " and ( " + pymol_state.resi1_sele + ")";
+        if (pymol_state.resi2_sele.size())
+            pymol_state.resi2_sele = " and ( " + pymol_state.resi2_sele + ")";
+    }
+}
+
+void write_pymol_to_file(const FlexalignPymolState& pymol_state,
+    const std::string& fname_super,
+    const std::string& yname, const int mm_opt, const int ter_opt)
+{
+    std::string fname_super_full = fname_super;
+    if (pymol_state.infmt == 0)
+        fname_super_full += ".pdb";
+    else if (pymol_state.infmt == 3)
+        fname_super_full += ".cif";
+    const std::string struct1_basename = get_basename(fname_super_full);
+    std::string struct2_basename;
+    copy_structure2_to_outdir(yname, fname_super, struct2_basename);
+    std::ofstream fp;
+    fp.open(fname_super_full.c_str());
+    fp << pymol_state.buf.str();
+    fp.close();
+
+    const std::string& chain1_sele = pymol_state.chain1_sele;
+    const std::string& chain2_sele = pymol_state.chain2_sele;
+    const std::string& resi1_sele = pymol_state.resi1_sele;
+    const std::string& resi2_sele = pymol_state.resi2_sele;
+    const std::string& resi1_bond = pymol_state.resi1_bond;
+    const std::string& resi2_bond = pymol_state.resi2_bond;
+    std::stringstream buf_pymol;
+    std::vector<std::string> pml_list;
+    pml_list.push_back(fname_super);
+    pml_list.push_back(fname_super + "_atm");
+    pml_list.push_back(fname_super + "_all");
+    pml_list.push_back(fname_super + "_all_atm");
+    pml_list.push_back(fname_super + "_all_atm_lig");
+
+    for (int p = 0; p < pml_list.size(); p++)
+    {
+        if (mm_opt && p <= 1)
+            continue;
+        buf_pymol
+            << "#!/usr/bin/env pymol\n"
+            << "cmd.load(\"" << struct1_basename << "\", \"structure1\")\n"
+            << "cmd.load(\"" << struct2_basename << "\", \"structure2\")\n"
+            << "hide all\n"
+            << "set all_states, " << ((ter_opt == 0) ? "on" : "off") << '\n';
+        if (p == 0) // .pml
+        {
+            if (chain1_sele.size())
+                buf_pymol
+                    << "remove structure1 and not " << chain1_sele.substr(4) << "\n";
+            if (chain2_sele.size())
+                buf_pymol
+                    << "remove structure2 and not " << chain2_sele.substr(4) << "\n";
+            buf_pymol
+                << "remove not n. CA and not n. C3'\n"
+                << resi1_bond
+                << resi2_bond
+                << "show stick, structure1" << chain1_sele << resi1_sele << "\n"
+                << "show stick, structure2" << chain2_sele << resi2_sele << "\n";
+        }
+        else if (p == 1) // _atm.pml
+        {
+            buf_pymol
+                << "show cartoon, structure1" << chain1_sele << resi1_sele << "\n"
+                << "show cartoon, structure2" << chain2_sele << resi2_sele << "\n";
+        }
+        else if (p == 2) // _all.pml
+        {
+            buf_pymol
+                << "show ribbon, structure1" << chain1_sele << "\n"
+                << "show ribbon, structure2" << chain2_sele << "\n";
+        }
+        else if (p == 3) // _all_atm.pml
+        {
+            buf_pymol
+                << "show cartoon, structure1" << chain1_sele << "\n"
+                << "show cartoon, structure2" << chain2_sele << "\n";
+        }
+        else if (p == 4) // _all_atm_lig.pml
+        {
+            buf_pymol
+                << "show cartoon, structure1\n"
+                << "show cartoon, structure2\n"
+                << "show stick, not polymer\n"
+                << "show sphere, not polymer\n";
+        }
+        buf_pymol
+            << "color blue, structure1\n"
+            << "color red, structure2\n"
+            << "set ribbon_width, 6\n"
+            << "set stick_radius, 0.3\n"
+            << "set sphere_scale, 0.25\n"
+            << "set ray_shadow, 0\n"
+            << "bg_color white\n"
+            << "set transparency=0.2\n"
+            << "zoom polymer and ((structure1" << chain1_sele
+            << ") or (structure2" << chain2_sele << "))\n"
+            << std::endl;
+
+        fp.open((pml_list[p] + ".pml").c_str());
+        fp << buf_pymol.str();
+        fp.close();
+        buf_pymol.str(std::string());
+    }
+}
+
+void output_flexalign_results(
+    const ParsedChain& chain1_data, const ParsedChain& chain2_data,
+    const FlexAlignResult& flexalign_res,
+    const UserOptions& opts,
+    const int mm_opt, std::ostream& os)
+{
+    const std::string xname = opts.xname.substr(opts.dir1_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
+    const std::string yname = opts.yname.substr(opts.dir2_opt.size() + opts.dir_opt.size() + opts.dirpair_opt.size());
+
+    const std::string& chainID1 = chain1_data.chain_id;
+    const std::string& chainID2 = chain2_data.chain_id;
+    const int xlen = chain1_data.chain_len;
+    const int ylen = chain2_data.chain_len;
+    const std::vector<std::string>& resi_vec1 = chain1_data.resi_vec;
+    const std::vector<std::string>& resi_vec2 = chain2_data.resi_vec;
+
+    if (opts.outfmt_opt<=0)
+    {
+        fcout(os, "\nName of Structure_1: %s%s (to be superimposed onto Structure_2)\n",
+            xname, chainID1);
+        fcout(os, "Name of Structure_2: %s%s\n", yname, chainID2);
+        fcout(os, "Length of Structure_1: %d residues\n", xlen);
+        fcout(os, "Length of Structure_2: %d residues\n\n", ylen);
+
+        if (opts.i_opt)
+            fcout(os, "User-specified initial alignment: TM/Lali/rmsd = %7.5lf, %4d, %6.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
+
+        fcout(os, "Aligned length= %d, RMSD= %6.2f, Seq_ID=n_identical/n_aligned= %4.3f\n", flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
+        fcout(os, "TM-score= %6.5f (normalized by length of Structure_1: L=%d, d0=%.2f)\n", flexalign_res.TM2, xlen, flexalign_res.d0B);
+        fcout(os, "TM-score= %6.5f (normalized by length of Structure_2: L=%d, d0=%.2f)\n", flexalign_res.TM1, ylen, flexalign_res.d0A);
+
+        if (opts.a_opt==1)
+            fcout(os, "TM-score= %6.5f (if normalized by average length of two structures: L=%.1f, d0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
+        if (opts.u_opt)
+            fcout(os, "TM-score= %6.5f (normalized by user-specified L=%.2f and d0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
+        if (opts.d_opt)
+            fcout(os, "TM-score= %6.5f (scaled by user-specified d0=%.2f, and L=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
+        os << "(You should use TM-score normalized by length of the reference structure)\n";
+
+        //output alignment
+        os << "\n([0-9,a-z,A-Z] denote different aligned fragment pairs separated by different hinges)\n";
+        os << flexalign_res.seqxA << "\n";
+        os << flexalign_res.seqM << "\n";
+        os << flexalign_res.seqyA << "\n";
+    }
+    else if (opts.outfmt_opt==1)
+    {
+        fcout(os, ">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+            xname, chainID1, xlen, flexalign_res.d0B, flexalign_res.Liden/xlen, flexalign_res.TM2);
+        os << flexalign_res.seqxA << "\n";
+        fcout(os, ">%s%s\tL=%d\td0=%.2f\tseqID=%.3f\tTM-score=%.5f\n",
+            yname, chainID2, ylen, flexalign_res.d0A, flexalign_res.Liden/ylen, flexalign_res.TM1);
+        os << flexalign_res.seqyA << "\n";
+
+        fcout(os, "# Lali=%d\tRMSD=%.2f\tseqID_ali=%.3f\n",
+            flexalign_res.n_ali8, flexalign_res.rmsd0, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0);
+
+        if (opts.i_opt)
+            fcout(os, "# User-specified initial alignment: TM=%.5lf\tLali=%4d\trmsd=%.3lf\n", flexalign_res.TM_ali, flexalign_res.L_ali, flexalign_res.rmsd_ali);
+
+        if(opts.a_opt)
+            fcout(os, "# TM-score=%.5f (normalized by average length of two structures: L=%.1f\td0=%.2f)\n", flexalign_res.TM3, (xlen+ylen)*0.5, flexalign_res.d0a);
+
+        if(opts.u_opt)
+            fcout(os, "# TM-score=%.5f (normalized by user-specified L=%.2f\td0=%.2f)\n", flexalign_res.TM4, opts.Lnorm_ass, flexalign_res.d0u);
+
+        if(opts.d_opt)
+            fcout(os, "# TM-score=%.5f (scaled by user-specified d0=%.2f\tL=%d)\n", flexalign_res.TM5, opts.d0_scale, ylen);
+
+        os << "$$$$\n";
+    }
+    else if (opts.outfmt_opt==2)
+    {
+        fcout(os, "%s%s\t%s%s\t%.4f\t%.4f\t%.2f\t%4.3f\t%4.3f\t%4.3f\t%d\t%d\t%d",
+            xname, chainID1, yname, chainID2,
+            flexalign_res.TM2, flexalign_res.TM1, flexalign_res.rmsd0, flexalign_res.Liden/xlen, flexalign_res.Liden/ylen, (flexalign_res.n_ali8>0)?flexalign_res.Liden/flexalign_res.n_ali8:0,
+            xlen, ylen, flexalign_res.n_ali8);
+    }
+    os << std::endl;
+
+    if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_matrix(
+            opts.fname_matrix, flexalign_res.tu_vec, os);
+
+    if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
+            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
+            resi_vec1, resi_vec2, chainID1, chainID2);
+    else if (opts.o_opt==2)
+        output_flexalign_rasmol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
+            opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
+            resi_vec1, resi_vec2, chainID1, chainID2,
+            xlen, ylen, flexalign_res.d0A, flexalign_res.n_ali8, flexalign_res.rmsd0, flexalign_res.TM1, flexalign_res.Liden);
+}
+
