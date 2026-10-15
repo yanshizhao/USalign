@@ -400,8 +400,6 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
-    int    i,j;                // file index
-    int    chain_i,chain_j;    // chain index
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     int read_resi = ((user_opts.byresi_opt == 0) && user_opts.o_opt) ? 2 : user_opts.byresi_opt;  // whether to read residue index
 
@@ -414,7 +412,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
         user_opts.split_opt, user_opts.het_opt,
         user_opts.chain2parse2, user_opts.model2parse2);
 
-    for (i=0;i<parsed_input.chain1_list.size();i++)
+    for (int i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
@@ -426,7 +424,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                 <<". Chain number 0."<<std::endl;
             continue;
         }
-        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        for (int chain_i=0;chain_i<xchainnum;chain_i++)
         {
             ParsedChain chain1_data;
             if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
@@ -435,7 +433,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                 continue;
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
-            for (j = j_start; j < parsed_input.chain2_list.size(); j++)
+            for (int j = j_start; j < parsed_input.chain2_list.size(); j++)
             {
                 // parse chain 2
                 if (PDB_lines2.size() == 0)
@@ -449,7 +447,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                         continue;
                     }
                 }
-                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                for (int chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     ParsedChain chain2_data;
                     if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,

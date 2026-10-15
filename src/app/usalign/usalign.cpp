@@ -506,7 +506,6 @@ void check_matrix_file_name(UserOptions& user_opts)
 
 void build_file_lists(UserOptions& user_opts, ParsedInput& parsed, ControlOptions& control)
 {
-    int i;
     if (user_opts.dirpair_opt.size())
         file2chainpairlist(parsed.chain1_list,parsed.chain2_list, user_opts.xname, user_opts.dirpair_opt, control.suffix_opt);
     else
@@ -515,7 +514,7 @@ void build_file_lists(UserOptions& user_opts, ParsedInput& parsed, ControlOption
         else file2chainlist(parsed.chain1_list, user_opts.xname, user_opts.dir_opt+user_opts.dir1_opt, control.suffix_opt);
 
         if (user_opts.dir_opt.size())
-            for (i=0;i<parsed.chain1_list.size();i++)
+            for (int i=0;i<parsed.chain1_list.size();i++)
                 parsed.chain2_list.push_back(parsed.chain1_list[i]);
         else if (user_opts.dir2_opt.size()==0) parsed.chain2_list.push_back(user_opts.yname);
         else file2chainlist(parsed.chain2_list, user_opts.yname, user_opts.dir2_opt, control.suffix_opt);

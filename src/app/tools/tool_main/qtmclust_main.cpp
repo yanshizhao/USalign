@@ -690,14 +690,13 @@ void report_clusters(const std::vector<size_t>& clust_repr_vec,
     const std::string& fname_clust)
 {
     size_t chain_j;
-    size_t chain_i;
     // print out cluster
     std::stringstream txt;
     for (size_t j=0;j<clust_repr_vec.size();j++)
     {
         chain_j=clust_repr_vec[j]; // cluster representative
         txt<<chainID_list[chain_j];
-        for (chain_i=0;chain_i<clust_mem_vec.size();chain_i++)
+        for (size_t chain_i=0;chain_i<clust_mem_vec.size();chain_i++)
         {
             if (chain_i!=chain_j && clust_mem_vec[chain_i]==j)
                 txt<<'\t'<<chainID_list[chain_i];

@@ -132,7 +132,6 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
 {
     size_t changed_chains=0;
     size_t c;
-    size_t r;
     std::string chainID;
 
     std::string chainID_string="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -170,7 +169,7 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
         }
         else
         {
-            for (r=0;r<PDB_lines[c].size();r++) PDB_lines[c][r]=
+            for (size_t r=0;r<PDB_lines[c].size();r++) PDB_lines[c][r]=
                 PDB_lines[c][r].substr(0,21)+chainID+PDB_lines[c][r].substr(22);
             changed_chains++;
         }

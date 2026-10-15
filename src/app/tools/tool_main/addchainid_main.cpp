@@ -57,9 +57,8 @@ void addChainID(const std::string &infile,const std::string &outfile,
     std::vector<std::string> lines;
     splitlines(buf.str(),lines);
     buf.str(std::string());
-    size_t l;
 
-    for (l=0;l<lines.size();l++)
+    for (size_t l=0;l<lines.size();l++)
     {
         if (lines[l].substr(0,6)=="ATOM  " ||
             lines[l].substr(0,6)=="HETATM")

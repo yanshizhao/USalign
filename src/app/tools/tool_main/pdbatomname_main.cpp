@@ -94,7 +94,6 @@ size_t pdbAtomName(const std::string &infile,const std::string &outfile)
     std::string resn="   ";
     int idxBegin = -1;
     int idxEnd = -1;
-    int i;
     std::string msg;
     std::map<std::string,int> msg_dict;
     size_t changeNum=0;
@@ -131,7 +130,7 @@ size_t pdbAtomName(const std::string &infile,const std::string &outfile)
 
             atom=lines[l].substr(12,4);
             idxBegin = idxEnd = -1;
-            for (i=0;i<4;i++)
+            for (int i=0;i<4;i++)
             {
                 if (atom[i]==' ') continue;
                 if (idxBegin==-1) idxBegin=i;
