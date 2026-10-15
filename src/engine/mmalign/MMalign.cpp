@@ -2674,3 +2674,650 @@ double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     return MMscore;
 }
 
+double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num,
+    CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM,
+    const int L, const RotArray& ut_mat)
+{
+    double MMscore_max=0;
+    double MMscore=0;
+    int i;
+    int j;
+    int c1;
+    int c2;
+    int max_i=-1; // the chain pair whose monomer u t yields highest MMscore
+    int max_j=-1;
+
+    int chain_num=getmin(chain1_num,chain2_num);
+    std::vector<int> assign1_tmp(chain1_num);
+    std::vector<int> assign2_tmp(chain2_num);
+    CoordArray xt;
+    xt.resize(chain1_num);
+    Vec3 t;
+    RotMat u;
+    int ui;
+    int uj;
+    int ut_idx;
+    double TMscore=0; // pseudo TM-score
+    double TMsum  =0;
+    double dd=0;
+
+    size_t  total_pair=chain1_num*chain2_num; // total pair
+    std::vector<double> ut_tmc_mat(total_pair, 0.0); // chain level TM-score
+    std::vector<std::pair<double,int> > ut_tm_vec(total_pair,std::make_pair(0.0,0)); // product of both
+
+    for (c1=0;c1<chain1_num;c1++)
+    {
+        for (c2=0;c2<chain2_num;c2++)
+        {
+            if (TMave_mat[c1][c2]<=0) continue;
+            ut_idx=c1*chain2_num+c2;
+            for (ui=0;ui<3;ui++)
+                for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[ut_idx][ui*3+uj];
+            for (uj=0;uj<3;uj++) t[uj]=ut_mat[ut_idx][9+uj];
+            
+            do_rotation(xcentroids, xt, chain1_num, t, u);
+
+            for (i=0;i<chain1_num;i++) assign1_tmp[i]=-1;
+            for (j=0;j<chain2_num;j++) assign2_tmp[j]=-1;
+
+
+            for (i=0;i<chain1_num;i++)
+            {
+                for (j=0;j<chain2_num;j++)
+                {
+                    ut_idx=i*chain2_num+j;
+                    ut_tmc_mat[ut_idx]=0;
+                    ut_tm_vec[ut_idx].first=-1;
+                    ut_tm_vec[ut_idx].second=ut_idx;
+                    if (TMave_mat[i][j]<=0) continue;
+                    dd=dist(xt[i],ycentroids[j]);
+                    ut_tmc_mat[ut_idx]=1/(1+dd/(d0MM*d0MM));
+                    ut_tm_vec[ut_idx].first=
+                        ut_tmc_mat[ut_idx]*TMave_mat[i][j];
+                }
+            }
+
+            // initial assignment
+            assign1_tmp[c1]=c2;
+            assign2_tmp[c2]=c1;
+            TMsum=TMave_mat[c1][c2];
+            TMscore=ut_tmc_mat[c1*chain2_num+c2];
+
+            // further assignment
+            std::sort(ut_tm_vec.begin(), ut_tm_vec.end()); // sort in ascending order
+            for (ut_idx=total_pair-1;ut_idx>=0;ut_idx--)
+            {
+                j=ut_tm_vec[ut_idx].second % chain2_num;
+                i=int(ut_tm_vec[ut_idx].second / chain2_num);
+                if (TMave_mat[i][j]<=0) break;
+                if (assign1_tmp[i]>=0 || assign2_tmp[j]>=0) continue;
+                assign1_tmp[i]=j;
+                assign2_tmp[j]=i;
+                TMsum+=TMave_mat[i][j];
+                TMscore+=ut_tmc_mat[i*chain2_num+j];
+            }
+
+            // final MMscore
+            MMscore=(TMsum/L)*(TMscore/chain_num);
+            if (max_i<0 || max_j<0 || MMscore>MMscore_max)
+            {
+                max_i=c1;
+                max_j=c2;
+                MMscore_max=MMscore;
+                for (i=0;i<chain1_num;i++) assign1_list[i]=assign1_tmp[i];
+                for (j=0;j<chain2_num;j++) assign2_list[j]=assign2_tmp[j];
+            }
+        }
+    }
+
+    return MMscore;
+}
+
+double hetero_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num,
+    const CoordArray& xcentroids, const CoordArray& ycentroids, const double d0MM, const int L)
+{
+    double MMscore_old=0;
+    double MMscore=0;
+    int i;
+    int j;
+
+    int chain_num=getmin(chain1_num,chain2_num);
+    CoordArray r1, r2, xt;
+    r1.resize(chain_num);
+    r2.resize(chain_num);
+    xt.resize(chain_num);
+    Vec3 t;
+    RotMat u;
+
+    // calculate MMscore
+    MMscore=MMscore_old=calMMscore(TMave_mat, assign1_list, chain1_num,
+        chain2_num, xcentroids, ycentroids, d0MM, r1, r2, xt, t, u, L);
+
+    /* iteratively refine chain assignment. in each iteration, attempt
+     * to swap (i,old_j=assign1_list[i]) with (i,j) */
+    double delta_score=-1;
+    std::vector<int> assign1_tmp(chain1_num);
+    std::vector<int> assign2_tmp(chain2_num);
+    for (i=0;i<chain1_num;i++) assign1_tmp[i]=assign1_list[i];
+    for (j=0;j<chain2_num;j++) assign2_tmp[j]=assign2_list[j];
+    int old_i=-1;
+    int old_j=-1;
+
+
+    for (int iter=0;iter<chain1_num*chain2_num;iter++)
+    {
+        delta_score=-1;
+        for (i=0;i<chain1_num;i++)
+        {
+            old_j=assign1_list[i];
+            for (j=0;j<chain2_num;j++)
+            {
+                if (j==assign1_list[i] || TMave_mat[i][j]<=0) continue;
+                old_i=assign2_list[j];
+
+                assign1_tmp[i]=j;
+                if (old_i>=0) assign1_tmp[old_i]=old_j;
+                assign2_tmp[j]=i;
+                if (old_j>=0) assign2_tmp[old_j]=old_i;
+                
+                MMscore=calMMscore(TMave_mat, assign1_tmp, chain1_num,
+                    chain2_num, xcentroids, ycentroids, d0MM,
+                    r1, r2, xt, t, u, L);
+
+                if (MMscore>MMscore_old) // successful swap
+                {
+                    assign1_list[i]=j;
+                    if (old_i>=0) assign1_list[old_i]=old_j;
+                    assign2_list[j]=i;
+                    if (old_j>=0) assign2_list[old_j]=old_i;
+                    delta_score=(MMscore-MMscore_old);
+                    MMscore_old=MMscore;
+                    break;
+                }
+                else
+                {
+                    assign1_tmp[i]=assign1_list[i];
+                    if (old_i>=0) assign1_tmp[old_i]=assign1_list[old_i];
+                    assign2_tmp[j]=assign2_list[j];
+                    if (old_j>=0) assign2_tmp[old_j]=assign2_list[old_j];
+                }
+            }
+        }
+        if (delta_score<=0) break; // cannot swap any chain pair
+    }
+    MMscore=MMscore_old;
+
+    return MMscore;
+}
+
+size_t get_full_PDB_lines(const std::string filename,
+    std::vector<std::vector<std::string> >&PDB_lines, const int ter_opt,
+    const int infmt_opt, const int split_opt, const int het_opt)
+{
+    size_t i=0; // resi i.e. atom index
+    std::string line;
+    char chainID=0;
+    std::vector<std::string> tmp_str_vec;
+    
+    int compress_type=0; // uncompressed file
+    std::ifstream fin;
+#ifndef REDI_PSTREAM_H_SEEN
+    std::ifstream fin_gz;
+#else
+    redi::ipstream fin_gz; // if file is compressed
+    if (filename.size()>=3 && 
+        filename.substr(filename.size()-3,3)==".gz")
+    {
+        fin_gz.open("gunzip -c '"+filename+"'");
+        compress_type=1;
+    }
+    else if (filename.size()>=4 && 
+        filename.substr(filename.size()-4,4)==".bz2")
+    {
+        fin_gz.open("bzcat '"+filename+"'");
+        compress_type=2;
+    }
+    else
+#endif
+        fin.open(filename.c_str());
+
+    if (infmt_opt==0||infmt_opt==-1) // PDB format
+    {
+        while (compress_type?fin_gz.good():fin.good())
+        {
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
+            if (infmt_opt==-1 && line.compare(0,5,"loop_")==0) // PDBx/mmCIF
+                return get_full_PDB_lines(filename,PDB_lines,
+                    ter_opt, 3, split_opt,het_opt);
+            if (i > 0)
+            {
+                if      (ter_opt>=1 && line.compare(0,3,"END")==0) break;
+                else if (ter_opt>=3 && line.compare(0,3,"TER")==0) break;
+            }
+            if (split_opt && line.compare(0,3,"END")==0) chainID=0;
+            if (line.size()>=54 && (line[16]==' ' || line[16]=='A') && (
+                (line.compare(0, 6, "ATOM  ")==0) || 
+                (line.compare(0, 6, "HETATM")==0 && het_opt==1) ||
+                (line.compare(0, 6, "HETATM")==0 && het_opt==2 && 
+                 line.compare(17,3, "MSE")==0)))
+            {
+                if (!chainID)
+                {
+                    chainID=line[21];
+                    PDB_lines.push_back(tmp_str_vec);
+                }
+                else if (ter_opt>=2 && chainID!=line[21]) break;
+                if (split_opt==2 && chainID!=line[21])
+                {
+                    chainID=line[21];
+                    PDB_lines.push_back(tmp_str_vec);
+                } 
+               
+                PDB_lines.back().push_back(line);
+                i++;
+            }
+        }
+    }
+    else if (infmt_opt==1) // SPICKER format
+    {
+        size_t L=0;
+        float x;
+        float y;
+        float z;
+        std::stringstream i8_stream;
+        while (compress_type?fin_gz.good():fin.good())
+        {
+            if (compress_type) fin_gz>>L>>x>>y>>z;
+            else               fin   >>L>>x>>y>>z;
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
+            if (!(compress_type?fin_gz.good():fin.good())) break;
+            for (i=0;i<L;i++)
+            {
+                if (compress_type) fin_gz>>x>>y>>z;
+                else               fin   >>x>>y>>z;
+                i8_stream<<"ATOM   "<<std::setw(4)<<i+1<<"  CA  UNK  "<<std::setw(4)
+                    <<i+1<<"    "<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setw(8)<<x<<std::setw(8)<<y<<std::setw(8)<<z;
+                line=i8_stream.str();
+                i8_stream.str(std::string());
+                PDB_lines.back().push_back(line);
+            }
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
+        }
+    }
+    else if (infmt_opt==2) // xyz format
+    {
+        size_t L=0;
+        std::stringstream i8_stream;
+        while (compress_type?fin_gz.good():fin.good())
+        {
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
+            L=safe_stoi(line.c_str());
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
+            for (i=0;i<line.size();i++)
+                if (line[i]==' '||line[i]=='\t') break;
+            if (!(compress_type?fin_gz.good():fin.good())) break;
+            PDB_lines.push_back(tmp_str_vec);
+            for (i=0;i<L;i++)
+            {
+                if (compress_type) std::getline(fin_gz, line);
+                else               std::getline(fin, line);
+                i8_stream<<"ATOM   "<<std::setw(4)<<i+1<<"  CA  "
+                    <<AAmap(line[0])<<"  "<<std::setw(4)<<i+1<<"    "
+                    <<line.substr(2,8)<<line.substr(11,8)<<line.substr(20,8);
+                line=i8_stream.str();
+                i8_stream.str(std::string());
+                PDB_lines.back().push_back(line);
+            }
+        }
+    }
+    else if (infmt_opt==3) // PDBx/mmCIF format
+    {
+        bool loop_ = false; // not reading following content
+        std::map<std::string,int> _atom_site;
+        int atom_site_pos;
+        std::vector<std::string> line_vec;
+        std::string alt_id=".";  // alternative location indicator
+        std::string asym_id="."; // this is similar to chainID, except that
+                            // chainID is char while asym_id is a string
+                            // with possibly multiple char
+        std::string prev_asym_id="";
+        std::string AA="";       // residue name
+        std::string atom="";
+        std::string resi="";
+        std::string model_index=""; // the same as model_idx but type is string
+        std::stringstream i8_stream;
+        while (compress_type?fin_gz.good():fin.good())
+        {
+            if (compress_type) std::getline(fin_gz, line);
+            else               std::getline(fin, line);
+            if (line.size()==0) continue;
+            if (loop_) loop_ = (line.size()>=2)?(line.compare(0,2,"# ")):(line.compare(0,1,"#"));
+            if (!loop_)
+            {
+                if (line.compare(0,5,"loop_")) continue;
+                while(1)
+                {
+                    if (compress_type)
+                    {
+                        if (fin_gz.good()) std::getline(fin_gz, line);
+                        else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
+                    }
+                    else
+                    {
+                        if (fin.good()) std::getline(fin, line);
+                        else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
+                    }
+                    if (line.size()) break;
+                }
+                if (line.compare(0,11,"_atom_site.")) continue;
+
+                loop_=true;
+                _atom_site.clear();
+                atom_site_pos=0;
+                _atom_site[Trim(line.substr(11))]=atom_site_pos;
+
+                while(1)
+                {
+                    if (compress_type) std::getline(fin_gz, line);
+                    else               std::getline(fin, line);
+                    if (line.size()==0) continue;
+                    if (line.compare(0,11,"_atom_site.")) break;
+                    _atom_site[Trim(line.substr(11))]=++atom_site_pos;
+                }
+
+
+                if (_atom_site.count("group_PDB")*
+                    _atom_site.count("label_atom_id")*
+                    _atom_site.count("label_comp_id")*
+                   (_atom_site.count("auth_asym_id")+
+                    _atom_site.count("label_asym_id"))*
+                   (_atom_site.count("auth_seq_id")+
+                    _atom_site.count("label_seq_id"))*
+                    _atom_site.count("Cartn_x")*
+                    _atom_site.count("Cartn_y")*
+                    _atom_site.count("Cartn_z")==0)
+                {
+                    loop_ = false;
+                    std::cerr<<"Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z"<<std::endl;
+                    continue;
+                }
+            }
+
+            line_vec.clear();
+            split(line,line_vec);
+            if ((line_vec[_atom_site["group_PDB"]]!="ATOM" &&
+                 line_vec[_atom_site["group_PDB"]]!="HETATM") ||
+                (line_vec[_atom_site["group_PDB"]]=="HETATM" &&
+                 (het_opt==0 || 
+                 (het_opt==2 && line_vec[_atom_site["label_comp_id"]]!="MSE")))
+                ) continue;
+            
+            alt_id=".";
+            if (_atom_site.count("label_alt_id")) // in 39.4 % of entries
+                alt_id=line_vec[_atom_site["label_alt_id"]];
+            if (alt_id!="." && alt_id!="A") continue;
+
+            atom=line_vec[_atom_site["label_atom_id"]];
+            if (atom[0]=='"') atom=atom.substr(1);
+            if (atom.size() && atom[atom.size()-1]=='"')
+                atom=atom.substr(0,atom.size()-1);
+            if (atom.size()==0) continue;
+            if      (atom.size()==1) atom=" "+atom+"  ";
+            else if (atom.size()==2) atom=" "+atom+" "; // wrong for sidechain H
+            else if (atom.size()==3) atom=" "+atom;
+            else if (atom.size()>=5) continue;
+
+            AA=line_vec[_atom_site["label_comp_id"]]; // residue name
+            if      (AA.size()==1) AA="  "+AA;
+            else if (AA.size()==2) AA=" " +AA;
+            else if (AA.size()>=4) continue;
+
+            if (_atom_site.count("auth_asym_id"))
+                 asym_id=line_vec[_atom_site["auth_asym_id"]];
+            else asym_id=line_vec[_atom_site["label_asym_id"]];
+            if (asym_id==".") asym_id=" ";
+            
+            if (_atom_site.count("pdbx_PDB_model_num") && 
+                model_index!=line_vec[_atom_site["pdbx_PDB_model_num"]])
+            {
+                model_index=line_vec[_atom_site["pdbx_PDB_model_num"]];
+                if (PDB_lines.size() && ter_opt>=1) break;
+                if (PDB_lines.size()==0 || split_opt>=1)
+                {
+                    PDB_lines.push_back(tmp_str_vec);
+                    prev_asym_id=asym_id;
+                }
+            }
+
+            if (prev_asym_id!=asym_id)
+            {
+                if (prev_asym_id!="" && ter_opt>=2) break;
+                if (split_opt>=2) PDB_lines.push_back(tmp_str_vec);
+            }
+            if (prev_asym_id!=asym_id) prev_asym_id=asym_id;
+
+            if (_atom_site.count("auth_seq_id"))
+                 resi=line_vec[_atom_site["auth_seq_id"]];
+            else resi=line_vec[_atom_site["label_seq_id"]];
+            if (_atom_site.count("pdbx_PDB_ins_code") && 
+                line_vec[_atom_site["pdbx_PDB_ins_code"]]!="?")
+                resi+=line_vec[_atom_site["pdbx_PDB_ins_code"]][0];
+            else resi+=" ";
+
+            i++;
+            i8_stream<<"ATOM  "
+                <<std::setw(5)<<i<<" "<<atom<<" "<<AA<<std::setw(2)<<asym_id.substr(0,2)
+                <<std::setw(5)<<resi.substr(0,5)<<"   "
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_x"]].substr(0,8)
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
+                <<std::setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
+            PDB_lines.back().push_back(i8_stream.str());
+            i8_stream.str(std::string());
+        }
+        _atom_site.clear();
+        line_vec.clear();
+        alt_id.clear();
+        asym_id.clear();
+        AA.clear();
+    }
+
+    if (compress_type) fin_gz.close();
+    else               fin.close();
+    return PDB_lines.size();
+}
+
+void output_superposed_chains(const std::vector<std::string>&chain_list, const int ter_opt,
+    const int split_opt, const int infmt_opt, const std::string atom_opt,
+    const int mirror_opt, const RotArray& ut_mat, const std::string&fname_super)
+{
+    size_t i;
+    int chain_i;
+    int a;
+    std::string name;
+    int chainnum;
+    Vec3 x;  // before transform
+    Vec3 x1; // after transform
+    std::string line;
+    std::vector<std::vector<std::string> >PDB_lines;
+    int m=0;
+    Vec3 t;
+    RotMat u;
+    int ui;
+    int uj;
+    std::stringstream buf;
+    std::string filename;
+    int het_opt=1;
+    for (i=0;i<chain_list.size();i++)
+    {
+        name=chain_list[i];
+        chainnum=get_full_PDB_lines(name, PDB_lines,
+            ter_opt, infmt_opt, split_opt, het_opt);
+        if (!chainnum) continue;
+        clear_full_PDB_lines(PDB_lines, atom_opt); // clear chains with <3 residue
+        for (chain_i=0;chain_i<chainnum;chain_i++)
+        {
+            if (PDB_lines[chain_i].size()<3) continue;
+            buf<<fname_super<<'.'<<m<<".pdb";
+            filename=buf.str();
+            buf.str(std::string());
+            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
+            for (uj=0;uj<3;uj++) t[uj]=ut_mat[m][9+uj];
+            for (a=0;a<PDB_lines[chain_i].size();a++)
+            {
+                line=PDB_lines[chain_i][a];
+                x[0]=safe_stod(line.substr(30,8).c_str());
+                x[1]=safe_stod(line.substr(38,8).c_str());
+                x[2]=safe_stod(line.substr(46,8).c_str());
+                if (mirror_opt) x[2]=-x[2];
+                transform(t, u, x, x1);
+                buf<<line.substr(0,30)<<std::setiosflags(std::ios::fixed)
+                   <<std::setprecision(3)
+                   <<std::setw(8)<<x1[0]<<std::setw(8)<<x1[1]<<std::setw(8)<<x1[2]
+                   <<line.substr(54)<<'\n';
+            }
+            buf<<"TER"<<std::endl;
+            std::ofstream fp;
+            fp.open(filename.c_str());
+            fp<<buf.str();
+            fp.close();
+            buf.str(std::string());
+            PDB_lines[chain_i].clear();
+            m++;
+        } // chain_i
+        name.clear();
+        PDB_lines.clear();
+    } // i
+    line.clear();
+}
+
+void parse_chain_list(const std::vector<std::string>&chain_list,
+    ComplexData& complex,
+    const int ter_opt, const int split_opt,
+    const std::string mol_opt, const int infmt_opt, const std::string atom_opt,
+    const bool normalize_atom_name, const int mirror_opt, const int het_opt,
+    const std::vector<std::string> &chain2parse,
+    const std::vector<std::string> &model2parse)
+{
+    DoubleCube& a_vec = complex.coords;
+    CharMatrix& seq_vec = complex.seqs;
+    CharMatrix& sec_vec = complex.secs;
+    std::vector<int>& mol_vec = complex.mol_types;
+    std::vector<int>& len_vec = complex.lengths;
+    std::vector<std::string>& chainID_list = complex.chain_ids;
+    int& len_aa = complex.total_len_aa;
+    int& len_na = complex.total_len_na;
+    std::vector<std::string>& resi_vec = complex.resi;
+    size_t i;
+    int chain_i;
+    int r;
+    std::string name;
+    int chainnum;
+    CoordArray xa;
+    int len;
+    std::string seq;
+    std::string sec;
+
+    std::vector<std::vector<std::string> >PDB_lines;
+    std::vector<double> tmp_atom_array(3,0);
+    DoubleMatrix tmp_chain_array;
+    std::vector<char>tmp_seq_array;
+    std::vector<char>tmp_sec_array;
+    int read_resi=2;
+
+    const PdbParseOptions pdb_parse_opts{
+        ter_opt, atom_opt, normalize_atom_name, split_opt, het_opt, chain2parse, model2parse};
+
+    for (i=0;i<chain_list.size();i++)
+    {
+        name=chain_list[i];
+        chainnum=get_PDB_lines(name, PDB_lines, chainID_list, mol_vec, infmt_opt,
+            pdb_parse_opts);
+        if (!chainnum)
+        {
+            std::cerr<<"Warning! Cannot parse file: "<<get_basename(name)
+                <<". Chain number 0."<<std::endl;
+            continue;
+        }
+        for (chain_i=0;chain_i<chainnum;chain_i++)
+        {
+            len=PDB_lines[chain_i].size();
+            if (!len)
+            {
+                std::cerr<<"Warning! Cannot parse file: "<<name
+                    <<". Chain length 0."<<std::endl;
+                continue;
+            }
+            else if (len<3)
+            {
+                std::cerr<<"Sequence is too short <3!: "<<name<<std::endl;
+                continue;
+            }
+            xa.clear();
+            xa.reserve(len);
+            sec.resize(len + 1);
+            len = read_PDB(PDB_lines[chain_i], xa, seq, resi_vec, read_resi);
+            if (mirror_opt) for (r=0;r<len;r++) xa[r][2]=-xa[r][2];
+            if (mol_vec[chain_i]>0 || mol_opt=="RNA")
+                make_sec(seq, xa, len, sec, atom_opt);
+            else make_sec(xa, len, sec); // secondary structure assignment
+            
+            // store in vector
+            tmp_chain_array.assign(len,tmp_atom_array);
+            std::vector<char>tmp_seq_array(len+1,0);
+            std::vector<char>tmp_sec_array(len+1,0);
+            for (r=0;r<len;r++)
+            {
+                tmp_chain_array[r][0]=xa[r][0];
+                tmp_chain_array[r][1]=xa[r][1];
+                tmp_chain_array[r][2]=xa[r][2];
+                tmp_seq_array[r]=seq[r];
+                tmp_sec_array[r]=sec[r];
+            }
+            a_vec.push_back(tmp_chain_array);
+            seq_vec.push_back(tmp_seq_array);
+            sec_vec.push_back(tmp_sec_array);
+            len_vec.push_back(len);
+
+            tmp_chain_array.clear();
+            tmp_seq_array.clear();
+            tmp_sec_array.clear();
+            PDB_lines[chain_i].clear();
+        } // chain_i
+        name.clear();
+        PDB_lines.clear();
+        mol_vec.clear();
+    } // i
+    tmp_atom_array.clear();
+
+    if (mol_opt=="RNA") mol_vec.assign(a_vec.size(),1);
+    else if (mol_opt=="protein") mol_vec.assign(a_vec.size(),-1);
+    else
+    {
+        mol_vec.assign(a_vec.size(),0);
+        for (i=0;i<a_vec.size();i++)
+        {
+            for (r=0;r<len_vec[i];r++)
+            {
+                if (seq_vec[i][r]>='a' && seq_vec[i][r]<='z') mol_vec[i]++;
+                else mol_vec[i]--;
+            }
+        }
+    }
+
+    len_aa=0;
+    len_na=0;
+    for (i=0;i<a_vec.size();i++)
+    {
+        if (mol_vec[i]>0) len_na+=len_vec[i];
+        else              len_aa+=len_vec[i];
+    }
+}
+
