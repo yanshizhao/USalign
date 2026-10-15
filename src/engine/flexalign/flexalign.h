@@ -71,6 +71,17 @@ struct FlexalignRasmolState
     std::string chain2_sele;
 };
 
+inline int hinge_char_to_index(char hinge_char)
+{
+    if (hinge_char >= '0' && hinge_char <= '9')
+        return hinge_char - '0';
+    if (hinge_char >= 'a' && hinge_char <= 'z')
+        return hinge_char - 'a' + 10;
+    if (hinge_char >= 'A' && hinge_char <= 'Z')
+        return hinge_char - 'A' + 36;
+    return 0;
+}
+
 inline void build_resi_hinge_map(FlexalignRasmolState& rasmol_state,
     const std::string& seqM, const std::string& seqxA,
     const std::vector<std::string>& resi_vec1, const int xlen)
@@ -115,7 +126,7 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
         <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
         <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
     std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
-    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+rasmol_state.buf_tm.str();
+    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
     if (!mm_opt) rasmol_state.buf<<rasmol_CA_header;
     rasmol_state.buf_all<<rasmol_CA_header;
     if (!mm_opt) rasmol_state.buf_atm<<rasmol_cartoon_header;
@@ -123,31 +134,64 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
     rasmol_state.buf_all_atm_lig<<rasmol_cartoon_header;
 }
 
+inline std::string build_rasmol_segment_cmd(const std::vector<std::string>& seg_sele)
+{
+    // Same 35-color palette as the PyMOL writer, so all tools share one scheme
+    const char* color1_list[] = {
+        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
+        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
+        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green"
+    };
+    const int color_palette_size = static_cast<int>(sizeof(color1_list) / sizeof(color1_list[0]));
+    std::string cmd;
+    const int num_seg = static_cast<int>(seg_sele.size());
+    for (int h = 0; h < num_seg; h++)
+    {
+        if (seg_sele[h].size() == 0)
+            continue;
+        cmd += "select " + seg_sele[h] + "\n";
+        cmd += "color " + std::string(color1_list[h % color_palette_size]) + "\n";
+    }
+    return cmd;
+}
+
 inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt)
+    const int mm_opt, const int num_hinges)
 {
     rasmol_state.i1=-1;
     rasmol_state.i2=-1;
+    std::string seg_cmd;
     if (!mm_opt)
     {
+        // Group aligned residues of structure 1 by hinge segment, following the
+        // same seqM walk as build_pymol_resi_suffix (unaligned residues skipped)
+        std::vector<std::string> seg_sele;
+        if (num_hinges>0) seg_sele.assign(num_hinges, "");
         for (int i=0;i<seqM.size();i++)
         {
-            rasmol_state.i1+=(seqxA[i]!='-');
+            rasmol_state.i1+=(seqxA[i]!='-' && seqxA[i]!='*');
             rasmol_state.i2+=(seqyA[i]!='-');
-            if (seqM[i]==' ') continue;
+            if (seqM[i]==' ' || seqxA[i]=='*') continue;
             rasmol_state.resi_aln1.push_back(resi_vec1[rasmol_state.i1].substr(0,4));
             rasmol_state.resi_aln2.push_back(resi_vec2[rasmol_state.i2].substr(0,4));
-            if (seqM[i]!=':') continue;
-            rasmol_state.buf    <<"select "<<rasmol_state.resi_aln1.back()<<":A,"
-                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
-            rasmol_state.buf_all<<"select "<<rasmol_state.resi_aln1.back()<<":A,"
-                   <<rasmol_state.resi_aln2.back()<<":B\ncolor red\n";
+            if (num_hinges<=0) continue;
+            int hinge_idx=hinge_char_to_index(seqM[i]);
+            if (hinge_idx>=num_hinges) hinge_idx=num_hinges-1;
+            if (seg_sele[hinge_idx].size()==0)
+                seg_sele[hinge_idx]=rasmol_state.resi_aln1.back()+":A";
+            else
+                seg_sele[hinge_idx]+=","+rasmol_state.resi_aln1.back()+":A";
         }
-        rasmol_state.buf<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+        seg_cmd=build_rasmol_segment_cmd(seg_sele);
+        rasmol_state.buf    <<seg_cmd<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+        rasmol_state.buf_atm<<seg_cmd<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
     }
-    rasmol_state.buf_all<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+    rasmol_state.buf_all        <<seg_cmd<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+    rasmol_state.buf_all_atm    <<seg_cmd<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
+    rasmol_state.buf_all_atm_lig<<seg_cmd<<"select all\nexit\n"<<rasmol_state.buf_tm.str();
 }
 
 void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
@@ -163,23 +207,23 @@ inline void write_rasmol_to_file(const FlexalignRasmolState& rasmol_state,
     std::ofstream fp;
     if (!mm_opt)
     {
-        fp.open(fname_super);
+        fp.open(fname_super + ".spt");
         fp << rasmol_state.buf.str();
         fp.close();
     }
-    fp.open(fname_super + "_all");
+    fp.open(fname_super + "_all.spt");
     fp << rasmol_state.buf_all.str();
     fp.close();
     if (!mm_opt)
     {
-        fp.open(fname_super + "_atm");
+        fp.open(fname_super + "_atm.spt");
         fp << rasmol_state.buf_atm.str();
         fp.close();
     }
-    fp.open(fname_super + "_all_atm");
+    fp.open(fname_super + "_all_atm.spt");
     fp << rasmol_state.buf_all_atm.str();
     fp.close();
-    fp.open(fname_super + "_all_atm_lig");
+    fp.open(fname_super + "_all_atm_lig.spt");
     fp << rasmol_state.buf_all_atm_lig.str();
     fp.close();
 }
@@ -250,17 +294,6 @@ inline void read_pymol_line_or_quit(FlexalignPymolReadState& read_state,
 {
     if (!read_pymol_line(read_state))
         PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-}
-
-inline int hinge_char_to_index(char hinge_char)
-{
-    if (hinge_char >= '0' && hinge_char <= '9')
-        return hinge_char - '0';
-    if (hinge_char >= 'a' && hinge_char <= 'z')
-        return hinge_char - 'a' + 10;
-    if (hinge_char >= 'A' && hinge_char <= 'Z')
-        return hinge_char - 'A' + 36;
-    return 0;
 }
 
 inline char find_nearest_hinge_char(const std::string& seqM,

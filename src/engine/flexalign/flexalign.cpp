@@ -895,7 +895,8 @@ void output_flexalign_rasmol(const std::string xname, const std::string yname,
 
     rasmol_state.is_mmcif=false;
 
-    extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
+    extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt,
+        static_cast<int>(tu_vec.size()));
 
     read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
 
