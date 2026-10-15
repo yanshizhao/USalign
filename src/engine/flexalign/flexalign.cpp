@@ -1514,3 +1514,186 @@ void fill_sub_struct_align_result(
     chain_align_res.invmap = best_align->invmap;
 }
 
+void extract_unalign_subcoords(
+        const std::string& seqxA, const std::string& seqyA,
+        const std::string& seqx, const std::string& seqy,
+        const std::string& secx, const std::string& secy,
+        const CoordArray& xa, const CoordArray& ya,
+        const int xlen_hinge_trimmed, const int ylen_hinge_trimmed,
+        CoordArray& xa_hinge_trimmed, CoordArray& ya_hinge_trimmed,
+        std::string& seqx_hinge_trimmed, std::string& seqy_hinge_trimmed,
+        std::string& secx_hinge_trimmed, std::string& secy_hinge_trimmed,
+        std::vector<int>& r1toi, std::vector<int>& r2toj)
+{
+    xa_hinge_trimmed.resize(xlen_hinge_trimmed);
+    ya_hinge_trimmed.resize(ylen_hinge_trimmed);
+    secx_hinge_trimmed.resize(xlen_hinge_trimmed + 1);
+    secy_hinge_trimmed.resize(ylen_hinge_trimmed + 1);
+    r1toi.assign(xlen_hinge_trimmed, 0);
+    r2toj.assign(ylen_hinge_trimmed, 0);
+    int i = -1, j = -1, r1 = 0, r2 = 0;
+    for (size_t r = 0; r < seqxA.size(); r++)
+    {
+        i += (seqxA[r] != '-');
+        j += (seqyA[r] != '-');
+        if (seqyA[r] == '-')
+        {
+            seqx_hinge_trimmed.push_back(seqx[i]);
+            secx_hinge_trimmed[r1] = secx[i];
+            xa_hinge_trimmed[r1][0] = xa[i][0];
+            xa_hinge_trimmed[r1][1] = xa[i][1];
+            xa_hinge_trimmed[r1][2] = xa[i][2];
+            r1toi[r1] = i;
+            r1++;
+        }
+        if (seqxA[r] == '-')
+        {
+            seqy_hinge_trimmed.push_back(seqy[j]);
+            secy_hinge_trimmed[r2] = secy[j];
+            ya_hinge_trimmed[r2][0] = ya[j][0];
+            ya_hinge_trimmed[r2][1] = ya[j][1];
+            ya_hinge_trimmed[r2][2] = ya[j][2];
+            r2toj[r2] = j;
+            r2++;
+        }
+    }
+}
+
+void search_hinge_regions(
+        CoordArray& xa, CoordArray& ya, CoordArray& xt, DoubleMatrix& tu_vec,
+        const std::string &seqx, const std::string &seqy, const std::string &secx,
+        const std::string &secy,
+        const int xlen, const int ylen, const int hinge_opt, const std::vector<std::string> &sequence,
+        const ChainPairAlignOptions& align_opts,
+        ChainPairAlignResult& chain_align_res,
+        std::ostream& os)
+{
+    int r;
+    for (int r2=0;r2<chain_align_res.seqM.size();r2++)
+    {
+        if (chain_align_res.seqM[r2]=='1')
+            chain_align_res.seqM[r2]='0';
+    }
+
+    int minlen = std::min(xlen, ylen);
+    for (int hinge=0;hinge<hinge_opt;hinge++)
+    {
+        if (minlen-chain_align_res.n_ali8<5) break;
+
+        int xlen_hinge_trimmed=xlen - chain_align_res.n_ali8;
+        int ylen_hinge_trimmed=ylen - chain_align_res.n_ali8;
+        CoordArray xa_hinge_trimmed;
+        CoordArray ya_hinge_trimmed;
+        std::string seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed;
+        std::vector<int> r1toi, r2toj;
+
+        extract_unalign_subcoords(chain_align_res.seqxA, chain_align_res.seqyA, seqx, seqy, secx, secy, xa, ya,
+            xlen_hinge_trimmed, ylen_hinge_trimmed, xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed, secx_hinge_trimmed, secy_hinge_trimmed, r1toi, r2toj);
+
+        CurHingeResult cur_hing_res;
+        cur_hing_res.tmalign_res.t0 = chain_align_res.t0;
+        cur_hing_res.tmalign_res.u0 = chain_align_res.u0;
+        cur_hing_res.tmalign_res.do_vec = chain_align_res.do_vec;
+        TMalign_main(xa_hinge_trimmed, ya_hinge_trimmed, seqx_hinge_trimmed, seqy_hinge_trimmed,
+            secx_hinge_trimmed, secy_hinge_trimmed, cur_hing_res.tmalign_res,
+            xlen_hinge_trimmed, ylen_hinge_trimmed, sequence, align_opts, os);
+        chain_align_res.t0 = cur_hing_res.tmalign_res.t0;
+        chain_align_res.u0 = cur_hing_res.tmalign_res.u0;
+        chain_align_res.do_vec = cur_hing_res.tmalign_res.do_vec;
+
+        do_rotation(xa, xt, xlen, chain_align_res.t0, chain_align_res.u0);
+        fill_hing_res(cur_hing_res, chain_align_res.TM1, chain_align_res.TM2, chain_align_res.TM3, chain_align_res.TM4, chain_align_res.TM5, chain_align_res.rmsd0,
+            chain_align_res.seqM, chain_align_res.seqxA, chain_align_res.seqyA, chain_align_res.n_ali, chain_align_res.n_ali8, chain_align_res.invmap, ylen);
+
+        cur_hing_res.tmalign_res.d0_0 = chain_align_res.d0_0;
+        cur_hing_res.tmalign_res.TM_0 = chain_align_res.TM_0;
+        cur_hing_res.tmalign_res.d0A = chain_align_res.d0A;
+        cur_hing_res.tmalign_res.d0B = chain_align_res.d0B;
+        cur_hing_res.tmalign_res.d0u = chain_align_res.d0u;
+        cur_hing_res.tmalign_res.d0a = chain_align_res.d0a;
+        cur_hing_res.tmalign_res.d0_out = chain_align_res.d0_out;
+        cur_hing_res.tmalign_res.do_vec = chain_align_res.do_vec;
+        cur_hing_res.tmalign_res.L_ali = chain_align_res.L_ali;
+        cur_hing_res.tmalign_res.Liden = chain_align_res.Liden;
+        cur_hing_res.tmalign_res.TM_ali = chain_align_res.TM_ali;
+        cur_hing_res.tmalign_res.rmsd_ali = chain_align_res.rmsd_ali;
+        se_main(xt, ya, seqx, seqy,
+            cur_hing_res.tmalign_res,
+            xlen, ylen, sequence, align_opts, 0, hinge+1);
+        chain_align_res.d0A = cur_hing_res.tmalign_res.d0A;
+        chain_align_res.d0B = cur_hing_res.tmalign_res.d0B;
+        chain_align_res.d0u = cur_hing_res.tmalign_res.d0u;
+        chain_align_res.d0a = cur_hing_res.tmalign_res.d0a;
+        chain_align_res.do_vec = cur_hing_res.tmalign_res.do_vec;
+        chain_align_res.Liden = cur_hing_res.tmalign_res.Liden;
+
+        int new_ali=0;
+        for (r=0;r<cur_hing_res.tmalign_res.seqM.size();r++)
+        {
+           new_ali+=(cur_hing_res.tmalign_res.seqM[r]==hinge+'1');
+        }
+        if (cur_hing_res.tmalign_res.n_ali8 - chain_align_res.n_ali8<5)
+        {
+           new_ali=0;
+        }
+
+        if (new_ali>=5)
+        {
+            update_global_res(chain_align_res, cur_hing_res, tu_vec);
+        }
+
+        if (new_ali<5) break;
+    }
+}
+
+void run_flexalign(
+    const ParsedChain& chain1_data,
+    const ParsedChain& chain2_data,
+    const AlignCommonInput& common_inputs,
+    const FlexalignParams& flex_params,
+    FlexAlignResult& flexalign_res,
+    std::ostream& os)
+{
+    CoordArray xa = chain1_data.chain_coords;
+    CoordArray ya = chain2_data.chain_coords;
+    std::string seqx = chain1_data.chain_seq;
+    std::string seqy = chain2_data.chain_seq;
+    std::string secx = chain1_data.chain_sec;
+    std::string secy = chain2_data.chain_sec;
+    int xa_len = chain1_data.chain_len;
+    int ya_len = chain2_data.chain_len;
+    int mol_type = chain1_data.cur_complex_mol_list + chain2_data.cur_complex_mol_list;
+
+    FlexAlignResult flexalign_main_res;
+    align_with_flexalign_main(
+        xa, ya, seqx, seqy, secx, secy, xa_len, ya_len,
+        common_inputs, mol_type, flex_params.hinge_opt, flexalign_main_res, os);
+    double best_global_max_TM = (flexalign_main_res.TM1 > flexalign_main_res.TM2) ? flexalign_main_res.TM1 : flexalign_main_res.TM2; // Best max(TM1,TM2) threshold (shared for min_resid_num pruning)
+
+    switch (flex_params.mode)
+    {
+        case FLEX_USBCAT:
+            if (best_global_max_TM >= flex_params.TMpass)
+            {
+                flexalign_res = flexalign_main_res;
+                flexalign_res.hingeNum = flexalign_res.tu_vec.size();
+            }
+            else
+            {
+                flexalign_usbcat_main(
+                    xa, ya, seqx, seqy, secx, secy, xa_len, ya_len, common_inputs,
+                    flexalign_main_res, mol_type, best_global_max_TM, flex_params.sparse_val,
+                    flex_params, flexalign_res, os);
+            }
+            break;
+        case FLEX_BEST:
+            flexalign_res = flexalign_main_res;
+            break;
+        default:
+            PrintErrorAndQuit("ERROR! Unknown FlexAlignMode.");
+            break;
+    }
+
+    return;
+}
+
