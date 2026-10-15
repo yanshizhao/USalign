@@ -200,10 +200,10 @@ struct FlexalignPymolState
     std::map<std::string, int> resi2hinge_dict;
     std::string chain1_sele;
     std::string chain2_sele;
-    std::string resi1_sele;
-    std::string resi2_sele;
-    std::string resi1_bond;
-    std::string resi2_bond;
+    std::vector<std::string> resi1_sele;
+    std::vector<std::string> resi2_sele;
+    std::vector<std::string> resi1_bond;
+    std::vector<std::string> resi2_bond;
     int infmt;
 };
 
@@ -339,19 +339,23 @@ inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
     {
         if (split_opt == 2 && ter_opt >= 1) // align one chain from model 1
         {
-            pymol_state.chain1_sele = " and c. " + chainID1.substr(1);
-            pymol_state.chain2_sele = " and c. " + chainID2.substr(1);
+            if (chainID1.substr(1) != "_")
+                pymol_state.chain1_sele = " and c. " + chainID1.substr(1);
+            if (chainID2.substr(1) != "_")
+                pymol_state.chain2_sele = " and c. " + chainID2.substr(1);
         }
         else if (split_opt == 2 && ter_opt == 0) // align one chain from each model
         {
             for (i = 1; i < chainID1.size(); i++)
                 if (chainID1[i] == ',')
                     break;
-            pymol_state.chain1_sele = " and c. " + chainID1.substr(i + 1);
+            if (chainID1.substr(i + 1) != "_")
+                pymol_state.chain1_sele = " and c. " + chainID1.substr(i + 1);
             for (i = 1; i < chainID2.size(); i++)
                 if (chainID2[i] == ',')
                     break;
-            pymol_state.chain2_sele = " and c. " + chainID2.substr(i + 1);
+            if (chainID2.substr(i + 1) != "_")
+                pymol_state.chain2_sele = " and c. " + chainID2.substr(i + 1);
         }
     }
 }
@@ -359,7 +363,7 @@ inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt);
+    const int mm_opt, const int num_hinges);
 
 void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     const std::string& fname_super,

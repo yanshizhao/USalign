@@ -9,10 +9,11 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
                             const std::string chainID1, const std::string chainID2){
     FlexalignPymolState pymol_state;
+    const int num_hinges = static_cast<int>(tu_vec.size());
     build_pymol_hinge_map(pymol_state, seqM, seqxA, resi_vec1);
     read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
     build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt);
-    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
+    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt, num_hinges);
     write_pymol_to_file(pymol_state, fname_super, yname, mm_opt, ter_opt);
 }
 void run_flexalign_main(
@@ -1046,12 +1047,17 @@ void read_pymol_structure(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt)
+    const int mm_opt, const int num_hinges)
 {
     int i1 = -1;
     int i2 = -1;
-    std::string prev_resi1;
-    std::string prev_resi2;
+    // Arrays to store selections and bonds separately for each hinge
+    pymol_state.resi1_sele.assign(num_hinges, "");
+    pymol_state.resi2_sele.assign(num_hinges, "");
+    pymol_state.resi1_bond.assign(num_hinges, "");
+    pymol_state.resi2_bond.assign(num_hinges, "");
+    std::vector<std::string> prev_resi1(num_hinges, "");
+    std::vector<std::string> prev_resi2(num_hinges, "");
     if (!mm_opt)
     {
         for (int i = 0; i < seqM.size(); i++)
@@ -1062,29 +1068,38 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                 continue;
             std::string curr_resi1 = resi_vec1[i1].substr(0, 4);
             std::string curr_resi2 = resi_vec2[i2].substr(0, 4);
-            if (pymol_state.resi1_sele.size() == 0)
-                pymol_state.resi1_sele = "i. " + curr_resi1;
+            // Extract hinge index from the alignment mapping (seqM)
+            int hinge_idx = hinge_char_to_index(seqM[i]);
+            // Safety check to prevent index out of bounds
+            if (hinge_idx >= num_hinges)
+                hinge_idx = num_hinges - 1;
+            if (pymol_state.resi1_sele[hinge_idx].size() == 0)
+                pymol_state.resi1_sele[hinge_idx] = "i. " + curr_resi1;
             else
             {
-                pymol_state.resi1_sele += " or i. " + curr_resi1;
-                pymol_state.resi1_bond += "bond structure1 and i. " + prev_resi1 +
+                pymol_state.resi1_sele[hinge_idx] += " or i. " + curr_resi1;
+                pymol_state.resi1_bond[hinge_idx] += "bond structure1 and i. " + prev_resi1[hinge_idx] +
                               ", i. " + curr_resi1 + "\n";
             }
-            if (pymol_state.resi2_sele.size() == 0)
-                pymol_state.resi2_sele = "i. " + curr_resi2;
+            if (pymol_state.resi2_sele[hinge_idx].size() == 0)
+                pymol_state.resi2_sele[hinge_idx] = "i. " + curr_resi2;
             else
             {
-                pymol_state.resi2_sele += " or i. " + curr_resi2;
-                pymol_state.resi2_bond += "bond structure2 and i. " + prev_resi2 +
+                pymol_state.resi2_sele[hinge_idx] += " or i. " + curr_resi2;
+                pymol_state.resi2_bond[hinge_idx] += "bond structure2 and i. " + prev_resi2[hinge_idx] +
                               ", i. " + curr_resi2 + "\n";
             }
-            prev_resi1 = curr_resi1;
-            prev_resi2 = curr_resi2;
+            prev_resi1[hinge_idx] = curr_resi1;
+            prev_resi2[hinge_idx] = curr_resi2;
         }
-        if (pymol_state.resi1_sele.size())
-            pymol_state.resi1_sele = " and ( " + pymol_state.resi1_sele + ")";
-        if (pymol_state.resi2_sele.size())
-            pymol_state.resi2_sele = " and ( " + pymol_state.resi2_sele + ")";
+        // Wrap final selections in parentheses
+        for (int h = 0; h < num_hinges; h++)
+        {
+            if (pymol_state.resi1_sele[h].size())
+                pymol_state.resi1_sele[h] = " and ( " + pymol_state.resi1_sele[h] + ")";
+            if (pymol_state.resi2_sele[h].size())
+                pymol_state.resi2_sele[h] = " and ( " + pymol_state.resi2_sele[h] + ")";
+        }
     }
 }
 
@@ -1107,10 +1122,20 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
 
     const std::string& chain1_sele = pymol_state.chain1_sele;
     const std::string& chain2_sele = pymol_state.chain2_sele;
-    const std::string& resi1_sele = pymol_state.resi1_sele;
-    const std::string& resi2_sele = pymol_state.resi2_sele;
-    const std::string& resi1_bond = pymol_state.resi1_bond;
-    const std::string& resi2_bond = pymol_state.resi2_bond;
+    const std::vector<std::string>& resi1_sele = pymol_state.resi1_sele;
+    const std::vector<std::string>& resi2_sele = pymol_state.resi2_sele;
+    const std::vector<std::string>& resi1_bond = pymol_state.resi1_bond;
+    const std::vector<std::string>& resi2_bond = pymol_state.resi2_bond;
+    const int num_hinges = static_cast<int>(resi1_sele.size());
+    // Define 35 distinct PyMOL colors for Structure 1
+    // The first 10 are highly contrasting for standard cases
+    const char* color1_list[] = {
+        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink", // Top 10 highly contrasting
+        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
+        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
+        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green" // Extended palette to safely cover >31 hinges
+    };
+    const int color_palette_size = static_cast<int>(sizeof(color1_list) / sizeof(color1_list[0]));
     std::stringstream buf_pymol;
     std::vector<std::string> pml_list;
     pml_list.push_back(fname_super);
@@ -1138,17 +1163,29 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
                 buf_pymol
                     << "remove structure2 and not " << chain2_sele.substr(4) << "\n";
             buf_pymol
-                << "remove not n. CA and not n. C3'\n"
-                << resi1_bond
-                << resi2_bond
-                << "show stick, structure1" << chain1_sele << resi1_sele << "\n"
-                << "show stick, structure2" << chain2_sele << resi2_sele << "\n";
+                << "remove not n. CA and not n. C3'\n";
+            // Add bonds for each hinge
+            for (int h = 0; h < num_hinges; h++)
+                buf_pymol << resi1_bond[h] << resi2_bond[h];
+            // Show sticks for each aligned hinge region
+            for (int h = 0; h < num_hinges; h++)
+            {
+                if (resi1_sele[h].size())
+                    buf_pymol << "show stick, structure1" << chain1_sele << resi1_sele[h] << "\n";
+                if (resi2_sele[h].size())
+                    buf_pymol << "show stick, structure2" << chain2_sele << resi2_sele[h] << "\n";
+            }
         }
         else if (p == 1) // _atm.pml
         {
-            buf_pymol
-                << "show cartoon, structure1" << chain1_sele << resi1_sele << "\n"
-                << "show cartoon, structure2" << chain2_sele << resi2_sele << "\n";
+            // Show cartoons for aligned hinge regions
+            for (int h = 0; h < num_hinges; h++)
+            {
+                if (resi1_sele[h].size())
+                    buf_pymol << "show cartoon, structure1" << chain1_sele << resi1_sele[h] << "\n";
+                if (resi2_sele[h].size())
+                    buf_pymol << "show cartoon, structure2" << chain2_sele << resi2_sele[h] << "\n";
+            }
         }
         else if (p == 2) // _all.pml
         {
@@ -1170,9 +1207,25 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
                 << "show stick, not polymer\n"
                 << "show sphere, not polymer\n";
         }
+        // Create selection groups in PyMOL for easy user interaction
+        for (int h = 0; h < num_hinges; h++)
+        {
+            if (resi1_sele[h].size())
+                buf_pymol << "select hinge_" << h << "_str1, structure1" << chain1_sele << resi1_sele[h] << "\n";
+            if (resi2_sele[h].size())
+                buf_pymol << "select hinge_" << h << "_str2, structure2" << chain2_sele << resi2_sele[h] << "\n";
+        }
+        // Global color setting: Structure 1 unaligned gets light gray, Structure 2 gets solid darker gray
         buf_pymol
-            << "color blue, structure1\n"
-            << "color red, structure2\n"
+            << "color grey, structure1\n"
+            << "color white, structure2\n";
+        // Color each hinge in Structure 1 with distinct colors
+        for (int h = 0; h < num_hinges; h++)
+        {
+            if (resi1_sele[h].size())
+                buf_pymol << "color " << color1_list[h % color_palette_size] << ", hinge_" << h << "_str1\n";
+        }
+        buf_pymol
             << "set ribbon_width, 6\n"
             << "set stick_radius, 0.3\n"
             << "set sphere_scale, 0.25\n"
