@@ -1866,103 +1866,14 @@ inline void run_region_align(
     }
 }
 
-inline void build_global_align_result(
+void build_global_align_result(
     std::vector<RegionAlignResult>& region_align_res,
     const std::vector<int>& chain1_bounds,
     const std::vector<int>& chain2_bounds,
     const int region_num,
     const std::string& seqx,
     const std::string& seqy,
-    GlobalAlignResult& global_align_res)
-{
-    for (int region_idx = 0; region_idx < region_num; region_idx++)
-    {
-        int L1_sub = chain1_bounds[region_idx + 1] - chain1_bounds[region_idx];
-        int L2_sub = chain2_bounds[region_idx + 1] - chain2_bounds[region_idx];
-
-        if (!region_align_res[region_idx].valid)
-        {
-            // Fill gaps if region was invalid or bypassed
-            for (int i = 0; i < L1_sub; i++)
-            {
-                global_align_res.seqxA += seqx[chain1_bounds[region_idx] + i];
-                global_align_res.seqyA += '-';
-                global_align_res.seqM += ' ';
-            }
-            for (int i = 0; i < L2_sub; i++)
-            {
-                global_align_res.seqxA += '-';
-                global_align_res.seqyA += seqy[chain2_bounds[region_idx] + i];
-                global_align_res.seqM += ' ';
-            }
-            continue;
-        }
-
-        FlexAlignResult& flexalign_res = region_align_res[region_idx].align_re;
-        if (flexalign_res.tu_vec.empty())
-        {
-            std::vector<double> tu_tmp(12);
-            t_u2tu(flexalign_res.t0, flexalign_res.u0, tu_tmp);
-            flexalign_res.tu_vec.push_back(tu_tmp);
-        }
-
-        int base_tu_idx = (int)global_align_res.tu_vec.size();
-        for (size_t m = 0; m < flexalign_res.tu_vec.size(); m++)
-            global_align_res.tu_vec.push_back(flexalign_res.tu_vec[m]);
-
-        int rx = chain1_bounds[region_idx];
-        int current_global_idx = base_tu_idx;
-
-        for (size_t i = 0; i < flexalign_res.seqxA.length(); i++)
-        {
-            char c = flexalign_res.seqM[i];
-            if (c != ' ' && c != '.' && c != ':')
-            {
-                int local_hinge_idx = -1;
-                if (c >= '0' && c <= '9')
-                    local_hinge_idx = c - '0';
-                else if (c >= 'a' && c <= 'z')
-                    local_hinge_idx = c - 'a' + 10;
-                else if (c >= 'A' && c <= 'Z')
-                    local_hinge_idx = c - 'A' + 36;
-
-                if (local_hinge_idx >= 0 && local_hinge_idx < (int)flexalign_res.tu_vec.size())
-                    current_global_idx = base_tu_idx + local_hinge_idx;
-            }
-
-            if (flexalign_res.seqxA[i] != '-')
-            {
-                global_align_res.res_tu[rx] = current_global_idx;
-                rx++;
-            }
-
-            if (flexalign_res.seqxA[i] != '-' && flexalign_res.seqyA[i] != '-')
-            {
-                if (c != ' ' && c != '.' && c != ':')
-                {
-                    char global_c;
-                    if (current_global_idx < 10)
-                        global_c = '0' + current_global_idx;
-                    else if (current_global_idx < 36)
-                        global_c = 'a' + (current_global_idx - 10);
-                    else if (current_global_idx < 62)
-                        global_c = 'A' + (current_global_idx - 36);
-                    else
-                        global_c = '*';
-                    flexalign_res.seqM[i] = global_c;
-                }
-                else
-                    flexalign_res.seqM[i] = c;
-            }
-            else
-                flexalign_res.seqM[i] = ' ';
-        }
-
-        global_align_res.seqM += flexalign_res.seqM;
-        global_align_res.seqxA += flexalign_res.seqxA;
-        global_align_res.seqyA += flexalign_res.seqyA;
-    }
-}
+    GlobalAlignResult& global_align_res);
 
 
 
@@ -1997,7 +1908,7 @@ inline void reset_flexalign_result(FlexAlignResult& flexalign_res, const size_t 
     flexalign_res.n_ali8 = 0;
 }
 
-inline void recompute_global_metrics(
+void recompute_global_metrics(
     const GlobalAlignResult& sd,
     const CoordArray& xa,
     const CoordArray& ya,
@@ -2008,96 +1919,7 @@ inline void recompute_global_metrics(
     const AlignCommonInput& common_inputs,
     const int mol_type,
     const double d0_out,
-    FlexAlignResult& flexalign_res)
-{
-    const UserOptions& opts = common_inputs.user_options;
-
-    double cur_d0A, cur_d0B, cur_d0a, cur_d0u;
-    calc_cur_d0(xlen, ylen, opts, mol_type, cur_d0A, cur_d0B, cur_d0a, cur_d0u);
-    reset_flexalign_result(flexalign_res, sd.seqxA.length());
-
-    int i_res = 0, j_res = 0;
-    int cached_matrix_idx = -1;
-    Vec3 t_k;
-    RotMat u_k;
-    for (size_t r = 0; r < sd.seqxA.length(); r++)
-    {
-        bool x_valid = (sd.seqxA[r] != '-');
-        bool y_valid = (sd.seqyA[r] != '-');
-
-        double d = -1.0;
-        if (x_valid && y_valid)
-        {
-            int matrix_idx = sd.res_tu[i_res];
-            if (matrix_idx >= 0 && matrix_idx < (int)sd.tu_vec.size())
-            {
-                if (matrix_idx != cached_matrix_idx)
-                {
-                    tu2t_u(sd.tu_vec[matrix_idx], t_k, u_k);
-                    cached_matrix_idx = matrix_idx;
-                }
-
-                Vec3 x_rot;
-                transform(t_k, u_k, xa[i_res], x_rot);
-                double dist2 = dist(x_rot, ya[j_res]);
-                d = std::sqrt(dist2);
-
-                flexalign_res.TM2 += 1.0 / (1.0 + dist2 / (cur_d0B * cur_d0B));
-                flexalign_res.TM1 += 1.0 / (1.0 + dist2 / (cur_d0A * cur_d0A));
-                if (opts.a_opt)
-                    flexalign_res.TM3 += 1.0 / (1.0 + dist2 / (cur_d0a * cur_d0a));
-                if (opts.u_opt)
-                    flexalign_res.TM4 += 1.0 / (1.0 + dist2 / (cur_d0u * cur_d0u));
-                if (opts.d_opt)
-                    flexalign_res.TM5 += 1.0 / (1.0 + dist2 / (opts.d0_scale * opts.d0_scale));
-
-                flexalign_res.n_ali++;
-
-                if (d <= d0_out)
-                {
-                    flexalign_res.rmsd0 += dist2;
-                    flexalign_res.n_ali8++;
-                    if (seqx[i_res] == seqy[j_res])
-                        flexalign_res.Liden += 1.0;
-                }
-            }
-        }
-        flexalign_res.do_vec.push_back(d);
-
-        if (x_valid)
-            i_res++;
-        if (y_valid)
-            j_res++;
-    }
-
-    flexalign_res.TM2 /= xlen;
-    flexalign_res.TM1 /= ylen;
-    if (opts.a_opt)
-        flexalign_res.TM3 /= (xlen + ylen) * 0.5;
-    if (opts.u_opt)
-        flexalign_res.TM4 /= opts.Lnorm_ass;
-    if (opts.d_opt)
-        flexalign_res.TM5 /= ylen;
-    if (flexalign_res.n_ali8 > 0)
-        flexalign_res.rmsd0 = std::sqrt(flexalign_res.rmsd0 / flexalign_res.n_ali8);
-    else
-        flexalign_res.rmsd0 = 0.0;
-
-    flexalign_res.seqM = sd.seqM;
-    flexalign_res.seqxA = sd.seqxA;
-    flexalign_res.seqyA = sd.seqyA;
-    flexalign_res.tu_vec = sd.tu_vec;
-    flexalign_res.d0A = cur_d0A;
-    flexalign_res.d0B = cur_d0B;
-    flexalign_res.d0a = cur_d0a;
-    flexalign_res.d0u = cur_d0u;
-    if (!flexalign_res.tu_vec.empty())
-        tu2t_u(flexalign_res.tu_vec[0], flexalign_res.t0, flexalign_res.u0);
-
-    flexalign_res.TM_ali = flexalign_res.TM1;
-    flexalign_res.rmsd_ali = flexalign_res.rmsd0;
-    flexalign_res.L_ali = flexalign_res.n_ali;
-}
+    FlexAlignResult& flexalign_res);
 
 inline void update_global_best_align(
     RegionBoundPool& region_bound_pool,
