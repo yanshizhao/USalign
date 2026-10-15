@@ -513,10 +513,9 @@ void msta_superpose_to_rep(MstaIterationState& msta_iter_state, MstaIterParams& 
         }
         sort(msta_iter_state.TM_pair_vec.begin(),msta_iter_state.TM_pair_vec.end());
     
-        int tm_idx;
         if (user_opts.outfmt_opt<0) std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"
                                <<"RMSD\tID1\tID2\tIDali\tL1\tL2\tLali"<<std::endl;
-        for (tm_idx=0; tm_idx<msta_iter_state.TM_pair_vec.size(); tm_idx++)
+        for (int tm_idx=0; tm_idx<msta_iter_state.TM_pair_vec.size(); tm_idx++)
         {
             i=msta_iter_state.TM_pair_vec[tm_idx].second;
             xlen = len_vec[i];
@@ -920,7 +919,6 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
     const std::vector<std::string>& chainID_list = complex.chain_ids;
     const std::vector<std::string>& resi_vec = complex.resi;
     int i;
-    int j;
     int xlen;
     int ylen;
     CoordArray xa;
@@ -960,7 +958,7 @@ void mTMalign_pairwise_alignment(AlignCommonInput& common_inputs, const ComplexD
             copy_chain_data(a_vec[i],seq_vec[i],sec_vec[i],xlen,xa,seqx,secx);
             seqxA_mat[i][i]=seqyA_mat[i][i]=seqx;
 
-            for (j=i+1;j<chain_num;j++)
+            for (int j=i+1;j<chain_num;j++)
             {
                 ylen=len_vec[j];
                 if (ylen<3) continue;
@@ -1169,7 +1167,6 @@ int mTMalign(AlignCommonInput& common_inputs)
     {
         RotArray ut_mat; // rotation matrices for all-against-all alignment
         ut_mat.resize(chain_num);
-        int ui;
         int uj;
         Vec3 t;
         RotMat u;
@@ -1191,7 +1188,7 @@ int mTMalign(AlignCommonInput& common_inputs)
                 ya[r][2]= a_vec[i][r][2];
             }
             Kabsch(xa, ya, xlen, 1, rmsd, t, u);
-            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=u[ui][uj];
+            for (int ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) ut_mat[i][ui*3+uj]=u[ui][uj];
             for (uj=0;uj<3;uj++) ut_mat[i][9+uj]=t[uj];
         }
         DoubleCube().swap(ua_vec);

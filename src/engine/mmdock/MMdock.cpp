@@ -225,8 +225,7 @@ void mmdock_assign_and_output(AlignCommonInput& common_inputs,
         align_opts.parallel_threads = 1;
         align_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
 
-        int c;
-        for (c=0; c<parsed_input.sequence.size(); c++) parsed_input.sequence[c].clear();
+        for (int c=0; c<parsed_input.sequence.size(); c++) parsed_input.sequence[c].clear();
         parsed_input.sequence.clear();
         parsed_input.sequence.push_back(seqxA_mat[i][j]);
         parsed_input.sequence.push_back(seqyA_mat[i][j]);
@@ -285,7 +284,6 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
     UserOptions& user_opts = common_inputs.user_options;
     ParsedInput& parsed_input = common_inputs.parsed_input;
     ControlOptions& ctrl_opts = common_inputs.control_options;
-    int i;
     int j;
     int xlen;
     int ylen;
@@ -311,7 +309,7 @@ void mmdock_pairwise_alignment(AlignCommonInput& common_inputs, ComplexData& com
 #endif
     if (!mmdock_parallel_done)
     {
-        for (i=0;i<chain1_num;i++)
+        for (int i=0;i<chain1_num;i++)
         {
             xlen=complex1.lengths[i];
             if (xlen<3)
@@ -393,7 +391,6 @@ int MMdock(AlignCommonInput& common_inputs)
 
     ComplexData complex1;
     ComplexData complex2;
-    int    i;                    // chain index
     int    xlen, ylen;             // chain length
     std::string seqx, seqy;             // for the protein sequence
     CoordArray xa;                     // structure of single chain
@@ -481,7 +478,7 @@ int MMdock(AlignCommonInput& common_inputs)
     TrimmedComplex trimmed;
     trimmed.max_aa_len=0;
     trimmed.max_na_len=0;
-    for (i=0;i<chain1_num;i++)
+    for (int i=0;i<chain1_num;i++)
     {
         xlen=complex1.lengths[i];
         if      (complex1.mol_types[i]>0  && xlen>trimmed.max_na_len) trimmed.max_na_len=xlen;

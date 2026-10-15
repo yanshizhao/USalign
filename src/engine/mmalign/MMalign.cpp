@@ -724,10 +724,8 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
     CoordArray chain2_coords;
     int chain1_len;
     int chain2_len;
-    int chain1_idx;
-    int chain2_idx;
     int pair_idx;
-    for (chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
+    for (int chain1_idx = 0; chain1_idx < chain1_num; chain1_idx++)
     {
         chain1_len = parsed.complex1.lengths[chain1_idx];
         if (chain1_len < 3)
@@ -740,7 +738,7 @@ void run_mmalign_serial_pairwise(AlignCommonInput& common_inputs,
         copy_chain_data(parsed.complex1.coords[chain1_idx], parsed.complex1.seqs[chain1_idx],
             parsed.complex1.secs[chain1_idx], chain1_len, chain1_coords, chain1_seq, chain1_sec);
 
-        for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+        for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
         {
             pair_idx = chain1_idx * chain2_num + chain2_idx;
             init_pair_rotation(pairwise.rotations, pair_idx);
@@ -1909,7 +1907,6 @@ int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& se
     simplify_step    = 40; //for simplified search engine
     score_sum_method = 8;  //for scoring method, whether only sum over pairs with dis<score_d8
 
-    int i;
     invmap0.assign(ylen+1, -1);
     invmap.assign(ylen+1, 0);
     TMmax=-1;
@@ -1927,7 +1924,7 @@ int TMalign_dimer_main(CoordArray& xa_c, CoordArray& ya_c, const std::string& se
     //*******************************************************************//
     //check if the initial alignment is generated appropriately
     bool flag=false;
-    for(i=0; i<ylen; i++)
+    for(int i=0; i<ylen; i++)
     {
         if(invmap0[i]>=0)
         {
@@ -2585,14 +2582,13 @@ double calculate_centroids(const DoubleCube&a_vec,
 {
     int L=0;
     int c; // index of chain
-    int r; // index of residue
     for (c=0; c<chain_num; c++)
     {
         centroids[c][0]=0;
         centroids[c][1]=0;
         centroids[c][2]=0;
         L=a_vec[c].size();
-        for (r=0; r<L; r++)
+        for (int r=0; r<L; r++)
         {
             centroids[c][0]+=a_vec[c][r][0];
             centroids[c][1]+=a_vec[c][r][1];
@@ -2683,8 +2679,6 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     double MMscore=0;
     int i;
     int j;
-    int c1;
-    int c2;
     int max_i=-1; // the chain pair whose monomer u t yields highest MMscore
     int max_j=-1;
 
@@ -2695,7 +2689,6 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     xt.resize(chain1_num);
     Vec3 t;
     RotMat u;
-    int ui;
     int uj;
     int ut_idx;
     double TMscore=0; // pseudo TM-score
@@ -2706,13 +2699,13 @@ double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>
     std::vector<double> ut_tmc_mat(total_pair, 0.0); // chain level TM-score
     std::vector<std::pair<double,int> > ut_tm_vec(total_pair,std::make_pair(0.0,0)); // product of both
 
-    for (c1=0;c1<chain1_num;c1++)
+    for (int c1=0;c1<chain1_num;c1++)
     {
-        for (c2=0;c2<chain2_num;c2++)
+        for (int c2=0;c2<chain2_num;c2++)
         {
             if (TMave_mat[c1][c2]<=0) continue;
             ut_idx=c1*chain2_num+c2;
-            for (ui=0;ui<3;ui++)
+            for (int ui=0;ui<3;ui++)
                 for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[ut_idx][ui*3+uj];
             for (uj=0;uj<3;uj++) t[uj]=ut_mat[ut_idx][9+uj];
             
@@ -3138,9 +3131,7 @@ void output_superposed_chains(const std::vector<std::string>&chain_list, const i
     const int split_opt, const int infmt_opt, const std::string atom_opt,
     const int mirror_opt, const RotArray& ut_mat, const std::string&fname_super)
 {
-    size_t i;
     int chain_i;
-    int a;
     std::string name;
     int chainnum;
     Vec3 x;  // before transform
@@ -3150,12 +3141,11 @@ void output_superposed_chains(const std::vector<std::string>&chain_list, const i
     int m=0;
     Vec3 t;
     RotMat u;
-    int ui;
     int uj;
     std::stringstream buf;
     std::string filename;
     int het_opt=1;
-    for (i=0;i<chain_list.size();i++)
+    for (size_t i=0;i<chain_list.size();i++)
     {
         name=chain_list[i];
         chainnum=get_full_PDB_lines(name, PDB_lines,
@@ -3168,9 +3158,9 @@ void output_superposed_chains(const std::vector<std::string>&chain_list, const i
             buf<<fname_super<<'.'<<m<<".pdb";
             filename=buf.str();
             buf.str(std::string());
-            for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
+            for (int ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[m][ui*3+uj];
             for (uj=0;uj<3;uj++) t[uj]=ut_mat[m][9+uj];
-            for (a=0;a<PDB_lines[chain_i].size();a++)
+            for (int a=0;a<PDB_lines[chain_i].size();a++)
             {
                 line=PDB_lines[chain_i][a];
                 x[0]=safe_stod(line.substr(30,8).c_str());
@@ -3216,7 +3206,6 @@ void parse_chain_list(const std::vector<std::string>&chain_list,
     int& len_na = complex.total_len_na;
     std::vector<std::string>& resi_vec = complex.resi;
     size_t i;
-    int chain_i;
     int r;
     std::string name;
     int chainnum;
@@ -3246,7 +3235,7 @@ void parse_chain_list(const std::vector<std::string>&chain_list,
                 <<". Chain number 0."<<std::endl;
             continue;
         }
-        for (chain_i=0;chain_i<chainnum;chain_i++)
+        for (int chain_i=0;chain_i<chainnum;chain_i++)
         {
             len=PDB_lines[chain_i].size();
             if (!len)
@@ -3630,8 +3619,6 @@ void mmalign_output_chain_aligns(
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
     const Vec3& t0, const RotMat& u0, std::ostream& os)
 {
-    int i;
-    int j;
     int xlen=0;
     int ylen=0;
     std::string seqx;
@@ -3665,7 +3652,7 @@ void mmalign_output_chain_aligns(
     int& n_ali8 = chain_align_res.n_ali8;
 
     // re-compute chain level alignment
-    for (i=0;i<final_params.chain1_num;i++)
+    for (int i=0;i<final_params.chain1_num;i++)
     {
         xlen=complex1.lengths[i];
         secx.resize(xlen+1);
@@ -3677,7 +3664,7 @@ void mmalign_output_chain_aligns(
         xt.resize(xlen);
         do_rotation(xa, xt, xlen, t0, u0);
 
-        for (j=0;j<final_params.chain2_num;j++)
+        for (int j=0;j<final_params.chain2_num;j++)
         {
             ylen=complex2.lengths[j];
             if (ylen<3)
@@ -3774,12 +3761,10 @@ void MMalign_final(
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
     const bool se_opt, std::ostream& os)
 {
-    int i;
-    int j;
     int xlen=0;
     int ylen=0;
-    for (i=0;i<final_params.chain1_num;i++) xlen+=complex1.lengths[i];
-    for (j=0;j<final_params.chain2_num;j++) ylen+=complex2.lengths[j];
+    for (int i=0;i<final_params.chain1_num;i++) xlen+=complex1.lengths[i];
+    for (int j=0;j<final_params.chain2_num;j++) ylen+=complex2.lengths[j];
     if (xlen<=3 || ylen<=3) return;
 
     std::string seqx;
@@ -3943,11 +3928,9 @@ void MMalign_iter(double & max_total_score, const int max_iter,
         
         if (chain_pair_map.size())
         {
-            int chain1_idx;
-            int chain2_idx;
-            for (chain1_idx =0;chain1_idx < chain1_num; chain1_idx++)
+            for (int chain1_idx =0;chain1_idx < chain1_num; chain1_idx++)
             {
-                for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
+                for (int chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
                 {
                                         // Local constraint: set chain pairs that do not satisfy the constraint to -1
                     if (!is_chain_pair_allowed(chain_pair_map, chain1_idx, chain2_idx))
@@ -3986,9 +3969,7 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
     double rmsd;
     std::vector<int> invmap(ylen+1);
 
-    int iteration;
     int i;
-    int j;
     int k;
     double tmscore;
     double tmscore_max;
@@ -4000,13 +3981,13 @@ double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray
     double d02=d0*d0;
     for(int g=g1; g<g2; g++)
     {
-        for(iteration=0; iteration<iteration_max; iteration++)
+        for(int iteration=0; iteration<iteration_max; iteration++)
         {
             NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
                 t, u, d02, gap_open[g], invmap);
 
             k=0;
-            for(j=0; j<ylen; j++)
+            for(int j=0; j<ylen; j++)
             {
                 i=invmap[j];
 
@@ -4594,10 +4575,7 @@ void trimComplex(DoubleCube&a_trim_vec,
 {
     trim_chain_count=0;
     int chain_num=a_vec.size();
-    int i;
-    int j;
     int r1;
-    int r2;
     double dinter;
     double dinter_min;
     std::vector<std::pair<double,int> >dinter_vec;
@@ -4610,7 +4588,7 @@ void trimComplex(DoubleCube&a_trim_vec,
     int ylen;
     int Lchain_max;
     double expand=2;
-    for (i=0;i<chain_num;i++)
+    for (int i=0;i<chain_num;i++)
     {
         xlen=len_vec[i];
         if (mol_vec[i]>0) Lchain_max=Lchain_na_max*expand;
@@ -4631,11 +4609,11 @@ void trimComplex(DoubleCube&a_trim_vec,
             xcoor[1]=a_vec[i][r1][1];
             xcoor[2]=a_vec[i][r1][2];
             dinter_min=FLT_MAX;
-            for (j=0;j<chain_num;j++)
+            for (int j=0;j<chain_num;j++)
             {
                 if (i==j) continue;
                 ylen=len_vec[j];
-                for (r2=0;r2<ylen;r2++)
+                for (int r2=0;r2<ylen;r2++)
                 {
                     ycoor[0]=a_vec[j][r2][0];
                     ycoor[1]=a_vec[j][r2][1];
@@ -4674,15 +4652,13 @@ void output_dock_rotation_matrix(const std::string& fname_matrix,
     const RotArray& ut_mat, const std::vector<int>& assign1_list)
 {
     std::stringstream ss;
-    int i;
-    int k;
-    for (i=0;i<xname_vec.size();i++)
+    for (int i=0;i<xname_vec.size();i++)
     {
         if (assign1_list[i]<0) continue;
         ss << "------ The rotation matrix to rotate "
              <<xname_vec[i]<<" to "<<yname_vec[i]<<" ------\n"
              << "m               t[m]        u[m][0]        u[m][1]        u[m][2]\n";
-        for (k = 0; k < 3; k++)
+        for (int k = 0; k < 3; k++)
             ss<<k<<std::setiosflags(std::ios::fixed)<<std::setprecision(10)
               <<' '<<std::setw(18)<<clean_fmt(ut_mat[i][9+k])
               <<' '<<std::setw(14)<<clean_fmt(ut_mat[i][3*k+0])

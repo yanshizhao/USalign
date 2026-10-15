@@ -84,8 +84,7 @@ bool adjust_dimer_assignment(
 inline int count_assign_pair(const std::vector<int>& assign1_list,const int chain1_num)
 {
     int pair_num=0;
-    int i;
-    for (i=0;i<chain1_num;i++) pair_num+=(assign1_list[i]>=0);
+    for (int i=0;i<chain1_num;i++) pair_num+=(assign1_list[i]>=0);
     return pair_num;
 }
 
@@ -125,12 +124,11 @@ inline void copy_chain_data(const DoubleMatrix&a_vec_i,
     const std::vector<char>&seq_vec_i,const std::vector<char>&sec_vec_i,
     const int len,CoordArray& coords,std::string &seq,std::string &sec)
 {
-    int r;
     seq.clear();
     seq.reserve(len);
     sec.assign(len, '\0');
     coords.resize(len);
-    for (r=0;r<len;r++)
+    for (int r=0;r<len;r++)
     {
         coords[r][0]=a_vec_i[r][0];
         coords[r][1]=a_vec_i[r][1];
@@ -238,7 +236,6 @@ inline void copy_chain_assign_data(int chain1_num, int chain2_num,
     std::vector<int>& assign1_tmp,  std::vector<int>& assign2_tmp,  DoubleMatrix& TMave_tmp)
 {
     int i;
-    int j;
     for (i=0;i<sequence.size();i++) sequence[i].clear();
     sequence.clear();
     sequence.push_back("");
@@ -247,7 +244,7 @@ inline void copy_chain_assign_data(int chain1_num, int chain2_num,
     for (i=0;i<chain2_num;i++) assign2_tmp[i]=assign2_list[i];
     for (i=0;i<chain1_num;i++)
     {
-        for (j=0;j<chain2_num;j++)
+        for (int j=0;j<chain2_num;j++)
         {
             seqxA_tmp[i][j]=seqxA_mat[i][j];
             seqyA_tmp[i][j]=seqyA_mat[i][j];
@@ -372,8 +369,7 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
     std::vector<int>& y2x0, std::vector<int>& y2x, const double D0_MIN, double d0)
 {
     score_matrix_rmsd_sec(r1, r2, score, secx, secy, x, y, xlen, ylen, y2x0, D0_MIN,d0);
-    int i,j;
-    for (i=0;i<xlen+1;i++) for (j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
+    for (int i=0;i<xlen+1;i++) for (int j=0;j<ylen+1;j++) score[i][j]=FLT_MIN;
     double gap_open=-1.0;
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
