@@ -261,6 +261,7 @@ bool parse_string_option(int argc, char* argv[], int& i, USFlexalignOptions& usf
     else if (std::string(argv[i]) == "-dir")    { usflexalign_opts.dir_opt    = argv[i + 1]; i++; }
     else if (std::string(argv[i]) == "-dir1")   { usflexalign_opts.dir1_opt   = argv[i + 1]; i++; }
     else if (std::string(argv[i]) == "-dir2")   { usflexalign_opts.dir2_opt   = argv[i + 1]; i++; }
+    else if (std::string(argv[i]) == "-dirpair"){ usflexalign_opts.dirpair_opt = argv[i + 1]; i++; }
     else if (std::string(argv[i]) == "-suffix") { usflexalign_opts.suffix_opt = argv[i + 1]; i++; }
     else if (std::string(argv[i]) == "-atom")   { usflexalign_opts.atom_opt   = argv[i + 1]; i++; }
     else if (std::string(argv[i]) == "-mol")    { usflexalign_opts.mol_opt    = argv[i + 1]; i++; }
@@ -296,9 +297,9 @@ void parse_arguments(int argc, char* argv[], USFlexalignOptions& usflexalign_opt
 
 void check_dir_conflicts(USFlexalignOptions& usflexalign_opts)
 {
-    if (usflexalign_opts.suffix_opt.size() && usflexalign_opts.dir_opt.size()+usflexalign_opts.dir1_opt.size()+usflexalign_opts.dir2_opt.size()==0)
+    if (usflexalign_opts.suffix_opt.size() && usflexalign_opts.dir_opt.size()+usflexalign_opts.dir1_opt.size()+usflexalign_opts.dir2_opt.size()+usflexalign_opts.dirpair_opt.size()==0)
         PrintErrorAndQuit("-suffix is only valid if -dir, -dir1 or -dir2 is set");
-    if ((usflexalign_opts.dir_opt.size() || usflexalign_opts.dir1_opt.size() || usflexalign_opts.dir2_opt.size()))
+    if ((usflexalign_opts.dir_opt.size() || usflexalign_opts.dir1_opt.size() || usflexalign_opts.dir2_opt.size() || usflexalign_opts.dirpair_opt.size()))
     {
         if (usflexalign_opts.o_opt)
             PrintErrorAndQuit("-pymol, -rasmol or -chimerax cannot be set with -dir, -dir1 or -dir2");
@@ -334,12 +335,35 @@ void apply_derived_options(USFlexalignOptions& usflexalign_opts)
     usflexalign_opts.read_resi=2;  // read residue index for superposed output
 }
 
+void check_flexalign_input_presence(USFlexalignOptions& usflexalign_opts)
+{
+    const bool incomplete_inputs = (usflexalign_opts.xname.size()==0)
+        || (usflexalign_opts.yname.size() && usflexalign_opts.dir_opt.size())
+        || (usflexalign_opts.yname.size() && usflexalign_opts.dirpair_opt.size())
+        || (usflexalign_opts.yname.size()==0 && usflexalign_opts.dir_opt.size()==0
+            && usflexalign_opts.dirpair_opt.size()==0);
+    if (!incomplete_inputs) return;
+    if (usflexalign_opts.h_opt) print_help(usflexalign_opts.h_opt);
+    if (usflexalign_opts.v_opt)
+    {
+        print_version(USFLEXALIGN_BANNER);
+        exit(EXIT_FAILURE);
+    }
+    if (usflexalign_opts.xname.size()==0)
+        PrintErrorAndQuit("Please provide input structures");
+    else if (usflexalign_opts.yname.size()==0 && usflexalign_opts.dir_opt.size()==0
+        && usflexalign_opts.dirpair_opt.size()==0)
+        PrintErrorAndQuit("Please provide structure B");
+    else if (usflexalign_opts.yname.size() && (usflexalign_opts.dir_opt.size() || usflexalign_opts.dirpair_opt.size()))
+        PrintErrorAndQuit("Please provide only one file name if -dir is set");
+}
+
 void postprocess_arguments(USFlexalignOptions& usflexalign_opts)
 {
     usflexalign_opts.outdir_opt = resolve_outdir(usflexalign_opts.outdir_opt);
     usflexalign_opts.fname_super = join_outdir(usflexalign_opts.outdir_opt, usflexalign_opts.fname_super);
     usflexalign_opts.fname_matrix = join_outdir(usflexalign_opts.outdir_opt, usflexalign_opts.fname_matrix);
-    check_input_presence(usflexalign_opts, USFLEXALIGN_BANNER, print_help);
+    check_flexalign_input_presence(usflexalign_opts);
     check_dir_conflicts(usflexalign_opts);
     check_hinge(usflexalign_opts);
     if (usflexalign_opts.mol_opt=="prot") usflexalign_opts.mol_opt="protein";
@@ -373,6 +397,7 @@ void fill_common_inputs(AlignCommonInput& common_inputs, const USFlexalignOption
     user_opts.dir_opt      = usflexalign_opts.dir_opt;
     user_opts.dir1_opt     = usflexalign_opts.dir1_opt;
     user_opts.dir2_opt     = usflexalign_opts.dir2_opt;
+    user_opts.dirpair_opt  = usflexalign_opts.dirpair_opt;
     user_opts.infmt1_opt   = usflexalign_opts.infmt1_opt;
     user_opts.infmt2_opt   = usflexalign_opts.infmt2_opt;
     user_opts.ter_opt      = usflexalign_opts.ter_opt;
@@ -450,6 +475,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
             for (int j = j_start; j < parsed_input.chain2_list.size(); j++)
             {
+                if (user_opts.dirpair_opt.size() && j != i) continue;
                 // parse chain 2
                 if (PDB_lines2.size() == 0)
                 {
@@ -517,7 +543,11 @@ int main(int argc, char *argv[])
 
     std::vector<std::string> chain1_list; // only when -dir1 is set
     std::vector<std::string> chain2_list; // only when -dir2 is set
-    build_file_lists(usflexalign_opts, chain1_list, chain2_list);
+    if (usflexalign_opts.dirpair_opt.size())
+        file2chainpairlist(chain1_list, chain2_list, usflexalign_opts.xname,
+            usflexalign_opts.dirpair_opt, usflexalign_opts.suffix_opt);
+    else
+        build_file_lists(usflexalign_opts, chain1_list, chain2_list);
 
     if (usflexalign_opts.outfmt_opt==2)
         std::cout<<"#PDBchain1\tPDBchain2\tTM1\tTM2\t"

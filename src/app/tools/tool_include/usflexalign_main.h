@@ -17,6 +17,7 @@ struct USFlexalignOptions
     std::string dir_opt   ="";    // set -dir to empty
     std::string dir1_opt  ="";    // set -dir1 to empty
     std::string dir2_opt  ="";    // set -dir2 to empty
+    std::string dirpair_opt="";   // set -dirpair to empty
     std::vector<std::string> sequence; // get value from alignment file
     std::vector<std::string> chain2parse1;
     std::vector<std::string> chain2parse2;
@@ -59,6 +60,7 @@ void parse_arguments(int argc, char* argv[], USFlexalignOptions& usflexalign_opt
 void check_dir_conflicts(USFlexalignOptions& usflexalign_opts);
 void check_hinge(USFlexalignOptions& usflexalign_opts);
 void apply_derived_options(USFlexalignOptions& usflexalign_opts);
+void check_flexalign_input_presence(USFlexalignOptions& usflexalign_opts);
 void postprocess_arguments(USFlexalignOptions& usflexalign_opts);
 void fill_flexalign_params(FlexalignParams& flex_params, const USFlexalignOptions& usflexalign_opts);
 void fill_common_inputs(AlignCommonInput& common_inputs, const USFlexalignOptions& usflexalign_opts, const std::vector<std::string>& chain1_list, const std::vector<std::string>& chain2_list);
