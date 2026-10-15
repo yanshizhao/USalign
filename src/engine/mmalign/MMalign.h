@@ -71,162 +71,14 @@ inline int count_na_aa_chain_num(int &na_chain_num,int &aa_chain_num,
 
 /* adjust chain assignment for dimer-dimer alignment 
  * return true if assignment is adjusted */
-inline bool adjust_dimer_assignment(        
+bool adjust_dimer_assignment(        
     const DoubleCube&xa_vec,
     const DoubleCube&ya_vec,
     const std::vector<int>&xlen_vec, const std::vector<int>&ylen_vec,
     const std::vector<int>&mol_vec1, const std::vector<int>&mol_vec2,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list,
     const std::vector<std::vector<std::string> >&seqxA_mat,
-    const std::vector<std::vector<std::string> >&seqyA_mat)
-{
-    // check currently assigned chains
-    int i1;
-    int i2;
-    int j1;
-    int j2;
-    i1=i2=j1=j2=-1;    
-    int chain1_num=xa_vec.size();
-    int i;
-    int j;
-    for (i=0;i<chain1_num;i++)
-    {
-        if (assign1_list[i]>=0)
-        {
-            if (i1<0)
-            {
-                i1=i;
-                j1=assign1_list[i1];
-            }
-            else
-            {
-                i2=i;
-                j2=assign1_list[i2];
-            }
-        }
-    }
-
-    // normalize d0 by L
-    int xlen=xlen_vec[i1]+xlen_vec[i2];
-    int ylen=ylen_vec[j1]+ylen_vec[j2];
-    int mol_type=mol_vec1[i1]+mol_vec1[i2]+
-                 mol_vec2[j1]+mol_vec2[j2];
-    double D0_MIN;
-    double d0;
-    double d0_search;
-    double Lnorm=getmin(xlen,ylen);
-    parameter_set4final(getmin(xlen,ylen), D0_MIN, Lnorm, d0, 
-        d0_search, mol_type);
-
-    CoordArray xa;
-    CoordArray ya;
-    CoordArray xt;
-    xa.resize(xlen);
-    ya.resize(ylen);
-    xt.resize(xlen);
-
-    double RMSD = 0;
-    double dd   = 0;
-    Vec3 t;
-    RotMat u;
-    size_t L_ali=0; // index of residue in aligned region
-    size_t r=0;     // index of residue in full alignment
-
-    // total score using current assignment
-    L_ali=0;
-    i=j=-1;
-    for (r=0;r<seqxA_mat[i1][j1].size();r++)
-    {
-        i+=(seqxA_mat[i1][j1][r]!='-');
-        j+=(seqyA_mat[i1][j1][r]!='-');
-        if (seqxA_mat[i1][j1][r]=='-' || seqyA_mat[i1][j1][r]=='-') continue;
-        xa[L_ali][0]=xa_vec[i1][i][0];
-        xa[L_ali][1]=xa_vec[i1][i][1];
-        xa[L_ali][2]=xa_vec[i1][i][2];
-        ya[L_ali][0]=ya_vec[j1][j][0];
-        ya[L_ali][1]=ya_vec[j1][j][1];
-        ya[L_ali][2]=ya_vec[j1][j][2];
-        L_ali++;
-    }
-    i=j=-1;
-    for (r=0;r<seqxA_mat[i2][j2].size();r++)
-    {
-        i+=(seqxA_mat[i2][j2][r]!='-');
-        j+=(seqyA_mat[i2][j2][r]!='-');
-        if (seqxA_mat[i2][j2][r]=='-' || seqyA_mat[i2][j2][r]=='-') continue;
-        xa[L_ali][0]=xa_vec[i2][i][0];
-        xa[L_ali][1]=xa_vec[i2][i][1];
-        xa[L_ali][2]=xa_vec[i2][i][2];
-        ya[L_ali][0]=ya_vec[j2][j][0];
-        ya[L_ali][1]=ya_vec[j2][j][1];
-        ya[L_ali][2]=ya_vec[j2][j][2];
-        L_ali++;
-    }
-
-    Kabsch(xa, ya, L_ali, 1, RMSD, t, u);
-    do_rotation(xa, xt, L_ali, t, u);
-
-    double total_score1=0;
-    for (r=0;r<L_ali;r++)
-    {
-        dd=dist(xt[r],ya[r]);
-        total_score1+=1/(1+dd/d0*d0);
-    }
-    total_score1/=Lnorm;
-
-    // total score using reversed assignment
-    L_ali=0;
-    i=j=-1;
-    for (r=0;r<seqxA_mat[i1][j2].size();r++)
-    {
-        i+=(seqxA_mat[i1][j2][r]!='-');
-        j+=(seqyA_mat[i1][j2][r]!='-');
-        if (seqxA_mat[i1][j2][r]=='-' || seqyA_mat[i1][j2][r]=='-') continue;
-        xa[L_ali][0]=xa_vec[i1][i][0];
-        xa[L_ali][1]=xa_vec[i1][i][1];
-        xa[L_ali][2]=xa_vec[i1][i][2];
-        ya[L_ali][0]=ya_vec[j2][j][0];
-        ya[L_ali][1]=ya_vec[j2][j][1];
-        ya[L_ali][2]=ya_vec[j2][j][2];
-        L_ali++;
-    }
-    i=j=-1;
-    for (r=0;r<seqxA_mat[i2][j1].size();r++)
-    {
-        i+=(seqxA_mat[i2][j1][r]!='-');
-        j+=(seqyA_mat[i2][j1][r]!='-');
-        if (seqxA_mat[i2][j1][r]=='-' || seqyA_mat[i2][j1][r]=='-') continue;
-        xa[L_ali][0]=xa_vec[i2][i][0];
-        xa[L_ali][1]=xa_vec[i2][i][1];
-        xa[L_ali][2]=xa_vec[i2][i][2];
-        ya[L_ali][0]=ya_vec[j1][j][0];
-        ya[L_ali][1]=ya_vec[j1][j][1];
-        ya[L_ali][2]=ya_vec[j1][j][2];
-        L_ali++;
-    }
-
-    Kabsch(xa, ya, L_ali, 1, RMSD, t, u);
-    do_rotation(xa, xt, L_ali, t, u);
-
-    double total_score2=0;
-    for (r=0;r<L_ali;r++)
-    {
-        dd=dist(xt[r],ya[r]);
-        total_score2+=1/(1+dd/d0*d0);
-    }
-    total_score2/=Lnorm;
-
-    // swap chain assignment
-    if (total_score1<total_score2)
-    {
-        assign1_list[i1]=j2;
-        assign1_list[i2]=j1;
-        assign2_list[j1]=i2;
-        assign2_list[j2]=i1;
-    }
-
-    return total_score1<total_score2;
-}
+    const std::vector<std::vector<std::string> >&seqyA_mat);
 
 // count how many chains are paired
 inline int count_assign_pair(const std::vector<int>& assign1_list,const int chain1_num)
@@ -239,145 +91,12 @@ inline int count_assign_pair(const std::vector<int>& assign1_list,const int chai
 
 
 // assign chain-chain correspondence
-inline double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
-    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num)
-{
-    double total_score=0;
-    double tmp_score=0;
-    int i;
-    int j;
-    int maxi=0;
-    int maxj=0;
-
-    // initialize parameters
-    for (i=0;i<chain1_num;i++) assign1_list[i]=-1;
-    for (j=0;j<chain2_num;j++) assign2_list[j]=-1;
-
-    /* greedy assignment: in each iteration, the highest chain pair is
-     * assigned, until no assignable chain is left */
-    while(1)
-    {
-        tmp_score=-1;
-        for (i=0;i<chain1_num;i++)
-        {
-            if (assign1_list[i]>=0) continue;
-            for (j=0;j<chain2_num;j++)
-            {
-                if (assign2_list[j]>=0 || TMave_mat[i][j]<=0) continue;
-                if (TMave_mat[i][j]>tmp_score) 
-                {
-                    maxi=i;
-                    maxj=j;
-                    tmp_score=TMave_mat[i][j];
-                }
-            }
-        }
-        if (tmp_score<=0) break; // error: no assignable chain
-        assign1_list[maxi]=maxj;
-        assign2_list[maxj]=maxi;
-        total_score+=tmp_score;
-    }
-    if (total_score<=0) return total_score; // error: no assignable chain
-
-    // iterative refinemnt
-    double delta_score;
-    std::vector<int> assign1_tmp(chain1_num);
-    std::vector<int> assign2_tmp(chain2_num);
-    for (i=0;i<chain1_num;i++) assign1_tmp[i]=assign1_list[i];
-    for (j=0;j<chain2_num;j++) assign2_tmp[j]=assign2_list[j];
-    int old_i=-1;
-    int old_j=-1;
-
-    for (int iter=0;iter<getmin(chain1_num,chain2_num)*5;iter++)
-    {
-        delta_score=-1;
-        for (i=0;i<chain1_num;i++)
-        {
-            old_j=assign1_list[i];
-            for (j=0;j<chain2_num;j++)
-            {
-                // attempt to swap (i,old_j=assign1_list[i]) with (i,j)
-                if (j==assign1_list[i] || TMave_mat[i][j]<=0) continue;
-                old_i=assign2_list[j];
-
-                assign1_tmp[i]=j;
-                if (old_i>=0) assign1_tmp[old_i]=old_j;
-                assign2_tmp[j]=i;
-                if (old_j>=0) assign2_tmp[old_j]=old_i;
-
-                delta_score=TMave_mat[i][j];
-                if (old_j>=0) delta_score-=TMave_mat[i][old_j];
-                if (old_i>=0) delta_score-=TMave_mat[old_i][j];
-                if (old_i>=0 && old_j>=0) delta_score+=TMave_mat[old_i][old_j];
-
-                if (delta_score>0) // successful swap
-                {
-                    assign1_list[i]=j;
-                    if (old_i>=0) assign1_list[old_i]=old_j;
-                    assign2_list[j]=i;
-                    if (old_j>=0) assign2_list[old_j]=old_i;
-                    total_score+=delta_score;
-                    break;
-                }
-                else
-                {
-                    assign1_tmp[i]=assign1_list[i];
-                    if (old_i>=0) assign1_tmp[old_i]=assign1_list[old_i];
-                    assign2_tmp[j]=assign2_list[j];
-                    if (old_j>=0) assign2_tmp[old_j]=assign2_list[old_j];
-                }
-            }
-            if (delta_score>0) break;
-        }
-        if (delta_score<=0) break; // cannot swap any chain pair
-    }
+double enhanced_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+    std::vector<int>& assign2_list, const int chain1_num, const int chain2_num);
 
 
-    return total_score;
-}
-
-
-inline double calculate_centroids(const DoubleCube&a_vec,
-    const int chain_num, CoordArray& centroids)
-{
-    int L=0;
-    int c; // index of chain
-    int r; // index of residue
-    for (c=0; c<chain_num; c++)
-    {
-        centroids[c][0]=0;
-        centroids[c][1]=0;
-        centroids[c][2]=0;
-        L=a_vec[c].size();
-        for (r=0; r<L; r++)
-        {
-            centroids[c][0]+=a_vec[c][r][0];
-            centroids[c][1]+=a_vec[c][r][1];
-            centroids[c][2]+=a_vec[c][r][2];
-        }
-        centroids[c][0]/=L;
-        centroids[c][1]/=L;
-        centroids[c][2]/=L;
-    }
-
-    std::vector<double> d0_vec(chain_num,-1);
-    int c2=0;
-    double d0MM=0;
-    for (c=0; c<chain_num; c++)
-    {
-        for (c2=0; c2<chain_num; c2++)
-        {
-            if (c2==c) continue;
-            d0MM=sqrt(dist(centroids[c],centroids[c2]));
-            if (d0_vec[c]<=0) d0_vec[c]=d0MM;
-            else d0_vec[c]=getmin(d0_vec[c], d0MM);
-        }
-    }
-    d0MM=0;
-    for (c=0; c<chain_num; c++) d0MM+=d0_vec[c];
-    d0MM/=chain_num;
-    return d0MM;
-}
+double calculate_centroids(const DoubleCube&a_vec,
+    const int chain_num, CoordArray& centroids);
 
 /* calculate MMscore of aligned chains
  * MMscore = sum(TMave_mat[i][j]) * sum(1/(1+dij^2/d0MM^2)) 
@@ -386,57 +105,10 @@ inline double calculate_centroids(const DoubleCube&a_vec,
  * d0MM is scaling factor. TMave_mat[i][j] is the TM-score between
  * chain pair i and j multiple by getmin(Li*Lj) */
 
-inline double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
+double calMMscore(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
     const int chain1_num, const int chain2_num, const CoordArray& xcentroids,
     const CoordArray& ycentroids, const double d0MM, CoordArray& r1, CoordArray& r2,
-    CoordArray& xt, Vec3& t, RotMat& u, const int L)
-{
-    int Nali=0;
-    int i;
-    int j;
-    double MMscore=0;
-    for (i=0;i<chain1_num;i++)
-    {
-        j=assign1_list[i];
-        if (j<0) continue;
-
-        r1[Nali][0]=xcentroids[i][0];
-        r1[Nali][1]=xcentroids[i][1];
-        r1[Nali][2]=xcentroids[i][2];
-
-        r2[Nali][0]=ycentroids[j][0];
-        r2[Nali][1]=ycentroids[j][1];
-        r2[Nali][2]=ycentroids[j][2];
-
-        Nali++;
-        MMscore+=TMave_mat[i][j];
-    }
-    MMscore/=L;
-
-    double RMSD = 0;
-    double TMscore=0;
-    if (Nali>=3)
-    {
-        Kabsch(r1, r2, Nali, 1, RMSD, t, u);
-        do_rotation(r1, xt, Nali, t, u);
-
-        double dd=0;
-        for (i=0;i<Nali;i++)
-        {
-            dd=dist(xt[i], r2[i]);
-            TMscore+=1/(1+dd/(d0MM*d0MM));
-        }
-    }
-    else if (Nali==2)
-    {
-        double dd=dist(r1[0],r2[0]);
-        TMscore=1/(1+dd/(d0MM*d0MM));
-    }
-    else TMscore=1;
-    TMscore/=getmin(chain1_num,chain2_num);
-    MMscore*=TMscore;
-    return MMscore;
-}
+    CoordArray& xt, Vec3& t, RotMat& u, const int L);
 
 // reassign chain-chain correspondence, specific for homooligomer
 inline double homo_refined_greedy_search(const DoubleMatrix& TMave_mat,std::vector<int>& assign1_list,
