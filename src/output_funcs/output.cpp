@@ -94,8 +94,7 @@ void output_soi_dist_table(std::ostream& os, int ylen,
     os << "###############\t###############\t#########\n";
     os << "#Aligned atom 1\tAligned atom 2 \tDistance#\n";
     int r1;
-    int r2;
-    for (r2=0;r2<ylen;r2++)
+    for (int r2=0;r2<ylen;r2++)
     {
         r1=invmap[r2];
         if (r1<0) continue;
@@ -502,7 +501,6 @@ static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
     std::string& resi1_sele, std::string& resi2_sele,
     std::string& resi1_bond, std::string& resi2_bond)
 {
-    int i;
     int i1=-1;
     int i2=-1;
     std::string prev_resi1;
@@ -515,7 +513,7 @@ static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
     }
     else
     {
-        for (i=0;i<seqM.size();i++)
+        for (int i=0;i<seqM.size();i++)
         {
             i1+=(seqxA[i]!='-' && seqxA[i]!='*');
             i2+=(seqyA[i]!='-');
@@ -567,7 +565,6 @@ static void extract_pymol_aligned_region(const int mm_opt, const int o_opt,
 void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
     const RotArray& ut_mat, const std::string& fname_super, const int o_opt){
     int compress_type=0; // uncompressed file
-    size_t m;
     std::string name;
     std::string filename;
 
@@ -576,7 +573,7 @@ void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
         buf_pymol<<"#!/usr/bin/env pymol\n";
     else if (o_opt==3)
         buf_pymol<<"#!/usr/bin/env chimerax --script\n";
-    for (m=0;m<chain_list.size();m++)
+    for (size_t m=0;m<chain_list.size();m++)
     {
         name=chain_list[m];
 
@@ -959,12 +956,11 @@ void output_mTMalign_results(const std::string xname, const std::string yname,
 void output_cp(const std::string&xname, const std::string&yname,
     const std::string &seqxA, const int outfmt_opt, int &right_num,
     std::ostream& os ){
-    int r;
     bool after_cp=false;
     int left_num=0;
     int left_aln_num=0;
     int right_aln_num=0;
-    for (r=0;r<seqxA.size();r++)
+    for (int r=0;r<seqxA.size();r++)
     {
         if (seqxA[r]=='*') after_cp=true;
         else 
@@ -1403,7 +1399,6 @@ void normalize_mmcif_atom_fields(
 void read_mTMalign_chain_pdb(const std::string& name, const std::string& fname_super,
     const int chain_idx, const RotArray& ut_mat, int& compress_type, std::string& filename)
 {
-    int ui;
     int uj;
     Vec3 t;
     RotMat u;
@@ -1432,7 +1427,7 @@ void read_mTMalign_chain_pdb(const std::string& name, const std::string& fname_s
         buf<<fname_super<<'.'<<chain_idx<<".pdb";
         filename=buf.str();
         buf.str(std::string());
-        for (ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[chain_idx][ui*3+uj];
+        for (int ui=0;ui<3;ui++) for (uj=0;uj<3;uj++) u[ui][uj]=ut_mat[chain_idx][ui*3+uj];
         for (uj=0;uj<3;uj++) t[uj]=ut_mat[chain_idx][9+uj];
 
         std::string line;
