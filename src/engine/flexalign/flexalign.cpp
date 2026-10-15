@@ -1284,3 +1284,233 @@ void output_flexalign_results(
             xlen, ylen, flexalign_res.d0A, flexalign_res.n_ali8, flexalign_res.rmsd0, flexalign_res.TM1, flexalign_res.Liden);
 }
 
+void recompute_flexalign_scores(const std::string &seqM, const std::string &seqxA,
+    const std::string &seqyA, std::vector<char>& seqM_char, std::vector<double>& di_vec,
+    const std::vector<int>& invmap, DoubleMatrix& tu_vec, CoordArray& xa,
+    CoordArray& ya, CoordArray& xt, Vec3& t0, RotMat& u0,
+    const int xlen, const int ylen,
+    double &TM1, double &TM2, double &TM3, double &TM4, double &TM5,
+    double &rmsd0, double &Liden,
+    const double d0A, const double d0B, const double d0a, const double d0u,
+    const double d0_scale, const double Lnorm_ass,
+    const int a_opt, const bool u_opt, const bool d_opt, const int n_ali8)
+{
+    for (int hinge=(int)tu_vec.size()-1; hinge>=0; hinge--)
+    {
+        tu2t_u(tu_vec[hinge],t0,u0);
+        do_rotation(xa, xt, xlen, t0, u0);
+        char cur_seg = hinge + '0';
+        for (int j=0; j<ylen; j++)
+        {
+            int i = invmap[j];
+            if (i < 0) continue;
+            if (seqM_char[j] != cur_seg) continue;
+            double d = sqrt(dist(xt[i], ya[j]));
+            if (di_vec[j] < 0 || d <= di_vec[j])
+                di_vec[j] = d;
+        }
+    }
+
+    rmsd0=TM1=TM2=TM3=TM4=TM5=0;
+    Liden=0;
+    for (int r=0; r<(int)seqM.size(); r++)
+    {
+        if (seqM[r]!=' ')
+            Liden+=(seqxA[r]==seqyA[r]);
+    }
+
+    for(int j=0; j<ylen; j++)
+    {
+        int i=invmap[j];
+        if(i<0) continue;
+        {
+            double d=di_vec[j];
+            TM2+=1/(1+(d/d0B)*(d/d0B)); // chain_1
+            TM1+=1/(1+(d/d0A)*(d/d0A)); // chain_2
+            if (a_opt) TM3+=1/(1+(d/d0a)*(d/d0a)); // -a
+            if (u_opt) TM4+=1/(1+(d/d0u)*(d/d0u)); // -u
+            if (d_opt) TM5+=1/(1+(d/d0_scale)*(d/d0_scale)); // -d
+            rmsd0+=d*d;
+        }
+    }
+    TM2/=xlen;
+    TM1/=ylen;
+    TM3/=(xlen+ylen)*0.5;
+    TM4/=Lnorm_ass;
+    TM5/=ylen;
+    if (n_ali8) rmsd0=sqrt(rmsd0/n_ali8);
+}
+
+void extract_split_substruct(
+        const CoordArray& xa, const CoordArray& ya,
+        const std::string &seqx, const std::string &seqy,
+        const std::string &secx, const std::string &secy,
+        const std::string &seqxA, const std::string &seqyA,
+        const int xlen, const int ylen, const int n_ali8,
+        AlignSubstruct sub[NUM_SPLIT_VARIANTS])
+{
+    AlignSubstruct &sub0 = sub[0];
+    AlignSubstruct &sub1 = sub[1];
+    sub0.seqx_hinge_trimmed.clear();
+    sub0.seqy_hinge_trimmed.clear();
+    sub0.secx_hinge_trimmed.resize(xlen + 1);
+    sub0.secy_hinge_trimmed.resize(ylen + 1);
+    sub0.xa_hinge_trimmed.resize(xlen);
+    sub0.ya_hinge_trimmed.resize(ylen);
+    sub0.xlen_hinge_trimmed = n_ali8;
+    sub0.ylen_hinge_trimmed = ylen - n_ali8;
+    sub1.seqx_hinge_trimmed.clear();
+    sub1.seqy_hinge_trimmed.clear();
+    sub1.secx_hinge_trimmed.resize(xlen + 1);
+    sub1.secy_hinge_trimmed.resize(ylen + 1);
+    sub1.xa_hinge_trimmed.resize(xlen);
+    sub1.ya_hinge_trimmed.resize(ylen);
+    sub1.xlen_hinge_trimmed = xlen - n_ali8;
+    sub1.ylen_hinge_trimmed = n_ali8;
+    int i = -1;
+    int j = -1;
+    int a0 = 0;
+    int b0 = 0;
+    int a1 = 0;
+    int b1 = 0;
+    for (size_t r = 0; r < seqxA.size(); r++)
+    {
+        i += (seqxA[r] != '-');
+        j += (seqyA[r] != '-');
+        if (seqxA[r] != '-' && seqyA[r] != '-')
+        {
+            sub0.seqx_hinge_trimmed += seqx[i];
+            sub0.secx_hinge_trimmed[a0] = secx[i];
+            sub0.xa_hinge_trimmed[a0][0] = xa[i][0];
+            sub0.xa_hinge_trimmed[a0][1] = xa[i][1];
+            sub0.xa_hinge_trimmed[a0][2] = xa[i][2];
+            a0++;
+            sub1.seqy_hinge_trimmed += seqy[j];
+            sub1.secy_hinge_trimmed[b1] = secy[j];
+            sub1.ya_hinge_trimmed[b1][0] = ya[j][0];
+            sub1.ya_hinge_trimmed[b1][1] = ya[j][1];
+            sub1.ya_hinge_trimmed[b1][2] = ya[j][2];
+            b1++;
+        }
+        else if (seqxA[r] != '-')
+        {
+            sub1.seqx_hinge_trimmed += seqx[i];
+            sub1.secx_hinge_trimmed[a1] = secx[i];
+            sub1.xa_hinge_trimmed[a1][0] = xa[i][0];
+            sub1.xa_hinge_trimmed[a1][1] = xa[i][1];
+            sub1.xa_hinge_trimmed[a1][2] = xa[i][2];
+            a1++;
+        }
+        else if (seqyA[r] != '-')
+        {
+            sub0.seqy_hinge_trimmed += seqy[j];
+            sub0.secy_hinge_trimmed[b0] = secy[j];
+            sub0.ya_hinge_trimmed[b0][0] = ya[j][0];
+            sub0.ya_hinge_trimmed[b0][1] = ya[j][1];
+            sub0.ya_hinge_trimmed[b0][2] = ya[j][2];
+            b0++;
+        }
+    }
+}
+
+void score_split_substruct(
+        AlignSubstruct& sub,
+        CoordArray& xa, CoordArray& ya,
+        const std::string &seqx, const std::string &seqy,
+        std::vector<double>& do_vec,
+        const int xlen, const int ylen,
+        const std::vector<std::string> &sequence,
+        const ChainPairAlignOptions& align_opts,
+        Vec3& t0, RotMat& u0,
+        SubstructAlignRes& sub_align_res,
+        std::ostream& os)
+{
+    ChainPairAlignResult chain_align_res = { 0};
+    chain_align_res.d0_out = 5.0;
+    chain_align_res.t0 = t0;
+    chain_align_res.u0 = u0;
+    chain_align_res.invmap.assign(ylen + 1, -1);
+    chain_align_res.do_vec = do_vec;
+    TMalign_main(sub.xa_hinge_trimmed, sub.ya_hinge_trimmed, sub.seqx_hinge_trimmed, sub.seqy_hinge_trimmed, sub.secx_hinge_trimmed, sub.secy_hinge_trimmed,
+        chain_align_res, sub.xlen_hinge_trimmed, sub.ylen_hinge_trimmed, sequence, align_opts, os);
+    t0 = chain_align_res.t0;
+    u0 = chain_align_res.u0;
+    do_vec = chain_align_res.do_vec;
+    sub_align_res.t_u_result = chain_align_res.t0;
+    sub_align_res.u_u_result = chain_align_res.u0;
+    chain_align_res.TM1 = chain_align_res.TM2 = chain_align_res.TM3 = chain_align_res.TM4 = chain_align_res.TM5 = chain_align_res.rmsd0 = 0;
+    chain_align_res.seqM = "";
+    chain_align_res.seqxA = "";
+    chain_align_res.seqyA = "";
+    chain_align_res.n_ali = chain_align_res.n_ali8 = 0;
+    CoordArray xt;
+    xt.resize(xlen);
+    score_with_cur_transform(
+        xa, ya, xt, seqx, seqy, xlen, ylen,
+        sequence, align_opts, 1, chain_align_res);
+    do_vec = chain_align_res.do_vec;
+    sub_align_res.TM1 = chain_align_res.TM1;
+    sub_align_res.TM2 = chain_align_res.TM2;
+    sub_align_res.TM3 = chain_align_res.TM3;
+    sub_align_res.TM4 = chain_align_res.TM4;
+    sub_align_res.TM5 = chain_align_res.TM5;
+    sub_align_res.seqM = chain_align_res.seqM;
+    sub_align_res.seqxA = chain_align_res.seqxA;
+    sub_align_res.seqyA = chain_align_res.seqyA;
+    sub_align_res.n_ali = chain_align_res.n_ali;
+    sub_align_res.n_ali8 = chain_align_res.n_ali8;
+    sub_align_res.rmsd0 = chain_align_res.rmsd0;
+    sub_align_res.d0_0 = chain_align_res.d0_0;
+    sub_align_res.TM_0 = chain_align_res.TM_0;
+    sub_align_res.d0A = chain_align_res.d0A;
+    sub_align_res.d0B = chain_align_res.d0B;
+    sub_align_res.d0u = chain_align_res.d0u;
+    sub_align_res.d0a = chain_align_res.d0a;
+    sub_align_res.d0_out = chain_align_res.d0_out;
+    sub_align_res.L_ali = chain_align_res.L_ali;
+    sub_align_res.Liden = chain_align_res.Liden;
+    sub_align_res.TM_ali = chain_align_res.TM_ali;
+    sub_align_res.rmsd_ali = chain_align_res.rmsd_ali;
+    sub_align_res.invmap = chain_align_res.invmap;
+}
+
+void fill_sub_struct_align_result(
+        const SubstructAlignRes sub_align_res[NUM_SPLIT_VARIANTS],
+        DoubleMatrix& tu_vec,
+        ChainPairAlignResult& chain_align_res)
+{
+    double TM_h=(sub_align_res[0].TM1>sub_align_res[0].TM2)?sub_align_res[0].TM1:sub_align_res[0].TM2;
+    double TM  =(sub_align_res[1].TM1>sub_align_res[1].TM2)?sub_align_res[1].TM1:sub_align_res[1].TM2;
+    const SubstructAlignRes* best_align;
+    if (TM_h>TM)
+        best_align=&sub_align_res[0];
+    else
+        best_align=&sub_align_res[1];
+    chain_align_res.t0 = best_align->t_u_result;
+    chain_align_res.u0 = best_align->u_u_result;
+    t_u2tu(chain_align_res.t0, chain_align_res.u0, tu_vec[0]);
+    chain_align_res.TM1=best_align->TM1;
+    chain_align_res.TM2=best_align->TM2;
+    chain_align_res.TM3=best_align->TM3;
+    chain_align_res.TM4=best_align->TM4;
+    chain_align_res.TM5=best_align->TM5;
+    chain_align_res.seqM=best_align->seqM;
+    chain_align_res.seqxA=best_align->seqxA;
+    chain_align_res.seqyA=best_align->seqyA;
+    chain_align_res.rmsd0=best_align->rmsd0;
+    chain_align_res.n_ali=best_align->n_ali;
+    chain_align_res.n_ali8=best_align->n_ali8;
+    chain_align_res.L_ali=best_align->L_ali;
+    chain_align_res.Liden=best_align->Liden;
+    chain_align_res.TM_ali=best_align->TM_ali;
+    chain_align_res.rmsd_ali=best_align->rmsd_ali;
+    chain_align_res.d0_0=best_align->d0_0;
+    chain_align_res.TM_0=best_align->TM_0;
+    chain_align_res.d0A=best_align->d0A;
+    chain_align_res.d0B=best_align->d0B;
+    chain_align_res.d0u=best_align->d0u;
+    chain_align_res.d0a=best_align->d0a;
+    chain_align_res.d0_out=best_align->d0_out;
+    chain_align_res.invmap = best_align->invmap;
+}
+
