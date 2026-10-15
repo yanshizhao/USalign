@@ -222,148 +222,11 @@ void mmalign_output_chain_aligns(
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
     const Vec3& t0, const RotMat& u0, std::ostream& os = std::cout);
 
-inline void MMalign_final(
+void MMalign_final(
     const ComplexData& complex1, const ComplexData& complex2,
     AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
     const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
-    const bool se_opt, std::ostream& os = std::cout)
-{
-    int i;
-    int j;
-    int xlen=0;
-    int ylen=0;
-    for (i=0;i<final_params.chain1_num;i++) xlen+=complex1.lengths[i];
-    for (j=0;j<final_params.chain2_num;j++) ylen+=complex2.lengths[j];
-    if (xlen<=3 || ylen<=3) return;
-
-    std::string seqx;
-    std::string seqy;
-    std::string secx;
-    std::string secy;
-    CoordArray xa;
-    CoordArray ya;
-    secx.resize(xlen+1);
-    xa.resize(xlen);
-    secy.resize(ylen+1);
-    ya.resize(ylen);
-
-    int mol_type=copy_chain_pair_data(complex1, complex2,
-        xa, ya, seqx, seqy, secx, secy, final_params.chain1_num,
-        pair_result.aligned_seq1, pair_result.aligned_seq2, assign_result.chain2_of_chain1, sequence);
-    seqx.resize(xlen+1);
-    seqy.resize(ylen+1);
-
-    ChainPairAlignResult chain_align_res = {};
-    chain_align_res.d0_out = 5.0;
-    Vec3& t0 = chain_align_res.t0;
-    RotMat& u0 = chain_align_res.u0;
-    double& TM1 = chain_align_res.TM1;
-    double& TM2 = chain_align_res.TM2;
-    double& TM3 = chain_align_res.TM3;
-    double& TM4 = chain_align_res.TM4;
-    double& TM5 = chain_align_res.TM5;
-    double& d0_0 = chain_align_res.d0_0;
-    double& TM_0 = chain_align_res.TM_0;
-    double& d0A = chain_align_res.d0A;
-    double& d0B = chain_align_res.d0B;
-    double& d0u = chain_align_res.d0u;
-    double& d0a = chain_align_res.d0a;
-    double& d0_out = chain_align_res.d0_out;
-    std::string& seqM = chain_align_res.seqM;
-    std::string& seqxA = chain_align_res.seqxA;
-    std::string& seqyA = chain_align_res.seqyA;
-    double& rmsd0 = chain_align_res.rmsd0;
-    int& L_ali = chain_align_res.L_ali;
-    double& Liden = chain_align_res.Liden;
-    double& TM_ali = chain_align_res.TM_ali;
-    double& rmsd_ali = chain_align_res.rmsd_ali;
-    int& n_ali8 = chain_align_res.n_ali8;
-    double Lnorm_ass=final_params.len_aa+final_params.len_na;
-
-    init_rt_mat(t0, u0);
-    std::vector<int> invmap(ylen+1);
-
-    ChainPairAlignOptions final_align_opts;
-    final_align_opts.i_opt = 3;
-    final_align_opts.a_opt = final_params.a_opt;
-    final_align_opts.u_opt = false;
-    final_align_opts.d_opt = final_params.d_opt;
-    final_align_opts.fast_opt = final_params.fast_opt;
-    final_align_opts.se_opt = false;
-    final_align_opts.cp_opt = false;
-    final_align_opts.Lnorm = Lnorm_ass;
-    final_align_opts.d0_scale = final_params.d0_scale;
-    final_align_opts.TMcut = -1;
-    final_align_opts.parallel_threads = 1;
-    final_align_opts.ss_opt = 0;
-    final_align_opts.mol_type = mol_type;
-
-    if (se_opt)
-    {
-        final_align_opts.u_opt = 2;
-        chain_align_res.invmap.assign(ylen+1, 0);
-        se_main(xa, ya, seqx, seqy, chain_align_res,
-            xlen, ylen, sequence, final_align_opts, 1);
-    }
-    else TMalign_main(xa, ya, seqx, seqy, secx, secy,
-        chain_align_res,
-        xlen, ylen, sequence, final_align_opts);
-
-    // prepare full complex alignment
-    std::string chainID1="";
-    std::string chainID2="";
-    mmalign_assemble_complex(seqM, complex1.seqs, complex2.seqs, complex1.lengths, complex2.lengths,
-        complex1.chain_ids, complex2.chain_ids, assign_result.chain2_of_chain1, assign_result.chain1_of_chain2,
-        final_params.chain1_num, final_params.chain2_num, pair_result.aligned_seq1, pair_result.aligned_seq2, pair_result.aligned_consensus,
-        chainID1, chainID2, sequence);
-    // print alignment
-    ChainPairAlignResult print_align_res = { 0};
-    print_align_res.t0 = t0;
-    print_align_res.u0 = u0;
-    print_align_res.TM1 = TM1;
-    print_align_res.TM2 = TM2;
-    print_align_res.TM3 = TM3;
-    print_align_res.TM4 = TM4;
-    print_align_res.TM5 = TM5;
-    print_align_res.rmsd0 = rmsd0;
-    print_align_res.d0_out = d0_out;
-    print_align_res.Liden = Liden;
-    print_align_res.n_ali8 = n_ali8;
-    print_align_res.L_ali = L_ali;
-    print_align_res.TM_ali = TM_ali;
-    print_align_res.rmsd_ali = rmsd_ali;
-    print_align_res.TM_0 = TM_0;
-    print_align_res.d0_0 = d0_0;
-    print_align_res.d0A = d0A;
-    print_align_res.d0B = d0B;
-    print_align_res.d0a = d0a;
-    print_align_res.d0u = d0u;
-    print_align_res.seqM = sequence[2];
-    print_align_res.seqxA = sequence[0];
-    print_align_res.seqyA = sequence[1];
-    OutputOptions out_opts;
-    fill_out_opts_mmalign_final(out_opts, final_params);
-    out_opts.Lnorm_ass = Lnorm_ass;
-    out_opts.mm_opt = true;
-    const std::string structure1_display = final_params.xname;
-    const std::string structure2_display = final_params.yname;
-    const ChainPairDesc pair_desc{structure1_display, structure2_display, chainID1, chainID2, xlen, ylen};
-    output_results(
-        pair_desc, print_align_res, out_opts, complex1.resi, complex2.resi, os);
-
-    sequence[0].clear();
-    sequence[1].clear();
-    sequence[2].clear();
-
-    if (!final_params.full_opt) return;
-
-    if (final_params.outfmt_opt<=2) os<<"# End of alignment for full complex. The following blocks list alignments for individual chains."<<std::endl;
-
-    mmalign_output_chain_aligns(complex1, complex2, pair_result, assign_result,
-        final_params, sequence, t0, u0, os);
-    sequence.clear();
-    return;
-}
+    const bool se_opt, std::ostream& os = std::cout);
 
 
 
@@ -399,70 +262,13 @@ inline void copy_chain_assign_data(int chain1_num, int chain2_num,
     return;
 }
 
-inline void MMalign_iter(double & max_total_score, const int max_iter,
+void MMalign_iter(double & max_total_score, const int max_iter,
     const ComplexData& complex1, const ComplexData& complex2,
     int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
     std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
     std::vector<int>& assign1_list, std::vector<int>& assign2_list, std::vector<std::string>&sequence,
     double d0_scale, bool fast_opt, std::map<int,int> &chain_pair_map,
-    const int byresi_opt=0)
-{
-    // tmp assignment
-    double total_score;
-    std::vector<int> assign1_tmp(chain1_num);
-    std::vector<int> assign2_tmp(chain2_num);
-    DoubleMatrix TMave_tmp;
-    TMave_tmp.assign(chain1_num, std::vector<double>(chain2_num));
-    std::vector<std::string> tmp_str_vec(chain2_num,"");
-    std::vector<std::vector<std::string> >seqxA_tmp(chain1_num,tmp_str_vec);
-    std::vector<std::vector<std::string> >seqyA_tmp(chain1_num,tmp_str_vec);
-    std::vector<std::string> sequence_tmp;
-    copy_chain_assign_data(chain1_num, chain2_num, sequence_tmp,
-        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
-        seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp);
-
-    for (int iter=0;iter<max_iter;iter++)
-    {
-        total_score=MMalign_search(complex1, complex2,
-            len_aa, len_na,
-            chain1_num, chain2_num,
-            TMave_tmp, seqxA_tmp, seqyA_tmp, assign1_tmp,
-            sequence, d0_scale, fast_opt, 3, byresi_opt, chain_pair_map);
-        
-        if (chain_pair_map.size())
-        {
-            int chain1_idx;
-            int chain2_idx;
-            for (chain1_idx =0;chain1_idx < chain1_num; chain1_idx++)
-            {
-                for (chain2_idx = 0; chain2_idx < chain2_num; chain2_idx++)
-                {
-                                        // Local constraint: set chain pairs that do not satisfy the constraint to -1
-                    if (!is_chain_pair_allowed(chain_pair_map, chain1_idx, chain2_idx))
-                    {
-                        TMave_tmp[chain1_idx][chain2_idx]=-1;
-                    }
-                }
-            }
-        }
-        total_score=enhanced_greedy_search(TMave_tmp, assign1_tmp,
-            assign2_tmp, chain1_num, chain2_num);
-        if (chain_pair_map.size())
-        {
-            // mapped chain forced to stay paired (user-enforced constraint, kept even if rescored score <= 0)
-            for (std::map<int,int>::const_iterator kv = chain_pair_map.begin(); kv != chain_pair_map.end(); ++kv)
-            {
-                assign1_tmp[kv->first]=kv->second;
-                assign2_tmp[kv->second]=kv->first;
-            }
-        }
-        if (total_score<=max_total_score) break;
-        max_total_score=total_score;
-        copy_chain_assign_data(chain1_num, chain2_num, sequence,
-            seqxA_tmp, seqyA_tmp, assign1_tmp,  assign2_tmp,  TMave_tmp,
-            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
-    }
-}
+    const int byresi_opt=0);
 
 
 /* Input: vectors x, y, rotation matrix t, u, scale factor d02, and gap_open
@@ -535,73 +341,11 @@ inline void NWDP_TM_dimer(CharMatrix& path, DoubleMatrix& val, const std::string
 //output: best alignment that maximizes the TMscore, will be stored in invmap.data()
 
 
-inline double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+double DP_iter_dimer(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CoordArray& xt, CharMatrix& path, DoubleMatrix& val, CoordArray& x, CoordArray& y,
     int xlen, int ylen, CharMatrix& mask, Vec3& t, RotMat& u, std::vector<int>& invmap0,
     int g1, int g2, int iteration_max, double local_d0_search,
-    double Lnorm, double d0, double score_d8)
-{
-    double gap_open[2]={-0.6, 0};
-    double rmsd;
-    std::vector<int> invmap(ylen+1);
-
-    int iteration;
-    int i;
-    int j;
-    int k;
-    double tmscore;
-    double tmscore_max;
-    double tmscore_old=0;
-    int score_sum_method=8;
-    int simplify_step=40;
-    tmscore_max=-1;
-
-    double d02=d0*d0;
-    for(int g=g1; g<g2; g++)
-    {
-        for(iteration=0; iteration<iteration_max; iteration++)
-        {
-            NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
-                t, u, d02, gap_open[g], invmap);
-
-            k=0;
-            for(j=0; j<ylen; j++)
-            {
-                i=invmap[j];
-
-                if(i>=0)
-                {
-                    xtm[k][0]=x[i][0];
-                    xtm[k][1]=x[i][1];
-                    xtm[k][2]=x[i][2];
-
-                    ytm[k][0]=y[j][0];
-                    ytm[k][1]=y[j][1];
-                    ytm[k][2]=y[j][2];
-                    k++;
-                }
-            }
-
-            tmscore = TMscore8_search(r1, r2, xtm, ytm, xt, k, t, u,
-                simplify_step, score_sum_method, rmsd, local_d0_search,
-                Lnorm, score_d8, d0);
-
-            if(tmscore>tmscore_max)
-            {
-                tmscore_max=tmscore;
-                for(i=0; i<ylen; i++) invmap0[i]=invmap[i];
-            }
-
-            if(iteration>0)
-            {
-                if(fabs(tmscore_old-tmscore)<0.000001) break;
-            }
-            tmscore_old=tmscore;
-        }
-    }
-
-    return tmscore_max;
-}
+    double Lnorm, double d0, double score_d8);
 
 
 
@@ -615,84 +359,10 @@ inline void get_initial_ss_dimer(CharMatrix& path, DoubleMatrix& val, const std:
     NWDP_TM_dimer(path, val, secx, secy, xlen, ylen, mask, gap_open, y2x);
 }
 
-inline bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
+bool get_initial5_dimer( CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     CharMatrix& path, DoubleMatrix& val,
     CoordArray& x, CoordArray& y, int xlen, int ylen, CharMatrix& mask, std::vector<int>& y2x,
-    double d0, double d0_search, const bool fast_opt, const double D0_MIN)
-{
-    double GL;
-    double rmsd;
-    Vec3 t;
-    RotMat u;
-
-    double d01 = d0 + 1.5;
-    if (d01 < D0_MIN) d01 = D0_MIN;
-    double d02 = d01 * d01;
-
-    double GLmax = 0;
-    int aL = getmin(xlen, ylen);
-    std::vector<int> invmap(ylen + 1);
-
-    int n_jump1 = 0;
-    if (xlen > 250) n_jump1 = 45;
-    else if (xlen > 200) n_jump1 = 35;
-    else if (xlen > 150) n_jump1 = 25;
-    else n_jump1 = 15;
-    if (n_jump1 > (xlen / 3)) n_jump1 = xlen / 3;
-
-    int n_jump2 = 0;
-    if (ylen > 250) n_jump2 = 45;
-    else if (ylen > 200) n_jump2 = 35;
-    else if (ylen > 150) n_jump2 = 25;
-    else n_jump2 = 15;
-    if (n_jump2 > (ylen / 3)) n_jump2 = ylen / 3;
-
-    std::array<int, 2> n_frag = { 20, 100 };
-    if (n_frag[0] > (aL / 3)) n_frag[0] = aL / 3;
-    if (n_frag[1] > (aL / 2)) n_frag[1] = aL / 2;
-
-    if (fast_opt) { n_jump1 *= 5; n_jump2 *= 5; }
-    bool flag = false;
-    for (int i_frag = 0; i_frag < 2; i_frag++)
-    {
-        int m1 = xlen - n_frag[i_frag] + 1;
-        int m2 = ylen - n_frag[i_frag] + 1;
-
-        for (int i = 0; i < m1; i = i + n_jump1)
-        {
-            for (int j = 0; j < m2; j = j + n_jump2)
-            {
-                for (int k = 0; k < n_frag[i_frag]; k++)
-                {
-                    r1[k][0] = x[k + i][0];
-                    r1[k][1] = x[k + i][1];
-                    r1[k][2] = x[k + i][2];
-
-                    r2[k][0] = y[k + j][0];
-                    r2[k][1] = y[k + j][1];
-                    r2[k][2] = y[k + j][2];
-                }
-
-                Kabsch(r1, r2, n_frag[i_frag], 1, rmsd, t, u);
-
-                double gap_open = 0.0;
-                NWDP_TM_dimer(path, val, x, y, xlen, ylen, mask,
-                    t, u, d02, gap_open, invmap);
-                GL = get_score_fast(r1, r2, xtm, ytm, x, y, ylen,
-                    invmap, d0, d0_search, t, u);
-                if (GL > GLmax)
-                {
-                    GLmax = GL;
-                    for (int ii = 0; ii < ylen; ii++) y2x[ii] = invmap[ii];
-                    flag = true;
-                }
-            }
-        }
-    }
-
-
-    return flag;
-}
+    double d0, double d0_search, const bool fast_opt, const double D0_MIN);
 
 
 
@@ -708,78 +378,11 @@ inline void get_initial_ssplus_dimer(CoordArray& r1, CoordArray& r2, DoubleMatri
     NWDP_TM(score, path, val, xlen, ylen, gap_open, y2x);
 }
 
-inline void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, CoordArray& xt, const std::string& seqx,
+void derive_dimer_alignment(CoordArray& xa_c, const CoordArray& ya_c, CoordArray& xt, const std::string& seqx,
     const std::string& seqy, const std::vector<int>& m1, const std::vector<int>& m2, const int n_ali8,
     const double d0_out, const int xlen, const int ylen, const Vec3& t0,
     const RotMat& u0, double& Liden, std::string& seqxA, std::string& seqyA,
-    std::string& seqM)
-{
-    double d;
-    // derive alignment from superposition
-    int ali_len=xlen+ylen; //maximum length of alignment
-    seqxA.assign(ali_len,'-');
-    seqM.assign( ali_len,' ');
-    seqyA.assign(ali_len,'-');
-
-    do_rotation(xa_c, xt, xlen, t0, u0);
-
-    int kk=0;
-    int i_old=0;
-    int j_old=0;
-    d=0;
-    for(int k=0; k<n_ali8; k++)
-    {
-        for(int i=i_old; i<m1[k]; i++)
-        {
-            //align x to gap
-            seqxA[kk]=seqx[i];
-            seqyA[kk]='-';
-            seqM[kk]=' ';                    
-            kk++;
-        }
-
-        for(int j=j_old; j<m2[k]; j++)
-        {
-            //align y to gap
-            seqxA[kk]='-';
-            seqyA[kk]=seqy[j];
-            seqM[kk]=' ';
-            kk++;
-        }
-
-        seqxA[kk]=seqx[m1[k]];
-        seqyA[kk]=seqy[m2[k]];
-        Liden+=(seqxA[kk]==seqyA[kk]);
-        d=sqrt(dist(xt[m1[k]], ya_c[m2[k]]));
-        if(d<d0_out) seqM[kk]=':';
-        else         seqM[kk]='.';
-        kk++;  
-        i_old=m1[k]+1;
-        j_old=m2[k]+1;
-    }
-
-    //tail
-    for(int i=i_old; i<xlen; i++)
-    {
-        //align x to gap
-        seqxA[kk]=seqx[i];
-        seqyA[kk]='-';
-        seqM[kk]=' ';
-        kk++;
-    }    
-    for(int j=j_old; j<ylen; j++)
-    {
-        //align y to gap
-        seqxA[kk]='-';
-        seqyA[kk]=seqy[j];
-        seqM[kk]=' ';
-        kk++;
-    }
-    seqxA=seqxA.substr(0,kk);
-    seqyA=seqyA.substr(0,kk);
-    seqM =seqM.substr(0,kk);
-
-}
+    std::string& seqM);
 
 int dimer_build_initial_alignment(CoordArray& xa_c, CoordArray& ya_c, const std::string& secx, const std::string& secy,
     const int xlen, const int ylen, CharMatrix& mask, const std::vector<std::string> sequence,
