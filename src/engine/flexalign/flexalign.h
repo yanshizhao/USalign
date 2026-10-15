@@ -1186,7 +1186,7 @@ inline int cur_diag_resid_num(int i, int j, int xlen, int ylen, int fragLen)
 }
 
 
-inline std::vector<USBCAT_AFP> extract_initial_afps(
+std::vector<USBCAT_AFP> extract_initial_afps(
     const CoordArray& xa,
     const CoordArray& ya,
     const LocalDistTables& tables,
@@ -1196,64 +1196,12 @@ inline std::vector<USBCAT_AFP> extract_initial_afps(
     const double min_resid_num,
     const double cur_rmsdCut,
     const double cur_badRmsd,
-    const int sparse_val)
-{
-
-        std::vector<USBCAT_AFP> initial_afps;
-        int step = sparse_val + 1;
-
-        
-        CoordArray r1(usb_cat_para.fragLen), r2(usb_cat_para.fragLen);
-
-        for (int i = 0; i <= xlen - usb_cat_para.fragLen; i += step)
-        {
-            for (int j = 0; j <= ylen - usb_cat_para.fragLen; j += step)
-            {
-                int cur_resid_num = cur_diag_resid_num(i, j, xlen, ylen, usb_cat_para.fragLen);
-                if (cur_resid_num < min_resid_num)
-                    continue;
-
-                double dist1 = tables.chain1_dist_table[i][usb_cat_para.fragLen - 1];
-                double dist2 = tables.chain2_dist_table[j][usb_cat_para.fragLen - 1];
-
-                if (std::fabs(dist1 - dist2) > 2.0 * cur_rmsdCut)
-                    continue;
-
-                for (int k = 0; k < usb_cat_para.fragLen; k++)
-                {
-                    r1[k][0] = xa[i + k][0];
-                    r1[k][1] = xa[i + k][1];
-                    r1[k][2] = xa[i + k][2];
-                    r2[k][0] = ya[j + k][0];
-                    r2[k][1] = ya[j + k][1];
-                    r2[k][2] = ya[j + k][2];
-                }
-
-                double rms_sum_sq;
-                Vec3 t_tmp;
-                RotMat u_tmp;
-            
-                Kabsch(r1, r2, usb_cat_para.fragLen, 0, rms_sum_sq, t_tmp, u_tmp);
-                double rmsd_tmp = std::sqrt(rms_sum_sq / usb_cat_para.fragLen);
-
-                if (rmsd_tmp < cur_rmsdCut)
-                {
-                    USBCAT_AFP afp;
-                    afp.i = i;
-                    afp.j = j;
-                    afp.len = usb_cat_para.fragLen;
-                    afp.score = afp_score(usb_cat_para.resScore, usb_cat_para.fragLen, rmsd_tmp, cur_badRmsd);
-                    initial_afps.push_back(afp);
-                }
-            }
-        }
-    return initial_afps;
-}
+    const int sparse_val);
 
 // Greedy merge of all AFPs along one diagonal
 // Input: cur_group (AFPs on the same diagonal, sorted ascending by i)
 // Output: merged AFP list
-inline std::vector<USBCAT_AFP> merge_cur_afps_group(
+std::vector<USBCAT_AFP> merge_cur_afps_group(
     const std::vector<USBCAT_AFP>& cur_group,
     const CoordArray& xa,
     const CoordArray& ya,
@@ -1261,57 +1209,7 @@ inline std::vector<USBCAT_AFP> merge_cur_afps_group(
     const int xlen,
     const int ylen,
     const double cur_rmsdCut,
-    const double cur_badRmsd)
-{
-    std::vector<USBCAT_AFP> merged_afps;
-    int afp_num = cur_group.size();
-    std::vector<bool> merged_status(afp_num, false);
-
-    int max_merge_len = std::min(xlen, ylen);
-    CoordArray r1_merge(max_merge_len), r2_merge(max_merge_len);
-
-    for (int idx = 0; idx < afp_num; idx++)
-    {
-        if (merged_status[idx]) continue;
-
-        USBCAT_AFP curr_afp = cur_group[idx];
-        for (int nxt_idx = idx + 1; nxt_idx < afp_num; nxt_idx++)
-        {
-            USBCAT_AFP nxt_afp = cur_group[nxt_idx];
-            if (nxt_afp.i > curr_afp.i + curr_afp.len)
-                break;  // Sorted by i, subsequent nxt entries cannot overlap
-
-            if (nxt_afp.i + nxt_afp.len > curr_afp.i + curr_afp.len)
-            {
-                int new_len = (nxt_afp.i + nxt_afp.len) - curr_afp.i;
-                for (int k = 0; k < new_len; k++)
-                {
-                    r1_merge[k][0] = xa[curr_afp.i + k][0];
-                    r1_merge[k][1] = xa[curr_afp.i + k][1];
-                    r1_merge[k][2] = xa[curr_afp.i + k][2];
-                    r2_merge[k][0] = ya[curr_afp.j + k][0];
-                    r2_merge[k][1] = ya[curr_afp.j + k][1];
-                    r2_merge[k][2] = ya[curr_afp.j + k][2];
-                }
-
-                double rms_sum_sq;
-                Vec3 t_tmp;
-                RotMat u_tmp;
-                Kabsch(r1_merge, r2_merge, new_len, 0, rms_sum_sq, t_tmp, u_tmp);
-                double rmsd_tmp = std::sqrt(rms_sum_sq / new_len);
-
-                if (rmsd_tmp < cur_rmsdCut)
-                {
-                    curr_afp.len = new_len;
-                    curr_afp.score = afp_score(usb_cat_para.resScore, new_len, rmsd_tmp, cur_badRmsd);
-                    merged_status[nxt_idx] = true;
-                }
-            }
-        }
-        merged_afps.push_back(curr_afp);
-    }
-    return merged_afps;
-}
+    const double cur_badRmsd);
 
 inline std::vector<USBCAT_AFP> merge_afps_group(
     const std::vector<USBCAT_AFP>& initial_afps,
@@ -1399,52 +1297,12 @@ inline void build_index_tables(
     propagate_index_table(afp_aft_index, xlen, ylen, -1);
 }
 
-inline void find_candidate_prevs(const USBCAT_AFP& cur_afp,
+void find_candidate_prevs(const USBCAT_AFP& cur_afp,
                                  const std::vector<int>& afp_aft_index,
                                  const std::vector<int>& afp_bef_index,
                                  const int xlen, const int ylen,
                                  const USBCATParams& usb_cat_para,
-                                 std::vector<int>& candidate_prevs)
-{
-    int x_right = cur_afp.i - usb_cat_para.fragLen;
-    int x_left2 = std::max(0, x_right - usb_cat_para.misCut);
-    int x_left1 = std::max(0, cur_afp.i - usb_cat_para.maxGapFrag);
-
-    int y_right = cur_afp.j - usb_cat_para.fragLen;
-    int y_left2 = std::max(0, y_right - usb_cat_para.misCut);
-    int y_left1 = std::max(0, cur_afp.j - usb_cat_para.maxGapFrag);
-
-    for (int st = 0; st < 2; st++)
-    {
-        int x_left, x_right_b, y_left, y_right_b;
-        if (st == 0)
-        {
-            x_left = std::max(x_left1, 0);
-            x_right_b = std::min(x_right, xlen - 1);
-            y_left = std::max(y_left2, 0);
-            y_right_b = std::min(y_right, ylen - 1);
-        }
-        else
-        {
-            x_left = std::max(x_left2, 0);
-            x_right_b = std::min(x_right, xlen - 1);
-            y_left = std::max(y_left1, 0);
-            y_right_b = std::min(y_left2 - 1, ylen - 1);
-        }
-
-        //Check whether the window overlaps the valid range [0, ylen-1]
-        if (y_left >= ylen || y_right_b < 0) continue;
-
-        for (int prev_i = x_left; prev_i <= x_right_b; prev_i++)
-        {
-            int s1 = afp_aft_index[prev_i * ylen + y_left];
-            int s2 = afp_bef_index[prev_i * ylen + y_right_b];
-            if (s1 != -1 && s2 != -1 && s1 <= s2)
-                for (int s = s1; s <= s2; s++)
-                    candidate_prevs.push_back(s);
-        }
-    }
-}
+                                 std::vector<int>& candidate_prevs);
 
 struct DpState
 {
@@ -1575,63 +1433,12 @@ inline void build_prev_lookup_tables(
     build_index_tables(xchain_idx_map_afp, afp_aft_index, afp_bef_index, xlen, ylen);
 }
 
-inline void split_candidate_blocks(
+void split_candidate_blocks(
     std::vector<AFPBlock>& candidate_blocks,
     const CoordArray& xa,
     const CoordArray& ya,
     const USBCATParams& usb_cat_para,
-    const double cur_local_badRmsd)
-{
-    const size_t max_blocks = (size_t)(usb_cat_para.max_hinge_num + 1);
-    bool can_split_more = candidate_blocks.size() < max_blocks; 
-    while (can_split_more)
-    {
-        bool splitted = false; 
-        double max_rmsd = 0.0;
-        int target_b = -1;
-    
-        for (size_t block_idx = 0; block_idx < candidate_blocks.size(); block_idx++)
-        {
-            if (candidate_blocks[block_idx].afps.size() > 2)
-            {
-                double cur_rmsd = calc_block_rmsd(candidate_blocks[block_idx].afps, xa, ya);
-                if (cur_rmsd > max_rmsd)
-                {
-                    max_rmsd = cur_rmsd;
-                    target_b = block_idx;
-                }
-            }
-        }
-        
-        if (max_rmsd >= cur_local_badRmsd && target_b != -1)
-        {
-            AFPBlock& target_blk = candidate_blocks[target_b]; 
-            double max_drmsd = 0;
-            int cut_afp_idx = 0;
-            for (size_t idx = 1; idx < target_blk.afps.size(); idx++)
-            {
-                if (target_blk.drmsd[idx] > max_drmsd)
-                {
-                    max_drmsd = target_blk.drmsd[idx];
-                    cut_afp_idx = idx;
-                }
-            }
-            
-            if (cut_afp_idx > 0)
-            {
-                AFPBlock right_blk;
-                right_blk.afps.assign(target_blk.afps.begin() + cut_afp_idx, target_blk.afps.end());
-                right_blk.drmsd.assign(target_blk.drmsd.begin() + cut_afp_idx, target_blk.drmsd.end());
-                right_blk.drmsd[0] = 0.0;
-                target_blk.afps.erase(target_blk.afps.begin() + cut_afp_idx, target_blk.afps.end());
-                target_blk.drmsd.erase(target_blk.drmsd.begin() + cut_afp_idx, target_blk.drmsd.end());
-                candidate_blocks.insert(candidate_blocks.begin() + target_b + 1, right_blk);
-                splitted = true;
-            }
-        }
-        can_split_more = splitted && (candidate_blocks.size() < max_blocks);
-    }
-}
+    const double cur_local_badRmsd);
 
 inline void remove_single_elem_block(
     std::vector<AFPBlock>& candidate_blocks,
