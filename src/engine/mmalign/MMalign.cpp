@@ -3321,3 +3321,450 @@ void parse_chain_list(const std::vector<std::string>&chain_list,
     }
 }
 
+int copy_chain_pair_data(
+    const ComplexData& complex1, const ComplexData& complex2,
+    CoordArray& xa, CoordArray& ya, std::string &seqx, std::string &seqy, std::string &secx, std::string &secy,
+    int chain1_num,
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
+    std::vector<int>& assign1_list, std::vector<std::string>&sequence)
+{
+    const DoubleCube&xa_vec = complex1.coords;
+    const DoubleCube&ya_vec = complex2.coords;
+    const CharMatrix&seqx_vec = complex1.seqs;
+    const CharMatrix&seqy_vec = complex2.seqs;
+    const CharMatrix&secx_vec = complex1.secs;
+    const CharMatrix&secy_vec = complex2.secs;
+    const std::vector<int>&mol_vec1 = complex1.mol_types;
+    const std::vector<int>&mol_vec2 = complex2.mol_types;
+    const std::vector<int>&xlen_vec = complex1.lengths;
+    const std::vector<int>&ylen_vec = complex2.lengths;
+    int i;
+    int j;
+    int r;
+    for (i=0;i<sequence.size();i++) sequence[i].clear();
+    sequence.clear();
+    sequence.push_back("");
+    sequence.push_back("");
+    int mol_type=0;
+    int xlen=0;
+    int ylen=0;
+    seqx.clear();
+    seqy.clear();
+    xa.clear();
+    ya.clear();
+    for (i=0;i<chain1_num;i++)
+    {
+        j=assign1_list[i];
+        if (j<0) continue;
+        for (r=0;r<xlen_vec[i];r++)
+        {
+            seqx += seqx_vec[i][r];
+            secx[xlen]=secx_vec[i][r];
+            xa.push_back({xa_vec[i][r][0], xa_vec[i][r][1], xa_vec[i][r][2]});
+            xlen++;
+        }
+        sequence[0]+=seqxA_mat[i][j];
+        for (r=0;r<ylen_vec[j];r++)
+        {
+            seqy += seqy_vec[j][r];
+            secy[ylen]=secy_vec[j][r];
+            ya.push_back({ya_vec[j][r][0], ya_vec[j][r][1], ya_vec[j][r][2]});
+            ylen++;
+        }
+        sequence[1]+=seqyA_mat[i][j];
+        mol_type+=mol_vec1[i]+mol_vec2[j];
+    }
+    secx[xlen]='\0';
+    secy[ylen]='\0';
+    return mol_type;
+}
+
+double MMalign_search(
+    const ComplexData& complex1, const ComplexData& complex2,
+    int len_aa, int len_na, int chain1_num, int chain2_num, DoubleMatrix& TMave_mat,
+    std::vector<std::vector<std::string> >&seqxA_mat, std::vector<std::vector<std::string> >&seqyA_mat,
+    std::vector<int>& assign1_list, std::vector<std::string>&sequence,
+    double d0_scale, bool fast_opt, const int i_opt, const int byresi_opt,
+    const std::map<int,int>& chain_pair_map)
+{
+    const DoubleCube& xa_vec = complex1.coords;
+    const DoubleCube& ya_vec = complex2.coords;
+    const CharMatrix& seqx_vec = complex1.seqs;
+    const CharMatrix& seqy_vec = complex2.seqs;
+    const CharMatrix& secx_vec = complex1.secs;
+    const CharMatrix& secy_vec = complex2.secs;
+    const std::vector<int>& mol_vec1 = complex1.mol_types;
+    const std::vector<int>& mol_vec2 = complex2.mol_types;
+    const std::vector<int>& xlen_vec = complex1.lengths;
+    const std::vector<int>& ylen_vec = complex2.lengths;
+    double total_score=0;
+    int i;
+    int j;
+    int xlen=0;
+    int ylen=0;
+    for (i=0;i<chain1_num;i++)
+    {
+        if (assign1_list[i]<0) continue;
+        xlen+=xlen_vec[i];
+        ylen+=ylen_vec[assign1_list[i]];
+    }
+    if (xlen<=3 || ylen<=3) return total_score;
+
+    std::string seqx;
+    std::string seqy;
+    std::string secx;
+    std::string secy;
+    CoordArray xa;
+    CoordArray ya;
+    secx.resize(xlen+1);
+    xa.resize(xlen);
+    secy.resize(ylen+1);
+    ya.resize(ylen);
+
+    int mol_type=copy_chain_pair_data(complex1, complex2,
+        xa, ya, seqx, seqy, secx, secy, chain1_num,
+        seqxA_mat, seqyA_mat, assign1_list, sequence);
+
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double& TM4 = chain_align_res.TM4;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    double& Liden = chain_align_res.Liden;
+
+    double Lnorm_ass=len_aa+len_na;
+
+    ChainPairAlignOptions align_opts;
+    align_opts.i_opt = i_opt;
+    align_opts.a_opt = false;
+    align_opts.u_opt = true;
+    align_opts.d_opt = false;
+    align_opts.fast_opt = fast_opt;
+    align_opts.se_opt = false;
+    align_opts.cp_opt = false;
+    align_opts.Lnorm = Lnorm_ass;
+    align_opts.d0_scale = d0_scale;
+    align_opts.TMcut = -1;
+    align_opts.parallel_threads = 1;
+    align_opts.ss_opt = 0;
+    align_opts.mol_type = mol_type;
+
+    TMalign_main(xa, ya, seqx, seqy, secx, secy,
+        chain_align_res,
+        xlen, ylen, sequence, align_opts);
+
+    chain_align_res.do_vec.clear();
+
+    // re-compute chain level alignment
+    for (i=0;i<chain1_num;i++)
+    {
+        xlen=xlen_vec[i];
+        if (xlen<3)
+        {
+            for (j=0;j<chain2_num;j++) TMave_mat[i][j]=-1;
+            continue;
+        }
+        secx.resize(xlen+1);
+        xa.resize(xlen);
+        copy_chain_data(xa_vec[i],seqx_vec[i],secx_vec[i],
+            xlen,xa,seqx,secx);
+
+        CoordArray xt;
+        xt.resize(xlen);
+        do_rotation(xa, xt, xlen, t0, u0);
+
+        for (j=0;j<chain2_num;j++)
+        {
+            if (mol_vec1[i]*mol_vec2[j]<0) //no protein-RNA alignment
+            {
+                TMave_mat[i][j]=-1;
+                continue;
+            }
+            // chainmap local constraint: skip chain pairs not allowed to pair
+            if (!is_chain_pair_allowed(chain_pair_map, i, j))
+            {
+                TMave_mat[i][j]=-1;
+                continue;
+            }
+
+            ylen=ylen_vec[j];
+            if (ylen<3)
+            {
+                TMave_mat[i][j]=-1;
+                continue;
+            }
+            secy.resize(ylen+1);
+            ya.resize(ylen);
+            copy_chain_data(ya_vec[j],seqy_vec[j],secy_vec[j],
+                ylen,ya,seqy,secy);
+
+            d0_out=5.0;
+            seqM.clear();
+            seqxA.clear();
+            seqyA.clear();
+            rmsd0 = 0.0;
+            Liden=0;
+            std::vector<int> invmap(ylen+1);
+
+            double Lnorm_ass=len_aa;
+            if (mol_vec1[i]+mol_vec2[j]>0) Lnorm_ass=len_na;
+            std::vector<std::string> sequence_tmp;
+            if (byresi_opt)
+            {
+                sequence_tmp.push_back(seqxA_mat[i][j]);
+                sequence_tmp.push_back(seqyA_mat[i][j]);
+            }
+
+            ChainPairAlignOptions se_opts = align_opts;
+            se_opts.i_opt = byresi_opt;
+            se_opts.u_opt = 2;
+            se_opts.Lnorm = Lnorm_ass;
+            se_opts.mol_type = mol_vec1[i]+mol_vec2[j];
+            chain_align_res.invmap.assign(ylen+1, 0);
+            se_main(xt, ya, seqx, seqy, chain_align_res,
+                xlen, ylen, sequence_tmp, se_opts, 1);
+
+            seqxA_mat[i][j]=seqxA;
+            seqyA_mat[i][j]=seqyA;
+
+            TMave_mat[i][j]=TM4*Lnorm_ass;
+            if (assign1_list[i]==j) total_score+=TMave_mat[i][j];
+
+            seqM.clear();
+            seqxA.clear();
+            seqyA.clear();
+            std::vector<std::string>().swap(sequence_tmp);
+
+            chain_align_res.do_vec.clear();
+        }
+    }
+    if (byresi_opt)
+    {
+        if (sequence.size()<2) sequence.push_back("");
+        else sequence[0]="";
+        if (sequence.size()<2) sequence.push_back("");
+        else sequence[1]="";
+        for (i=0;i<chain1_num;i++)
+        {
+            j=assign1_list[i];
+            if (j>=0)
+            {
+                sequence[0]+=seqxA_mat[i][j];
+                sequence[1]+=seqyA_mat[i][j];
+            }
+        }
+    }
+    return total_score;
+}
+
+void mmalign_assemble_complex(
+    const std::string& seqM,
+    const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
+    const std::vector<int>& xlen_vec, const std::vector<int>& ylen_vec,
+    const std::vector<std::string>& chainID_list1, const std::vector<std::string>& chainID_list2,
+    const std::vector<int>& assign1_list, const std::vector<int>& assign2_list,
+    int chain1_num, int chain2_num,
+    std::vector<std::vector<std::string> >& seqxA_mat,
+    std::vector<std::vector<std::string> >& seqyA_mat,
+    std::vector<std::vector<std::string> >& seqM_mat,
+    std::string& chainID1, std::string& chainID2,
+    std::vector<std::string>& sequence)
+{
+    int i;
+    int j;
+    sequence.clear();
+    sequence.push_back(""); // seqxA
+    sequence.push_back(""); // seqyA
+    sequence.push_back(""); // seqM
+    int aln_start=0;
+    int aln_end=0;
+    for (i=0;i<chain1_num;i++)
+    {
+        j=assign1_list[i];
+        if (j<0) continue;
+        chainID1+=chainID_list1[i];
+        chainID2+=chainID_list2[j];
+        sequence[0]+=seqxA_mat[i][j]+'*';
+        sequence[1]+=seqyA_mat[i][j]+'*';
+
+        aln_end+=seqxA_mat[i][j].size();
+        seqM_mat[i][j]=seqM.substr(aln_start,aln_end-aln_start);
+        sequence[2]+=seqM_mat[i][j]+'*';
+        aln_start=aln_end;
+    }
+
+    // prepare unaligned region
+    for (i=0;i<chain1_num;i++)
+    {
+        if (assign1_list[i]>=0) continue;
+        chainID1+=chainID_list1[i];
+        chainID2+=':';
+        std::string s(seqx_vec[i].begin(),seqx_vec[i].end());
+        sequence[0]+=s.substr(0,xlen_vec[i])+'*';
+        sequence[1]+=std::string(xlen_vec[i],'-')+'*';
+        s.clear();
+        sequence[2]+=std::string(xlen_vec[i],' ')+'*';
+    }
+    for (j=0;j<chain2_num;j++)
+    {
+        if (assign2_list[j]>=0) continue;
+        chainID1+=':';
+        chainID2+=chainID_list2[j];
+        std::string s(seqy_vec[j].begin(),seqy_vec[j].end());
+        sequence[0]+=std::string(ylen_vec[j],'-')+'*';
+        sequence[1]+=s.substr(0,ylen_vec[j])+'*';
+        s.clear();
+        sequence[2]+=std::string(ylen_vec[j],' ')+'*';
+    }
+
+}
+
+void mmalign_output_chain_aligns(
+    const ComplexData& complex1, const ComplexData& complex2,
+    AllChainPairsResult& pair_result, ChainAssignResult& assign_result,
+    const MMalignFinalParams& final_params, std::vector<std::string>& sequence,
+    const Vec3& t0, const RotMat& u0, std::ostream& os)
+{
+    int i;
+    int j;
+    int xlen=0;
+    int ylen=0;
+    std::string seqx;
+    std::string seqy;
+    std::string secx;
+    std::string secy;
+    CoordArray xa;
+    CoordArray ya;
+    ChainPairAlignResult chain_align_res = {};
+    chain_align_res.d0_out = 5.0;
+    double& TM1 = chain_align_res.TM1;
+    double& TM2 = chain_align_res.TM2;
+    double& TM3 = chain_align_res.TM3;
+    double& TM4 = chain_align_res.TM4;
+    double& TM5 = chain_align_res.TM5;
+    double& d0_0 = chain_align_res.d0_0;
+    double& TM_0 = chain_align_res.TM_0;
+    double& d0A = chain_align_res.d0A;
+    double& d0B = chain_align_res.d0B;
+    double& d0u = chain_align_res.d0u;
+    double& d0a = chain_align_res.d0a;
+    double& d0_out = chain_align_res.d0_out;
+    std::string& seqM = chain_align_res.seqM;
+    std::string& seqxA = chain_align_res.seqxA;
+    std::string& seqyA = chain_align_res.seqyA;
+    double& rmsd0 = chain_align_res.rmsd0;
+    int& L_ali = chain_align_res.L_ali;
+    double& Liden = chain_align_res.Liden;
+    double& TM_ali = chain_align_res.TM_ali;
+    double& rmsd_ali = chain_align_res.rmsd_ali;
+    int& n_ali8 = chain_align_res.n_ali8;
+
+    // re-compute chain level alignment
+    for (i=0;i<final_params.chain1_num;i++)
+    {
+        xlen=complex1.lengths[i];
+        secx.resize(xlen+1);
+        xa.resize(xlen);
+        copy_chain_data(complex1.coords[i],complex1.seqs[i],complex1.secs[i],
+            xlen,xa,seqx,secx);
+
+        CoordArray xt;
+        xt.resize(xlen);
+        do_rotation(xa, xt, xlen, t0, u0);
+
+        for (j=0;j<final_params.chain2_num;j++)
+        {
+            ylen=complex2.lengths[j];
+            if (ylen<3)
+            {
+                pair_result.tm_matrix[i][j]=-1;
+                continue;
+            }
+            secy.resize(ylen+1);
+            ya.resize(ylen);
+            copy_chain_data(complex2.coords[j],complex2.seqs[j],complex2.secs[j],
+                ylen,ya,seqy,secy);
+
+            d0_out=5.0;
+            rmsd0 = 0.0;
+            Liden=0;
+            std::vector<int> invmap(ylen+1);
+            seqM="";
+            seqxA="";
+            seqyA="";
+            double Lnorm_ass=final_params.len_aa;
+            if (complex1.mol_types[i]+complex2.mol_types[j]>0) Lnorm_ass=final_params.len_na;
+            sequence[0]=pair_result.aligned_seq1[i][j];
+            sequence[1]=pair_result.aligned_seq2[i][j];
+
+            ChainPairAlignOptions se_opts;
+            se_opts.i_opt = 1;
+            se_opts.a_opt = final_params.a_opt;
+            se_opts.u_opt = 2;
+            se_opts.d_opt = final_params.d_opt;
+            se_opts.fast_opt = false;
+            se_opts.se_opt = false;
+            se_opts.cp_opt = false;
+            se_opts.Lnorm = Lnorm_ass;
+            se_opts.d0_scale = final_params.d0_scale;
+            se_opts.TMcut = -1;
+            se_opts.parallel_threads = 1;
+            se_opts.ss_opt = 0;
+            se_opts.mol_type = complex1.mol_types[i]+complex2.mol_types[j];
+            chain_align_res.invmap.assign(ylen+1, 0);
+            se_main(xt, ya, seqx, seqy, chain_align_res,
+                xlen, ylen, sequence, se_opts, 1);
+
+            pair_result.tm_matrix[i][j]=TM4*Lnorm_ass;
+
+            if (j==assign_result.chain2_of_chain1[i])
+            {
+                ChainPairAlignResult print_align_res = { 0};
+                print_align_res.t0 = t0;
+                print_align_res.u0 = u0;
+                print_align_res.TM1 = TM1;
+                print_align_res.TM2 = TM2;
+                print_align_res.TM3 = TM3;
+                print_align_res.TM4 = TM4;
+                print_align_res.TM5 = TM5;
+                print_align_res.rmsd0 = rmsd0;
+                print_align_res.d0_out = d0_out;
+                print_align_res.Liden = Liden;
+                print_align_res.n_ali8 = n_ali8;
+                print_align_res.L_ali = L_ali;
+                print_align_res.TM_ali = TM_ali;
+                print_align_res.rmsd_ali = rmsd_ali;
+                print_align_res.TM_0 = TM_0;
+                print_align_res.d0_0 = d0_0;
+                print_align_res.d0A = d0A;
+                print_align_res.d0B = d0B;
+                print_align_res.d0a = d0a;
+                print_align_res.d0u = d0u;
+                print_align_res.seqM = pair_result.aligned_consensus[i][j];
+                print_align_res.seqxA = pair_result.aligned_seq1[i][j];
+                print_align_res.seqyA = pair_result.aligned_seq2[i][j];
+                OutputOptions out_opts;
+                fill_out_opts_mmalign_final(out_opts, final_params);
+                out_opts.Lnorm_ass = Lnorm_ass;
+                out_opts.fname_matrix = "";
+                out_opts.fname_super = "";
+                out_opts.o_opt = 0;
+                out_opts.mirror_opt = 0;
+                const std::string structure1_display = final_params.xname;
+                const std::string structure2_display = final_params.yname;
+                const ChainPairDesc pair_desc{structure1_display, structure2_display, complex1.chain_ids[i], complex2.chain_ids[j], xlen, ylen};
+                output_results(
+                    pair_desc, print_align_res, out_opts, complex1.resi, complex2.resi, os);
+            }
+
+            sequence[0].clear();
+            sequence[1].clear();
+        }
+    }
+}
+
