@@ -225,6 +225,7 @@ bool parse_numeric_option(int argc, char* argv[], int& i, USFlexalignOptions& us
     else if (std::string(argv[i]) == "-ter")     { usflexalign_opts.ter_opt    = safe_stoi(argv[i + 1]); i++; }
     else if (std::string(argv[i]) == "-split")   { usflexalign_opts.split_opt  = safe_stoi(argv[i + 1]); i++; }
     else if (std::string(argv[i]) == "-outfmt")  { usflexalign_opts.outfmt_opt = safe_stoi(argv[i + 1]); i++; }
+    // -TMcut is accepted for compatibility only and has no effect on flexalign.
     else if (std::string(argv[i]) == "-TMcut")   { usflexalign_opts.TMcut      = safe_stod(argv[i + 1]); i++; }
     else if (std::string(argv[i]) == "-mirror")  { usflexalign_opts.mirror_opt = safe_stoi(argv[i + 1]); i++; }
     else if (std::string(argv[i]) == "-het")     { usflexalign_opts.het_opt    = safe_stoi(argv[i + 1]); i++; }
@@ -341,6 +342,8 @@ void postprocess_arguments(USFlexalignOptions& usflexalign_opts)
     check_input_presence(usflexalign_opts, USFLEXALIGN_BANNER, print_help);
     check_dir_conflicts(usflexalign_opts);
     check_hinge(usflexalign_opts);
+    if (usflexalign_opts.mol_opt=="prot") usflexalign_opts.mol_opt="protein";
+    else if (usflexalign_opts.mol_opt=="DNA") usflexalign_opts.mol_opt="RNA";
     check_atom_and_mol_type(usflexalign_opts);
     check_numeric_conflicts(usflexalign_opts);
     apply_derived_options(usflexalign_opts);
