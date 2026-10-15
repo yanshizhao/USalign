@@ -7,14 +7,14 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const int mm_opt, const int split_opt, const int mirror_opt,
                             const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
                             const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
-                            const std::string chainID1, const std::string chainID2){
+                            const std::string chainID1, const std::string chainID2, const int o_opt){
     FlexalignPymolState pymol_state;
     const int num_hinges = static_cast<int>(tu_vec.size());
     build_pymol_hinge_map(pymol_state, seqM, seqxA, resi_vec1);
     read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
-    build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt);
-    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt, num_hinges);
-    write_pymol_to_file(pymol_state, fname_super, yname, mm_opt, ter_opt);
+    build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt, o_opt);
+    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt, num_hinges, o_opt);
+    write_pymol_to_file(pymol_state, fname_super, yname, mm_opt, ter_opt, o_opt);
 }
 void run_flexalign_main(
     CoordArray& xa, CoordArray& ya, const std::string &seqx, const std::string &seqy,
@@ -1048,7 +1048,7 @@ void read_pymol_structure(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt, const int num_hinges)
+    const int mm_opt, const int num_hinges, const int o_opt)
 {
     int i1 = -1;
     int i2 = -1;
@@ -1074,39 +1074,50 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
             // Safety check to prevent index out of bounds
             if (hinge_idx >= num_hinges)
                 hinge_idx = num_hinges - 1;
-            if (pymol_state.resi1_sele[hinge_idx].size() == 0)
-                pymol_state.resi1_sele[hinge_idx] = "i. " + curr_resi1;
-            else
+            if (o_opt == 3)
             {
-                pymol_state.resi1_sele[hinge_idx] += " or i. " + curr_resi1;
-                pymol_state.resi1_bond[hinge_idx] += "bond structure1 and i. " + prev_resi1[hinge_idx] +
-                              ", i. " + curr_resi1 + "\n";
+                append_chimerax_resi_sele(pymol_state.resi1_sele[hinge_idx], curr_resi1);
+                append_chimerax_resi_sele(pymol_state.resi2_sele[hinge_idx], curr_resi2);
             }
-            if (pymol_state.resi2_sele[hinge_idx].size() == 0)
-                pymol_state.resi2_sele[hinge_idx] = "i. " + curr_resi2;
             else
             {
-                pymol_state.resi2_sele[hinge_idx] += " or i. " + curr_resi2;
-                pymol_state.resi2_bond[hinge_idx] += "bond structure2 and i. " + prev_resi2[hinge_idx] +
-                              ", i. " + curr_resi2 + "\n";
+                if (pymol_state.resi1_sele[hinge_idx].size() == 0)
+                    pymol_state.resi1_sele[hinge_idx] = "i. " + curr_resi1;
+                else
+                {
+                    pymol_state.resi1_sele[hinge_idx] += " or i. " + curr_resi1;
+                    pymol_state.resi1_bond[hinge_idx] += "bond structure1 and i. " + prev_resi1[hinge_idx] +
+                                  ", i. " + curr_resi1 + "\n";
+                }
+                if (pymol_state.resi2_sele[hinge_idx].size() == 0)
+                    pymol_state.resi2_sele[hinge_idx] = "i. " + curr_resi2;
+                else
+                {
+                    pymol_state.resi2_sele[hinge_idx] += " or i. " + curr_resi2;
+                    pymol_state.resi2_bond[hinge_idx] += "bond structure2 and i. " + prev_resi2[hinge_idx] +
+                                  ", i. " + curr_resi2 + "\n";
+                }
             }
             prev_resi1[hinge_idx] = curr_resi1;
             prev_resi2[hinge_idx] = curr_resi2;
         }
         // Wrap final selections in parentheses
-        for (int h = 0; h < num_hinges; h++)
+        if (o_opt != 3)
         {
-            if (pymol_state.resi1_sele[h].size())
-                pymol_state.resi1_sele[h] = " and ( " + pymol_state.resi1_sele[h] + ")";
-            if (pymol_state.resi2_sele[h].size())
-                pymol_state.resi2_sele[h] = " and ( " + pymol_state.resi2_sele[h] + ")";
+            for (int h = 0; h < num_hinges; h++)
+            {
+                if (pymol_state.resi1_sele[h].size())
+                    pymol_state.resi1_sele[h] = " and ( " + pymol_state.resi1_sele[h] + ")";
+                if (pymol_state.resi2_sele[h].size())
+                    pymol_state.resi2_sele[h] = " and ( " + pymol_state.resi2_sele[h] + ")";
+            }
         }
     }
 }
 
 void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     const std::string& fname_super,
-    const std::string& yname, const int mm_opt, const int ter_opt)
+    const std::string& yname, const int mm_opt, const int ter_opt, const int o_opt)
 {
     std::string fname_super_full = fname_super;
     if (pymol_state.infmt == 0)
@@ -1149,6 +1160,92 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     {
         if (mm_opt && p <= 1)
             continue;
+        if (o_opt == 3)
+        {
+            buf_pymol
+                << "#!/usr/bin/env chimerax --script\n"
+                << "open \"" << struct1_basename << "\" name structure1\n"
+                << "open \"" << struct2_basename << "\" name structure2\n";
+            if (p == 0)
+            {
+                buf_pymol
+                    << "hide all cartoon\n"
+                    << "hide all atoms\n"
+                    << "hide all bonds\n";
+                for (int h = 0; h < num_hinges; h++)
+                {
+                    if (resi1_sele[h].size())
+                        buf_pymol << "show #1" << chain1_sele << resi1_sele[h] << " cartoon\n";
+                    if (resi2_sele[h].size())
+                        buf_pymol << "show #2" << chain2_sele << resi2_sele[h] << " cartoon\n";
+                }
+            }
+            else if (p == 1)
+            {
+                buf_pymol
+                    << "hide all cartoon\n"
+                    << "hide all atoms\n"
+                    << "hide all bonds\n";
+                for (int h = 0; h < num_hinges; h++)
+                {
+                    if (resi1_sele[h].size())
+                        buf_pymol
+                            << "show #1" << chain1_sele << resi1_sele[h] << " cartoon\n"
+                            << "show #1" << chain1_sele << resi1_sele[h] << " & nucleic cartoon,bonds\n";
+                    if (resi2_sele[h].size())
+                        buf_pymol
+                            << "show #2" << chain2_sele << resi2_sele[h] << " cartoon\n"
+                            << "show #2" << chain2_sele << resi2_sele[h] << " & nucleic cartoon,bonds\n";
+                }
+            }
+            else if (p == 2)
+            {
+                buf_pymol
+                    << "hide all atoms\n"
+                    << "hide all bonds\n"
+                    << "cartoon style protein modeh default arrows f xsect oval width 1 thick 1\n"
+                    << "cartoon style nucleic xsect oval width 1 thick 1\n"
+                    << "hide all cartoon\n"
+                    << "show #1" << chain1_sele << " cartoon\n"
+                    << "show #2" << chain2_sele << " cartoon\n";
+            }
+            else if (p == 3)
+            {
+                buf_pymol
+                    << "hide all bonds\n"
+                    << "hide all atoms\n"
+                    << "hide all cartoon\n"
+                    << "show #1" << chain1_sele << " cartoon\n"
+                    << "show #1" << chain1_sele << " & nucleic cartoon,bonds\n"
+                    << "show #2" << chain2_sele << " cartoon\n"
+                    << "show #2" << chain2_sele << " & nucleic cartoon,bonds\n";
+            }
+            else if (p == 4)
+            {
+                buf_pymol
+                    << "hide all bonds\n"
+                    << "hide all atoms\n"
+                    << "hide all cartoon\n"
+                    << "show #1" << chain1_sele << " cartoon\n"
+                    << "show #2" << chain2_sele << " cartoon\n"
+                    << "show solvent atoms,bonds\n";
+            }
+            buf_pymol
+                << "color #1 grey\n"
+                << "color #2 white\n";
+            for (int h = 0; h < num_hinges; h++)
+            {
+                if (resi1_sele[h].size())
+                    buf_pymol << "color #1" << chain1_sele << resi1_sele[h] << " "
+                        << color1_list[h % color_palette_size] << "\n";
+            }
+            buf_pymol << "set bgColor white\n" << std::endl;
+            fp.open((pml_list[p] + ".cxc").c_str());
+            fp << buf_pymol.str();
+            fp.close();
+            buf_pymol.str(std::string());
+            continue;
+        }
         buf_pymol
             << "#!/usr/bin/env pymol\n"
             << "cmd.load(\"" << struct1_basename << "\", \"structure1\")\n"
@@ -1327,9 +1424,9 @@ void output_flexalign_results(
     if (opts.m_opt && !opts.fname_matrix.empty()) output_flexalign_matrix(
             opts.fname_matrix, flexalign_res.tu_vec, os);
 
-    if (opts.o_opt==1) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
+    if (opts.o_opt==1 || opts.o_opt==3) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
             opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
-            resi_vec1, resi_vec2, chainID1, chainID2);
+            resi_vec1, resi_vec2, chainID1, chainID2, opts.o_opt);
     else if (opts.o_opt==2)
         output_flexalign_rasmol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
             opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,

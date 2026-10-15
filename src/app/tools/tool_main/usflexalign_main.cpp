@@ -54,6 +54,14 @@ void print_extra_help()
 "          $ rasmol -script sup_all_atm       # full-atom whole chain\n"
 "          $ rasmol -script sup_all_atm_lig   # full-atom with all molecules\n"
 "\n"
+"-chimerax Output superposed structure1 to sup.* for ChimeraX viewing.\n"
+"          $ USFlexalign structure1.pdb structure2.pdb -chimerax sup\n"
+"          $ chimerax --script sup.cxc             # C-alpha trace aligned region\n"
+"          $ chimerax --script sup_all.cxc         # C-alpha trace whole chain\n"
+"          $ chimerax --script sup_atm.cxc         # full-atom aligned region\n"
+"          $ chimerax --script sup_all_atm.cxc     # full-atom whole chain\n"
+"          $ chimerax --script sup_all_atm_lig.cxc # full-atom with all molecules\n"
+"\n"
 "      -a  TM-score normalized by the average length of two structures\n"
 "          T or F, (default F). -a does not change the final alignment.\n"
 "\n"
@@ -154,8 +162,8 @@ void print_help(bool h_opt)
 
 inline void set_output_format(int& o_opt, std::string& fname_super, const int incoming, const std::string& value)
 {
-    static const char* format_name[] = {"", "-pymol", "-rasmol"};
-    for (int other = 1; other <= 2; other++)
+    static const char* format_name[] = {"", "-pymol", "-rasmol", "-chimerax"};
+    for (int other = 1; other <= 3; other++)
     {
         if (other == incoming) continue;
         if (o_opt == other)
@@ -179,6 +187,10 @@ bool parse_file_option(int argc, char* argv[], int& i, USFlexalignOptions& usfle
     else if (std::string(argv[i]) == "-rasmol")
     {
         set_output_format(usflexalign_opts.o_opt, usflexalign_opts.fname_super, 2, argv[i + 1]); i++;
+    }
+    else if (std::string(argv[i]) == "-chimerax")
+    {
+        set_output_format(usflexalign_opts.o_opt, usflexalign_opts.fname_super, 3, argv[i + 1]); i++;
     }
     else if (std::string(argv[i]) == "-m")
     {
@@ -288,14 +300,14 @@ void check_dir_conflicts(USFlexalignOptions& usflexalign_opts)
     if ((usflexalign_opts.dir_opt.size() || usflexalign_opts.dir1_opt.size() || usflexalign_opts.dir2_opt.size()))
     {
         if (usflexalign_opts.o_opt)
-            PrintErrorAndQuit("-pymol or -rasmol cannot be set with -dir, -dir1 or -dir2");
+            PrintErrorAndQuit("-pymol, -rasmol or -chimerax cannot be set with -dir, -dir1 or -dir2");
         if (usflexalign_opts.m_opt && usflexalign_opts.fname_matrix != "-")
             PrintErrorAndQuit("-m can only be - or unset when using -dir, -dir1 or -dir2");
         else if (usflexalign_opts.dir_opt.size() && (usflexalign_opts.dir1_opt.size() || usflexalign_opts.dir2_opt.size()))
             PrintErrorAndQuit("-dir cannot be set with -dir1 or -dir2");
     }
     if (usflexalign_opts.o_opt && (usflexalign_opts.infmt1_opt != -1 && usflexalign_opts.infmt1_opt != 0 && usflexalign_opts.infmt1_opt != 3))
-        PrintErrorAndQuit("-pymol can only be used with -infmt1 -1, 0 or 3");
+        PrintErrorAndQuit("-pymol, -rasmol or -chimerax can only be used with -infmt1 -1, 0 or 3");
 }
 
 void check_hinge(USFlexalignOptions& usflexalign_opts)

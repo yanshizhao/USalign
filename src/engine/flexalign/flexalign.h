@@ -363,32 +363,47 @@ void read_pymol_structure(FlexalignPymolState& pymol_state,
     const std::string& xname, const std::vector<std::string>& resi_vec1,
     const DoubleMatrix& tu_vec, const int mirror_opt, const int ter_opt);
 
+inline void fill_pymol_chain_sele(std::string& chain_sele, const std::string& chain_id,
+    const int o_opt)
+{
+    if (chain_id.size() == 0 || chain_id == "_")
+        return;
+    if (o_opt == 3)
+        chain_sele = "/" + chain_id;
+    else
+        chain_sele = " and c. " + chain_id;
+}
+
+inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string& resi)
+{
+    if (resi_sele.size() == 0)
+        resi_sele = ":" + Trim(resi);
+    else
+        resi_sele += "," + Trim(resi);
+}
+
 inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
     const std::string& chainID1, const std::string& chainID2,
-    const int mm_opt, const int split_opt, const int ter_opt)
+    const int mm_opt, const int split_opt, const int ter_opt, const int o_opt)
 {
     int i;
     if (!mm_opt)
     {
         if (split_opt == 2 && ter_opt >= 1) // align one chain from model 1
         {
-            if (chainID1.substr(1) != "_")
-                pymol_state.chain1_sele = " and c. " + chainID1.substr(1);
-            if (chainID2.substr(1) != "_")
-                pymol_state.chain2_sele = " and c. " + chainID2.substr(1);
+            fill_pymol_chain_sele(pymol_state.chain1_sele, chainID1.substr(1), o_opt);
+            fill_pymol_chain_sele(pymol_state.chain2_sele, chainID2.substr(1), o_opt);
         }
         else if (split_opt == 2 && ter_opt == 0) // align one chain from each model
         {
             for (i = 1; i < chainID1.size(); i++)
                 if (chainID1[i] == ',')
                     break;
-            if (chainID1.substr(i + 1) != "_")
-                pymol_state.chain1_sele = " and c. " + chainID1.substr(i + 1);
+            fill_pymol_chain_sele(pymol_state.chain1_sele, chainID1.substr(i + 1), o_opt);
             for (i = 1; i < chainID2.size(); i++)
                 if (chainID2[i] == ',')
                     break;
-            if (chainID2.substr(i + 1) != "_")
-                pymol_state.chain2_sele = " and c. " + chainID2.substr(i + 1);
+            fill_pymol_chain_sele(pymol_state.chain2_sele, chainID2.substr(i + 1), o_opt);
         }
     }
 }
@@ -396,11 +411,11 @@ inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt, const int num_hinges);
+    const int mm_opt, const int num_hinges, const int o_opt);
 
 void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     const std::string& fname_super,
-    const std::string& yname, const int mm_opt, const int ter_opt);
+    const std::string& yname, const int mm_opt, const int ter_opt, const int o_opt);
 
 void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const std::string fname_super, const std::vector<std::vector<double> > &tu_vec,
@@ -408,7 +423,7 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const int mm_opt, const int split_opt, const int mirror_opt,
                             const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
                             const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
-                            const std::string chainID1, const std::string chainID2);
+                            const std::string chainID1, const std::string chainID2, const int o_opt);
 
 struct FlexAlignResult : ChainPairAlignResult
 {
