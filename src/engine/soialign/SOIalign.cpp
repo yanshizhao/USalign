@@ -535,3 +535,452 @@ void get_SOI_initial_assign(CoordArray& xk, CoordArray& yk, const int closeK_opt
     soi_egs(score, xlen, ylen, invmap, secx_bond, secy_bond, mm_opt, parallel_threads);
 
 }
+
+void soi_align_initial_seq(CoordArray& xa_c, CoordArray& ya_c,
+    const std::string &seqx, const std::string &seqy,
+    const std::string &secx, const std::string &secy,
+    int xlen, int ylen, const std::vector<std::string> sequence,
+    const ChainPairAlignOptions& align_opts, SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads,
+    std::ostream& os)
+{
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    std::string &seqxA = chain_align_res.seqxA;
+    std::string &seqyA = chain_align_res.seqyA;
+    double &Lnorm = soi_search_state.Lnorm;
+    double &score_d8 = soi_search_state.score_d8;
+    double &d0 = soi_search_state.d0;
+    double &local_d0_search = soi_search_state.local_d0_search;
+    DoubleMatrix &score = soi_search_state.score;
+    DoubleMatrix &scoret = soi_search_state.scoret;
+    CharMatrix &path = soi_search_state.path;
+    DoubleMatrix &val = soi_search_state.val;
+    CoordArray &xtm = soi_search_state.xtm;
+    CoordArray &ytm = soi_search_state.ytm;
+    CoordArray &xt = soi_search_state.xt;
+    CoordArray &yt = soi_search_state.yt;
+    CoordArray &r1 = soi_search_state.r1;
+    CoordArray &r2 = soi_search_state.r2;
+    std::vector<int> &fwdmap0 = soi_search_state.fwdmap0;
+    std::vector<int> &invmap0 = soi_search_state.invmap0;
+    double &TMmax = soi_search_state.TMmax;
+    double &TM = soi_search_state.TM;
+    int &iteration_max = soi_search_state.iteration_max;
+    int i;
+    int j;
+    CPalign_main(xa_c, ya_c, seqx, seqy, secx, secy,
+        chain_align_res,
+        xlen, ylen, sequence, align_opts, os);
+    chain_align_res.do_vec.clear();
+    if (mm_opt==6)
+    {
+        i=0;
+        j=0;
+        for (int r=0;r<seqxA.size();r++)
+        {
+            if (seqxA[r]=='*') // circular permutation point
+            {
+                for (int jj=0;jj<j;jj++) if (invmap0[jj]>=0)
+                    invmap0[jj]+=xlen - i;
+                i=0;
+                continue;
+            }
+            if (seqyA[r]!='-')
+            {
+                if (seqxA[r]!='-') invmap0[j]=i;
+                j++;
+            }
+            if (seqxA[r]!='-') i++;
+        }
+        for (j=0;j<ylen;j++)
+        {
+            i=invmap0[j];
+            if (i>=0) fwdmap0[i]=j;
+        }
+    }
+    do_rotation(xa_c, xt, xlen, t0, u0);
+    SOI_super2score(xt, ya_c, xlen, ylen, score, d0, score_d8);
+    for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
+    TMmax=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
+        xlen, ylen, t0, u0, invmap0, iteration_max,
+        local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, parallel_threads, true);
+    TM   =SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c,
+        ylen, xlen, t0, u0, fwdmap0, iteration_max,
+        local_d0_search, Lnorm, d0, score_d8, secy_bond, secx_bond, mm_opt, parallel_threads, true);
+    if (TM>TMmax)
+    {
+        TMmax = TM;
+        for (j=0; j<ylen; j++) invmap0[j]=-1;
+        for (i=0; i<xlen; i++) 
+        {
+            j=fwdmap0[i];
+            if (j>=0) invmap0[j]=i;
+        }
+    }
+}
+void soi_align_initial_closek(CoordArray& xa_c, CoordArray& ya_c,
+    CoordArray& xk, CoordArray& yk, const int closeK_opt,
+    int xlen, int ylen, SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res,
+    IntPairArray& secx_bond, IntPairArray& secy_bond, const int mm_opt,
+    const int parallel_threads)
+{
+    std::vector<int> &invmap = chain_align_res.invmap;
+    Vec3 &t = soi_search_state.t;
+    RotMat &u = soi_search_state.u;
+    double &Lnorm = soi_search_state.Lnorm;
+    double &score_d8 = soi_search_state.score_d8;
+    double &d0 = soi_search_state.d0;
+    double &local_d0_search = soi_search_state.local_d0_search;
+    DoubleMatrix &score = soi_search_state.score;
+    DoubleMatrix &scoret = soi_search_state.scoret;
+    CharMatrix &path = soi_search_state.path;
+    DoubleMatrix &val = soi_search_state.val;
+    CoordArray &xtm = soi_search_state.xtm;
+    CoordArray &ytm = soi_search_state.ytm;
+    CoordArray &xt = soi_search_state.xt;
+    CoordArray &yt = soi_search_state.yt;
+    CoordArray &r1 = soi_search_state.r1;
+    CoordArray &r2 = soi_search_state.r2;
+    std::vector<int> &fwdmap0 = soi_search_state.fwdmap0;
+    std::vector<int> &invmap0 = soi_search_state.invmap0;
+    double &TMmax = soi_search_state.TMmax;
+    double &TM = soi_search_state.TM;
+    int &iteration_max = soi_search_state.iteration_max;
+    int i;
+    int j;
+    /***************************************************************/
+    // initial alignment with sequence order independent alignment
+    /***************************************************************/
+    if (closeK_opt>=3)
+    {
+        get_SOI_initial_assign(xk, yk, closeK_opt, score, path, val,
+            xlen, ylen, t, u, invmap, d0, score_d8,
+            secx_bond, secy_bond, mm_opt, parallel_threads);
+        for (i=0;i<xlen;i++) for (j=0;j<ylen;j++) scoret[j+1][i+1]=score[i+1][j+1];
+
+        SOI_assign2super(r1, r2, xtm, ytm, xt, xa_c, ya_c,
+            xlen, ylen, t, u, invmap, local_d0_search, Lnorm, d0, score_d8);
+        TM=SOI_iter(r1, r2, xtm, ytm, xt, score, path, val, xa_c, ya_c,
+            xlen, ylen, t, u, invmap, iteration_max,
+            local_d0_search, Lnorm, d0, score_d8, secx_bond, secy_bond, mm_opt, parallel_threads);
+        if (TM>TMmax)
+        {
+            TMmax = TM;
+            for (j = 0; j<ylen; j++) invmap0[j] = invmap[j];
+        }
+
+        for (i=0;i<xlen;i++) fwdmap0[i]=-1;
+        if (mm_opt==6) NWDP_TM(scoret, path, val, ylen, xlen, -0.6, fwdmap0);
+        soi_egs(scoret, ylen, xlen, fwdmap0, secy_bond, secx_bond, mm_opt, parallel_threads);
+        SOI_assign2super(r2, r1, ytm, xtm, yt, ya_c, xa_c,
+            ylen, xlen, t, u, fwdmap0, local_d0_search, Lnorm, d0, score_d8);
+        TM=SOI_iter(r2, r1, ytm, xtm, yt, scoret, path, val, ya_c, xa_c, ylen, xlen, t, u,
+            fwdmap0, iteration_max, local_d0_search, Lnorm, d0, score_d8,secy_bond, secx_bond, mm_opt, parallel_threads);
+        if (TM>TMmax)
+        {
+            TMmax = TM;
+            for (j=0; j<ylen; j++) invmap0[j]=-1;
+            for (i=0; i<xlen; i++) 
+            {
+                j=fwdmap0[i];
+                if (j>=0) invmap0[j]=i;
+            }
+        }
+    }
+}
+void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
+    int xlen, int ylen, const ChainPairAlignOptions& align_opts,
+    SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res)
+{
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double &TM2 = chain_align_res.TM2;
+    double &d0B = chain_align_res.d0B;
+    double &rmsd0 = chain_align_res.rmsd0;
+    int &n_ali = chain_align_res.n_ali;
+    int &n_ali8 = chain_align_res.n_ali8;
+    const int mol_type = align_opts.mol_type;
+    const bool fast_opt = align_opts.fast_opt;
+    double &D0_MIN = soi_search_state.D0_MIN;
+    double &Lnorm = soi_search_state.Lnorm;
+    double &score_d8 = soi_search_state.score_d8;
+    double &d0 = soi_search_state.d0;
+    double &d0_search = soi_search_state.d0_search;
+    double &local_d0_search = soi_search_state.local_d0_search;
+    int &simplify_step = soi_search_state.simplify_step;
+    int &score_sum_method = soi_search_state.score_sum_method;
+    CoordArray &xtm = soi_search_state.xtm;
+    CoordArray &ytm = soi_search_state.ytm;
+    CoordArray &xt = soi_search_state.xt;
+    CoordArray &r1 = soi_search_state.r1;
+    CoordArray &r2 = soi_search_state.r2;
+    std::vector<int> &fwdmap0 = soi_search_state.fwdmap0;
+    std::vector<int> &invmap0 = soi_search_state.invmap0;
+    Vec3 &t = soi_search_state.t;
+    RotMat &u = soi_search_state.u;
+    double &TM = soi_search_state.TM;
+    int i;
+    int j;
+
+    //********************************************************************//
+    //    Detailed TMscore search engine --> prepare for final TMscore    //
+    //********************************************************************//
+    //run detailed TMscore search engine for the best alignment, and
+    //extract the best rotation matrix (t, u) for the best alignment
+    simplify_step=1;
+    if (fast_opt) simplify_step=40;
+    score_sum_method=8;
+    TM = detailed_search_standard(r1, r2, xtm, ytm, xt, xa_c, ya_c, ylen,
+        invmap0, t, u, simplify_step, score_sum_method, local_d0_search,
+        false, Lnorm, score_d8, d0);
+    
+    double rmsd;
+    simplify_step=1;
+    score_sum_method=0;
+
+    //select pairs with dis<d8 for final TMscore computation and output alignment
+    int k=0;
+    double d;
+    std::vector<int> m1(xlen); //alignd index in x
+    std::vector<int> m2(ylen); //alignd index in y
+    copy_t_u(t, u, t0, u0);
+    
+    //****************************************//
+    //              Final TMscore 1           //
+    //****************************************//
+
+    do_rotation(xa_c, xt, xlen, t, u);
+    k=0;
+    n_ali=0;
+    for (i=0; i<xlen; i++)
+    {
+        j=fwdmap0[i];
+        if(j>=0)//aligned
+        {
+            n_ali++;
+            d=sqrt(dist(xt[i], ya_c[j]));
+            if (d <= score_d8)
+            {
+                m1[k]=i;
+                m2[k]=j;
+
+                xtm[k][0]=xa_c[i][0];
+                xtm[k][1]=xa_c[i][1];
+                xtm[k][2]=xa_c[i][2];
+
+                ytm[k][0]=ya_c[j][0];
+                ytm[k][1]=ya_c[j][1];
+                ytm[k][2]=ya_c[j][2];
+
+                r1[k][0] = xt[i][0];
+                r1[k][1] = xt[i][1];
+                r1[k][2] = xt[i][2];
+                r2[k][0] = ya_c[j][0];
+                r2[k][1] = ya_c[j][1];
+                r2[k][2] = ya_c[j][2];
+
+                k++;
+            }
+            else fwdmap0[i]=-1;
+        }
+    }
+    n_ali8=k;
+
+    Kabsch(r1, r2, n_ali8, 0, rmsd0, t, u);// rmsd0 is used for final output, only recalculate rmsd0, not t & u
+    rmsd0 = sqrt(rmsd0 / n_ali8);
+
+    //normalized by length of structure A
+    parameter_set4final(xlen+0.0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+    d0B=d0;
+    local_d0_search = d0_search;
+    TM2 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t, u, simplify_step,
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
+    soi_align_final_tmscore_inv(xa_c, ya_c, xlen, ylen, align_opts, soi_search_state, chain_align_res);
+}
+void soi_align_final_tmscore_inv(CoordArray& xa_c, CoordArray& ya_c,
+    int xlen, int ylen, const ChainPairAlignOptions& align_opts,
+    SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res)
+{
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    double &TM1 = chain_align_res.TM1;
+    double &TM3 = chain_align_res.TM3;
+    double &TM4 = chain_align_res.TM4;
+    double &TM5 = chain_align_res.TM5;
+    double &d0_0 = chain_align_res.d0_0;
+    double &TM_0 = chain_align_res.TM_0;
+    double &d0A = chain_align_res.d0A;
+    double &d0u = chain_align_res.d0u;
+    double &d0a = chain_align_res.d0a;
+    double &d0_out = chain_align_res.d0_out;
+    int &n_ali8 = chain_align_res.n_ali8;
+    std::vector<int> &invmap = chain_align_res.invmap;
+    const double Lnorm_ass = align_opts.Lnorm;
+    const double d0_scale = align_opts.d0_scale;
+    const int a_opt = align_opts.a_opt;
+    const bool u_opt = align_opts.u_opt;
+    const bool d_opt = align_opts.d_opt;
+    const int mol_type = align_opts.mol_type;
+    double &D0_MIN = soi_search_state.D0_MIN;
+    double &Lnorm = soi_search_state.Lnorm;
+    double &score_d8 = soi_search_state.score_d8;
+    double &d0 = soi_search_state.d0;
+    double &d0_search = soi_search_state.d0_search;
+    double &local_d0_search = soi_search_state.local_d0_search;
+    int &simplify_step = soi_search_state.simplify_step;
+    int &score_sum_method = soi_search_state.score_sum_method;
+    CoordArray &xtm = soi_search_state.xtm;
+    CoordArray &ytm = soi_search_state.ytm;
+    CoordArray &xt = soi_search_state.xt;
+    CoordArray &r1 = soi_search_state.r1;
+    CoordArray &r2 = soi_search_state.r2;
+    std::vector<int> &invmap0 = soi_search_state.invmap0;
+    double rmsd;
+    double Lnorm_0=ylen;
+    int i;
+    int j;
+    int k;
+    double d;
+    std::vector<int> m1(xlen);
+    std::vector<int> m2(ylen);
+    //****************************************//
+    //              Final TMscore 2           //
+    //****************************************//
+
+    do_rotation(xa_c, xt, xlen, t0, u0);
+    k=0;
+    for (j=0; j<ylen; j++)
+    {
+        i=invmap0[j];
+        if(i>=0)//aligned
+        {
+            d=sqrt(dist(xt[i], ya_c[j]));
+            if (d <= score_d8)
+            {
+                m1[k]=i;
+                m2[k]=j;
+
+                xtm[k][0]=xa_c[i][0];
+                xtm[k][1]=xa_c[i][1];
+                xtm[k][2]=xa_c[i][2];
+
+                ytm[k][0]=ya_c[j][0];
+                ytm[k][1]=ya_c[j][1];
+                ytm[k][2]=ya_c[j][2];
+
+                r1[k][0] = xt[i][0];
+                r1[k][1] = xt[i][1];
+                r1[k][2] = xt[i][2];
+                r2[k][0] = ya_c[j][0];
+                r2[k][1] = ya_c[j][1];
+                r2[k][2] = ya_c[j][2];
+
+                k++;
+            }
+            else invmap[j]=invmap0[j]=-1;
+        }
+    }
+
+    //normalized by length of structure B
+    parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+    d0A=d0;
+    d0_0=d0A;
+    local_d0_search = d0_search;
+    TM1 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0, simplify_step,
+        score_sum_method, rmsd, local_d0_search, Lnorm, score_d8, d0);
+    TM_0 = TM1;
+
+    if (a_opt>0)
+    {
+        //normalized by average length of structures A, B
+        Lnorm_0=(xlen+ylen)*0.5;
+        parameter_set4final(Lnorm_0, D0_MIN, Lnorm, d0, d0_search, mol_type);
+        d0a=d0;
+        d0_0=d0a;
+        local_d0_search = d0_search;
+
+        TM3 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
+            score_d8, d0);
+        TM_0=TM3;
+    }
+    if (u_opt)
+    {
+        //normalized by user assigned length
+        parameter_set4final(Lnorm_ass, D0_MIN, Lnorm,
+            d0, d0_search, mol_type);
+        d0u=d0;
+        d0_0=d0u;
+        Lnorm_0=Lnorm_ass;
+        local_d0_search = d0_search;
+        TM4 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
+            score_d8, d0);
+        TM_0=TM4;
+    }
+    if (d_opt)
+    {
+        //scaled by user assigned d0
+        parameter_set4scale(ylen, d0_scale, Lnorm, d0, d0_search);
+        d0_out=d0_scale;
+        d0_0=d0_scale;
+        local_d0_search = d0_search;
+        TM5 = TMscore8_search(r1, r2, xtm, ytm, xt, n_ali8, t0, u0,
+            simplify_step, score_sum_method, rmsd, local_d0_search, Lnorm,
+            score_d8, d0);
+        TM_0=TM5;
+    }
+}
+void soi_derive_alignment_strings(CoordArray& xa_c, CoordArray& ya_c,
+    const std::string &seqx, const std::string &seqy, int xlen, int ylen,
+    SoiAlignSearchState& soi_search_state, ChainPairAlignResult& chain_align_res, std::vector<double>& dist_list)
+{
+    std::string &seqM = chain_align_res.seqM;
+    std::string &seqxA = chain_align_res.seqxA;
+    std::string &seqyA = chain_align_res.seqyA;
+    double &Liden = chain_align_res.Liden;
+    const double d0_out = chain_align_res.d0_out;
+    Vec3& t0 = chain_align_res.t0;
+    RotMat& u0 = chain_align_res.u0;
+    CoordArray &xt = soi_search_state.xt;
+    std::vector<int> &fwdmap0 = soi_search_state.fwdmap0;
+    std::vector<int> &invmap0 = soi_search_state.invmap0;
+    int i;
+    int j;
+    int k;
+    double d;
+    // derive alignment from superposition
+    int ali_len=xlen+ylen;
+    for (j=0;j<ylen;j++) ali_len-=(invmap0[j]>=0);
+    seqxA.assign(ali_len,'-');
+    seqM.assign( ali_len,' ');
+    seqyA.assign(ali_len,'-');
+    
+    do_rotation(xa_c, xt, xlen, t0, u0);
+
+    Liden=0;
+    for (j=0;j<ylen;j++)
+    {
+        seqyA[j]=seqy[j];
+        i=invmap0[j];
+        dist_list[j]=-1;
+        if (i<0) continue;
+        d=sqrt(dist(xt[i], ya_c[j]));
+        if (d<d0_out) seqM[j]=':';
+        else seqM[j]='.';
+        dist_list[j]=d;
+        seqxA[j]=seqx[i];
+        Liden+=(seqx[i]==seqy[j]);
+    }
+    k=0;
+    for (i=0;i<xlen;i++)
+    {
+        j=fwdmap0[i];
+        if (j>=0) continue;
+        seqxA[ylen+k]=seqx[i];
+        k++;
+    }
+
+}
