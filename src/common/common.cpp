@@ -564,7 +564,6 @@ size_t get_FASTA_lines(const std::string filename,
 {
     std::string line;
     std::vector<std::string> tmp_str_vec;
-    size_t l;
 
     int compress_type=0; // uncompressed file
     std::ifstream fin;
@@ -619,7 +618,7 @@ size_t get_FASTA_lines(const std::string filename,
         else
         {
             FASTA_lines.back()[0]+=line;
-            for (l=0;l<line.size();l++) mol_vec.back()+=
+            for (size_t l=0;l<line.size();l++) mol_vec.back()+=
                 ('a'<=line[l] && line[l]<='z')-('A'<=line[l] && line[l]<='Z');
         }
     }
