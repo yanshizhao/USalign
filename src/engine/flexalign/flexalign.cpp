@@ -322,3 +322,584 @@ int flexalign_main(CoordArray& xa, CoordArray& ya,
     return flexalign_res.tu_vec.size();
 }
 
+void output_flexalign_matrix(const std::string& fname_matrix,
+    const DoubleMatrix&tu_vec, std::ostream& os)
+{
+    Vec3 t; RotMat u;
+    std::stringstream ss;
+    for (int hinge=0;hinge<tu_vec.size();hinge++)
+    {
+        tu2t_u(tu_vec[hinge],t,u);
+        ss << "------ The rotation matrix to rotate Structure_1 to Structure_2 ------\n";
+        ss << strfmt("m %18s %14s %14s %14s\n", "t[m]", "u[m][0]", "u[m][1]", "u[m][2]");
+        for (int k = 0; k < 3; k++)
+        {
+            ss << strfmt("%d %18.10f %14.10f %14.10f %14.10f\n", k, clean_fmt(t[k]), clean_fmt(u[k][0]), clean_fmt(u[k][1]), clean_fmt(u[k][2]));
+        }
+    }
+    ss << "\nCode for rotating Structure 1 from (x,y,z) to (X,Y,Z):\n"
+            "for(i=0; i<L; i++)\n"
+            "{\n"
+            "   X[i] = t[0] + u[0][0]*x[i] + u[0][1]*y[i] + u[0][2]*z[i];\n"
+            "   Y[i] = t[1] + u[1][0]*x[i] + u[1][1]*y[i] + u[1][2]*z[i];\n"
+            "   Z[i] = t[2] + u[2][0]*x[i] + u[2][1]*y[i] + u[2][2]*z[i];\n"
+            "}\n";
+    if (fname_matrix == "-")
+       os<<ss.str();
+    else
+    {
+        std::fstream fout;
+        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
+        if (fout)
+        {
+            fout<<ss.str();
+            fout.close();
+        }
+        else os << "Open file to output rotation matrix fail.\n";
+    }
+    ss.str(std::string());
+}
+
+void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
+    const std::string& xname, const DoubleMatrix& tu_vec,
+    const int mm_opt, const int ter_opt, const int mirror_opt)
+{
+    std::ifstream fin;
+    int i;
+    Vec3 t; RotMat u;
+    rasmol_state.after_ter=false;
+    rasmol_state.asym_id="";
+    fin.open(xname.c_str());
+    int hinge=0;
+    while (fin.good())
+    {
+        std::getline(fin, rasmol_state.line);
+        if (ter_opt>=3 && rasmol_state.line.compare(0,3,"TER")==0) rasmol_state.after_ter=true;
+        if (rasmol_state.is_mmcif==false && rasmol_state.line.size()>=54 &&
+           (rasmol_state.line.compare(0, 6, "ATOM  ")==0 ||
+            rasmol_state.line.compare(0, 6, "HETATM")==0)) // PDB format
+        {
+            if (rasmol_state.line[16]!='A' && rasmol_state.line[16]!=' ') continue;
+            rasmol_state.x[0]=safe_stod(rasmol_state.line.substr(30,8).c_str());
+            rasmol_state.x[1]=safe_stod(rasmol_state.line.substr(38,8).c_str());
+            rasmol_state.x[2]=safe_stod(rasmol_state.line.substr(46,8).c_str());
+            if (mirror_opt) rasmol_state.x[2]=-rasmol_state.x[2];
+            if (rasmol_state.read_resi==1) rasmol_state.resi=rasmol_state.line.substr(22,5);
+            else rasmol_state.resi=rasmol_state.line.substr(22,5)+rasmol_state.line[21];
+            hinge=0;
+            if (rasmol_state.resi2hinge_dict.count(rasmol_state.resi)) hinge=rasmol_state.resi2hinge_dict[rasmol_state.resi];
+            tu2t_u(tu_vec[hinge],t,u);
+            transform(t, u, rasmol_state.x, rasmol_state.x1);
+
+            if (rasmol_state.after_ter && rasmol_state.line.compare(0,6,"ATOM  ")==0) continue;
+            rasmol_state.lig_idx1++;
+            rasmol_state.buf_all_atm_lig<<rasmol_state.line.substr(0,6)<<std::setw(5)<<rasmol_state.lig_idx1
+                <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+            if (rasmol_state.chain1_sele.size() && rasmol_state.line[21]!=rasmol_state.chain1_sele[0]) continue;
+            if (rasmol_state.after_ter || rasmol_state.line.compare(0,6,"ATOM  ")) continue;
+            if (ter_opt>=2)
+            {
+                if (rasmol_state.ca_idx1 && rasmol_state.asym_id.size() && rasmol_state.asym_id!=rasmol_state.line.substr(21,1)) 
+                {
+                    rasmol_state.after_ter=true;
+                    continue;
+                }
+                rasmol_state.asym_id=rasmol_state.line[21];
+            }
+            rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1
+                <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+            if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),rasmol_state.resi_aln1.end(),
+                rasmol_state.line.substr(22,4))!=rasmol_state.resi_aln1.end())
+            {
+                rasmol_state.buf_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1
+                    <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
+                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+            }
+            if (rasmol_state.line.substr(12,4)!=" CA " && rasmol_state.line.substr(12,4)!=" C3'") continue;
+            rasmol_state.ca_idx1++;
+            rasmol_state.buf_all<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1<<' '
+                <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" A"<<rasmol_state.line.substr(22,8)
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1]<<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+            if (std::find(rasmol_state.resi_aln1.begin(),rasmol_state.resi_aln1.end(),
+                rasmol_state.line.substr(22,4))==rasmol_state.resi_aln1.end()) continue;
+            if (!mm_opt) rasmol_state.buf<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1<<' '
+                <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" A"<<rasmol_state.line.substr(22,8)
+                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1]<<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+            rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1);
+        }
+        else if (rasmol_state.line.compare(0,5,"loop_")==0) // PDBx/mmCIF
+        {
+            while(1)
+            {
+                if (fin.good()) getline(fin, rasmol_state.line);
+                else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                if (rasmol_state.line.size()) break;
+            }
+            if (rasmol_state.line.compare(0,11,"_atom_site.")) continue;
+            rasmol_state.atom_site.clear();
+            rasmol_state.atom_site_pos=0;
+            rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=rasmol_state.atom_site_pos;
+            while(1)
+            {
+                if (fin.good()) getline(fin, rasmol_state.line);
+                else PrintErrorAndQuit("ERROR! Unexpected end of "+xname);
+                if (rasmol_state.line.size()==0) continue;
+                if (rasmol_state.line.compare(0,11,"_atom_site.")) break;
+                rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=++rasmol_state.atom_site_pos;
+            }
+
+            if (rasmol_state.is_mmcif==false)
+            {
+                rasmol_state.is_mmcif=true;
+            }
+
+            while(1)
+            {
+                rasmol_state.line_vec.clear();
+                split(rasmol_state.line,rasmol_state.line_vec);
+                if (rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]!="ATOM" &&
+                    rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]!="HETATM") break;
+                if (rasmol_state.atom_site.count("pdbx_PDB_model_num"))
+                {
+                    if (rasmol_state.model_index.size() && rasmol_state.model_index!=
+                        rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_model_num"]])
+                        break;
+                    rasmol_state.model_index=rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_model_num"]];
+                }
+
+                rasmol_state.x[0]=safe_stod(rasmol_state.line_vec[rasmol_state.atom_site["Cartn_x"]].c_str());
+                rasmol_state.x[1]=safe_stod(rasmol_state.line_vec[rasmol_state.atom_site["Cartn_y"]].c_str());
+                rasmol_state.x[2]=safe_stod(rasmol_state.line_vec[rasmol_state.atom_site["Cartn_z"]].c_str());
+                if (mirror_opt) rasmol_state.x[2]=-rasmol_state.x[2];
+
+
+                if (rasmol_state.atom_site.count("auth_seq_id"))
+                    rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["auth_seq_id"]];
+                else rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["label_seq_id"]];
+                if (rasmol_state.atom_site.count("pdbx_PDB_ins_code") && 
+                    rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]]!="?")
+                    rasmol_state.resi+=rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]][0];
+                else rasmol_state.resi+=" ";
+                if (rasmol_state.read_resi>=2)
+                {
+                    if (rasmol_state.atom_site.count("auth_asym_id"))
+                        rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]];
+                    else rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]];
+                    if (rasmol_state.asym_id==".") rasmol_state.asym_id=" ";
+                    rasmol_state.resi+=rasmol_state.asym_id[0];
+                }
+                hinge=0;
+                if (rasmol_state.resi2hinge_dict.count(rasmol_state.resi)) hinge=rasmol_state.resi2hinge_dict[rasmol_state.resi];
+                tu2t_u(tu_vec[hinge],t,u);
+                transform(t, u, rasmol_state.x, rasmol_state.x1);
+
+                if (rasmol_state.atom_site.count("label_alt_id")==0 || 
+                    rasmol_state.line_vec[rasmol_state.atom_site["label_alt_id"]]=="." ||
+                    rasmol_state.line_vec[rasmol_state.atom_site["label_alt_id"]]=="A")
+                {
+                    rasmol_state.atom=rasmol_state.line_vec[rasmol_state.atom_site["label_atom_id"]];
+                    if (rasmol_state.atom[0]=='"') rasmol_state.atom=rasmol_state.atom.substr(1);
+                    if (rasmol_state.atom.size() && rasmol_state.atom[rasmol_state.atom.size()-1]=='"')
+                        rasmol_state.atom=rasmol_state.atom.substr(0,rasmol_state.atom.size()-1);
+                    if      (rasmol_state.atom.size()==0) rasmol_state.atom="    ";
+                    else if (rasmol_state.atom.size()==1) rasmol_state.atom=" "+rasmol_state.atom+"  ";
+                    else if (rasmol_state.atom.size()==2) rasmol_state.atom=" "+rasmol_state.atom+" ";
+                    else if (rasmol_state.atom.size()==3) rasmol_state.atom=" "+rasmol_state.atom;
+                    else if (rasmol_state.atom.size()>=5) rasmol_state.atom=rasmol_state.atom.substr(0,4);
+            
+                    rasmol_state.AA=rasmol_state.line_vec[rasmol_state.atom_site["label_comp_id"]]; // residue name
+                    if      (rasmol_state.AA.size()==1) rasmol_state.AA="  "+rasmol_state.AA;
+                    else if (rasmol_state.AA.size()==2) rasmol_state.AA=" " +rasmol_state.AA;
+                    else if (rasmol_state.AA.size()>=4) rasmol_state.AA=rasmol_state.AA.substr(0,3);
+                
+                    if (rasmol_state.atom_site.count("auth_seq_id"))
+                        rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["auth_seq_id"]];
+                    else rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["label_seq_id"]];
+                    while (rasmol_state.resi.size()<4) rasmol_state.resi=' '+rasmol_state.resi;
+                    if (rasmol_state.resi.size()>4) rasmol_state.resi=rasmol_state.resi.substr(0,4);
+                
+                    rasmol_state.inscode=' ';
+                    if (rasmol_state.atom_site.count("pdbx_PDB_ins_code") && 
+                        rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]]!="?")
+                        rasmol_state.inscode=rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]][0];
+
+                    if (rasmol_state.atom_site.count("auth_asym_id"))
+                    {
+                        if (rasmol_state.chain1_sele.size()) rasmol_state.after_ter
+                            =rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]]!=rasmol_state.chain1_sele;
+                        else if (ter_opt>=2 && rasmol_state.ca_idx1 && rasmol_state.asym_id.size() && 
+                            rasmol_state.asym_id!=rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]])
+                            rasmol_state.after_ter=true;
+                        rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]];
+                    }
+                    else if (rasmol_state.atom_site.count("label_asym_id"))
+                    {
+                        if (rasmol_state.chain1_sele.size()) rasmol_state.after_ter
+                            =rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]]!=rasmol_state.chain1_sele;
+                        if (ter_opt>=2 && rasmol_state.ca_idx1 && rasmol_state.asym_id.size() && 
+                            rasmol_state.asym_id!=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]])
+                            rasmol_state.after_ter=true;
+                        rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]];
+                    }
+
+                    if (rasmol_state.after_ter==false ||
+                        rasmol_state.line_vec[rasmol_state.atom_site["group_pdb"]]=="HETATM")
+                    {
+                        rasmol_state.lig_idx1++;
+                        rasmol_state.buf_all_atm_lig<<std::left<<std::setw(6)
+                            <<rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]<<std::right
+                            <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '<<rasmol_state.atom<<' '
+                            <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                            <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                            <<std::setw(8)<<rasmol_state.x1[0]
+                            <<std::setw(8)<<rasmol_state.x1[1]
+                            <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                        if (rasmol_state.after_ter==false &&
+                            rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]=="ATOM")
+                        {
+                            rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(6)
+                                <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '<<rasmol_state.atom<<' '
+                                <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setw(8)<<rasmol_state.x1[0]
+                                <<std::setw(8)<<rasmol_state.x1[1]
+                                <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                            if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),
+                                rasmol_state.resi_aln1.end(),rasmol_state.resi)!=rasmol_state.resi_aln1.end())
+                            {
+                                rasmol_state.buf_atm<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '
+                                    <<rasmol_state.atom<<' '<<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<rasmol_state.x1[0]
+                                    <<std::setw(8)<<rasmol_state.x1[1]
+                                    <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                            }
+                            if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
+                            {
+                                rasmol_state.ca_idx1++;
+                                rasmol_state.buf_all<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
+                                    <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<rasmol_state.x1[0]
+                                    <<std::setw(8)<<rasmol_state.x1[1]
+                                    <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                                if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),
+                                    rasmol_state.resi_aln1.end(),rasmol_state.resi)!=rasmol_state.resi_aln1.end())
+                                {
+                                    rasmol_state.buf<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
+                                    <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setw(8)<<rasmol_state.x1[0]
+                                    <<std::setw(8)<<rasmol_state.x1[1]
+                                    <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
+                                    rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                while(1)
+                {
+                    if (fin.good()) getline(fin, rasmol_state.line);
+                    else break;
+                    if (rasmol_state.line.size()) break;
+                }
+            }
+        }
+        else if (rasmol_state.line.size() && rasmol_state.is_mmcif==false)
+        {
+            if (ter_opt>=1 && rasmol_state.line.compare(0,3,"END")==0) break;
+        }
+    }
+    fin.close();
+    if (!mm_opt) rasmol_state.buf<<"TER\n";
+    rasmol_state.buf_all<<"TER\n";
+    if (!mm_opt) rasmol_state.buf_atm<<"TER\n";
+    rasmol_state.buf_all_atm<<"TER\n";
+    rasmol_state.buf_all_atm_lig<<"TER\n";
+    for (i=1;i<rasmol_state.ca_idx1;i++) rasmol_state.buf_all<<"CONECT"
+        <<std::setw(5)<<i%100000<<std::setw(5)<<(i+1)%100000<<'\n';
+    if (!mm_opt) for (i=1;i<rasmol_state.idx_vec.size();i++) rasmol_state.buf<<"CONECT"
+        <<std::setw(5)<<rasmol_state.idx_vec[i-1]%100000<<std::setw(5)<<rasmol_state.idx_vec[i]%100000<<'\n';
+    rasmol_state.idx_vec.clear();
+}
+
+void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
+    const std::string& yname, const int mm_opt, const int ter_opt)
+{
+    std::ifstream fin;
+    int i;
+    rasmol_state.after_ter=false;
+    rasmol_state.asym_id="";
+    fin.open(yname.c_str());
+    while (fin.good())
+    {
+        std::getline(fin, rasmol_state.line);
+        if (ter_opt>=3 && rasmol_state.line.compare(0,3,"TER")==0) rasmol_state.after_ter=true;
+        if (rasmol_state.line.size()>=54 && (rasmol_state.line.compare(0, 6, "ATOM  ")==0 ||
+            rasmol_state.line.compare(0, 6, "HETATM")==0)) // PDB format
+        {
+            if (rasmol_state.line[16]!='A' && rasmol_state.line[16]!=' ') continue;
+            if (rasmol_state.after_ter && rasmol_state.line.compare(0,6,"ATOM  ")==0) continue;
+            rasmol_state.lig_idx2++;
+            rasmol_state.buf_all_atm_lig<<rasmol_state.line.substr(0,6)<<std::setw(5)<<rasmol_state.lig_idx1+rasmol_state.lig_idx2
+                <<rasmol_state.line.substr(11,9)<<" B"<<rasmol_state.line.substr(22,32)<<'\n';
+            if (rasmol_state.chain1_sele.size() && rasmol_state.line[21]!=rasmol_state.chain1_sele[0]) continue;
+            if (rasmol_state.after_ter || rasmol_state.line.compare(0,6,"ATOM  ")) continue;
+            if (ter_opt>=2)
+            {
+                if (rasmol_state.ca_idx2 && rasmol_state.asym_id.size() && rasmol_state.asym_id!=rasmol_state.line.substr(21,1))
+                {
+                    rasmol_state.after_ter=true;
+                    continue;
+                }
+                rasmol_state.asym_id=rasmol_state.line[21];
+            }
+            rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1+rasmol_state.lig_idx2
+                <<rasmol_state.line.substr(11,9)<<" B"<<rasmol_state.line.substr(22,32)<<'\n';
+            if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),rasmol_state.resi_aln2.end(),
+                rasmol_state.line.substr(22,4))!=rasmol_state.resi_aln2.end())
+            {
+                rasmol_state.buf_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1+rasmol_state.lig_idx2
+                    <<rasmol_state.line.substr(11,9)<<" B"<<rasmol_state.line.substr(22,32)<<'\n';
+            }
+            if (rasmol_state.line.substr(12,4)!=" CA " && rasmol_state.line.substr(12,4)!=" C3'") continue;
+            rasmol_state.ca_idx2++;
+            rasmol_state.buf_all<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1+rasmol_state.ca_idx2<<' '<<rasmol_state.line.substr(12,4)
+                <<' '<<rasmol_state.line.substr(17,3)<<" B"<<rasmol_state.line.substr(22,32)<<'\n';
+            if (std::find(rasmol_state.resi_aln2.begin(),rasmol_state.resi_aln2.end(),rasmol_state.line.substr(22,4)
+                )==rasmol_state.resi_aln2.end()) continue;
+            if (!mm_opt) rasmol_state.buf<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1+rasmol_state.ca_idx2<<' '
+                <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" B"
+                <<rasmol_state.line.substr(22,32)<<'\n';
+            rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1+rasmol_state.ca_idx2);
+        }
+        else if (rasmol_state.line.compare(0,5,"loop_")==0) // PDBx/mmCIF
+        {
+            while(1)
+            {
+                if (fin.good()) getline(fin, rasmol_state.line);
+                else PrintErrorAndQuit("ERROR! Unexpected end of "+yname);
+                if (rasmol_state.line.size()) break;
+            }
+            if (rasmol_state.line.compare(0,11,"_atom_site.")) continue;
+            rasmol_state.atom_site.clear();
+            rasmol_state.atom_site_pos=0;
+            rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=rasmol_state.atom_site_pos;
+            while(1)
+            {
+                if (fin.good()) getline(fin, rasmol_state.line);
+                else PrintErrorAndQuit("ERROR! Unexpected end of "+yname);
+                if (rasmol_state.line.size()==0) continue;
+                if (rasmol_state.line.compare(0,11,"_atom_site.")) break;
+                rasmol_state.atom_site[rasmol_state.line.substr(11,rasmol_state.line.size()-12)]=++rasmol_state.atom_site_pos;
+            }
+
+            while(1)
+            {
+                rasmol_state.line_vec.clear();
+                split(rasmol_state.line,rasmol_state.line_vec);
+                if (rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]!="ATOM" &&
+                    rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]!="HETATM") break;
+                if (rasmol_state.atom_site.count("pdbx_PDB_model_num"))
+                {
+                    if (rasmol_state.model_index.size() && rasmol_state.model_index!=
+                        rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_model_num"]])
+                        break;
+                    rasmol_state.model_index=rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_model_num"]];
+                }
+
+                if (rasmol_state.atom_site.count("label_alt_id")==0 || 
+                    rasmol_state.line_vec[rasmol_state.atom_site["label_alt_id"]]=="." ||
+                    rasmol_state.line_vec[rasmol_state.atom_site["label_alt_id"]]=="A")
+                {
+                    rasmol_state.atom=rasmol_state.line_vec[rasmol_state.atom_site["label_atom_id"]];
+                    if (rasmol_state.atom[0]=='"') rasmol_state.atom=rasmol_state.atom.substr(1);
+                    if (rasmol_state.atom.size() && rasmol_state.atom[rasmol_state.atom.size()-1]=='"')
+                        rasmol_state.atom=rasmol_state.atom.substr(0,rasmol_state.atom.size()-1);
+                    if      (rasmol_state.atom.size()==0) rasmol_state.atom="    ";
+                    else if (rasmol_state.atom.size()==1) rasmol_state.atom=" "+rasmol_state.atom+"  ";
+                    else if (rasmol_state.atom.size()==2) rasmol_state.atom=" "+rasmol_state.atom+" ";
+                    else if (rasmol_state.atom.size()==3) rasmol_state.atom=" "+rasmol_state.atom;
+                    else if (rasmol_state.atom.size()>=5) rasmol_state.atom=rasmol_state.atom.substr(0,4);
+            
+                    rasmol_state.AA=rasmol_state.line_vec[rasmol_state.atom_site["label_comp_id"]]; // residue name
+                    if      (rasmol_state.AA.size()==1) rasmol_state.AA="  "+rasmol_state.AA;
+                    else if (rasmol_state.AA.size()==2) rasmol_state.AA=" " +rasmol_state.AA;
+                    else if (rasmol_state.AA.size()>=4) rasmol_state.AA=rasmol_state.AA.substr(0,3);
+                
+                    if (rasmol_state.atom_site.count("auth_seq_id"))
+                        rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["auth_seq_id"]];
+                    else rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["label_seq_id"]];
+                    while (rasmol_state.resi.size()<4) rasmol_state.resi=' '+rasmol_state.resi;
+                    if (rasmol_state.resi.size()>4) rasmol_state.resi=rasmol_state.resi.substr(0,4);
+                
+                    rasmol_state.inscode=' ';
+                    if (rasmol_state.atom_site.count("pdbx_PDB_ins_code") && 
+                        rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]]!="?")
+                        rasmol_state.inscode=rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]][0];
+                    
+                    if (rasmol_state.atom_site.count("auth_asym_id"))
+                    {
+                        if (rasmol_state.chain2_sele.size()) rasmol_state.after_ter
+                            =rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]]!=rasmol_state.chain2_sele;
+                        if (ter_opt>=2 && rasmol_state.ca_idx2 && rasmol_state.asym_id.size() && 
+                            rasmol_state.asym_id!=rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]])
+                            rasmol_state.after_ter=true;
+                        rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]];
+                    }
+                    else if (rasmol_state.atom_site.count("label_asym_id"))
+                    {
+                        if (rasmol_state.chain2_sele.size()) rasmol_state.after_ter
+                            =rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]]!=rasmol_state.chain2_sele;
+                        if (ter_opt>=2 && rasmol_state.ca_idx2 && rasmol_state.asym_id.size() && 
+                            rasmol_state.asym_id!=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]])
+                            rasmol_state.after_ter=true;
+                        rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]];
+                    }
+                    if (rasmol_state.after_ter==false || 
+                        rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]=="HETATM")
+                    {
+                        rasmol_state.lig_idx2++;
+                        rasmol_state.buf_all_atm_lig<<std::left<<std::setw(6)
+                            <<rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]<<std::right
+                            <<std::setw(5)<<(rasmol_state.lig_idx1+rasmol_state.lig_idx2)%100000<<' '
+                            <<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                            <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_x"]]
+                            <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_y"]]
+                            <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_z"]]
+                            <<'\n';
+                        if (rasmol_state.after_ter==false &&
+                            rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]=="ATOM")
+                        {
+                            rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(6)
+                                <<std::setw(5)<<(rasmol_state.lig_idx1+rasmol_state.lig_idx2)%100000<<' '
+                                <<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_x"]]
+                                <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_y"]]
+                                <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_z"]]
+                                <<'\n';
+                            if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),
+                                rasmol_state.resi_aln2.end(),rasmol_state.resi)!=rasmol_state.resi_aln2.end())
+                            {
+                                rasmol_state.buf_atm<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(rasmol_state.lig_idx1+rasmol_state.lig_idx2)%100000<<' '
+                                    <<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_z"]]
+                                    <<'\n';
+                            }
+                            if (rasmol_state.atom==" CA " || rasmol_state.atom==" C3'")
+                            {
+                                rasmol_state.ca_idx2++;
+                                rasmol_state.buf_all<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(rasmol_state.ca_idx1+rasmol_state.ca_idx2)%100000
+                                    <<' '<<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_z"]]
+                                    <<'\n';
+                                if (!mm_opt && std::find(rasmol_state.resi_aln2.begin(),
+                                    rasmol_state.resi_aln2.end(),rasmol_state.resi)!=rasmol_state.resi_aln2.end())
+                                {
+                                    rasmol_state.buf<<"ATOM  "<<std::setw(6)
+                                    <<std::setw(5)<<(rasmol_state.ca_idx1+rasmol_state.ca_idx2)%100000
+                                    <<' '<<rasmol_state.atom<<' '<<rasmol_state.AA<<" B"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_x"]]
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_y"]]
+                                    <<std::setw(8)<<rasmol_state.line_vec[rasmol_state.atom_site["Cartn_z"]]
+                                    <<'\n';
+                                    rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1+rasmol_state.ca_idx2);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (fin.good()) getline(fin, rasmol_state.line);
+                else break;
+            }
+        }
+        else if (rasmol_state.line.size())
+        {
+            if (ter_opt>=1 && rasmol_state.line.compare(0,3,"END")==0) break;
+        }
+    }
+    fin.close();
+    if (!mm_opt) rasmol_state.buf<<"TER\n";
+    rasmol_state.buf_all<<"TER\n";
+    if (!mm_opt) rasmol_state.buf_atm<<"TER\n";
+    rasmol_state.buf_all_atm<<"TER\n";
+    rasmol_state.buf_all_atm_lig<<"TER\n";
+    for (i=rasmol_state.ca_idx1+1;i<rasmol_state.ca_idx1+rasmol_state.ca_idx2;i++) rasmol_state.buf_all<<"CONECT"
+        <<std::setw(5)<<i%100000<<std::setw(5)<<(i+1)%100000<<'\n';
+    for (i=1;i<rasmol_state.idx_vec.size();i++) rasmol_state.buf<<"CONECT"
+        <<std::setw(5)<<rasmol_state.idx_vec[i-1]%100000<<std::setw(5)<<rasmol_state.idx_vec[i]%100000<<'\n';
+    rasmol_state.idx_vec.clear();
+
+}
+
+void output_flexalign_rasmol(const std::string xname, const std::string yname,
+    const std::string fname_super,const DoubleMatrix&tu_vec,
+    const int ter_opt,
+    const int mm_opt, const int split_opt, const int mirror_opt,
+    const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
+    const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::string chainID1, const std::string chainID2,
+    const int xlen, const int ylen, const double d0A, const int n_ali8,
+    const double rmsd, const double TM1, const double Liden)
+{
+    FlexalignRasmolState rasmol_state;
+    rasmol_state.ca_idx1=0;
+    rasmol_state.lig_idx1=0;
+    rasmol_state.ca_idx2=0;
+    rasmol_state.lig_idx2=0;
+
+    build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, xlen);
+    rasmol_state.resi=resi_vec1[0];
+    rasmol_state.read_resi=rasmol_state.resi.size()-4;
+
+    build_rasmol_headers(rasmol_state, xname, yname, chainID1, chainID2,
+        xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden, mm_opt);
+
+    if (!mm_opt)
+    {
+        if (split_opt==2 && ter_opt>=1) // align one chain from model 1
+        {
+            rasmol_state.chain1_sele=chainID1.substr(1);
+            rasmol_state.chain2_sele=chainID2.substr(1);
+        }
+        else if (split_opt==2 && ter_opt==0) // align one chain from each model
+        {
+            int i;
+            for (i=1;i<chainID1.size();i++) if (chainID1[i]==',') break;
+            rasmol_state.chain1_sele=chainID1.substr(i+1);
+            for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
+            rasmol_state.chain2_sele=chainID2.substr(i+1);
+        }
+    }
+
+
+    rasmol_state.is_mmcif=false;
+
+    extract_aligned_resi(rasmol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt);
+
+    read_rasmol_structure1(rasmol_state, xname, tu_vec, mm_opt, ter_opt, mirror_opt);
+
+    read_rasmol_structure2(rasmol_state, yname, mm_opt, ter_opt);
+
+    write_rasmol_to_file(rasmol_state, fname_super, mm_opt);
+}
+
