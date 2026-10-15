@@ -1048,14 +1048,13 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
     const int mm_opt)
 {
-    int i;
     int i1 = -1;
     int i2 = -1;
     std::string prev_resi1;
     std::string prev_resi2;
     if (!mm_opt)
     {
-        for (i = 0; i < seqM.size(); i++)
+        for (int i = 0; i < seqM.size(); i++)
         {
             i1 += (seqxA[i] != '-' && seqxA[i] != '*');
             i2 += (seqyA[i] != '-');
@@ -1568,7 +1567,6 @@ void search_hinge_regions(
         ChainPairAlignResult& chain_align_res,
         std::ostream& os)
 {
-    int r;
     for (int r2=0;r2<chain_align_res.seqM.size();r2++)
     {
         if (chain_align_res.seqM[r2]=='1')
@@ -1628,7 +1626,7 @@ void search_hinge_regions(
         chain_align_res.Liden = cur_hing_res.tmalign_res.Liden;
 
         int new_ali=0;
-        for (r=0;r<cur_hing_res.tmalign_res.seqM.size();r++)
+        for (int r=0;r<cur_hing_res.tmalign_res.seqM.size();r++)
         {
            new_ali+=(cur_hing_res.tmalign_res.seqM[r]==hinge+'1');
         }

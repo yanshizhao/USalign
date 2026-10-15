@@ -75,19 +75,17 @@ inline void build_resi_hinge_map(FlexalignRasmolState& rasmol_state,
     const std::string& seqM, const std::string& seqxA,
     const std::vector<std::string>& resi_vec1, const int xlen)
 {
-    int r;
-    int i;
     int j=-1;
     char hinge_char=0;
     int ali_len=seqM.size();
-    for (r=0;r<seqxA.size();r++)
+    for (int r=0;r<seqxA.size();r++)
     {
         if (seqxA[r]=='-') continue;
         j++;
         hinge_char=seqM[r];
         if (hinge_char==' ')
         {
-            for (i=1;i<ali_len;i++)
+            for (int i=1;i<ali_len;i++)
             {
                 if (r-i>=0 && seqM[r-i]!=' ')
                     hinge_char=seqM[r-i];
@@ -130,12 +128,11 @@ inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
     const int mm_opt)
 {
-    int i;
     rasmol_state.i1=-1;
     rasmol_state.i2=-1;
     if (!mm_opt)
     {
-        for (i=0;i<seqM.size();i++)
+        for (int i=0;i<seqM.size();i++)
         {
             rasmol_state.i1+=(seqxA[i]!='-');
             rasmol_state.i2+=(seqyA[i]!='-');

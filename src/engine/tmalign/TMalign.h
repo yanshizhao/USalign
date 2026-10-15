@@ -112,10 +112,10 @@ inline double detailed_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, C
     int score_sum_method, double local_d0_search, double Lnorm,
     double score_d8, double d0)
 {
-    int i,j,k;
+    int j, k;
     double tmscore, rmsd;
     k=0;
-    for(i=0; i<ylen; i++)
+    for(int i=0; i<ylen; i++)
     {
         j=invmap0[i];
         if(j>=0)
@@ -137,10 +137,10 @@ inline double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0)
 {
-    int i,j,k;
+    int j, k;
     double tmscore, rmsd;
     k=0;
-    for(i=0; i<ylen; i++)
+    for(int i=0; i<ylen; i++)
     {
         j=invmap0[i];
         if(j>=0)

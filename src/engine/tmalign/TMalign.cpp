@@ -10,7 +10,6 @@ int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, 
     double d02=d0*d0;
     double score_d8_cut = score_d8*score_d8;
 
-    int i;
     int n_cut;
     int inc=0;
 
@@ -18,7 +17,7 @@ int score_fun8(const CoordArray& xa, const CoordArray& ya, int n_ali, double d, 
     {
         n_cut=0;
         score_sum=0;
-        for(i=0; i<n_ali; i++)
+        for(int i=0; i<n_ali; i++)
         {
             di = dist(xa[i], ya[i]);
             if(di<d_tmp)
@@ -555,24 +554,23 @@ int run_batch_parallel(
     const std::string& dir2_opt, const std::string& dirpair_opt, const ChainParseOptions& parse_opts1, const ChainParseOptions& parse_opts2,
     const ChainPairAlignOptions& align_opts, const OutputOptions& out_opts, bool do_opt, int parallel_threads)
 {
-    int i, j, chain_i;
 
     // ---- Phase 1: pre-parse all unique files, build task list ----
     std::vector<ParsedChain> all_chains;
     std::map<std::string, std::vector<int>> file_to_idx;
     std::vector<PairTask> tasks;
 
-    for (i = 0; i < (int)chain1_list.size(); i++) {
+    for (int i = 0; i < (int)chain1_list.size(); i++) {
         const std::string key1 = make_cache_key(chain1_list[i], true);
         parse_file_into_cache(chain1_list[i], parse_opts1, all_chains, file_to_idx, key1);
 
         auto& c1_indices = file_to_idx[key1];
-        for (chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
+        for (int chain_i = 0; chain_i < (int)c1_indices.size(); chain_i++) {
             int c1_idx = c1_indices[chain_i];
             if (c1_idx < 0) continue;
             int j_start = (dir_opt.size() > 0) * (i + 1);
 
-            for (j = j_start; j < (int)chain2_list.size(); j++) {
+            for (int j = j_start; j < (int)chain2_list.size(); j++) {
                 if (dirpair_opt.size() && j != i) continue;
                 const std::string key2 = make_cache_key(chain2_list[j], false);
 
@@ -661,9 +659,6 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
     std::vector<std::string> chainID_list2;      // list of chainID2
-    int    i,j;                // file index
-    int    chain_i,chain_j;    // chain index
-    int    r;                  // residue index
     int    xlen, ylen;         // chain length
     int    xchainnum=0,ychainnum=0;// number of chains in a PDB file
     std::string secx;                // for the secondary structure
@@ -721,7 +716,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
         user_opts.chain2parse2, user_opts.model2parse2);
 
     // loop over file names (original serial code)
-    for (i=0;i<parsed_input.chain1_list.size();i++)
+    for (int i=0;i<parsed_input.chain1_list.size();i++)
     {
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
@@ -733,7 +728,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                 <<". Chain number 0."<<std::endl;
             continue;
         }
-        for (chain_i=0;chain_i<xchainnum;chain_i++)
+        for (int chain_i=0;chain_i<xchainnum;chain_i++)
         {
             xlen=PDB_lines1[chain_i].size();
             if (user_opts.mol_opt=="RNA") mol_vec1[chain_i]=1;
@@ -755,12 +750,12 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
             secx.resize(xlen + 1);
             xlen = read_PDB(PDB_lines1[chain_i], xa, seqx,
                 resi_vec1, tm_params.read_resi);
-            if (user_opts.mirror_opt) for (r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
+            if (user_opts.mirror_opt) for (int r=0;r<xlen;r++) xa[r][2]=-xa[r][2];
             if (mol_vec1[chain_i]>0) make_sec(seqx, xa, xlen, secx, user_opts.atom_opt);
             else make_sec(xa, xlen, secx); // secondary structure assignment
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
-            for (j=j_start;j<parsed_input.chain2_list.size();j++)
+            for (int j=j_start;j<parsed_input.chain2_list.size();j++)
             {
                 if (user_opts.dirpair_opt.size() && j!=i) continue;
                 // parse chain 2
@@ -775,7 +770,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                         continue;
                     }
                 }
-                for (chain_j=0;chain_j<ychainnum;chain_j++)
+                for (int chain_j=0;chain_j<ychainnum;chain_j++)
                 {
                     ylen=PDB_lines2[chain_j].size();
                     if (user_opts.mol_opt=="RNA") mol_vec2[chain_j]=1;
@@ -1306,7 +1301,6 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     if(Lali<L_ini_min) L_ini_min=Lali;
 
     int n_init=0;
-    int i_init;
     for(i=0; i<n_init_max-1; i++)
     {
         n_init++;
@@ -1327,7 +1321,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     int L_frag;
     int iL_max;
 
-    for(i_init=0; i_init<n_init; i_init++)
+    for(int i_init=0; i_init<n_init; i_init++)
     {
         L_frag=L_ini[i_init];
         iL_max=Lali-L_frag;
@@ -1372,7 +1366,6 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     if (Lali<L_ini_min) L_ini_min = Lali;
 
     int n_init = 0;
-    int i_init;
     for (i = 0; i<n_init_max - 1; i++)
     {
         n_init++;
@@ -1393,7 +1386,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     int L_frag;
     int iL_max;
 
-    for (i_init = 0; i_init<n_init; i_init++)
+    for (int i_init = 0; i_init<n_init; i_init++)
     {
         L_frag = L_ini[i_init];
         iL_max = Lali - L_frag;
@@ -1641,8 +1634,7 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
         int i;
         int j;
-        int k;
-        for(k=n1; k<=n2; k+=(fast_opt)?3:1)
+        for(int k=n1; k<=n2; k+=(fast_opt)?3:1)
         {
             //get the map
             for(j=0; j<ylen; j++)
@@ -1676,9 +1668,8 @@ double get_initial_fgt(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
 
         int i;
         int j;
-        int k;
 
-        for(k=n1; k<=n2; k++)
+        for(int k=n1; k<=n2; k++)
         {
             //get the map
             for(j=0; j<ylen; j++) y2x_[j]=-1;
@@ -1713,7 +1704,7 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     double gap_open[2]={-0.6, 0};
     double rmsd;
     std::vector<int> invmap(ylen+1);
-    int iteration, i, j, k;
+    int i, k;
     double tmscore, tmscore_max, tmscore_old=0;
     int score_sum_method=8, simplify_step=40;
     tmscore_max=-1;
@@ -1721,13 +1712,13 @@ double DP_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm,
     double d02=d0*d0;
     for(int g=g1; g<g2; g++)
     {
-        for(iteration=0; iteration<iteration_max; iteration++)
+        for(int iteration=0; iteration<iteration_max; iteration++)
         {
             NWDP_TM(path, val, x, y, xlen, ylen,
                 t, u, d02, gap_open[g], invmap);
 
             k=0;
-            for(j=0; j<ylen; j++)
+            for(int j=0; j<ylen; j++)
             {
                 i=invmap[j];
                 if(i>=0)
