@@ -63,7 +63,7 @@ void mmdock_align_trimmed(ChainPairAlignResult& chain_align_res,
         chain_align_res, xlen, ylen, sequence, trim_opts);
 }
 
-inline void run_mmdock_parallel(
+void run_mmdock_parallel(
     const DoubleCube& xa_vec, const DoubleCube& ya_vec,
     const CharMatrix& seqx_vec, const CharMatrix& seqy_vec,
     const CharMatrix& secx_vec, const CharMatrix& secy_vec,
