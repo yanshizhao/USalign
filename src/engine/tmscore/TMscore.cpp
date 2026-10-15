@@ -168,7 +168,6 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     if(Lali<L_ini_min) L_ini_min=Lali;
 
     int n_init=0;
-    int i_init;
     for(i=0; i<n_init_max-1; i++)
     {
         n_init++;
@@ -192,7 +191,7 @@ double TMscore8_search(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArr
     int L_frag; //fragment length
     int iL_max; //maximum starting postion for the fragment
 
-    for(i_init=0; i_init<n_init; i_init++)
+    for(int i_init=0; i_init<n_init; i_init++)
     {
         L_frag=L_ini[i_init];
         iL_max=Lali-L_frag;
@@ -339,7 +338,6 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     if (Lali<L_ini_min) L_ini_min = Lali;
 
     int n_init = 0;
-    int i_init;
     for (i = 0; i<n_init_max - 1; i++)
     {
         n_init++;
@@ -362,7 +360,7 @@ double TMscore8_search_standard(CoordArray& r1, CoordArray& r2,
     int L_frag;
     int iL_max;
 
-    for (i_init = 0; i_init<n_init; i_init++)
+    for (int i_init = 0; i_init<n_init; i_init++)
     {
         L_frag = L_ini[i_init];
         iL_max = Lali - L_frag;
@@ -478,14 +476,13 @@ double detailed_search_standard( CoordArray& r1, CoordArray& r2,
     int simplify_step, int score_sum_method, double local_d0_search,
     const bool& bNormalize, double Lnorm, double score_d8, double d0,
     double GDT_list[5], double &maxsub){
-    int i;
     int j;
     int k;
     double tmscore;
     double rmsd;
 
     k=0;
-    for(i=0; i<ylen; i++)
+    for(int i=0; i<ylen; i++)
     {
         j=invmap0[i];
         if(j>=0) //aligned

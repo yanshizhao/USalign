@@ -345,7 +345,6 @@ int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     std::vector<int>& invmap = chain_align_res.invmap;
     const bool fast_opt = align_opts.fast_opt;
     int i;
-    int j;
     SoiAlignSearchState soi_search_state;
 
     /***********************/
@@ -392,7 +391,7 @@ int SOIalign_main(CoordArray& xa_c, CoordArray& ya_c,
     //check if the initial alignment is generated appropriately
     bool flag=false;
     for (i=0; i<xlen; i++) soi_search_state.fwdmap0[i]=-1;
-    for (j=0; j<ylen; j++)
+    for (int j=0; j<ylen; j++)
     {
         i=soi_search_state.invmap0[j];
         invmap[j]=i;
@@ -428,7 +427,6 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
     double rmsd;
     std::vector<int> invmap(ylen+1);
 
-    int iteration;
     int i;
     int j;
     int k;
@@ -437,7 +435,7 @@ double SOI_iter(CoordArray& r1, CoordArray& r2, CoordArray& xtm, CoordArray& ytm
     double tmscore_old=0;
     tmscore_max=-1;
 
-    for (iteration=0; iteration<iteration_max; iteration++)
+    for (int iteration=0; iteration<iteration_max; iteration++)
     {
         if (iteration==0 && init_invmap)
             for (j=0;j<ylen;j++) invmap[j]=invmap0[j];
@@ -721,7 +719,6 @@ void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
     Vec3 &t = soi_search_state.t;
     RotMat &u = soi_search_state.u;
     double &TM = soi_search_state.TM;
-    int i;
     int j;
 
     //********************************************************************//
@@ -754,7 +751,7 @@ void soi_align_final_tmscore(CoordArray& xa_c, CoordArray& ya_c,
     do_rotation(xa_c, xt, xlen, t, u);
     k=0;
     n_ali=0;
-    for (i=0; i<xlen; i++)
+    for (int i=0; i<xlen; i++)
     {
         j=fwdmap0[i];
         if(j>=0)//aligned
@@ -840,7 +837,6 @@ void soi_align_final_tmscore_inv(CoordArray& xa_c, CoordArray& ya_c,
     double rmsd;
     double Lnorm_0=ylen;
     int i;
-    int j;
     int k;
     double d;
     std::vector<int> m1(xlen);
@@ -851,7 +847,7 @@ void soi_align_final_tmscore_inv(CoordArray& xa_c, CoordArray& ya_c,
 
     do_rotation(xa_c, xt, xlen, t0, u0);
     k=0;
-    for (j=0; j<ylen; j++)
+    for (int j=0; j<ylen; j++)
     {
         i=invmap0[j];
         if(i>=0)//aligned
@@ -1004,7 +1000,6 @@ void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
     double score_d8,d0,d0_search,dcu0;
     CharMatrix  path;
     DoubleMatrix val;
-    int i;
     int j;
 
     /***********************/
@@ -1038,7 +1033,7 @@ void soi_build_score_seed_invmap(CoordArray& xa, CoordArray& ya,
     double d02=d0*d0;
     double score_d82=score_d8*score_d8;
     double d2;
-    for(i=0; i<xlen; i++)
+    for(int i=0; i<xlen; i++)
     {
         for(j=0; j<ylen; j++)
         {
@@ -1076,7 +1071,6 @@ bool soi_se_score_alignment(CoordArray& xa, CoordArray& ya,
     std::vector<int> m1;
     std::vector<int> m2;
     int i;
-    int j;
     double d;
     if (outfmt_opt<2)
     {
@@ -1088,7 +1082,7 @@ bool soi_se_score_alignment(CoordArray& xa, CoordArray& ya,
     int k=0;
     n_ali=0;
     n_ali8=0;
-    for(j=0; j<ylen; j++)
+    for(int j=0; j<ylen; j++)
     {
         i=invmap[j];
         dist_list[j]=-1;

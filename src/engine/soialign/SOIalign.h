@@ -24,7 +24,7 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
     DoubleMatrix score;
     score.assign(xlen+1, std::vector<double>(xlen+1, 0));
     std::vector<std::pair<double,int> > close_idx_vec(xlen, std::make_pair(0,0));
-    int i,j,k;
+    int i, j;
     for(i=0;i<xlen;i++) {
         score[i+1][i+1]=0;
         for(j=i+1;j<xlen;j++) score[j+1][i+1]=score[i+1][j+1]=dist(xa[i], xa[j]);
@@ -32,7 +32,7 @@ inline void getCloseK(const CoordArray& xa, const int xlen, const int closeK_opt
     for(i=0;i<xlen;i++) {
         for(j=0;j<xlen;j++) { close_idx_vec[j].first=score[i+1][j+1]; close_idx_vec[j].second=j; }
         std::sort(close_idx_vec.begin(), close_idx_vec.end());
-        for(k=0;k<closeK_opt;k++) {
+        for(int k=0;k<closeK_opt;k++) {
             j=close_idx_vec[k % xlen].second;
             xk[i*closeK_opt+k][0]=xa[j][0]; xk[i*closeK_opt+k][1]=xa[j][1]; xk[i*closeK_opt+k][2]=xa[j][2];
         }
@@ -70,8 +70,8 @@ inline int soi_se_main(CoordArray& xa, CoordArray& ya, const std::string &seqx, 
 inline void SOI_super2score(const CoordArray& xt, const CoordArray& ya, const int xlen,
     const int ylen, DoubleMatrix& score, double d0, double score_d8)
 {
-    int i,j; double d02=d0*d0,score_d82=score_d8*score_d8,d2;
-    for(i=0;i<xlen;i++) for(j=0;j<ylen;j++){
+    double d02=d0*d0,score_d82=score_d8*score_d8,d2;
+    for(int i=0;i<xlen;i++) for(int j=0;j<ylen;j++){
         d2=dist(xt[i],ya[j]);
         if(d2>score_d82)score[i+1][j+1]=0;else score[i+1][j+1]=1./(1+d2/d02);
     }
@@ -97,12 +97,11 @@ inline void SOI_assign2super(CoordArray& r1, CoordArray& r2, CoordArray& xtm, Co
     double local_d0_search, double Lnorm, double d0, double score_d8)
 {
     int i;
-    int j;
     int k;
     double rmsd;
 
     k=0;
-    for (j=0; j<ylen; j++)
+    for (int j=0; j<ylen; j++)
     {
         i=invmap[j];
         if (i<0) continue;
@@ -238,8 +237,7 @@ inline void soi_align_pair(ChainPairAlignResult& chain_align_res,
         {
             chain_align_res.Liden=chain_align_res.L_ali=0;
             int r1;
-            int r2;
-            for (r2=0;r2<ylen;r2++)
+            for (int r2=0;r2<ylen;r2++)
             {
                 r1=chain_align_res.invmap[r2];
                 if (r1<0) continue;

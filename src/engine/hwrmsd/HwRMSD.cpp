@@ -5,8 +5,7 @@ double Kabsch_Superpose(CoordArray& r1, CoordArray& r2, CoordArray& xt,
     int& L_ali, Vec3& t, RotMat& u){
     L_ali = 0;
     int i;
-    int j;
-    for (j = 0; j<ylen; j++)
+    for (int j = 0; j<ylen; j++)
     {
         i = invmap[j];
         if (i >= 0)
@@ -144,7 +143,6 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
     iter_res.invmap.assign(ylen+1, 0);
     std::vector<int>& invmap_tmp = iter_res.invmap;
 
-    int i;
     int j;
     double& TM1_tmp = iter_res.TM1;
     double& TM2_tmp = iter_res.TM2;
@@ -214,7 +212,7 @@ int HwRMSD_main(CoordArray& xa, CoordArray& ya,
 
         if (TM1_tmp>TM1 && TM2_tmp>TM2)
         {
-            for (i=0; i<3; i++)
+            for (int i=0; i<3; i++)
             {
                 t0[i]=t[i];
                 for (j=0;j<3;j++) u0[i][j]=u[i][j];

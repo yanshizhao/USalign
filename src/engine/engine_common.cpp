@@ -242,8 +242,6 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
     int aln_score;
     int gapopen=gapopen_blosum62;
     int gapext =gapext_blosum62;
-    int i;
-    int j;
     if (mol_type>0) // RNA or DNA
     {
         gapopen=gapopen_blastn;
@@ -255,9 +253,9 @@ int NWalign_main(const std::string &seqx, const std::string &seqy, const int xle
         }
     }
 
-    for (i=0;i<xlen+1;i++)
+    for (int i=0;i<xlen+1;i++)
     {
-        for (j=0;j<ylen+1;j++)
+        for (int j=0;j<ylen+1;j++)
         {
             if (i*j==0) S[i][j]=0;
             else S[i][j]=BLOSUM[seqx[i-1]][seqy[j-1]];
@@ -284,8 +282,7 @@ void get_seqID(const std::vector<int>& invmap, const std::string& seqx, const st
     Liden=0;
     L_ali=0;
     int i;
-    int j;
-    for (j=0;j<ylen;j++)
+    for (int j=0;j<ylen;j++)
     {
         i=invmap[j];
         if (i<0) continue;
@@ -583,8 +580,7 @@ void align_chain_pair(ChainPairAlignResult& chain_align_res,
         {
             chain_align_res.Liden=chain_align_res.L_ali=0;
             int r1;
-            int r2;
-            for (r2=0; r2<ylen; r2++)
+            for (int r2=0; r2<ylen; r2++)
             {
                 r1 = chain_align_res.invmap[r2];
                 if (r1 < 0) continue;

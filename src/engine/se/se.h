@@ -30,8 +30,7 @@ inline void se_build_initial_alignment(CharMatrix& path, DoubleMatrix& val,
     const double d0 = se_search_state.d0;
     const bool i_opt = align_opts.i_opt;
     std::vector<int> &invmap = chain_align_res.invmap;
-    int j;
-    if (hinge==0) for(j=0; j<ylen; j++) invmap[j]=-1;
+    if (hinge==0) for(int j=0; j<ylen; j++) invmap[j]=-1;
     if (!i_opt) NWDP_SE(path, val, xa, ya, xlen, ylen, d0*d0, 0, invmap, hinge);
     else
     {
