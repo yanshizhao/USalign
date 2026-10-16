@@ -703,6 +703,26 @@ void output_flexalign_rotation_matrix(const char *fname_matrix,
     ss.str(string());
 }
 
+string build_rasmol_segment_cmd(const vector<string> &seg_sele)
+{
+    const char *color1_list[] = {
+        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
+        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
+        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green"};
+    const int color_palette_size = sizeof(color1_list) / sizeof(color1_list[0]);
+    string cmd;
+    const int num_seg = seg_sele.size();
+    for (int h = 0; h < num_seg; h++)
+    {
+        if (seg_sele[h].size() == 0)
+            continue;
+        cmd += "select " + seg_sele[h] + "\n";
+        cmd += "color " + string(color1_list[h % color_palette_size]) + "\n";
+    }
+    return cmd;
+}
+
 void output_flexalign_rasmol(const string xname, const string yname,
                              const string fname_super, const vector<vector<double> > &tu_vec,
                              double t[3], double u[3][3], const int ter_opt,
@@ -777,8 +797,8 @@ void output_flexalign_rasmol(const string xname, const string yname,
            << ", TM-score=" << setw(7) << setiosflags(ios::fixed) << setprecision(5) << TM1
            << ", ID=" << setw(5) << setiosflags(ios::fixed) << setprecision(3)
            << ((n_ali8 > 0) ? Liden / n_ali8 : 0) << endl;
-    string rasmol_CA_header = "load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
-    string rasmol_cartoon_header = "load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n" + buf_tm.str();
+    string rasmol_CA_header = "load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor grey\n";
+    string rasmol_cartoon_header = "load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
     if (!mm_opt)
         buf << rasmol_CA_header;
     buf_all << rasmol_CA_header;
@@ -808,6 +828,10 @@ void output_flexalign_rasmol(const string xname, const string yname,
                     break;
             chain2_sele = chainID2.substr(i + 1);
         }
+        if (chain1_sele == "_")
+            chain1_sele.clear();
+        if (chain2_sele == "_")
+            chain2_sele.clear();
     }
 
     /* for PDBx/mmCIF only */
@@ -834,28 +858,53 @@ void output_flexalign_rasmol(const string xname, const string yname,
     vector<string> resi_aln2;
     int i1 = -1;
     int i2 = -1;
+    int num_hinges = tu_vec.size();
+    vector<string> seg_sele;
+    string seg_cmd;
+    string chain1_suffix;
+    if (chain1_sele.size())
+        chain1_suffix = ":" + chain1_sele;
     if (!mm_opt)
     {
+        if (num_hinges > 0)
+            seg_sele.assign(num_hinges, "");
         for (i = 0; i < strlen(seqM); i++)
         {
-            i1 += (seqxA[i] != '-');
+            i1 += (seqxA[i] != '-' && seqxA[i] != '*');
             i2 += (seqyA[i] != '-');
-            if (seqM[i] == ' ')
+            if (seqM[i] == ' ' || seqxA[i] == '*')
                 continue;
             resi_aln1.push_back(resi_vec1[i1].substr(0, 4));
             resi_aln2.push_back(resi_vec2[i2].substr(0, 4));
-            if (seqM[i] != ':')
+            if (num_hinges <= 0)
                 continue;
-            buf << "select " << resi_aln1.back() << ":A,"
-                << resi_aln2.back() << ":B\ncolor red\n";
-            buf_all << "select " << resi_aln1.back() << ":A,"
-                    << resi_aln2.back() << ":B\ncolor red\n";
+            char hinge_char = seqM[i];
+            int hinge_idx = 0;
+            if (hinge_char >= '0' && hinge_char <= '9')
+                hinge_idx = hinge_char - '0';
+            else if (hinge_char >= 'a' && hinge_char <= 'z')
+                hinge_idx = hinge_char - 'a' + 10;
+            else if (hinge_char >= 'A' && hinge_char <= 'Z')
+                hinge_idx = hinge_char - 'A' + 36;
+            if (hinge_idx >= num_hinges)
+                hinge_idx = num_hinges - 1;
+            if (seg_sele[hinge_idx].size() == 0)
+                seg_sele[hinge_idx] = resi_aln1.back() + chain1_suffix;
+            else
+                seg_sele[hinge_idx] += "," + resi_aln1.back() + chain1_suffix;
         }
-        buf << "select all\nexit\n"
+        seg_cmd = build_rasmol_segment_cmd(seg_sele);
+        buf << seg_cmd << "select all\nexit\n"
             << buf_tm.str();
+        buf_atm << seg_cmd << "select all\nexit\n"
+                << buf_tm.str();
     }
-    buf_all << "select all\nexit\n"
+    buf_all << seg_cmd << "select all\nexit\n"
             << buf_tm.str();
+    buf_all_atm << seg_cmd << "select all\nexit\n"
+                << buf_tm.str();
+    buf_all_atm_lig << seg_cmd << "select all\nexit\n"
+                    << buf_tm.str();
 
     ifstream fin;
     /* read first file */
@@ -1966,7 +2015,7 @@ void output_flexalign_pymol(const string xname, const string yname,
         // Global color setting: Structure 1 unaligned gets light gray, Structure 2 gets solid darker gray
         buf_pymol
             << "color grey, structure1\n"
-            << "color white, structure2\n";
+            << "color wheat, structure2\n";
 
         // Color each hinge in Structure 1 with distinct colors
         for (int h = 0; h < num_hinges; h++) {
