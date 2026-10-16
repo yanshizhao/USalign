@@ -125,7 +125,7 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
         <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
         <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
         <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
-    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
+    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor grey\n";
     std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
     if (!mm_opt) rasmol_state.buf<<rasmol_CA_header;
     rasmol_state.buf_all<<rasmol_CA_header;

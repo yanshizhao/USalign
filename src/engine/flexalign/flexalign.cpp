@@ -1234,7 +1234,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
             }
             buf_pymol
                 << "color #1 grey\n"
-                << "color #2 white\n";
+                << "color #2 wheat\n";
             for (int h = 0; h < num_hinges; h++)
             {
                 if (resi1_sele[h].size())
@@ -1318,7 +1318,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
         // Global color setting: Structure 1 unaligned gets light gray, Structure 2 gets solid darker gray
         buf_pymol
             << "color grey, structure1\n"
-            << "color white, structure2\n";
+            << "color wheat, structure2\n";
         // Color each hinge in Structure 1 with distinct colors
         for (int h = 0; h < num_hinges; h++)
         {
