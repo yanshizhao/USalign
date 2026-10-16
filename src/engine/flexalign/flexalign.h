@@ -164,6 +164,8 @@ inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
     rasmol_state.i1=-1;
     rasmol_state.i2=-1;
     std::string seg_cmd;
+    std::string chain1_suffix;
+    if (rasmol_state.chain1_sele.size()) chain1_suffix=":"+rasmol_state.chain1_sele;
     if (!mm_opt)
     {
         // Group aligned residues of structure 1 by hinge segment, following the
@@ -181,9 +183,9 @@ inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
             int hinge_idx=hinge_char_to_index(seqM[i]);
             if (hinge_idx>=num_hinges) hinge_idx=num_hinges-1;
             if (seg_sele[hinge_idx].size()==0)
-                seg_sele[hinge_idx]=rasmol_state.resi_aln1.back()+":A";
+                seg_sele[hinge_idx]=rasmol_state.resi_aln1.back()+chain1_suffix;
             else
-                seg_sele[hinge_idx]+=","+rasmol_state.resi_aln1.back()+":A";
+                seg_sele[hinge_idx]+=","+rasmol_state.resi_aln1.back()+chain1_suffix;
         }
         seg_cmd=build_rasmol_segment_cmd(seg_sele);
         rasmol_state.buf    <<seg_cmd<<"select all\nexit\n"<<rasmol_state.buf_tm.str();

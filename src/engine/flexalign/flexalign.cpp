@@ -890,6 +890,8 @@ void output_flexalign_rasmol(const std::string xname, const std::string yname,
             for (i=1;i<chainID2.size();i++) if (chainID2[i]==',') break;
             rasmol_state.chain2_sele=chainID2.substr(i+1);
         }
+        if (rasmol_state.chain1_sele=="_") rasmol_state.chain1_sele.clear();
+        if (rasmol_state.chain2_sele=="_") rasmol_state.chain2_sele.clear();
     }
 
 
