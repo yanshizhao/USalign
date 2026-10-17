@@ -1593,13 +1593,11 @@ void output_flexalign_rasmol(const string xname, const string yname,
     model_index.clear();
 }
 
-void output_flexalign_pymol(const string xname, const string yname,
-                            const string fname_super, const vector<vector<double> > &tu_vec,
-                            double t[3], double u[3][3], const int ter_opt,
-                            const int mm_opt, const int split_opt, const int mirror_opt,
-                            const char *seqM, const char *seqxA, const char *seqyA,
-                            const vector<string> &resi_vec1, const vector<string> &resi_vec2,
-                            const string chainID1, const string chainID2)
+string read_superposed_structure1(const string xname, const string fname_super,
+    const vector<vector<double> >& tu_vec,
+    const int ter_opt, const int mirror_opt,
+    const vector<string>& resi_vec1,
+    const char* seqM, const char* seqxA)
 {
     int compress_type = 0; // uncompressed file
     ifstream fin;
@@ -1666,7 +1664,8 @@ void output_flexalign_pymol(const string xname, const string yname,
     int read_resi = resi.size() - 4;
 
     stringstream buf;
-    stringstream buf_pymol;
+    double t[3];
+    double u[3][3];
     string line;
     double x[3];  // before transform
     double x1[3]; // after transform
@@ -1862,7 +1861,27 @@ void output_flexalign_pymol(const string xname, const string yname,
     fp.open(fname_super_full.c_str());
     fp << buf.str();
     fp.close();
-    buf.str(string()); // clear stream
+
+    return fname_super_full;
+}
+
+void output_flexalign_pymol(const string xname, const string yname,
+                            const string fname_super, const vector<vector<double> > &tu_vec,
+                            const int ter_opt,
+                            const int mm_opt, const int split_opt, const int mirror_opt,
+                            const char *seqM, const char *seqxA, const char *seqyA,
+                            const vector<string> &resi_vec1, const vector<string> &resi_vec2,
+                            const string chainID1, const string chainID2)
+{
+    int i;
+    double t[3];
+    double u[3][3];
+    stringstream buf_pymol;
+    string line;
+    int hinge = 0;
+    ofstream fp;
+    string fname_super_full = read_superposed_structure1(xname, fname_super,
+        tu_vec, ter_opt, mirror_opt, resi_vec1, seqM, seqxA);
 
     string chain1_sele;
     string chain2_sele;
@@ -2071,24 +2090,6 @@ void output_flexalign_pymol(const string xname, const string yname,
         buf_pymol.str(string());
     }
 
-    /* clean up */
-    pml_list.clear();
-
-    resi1_sele.clear();
-    resi2_sele.clear();
-
-    resi1_bond.clear();
-    resi2_bond.clear();
-
-    prev_resi1.clear();
-    prev_resi2.clear();
-
-    curr_resi1.clear();
-    curr_resi2.clear();
-
-    chain1_sele.clear();
-    chain2_sele.clear();
-    resi2hinge_dict.clear();
 }
 
 string get_basename(const string &name)
@@ -2163,260 +2164,15 @@ void output_flexalign_chimerax(const string xname, const string yname,
                                const vector<string> &resi_vec2,
                                const string chainID1, const string chainID2)
 {
-    int compress_type = 0;
-    ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    ifstream fin_gz;
-#else
-    redi::ipstream fin_gz;
-    if (xname.size() >= 3 &&
-        xname.substr(xname.size() - 3, 3) == ".gz")
-    {
-        fin_gz.open("gunzip -c " + xname);
-        compress_type = 1;
-    }
-    else if (xname.size() >= 4 &&
-             xname.substr(xname.size() - 4, 4) == ".bz2")
-    {
-        fin_gz.open("bzcat " + xname);
-        compress_type = 2;
-    }
-    else
-#endif
-    fin.open(xname.c_str());
-
-    map<string, int> resi2hinge_dict;
-    int r, i, j;
+    int i;
     double t[3];
     double u[3][3];
-    j = -1;
-    char hinge_char = 0;
-    int ali_len = strlen(seqM);
-    for (r = 0; r < strlen(seqxA); r++)
-    {
-        if (seqxA[r] == '-')
-            continue;
-        j++;
-        hinge_char = seqM[r];
-        if (hinge_char == ' ')
-        {
-            for (i = 1; i < ali_len; i++)
-            {
-                if (r - i >= 0 && seqM[r - i] != ' ')
-                    hinge_char = seqM[r - i];
-                else if (r + i < ali_len && seqM[r + i] != ' ')
-                    hinge_char = seqM[r + i];
-                if (hinge_char != ' ')
-                    break;
-            }
-        }
-        int hinge_idx = 0;
-        if (hinge_char >= '0' && hinge_char <= '9')
-            hinge_idx = hinge_char - '0';
-        else if (hinge_char >= 'a' && hinge_char <= 'z')
-            hinge_idx = hinge_char - 'a' + 10;
-        else if (hinge_char >= 'A' && hinge_char <= 'Z')
-            hinge_idx = hinge_char - 'A' + 36;
-        resi2hinge_dict[resi_vec1[j]] = hinge_idx;
-    }
-    string resi = resi_vec1[0];
-    int read_resi = resi.size() - 4;
-
-    stringstream buf;
     stringstream buf_cxc;
     string line;
-    double x[3];
-    double x1[3];
-
-    map<string, int> _atom_site;
-    size_t atom_site_pos;
-    vector<string> line_vec;
-    int infmt = -1;
     int hinge = 0;
-    string asym_id = ".";
-    while (compress_type ? fin_gz.good() : fin.good())
-    {
-        if (compress_type)
-            getline(fin_gz, line);
-        else
-            getline(fin, line);
-        if (line.compare(0, 6, "ATOM  ") == 0 ||
-            line.compare(0, 6, "HETATM") == 0)
-        {
-            infmt = 0;
-            x[0] = atof(line.substr(30, 8).c_str());
-            x[1] = atof(line.substr(38, 8).c_str());
-            x[2] = atof(line.substr(46, 8).c_str());
-            if (mirror_opt)
-                x[2] = -x[2];
-            if (read_resi == 1)
-                resi = line.substr(22, 5);
-            else
-                resi = line.substr(22, 5) + line[21];
-            hinge = 0;
-            if (resi2hinge_dict.count(resi))
-                hinge = resi2hinge_dict[resi];
-            tu2t_u(tu_vec[hinge], t, u);
-            transform(t, u, x, x1);
-            buf << line.substr(0, 30) << setiosflags(ios::fixed)
-                << setprecision(3)
-                << setw(8) << x1[0] << setw(8) << x1[1] << setw(8) << x1[2]
-                << line.substr(54) << '\n';
-        }
-        else if (line.compare(0, 5, "loop_") == 0)
-        {
-            infmt = 3;
-            buf << line << '\n';
-            while (1)
-            {
-                if (compress_type)
-                {
-                    if (fin_gz.good())
-                        getline(fin_gz, line);
-                    else
-                        PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                }
-                else
-                {
-                    if (fin.good())
-                        getline(fin, line);
-                    else
-                        PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                }
-                if (line.size())
-                    break;
-            }
-            buf << line << '\n';
-            if (line.compare(0, 11, "_atom_site."))
-                continue;
-            _atom_site.clear();
-            atom_site_pos = 0;
-            _atom_site[Trim(line.substr(11))] = atom_site_pos;
-            while (1)
-            {
-                while (1)
-                {
-                    if (compress_type)
-                    {
-                        if (fin_gz.good())
-                            getline(fin_gz, line);
-                        else
-                            PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                    }
-                    else
-                    {
-                        if (fin.good())
-                            getline(fin, line);
-                        else
-                            PrintErrorAndQuit("ERROR! Unexpected end of " + xname);
-                    }
-                    if (line.size())
-                        break;
-                }
-                if (line.compare(0, 11, "_atom_site."))
-                    break;
-                _atom_site[Trim(line.substr(11))] = ++atom_site_pos;
-                buf << line << '\n';
-            }
-
-            if (_atom_site.count("group_PDB") *
-                    _atom_site.count("Cartn_x") *
-                    _atom_site.count("Cartn_y") *
-                    _atom_site.count("Cartn_z") ==
-                0)
-            {
-                buf << line << '\n';
-                cerr << "Warning! Missing one of the following _atom_site data items: group_PDB, Cartn_x, Cartn_y, Cartn_z" << endl;
-                continue;
-            }
-
-            while (1)
-            {
-                line_vec.clear();
-                split(line, line_vec);
-                if (line_vec[_atom_site["group_PDB"]] != "ATOM" &&
-                    line_vec[_atom_site["group_PDB"]] != "HETATM")
-                    break;
-
-                x[0] = atof(line_vec[_atom_site["Cartn_x"]].c_str());
-                x[1] = atof(line_vec[_atom_site["Cartn_y"]].c_str());
-                x[2] = atof(line_vec[_atom_site["Cartn_z"]].c_str());
-                if (mirror_opt)
-                    x[2] = -x[2];
-
-                if (_atom_site.count("auth_seq_id"))
-                    resi = line_vec[_atom_site["auth_seq_id"]];
-                else
-                    resi = line_vec[_atom_site["label_seq_id"]];
-                if (_atom_site.count("pdbx_PDB_ins_code") &&
-                    line_vec[_atom_site["pdbx_PDB_ins_code"]] != "?")
-                    resi += line_vec[_atom_site["pdbx_PDB_ins_code"]][0];
-                else
-                    resi += " ";
-                if (read_resi >= 2)
-                {
-                    if (_atom_site.count("auth_asym_id"))
-                        asym_id = line_vec[_atom_site["auth_asym_id"]];
-                    else
-                        asym_id = line_vec[_atom_site["label_asym_id"]];
-                    if (asym_id == ".")
-                        asym_id = " ";
-                    resi += asym_id[0];
-                }
-                hinge = 0;
-                if (resi2hinge_dict.count(resi))
-                    hinge = resi2hinge_dict[resi];
-                tu2t_u(tu_vec[hinge], t, u);
-                transform(t, u, x, x1);
-
-                for (atom_site_pos = 0; atom_site_pos < _atom_site.size(); atom_site_pos++)
-                {
-                    if (atom_site_pos == _atom_site["Cartn_x"])
-                        buf << setiosflags(ios::fixed) << setprecision(3)
-                            << setw(8) << x1[0] << ' ';
-                    else if (atom_site_pos == _atom_site["Cartn_y"])
-                        buf << setiosflags(ios::fixed) << setprecision(3)
-                            << setw(8) << x1[1] << ' ';
-                    else if (atom_site_pos == _atom_site["Cartn_z"])
-                        buf << setiosflags(ios::fixed) << setprecision(3)
-                            << setw(8) << x1[2] << ' ';
-                    else
-                        buf << line_vec[atom_site_pos] << ' ';
-                }
-                buf << '\n';
-
-                if (compress_type && fin_gz.good())
-                    getline(fin_gz, line);
-                else if (!compress_type && fin.good())
-                    getline(fin, line);
-                else
-                    break;
-            }
-            if (compress_type ? fin_gz.good() : fin.good())
-                buf << line << '\n';
-        }
-        else if (line.size())
-        {
-            buf << line << '\n';
-            if (ter_opt >= 1 && line.compare(0, 3, "END") == 0)
-                break;
-        }
-    }
-    if (compress_type)
-        fin_gz.close();
-    else
-        fin.close();
-
-    string fname_super_full = fname_super;
-    if (infmt == 0)
-        fname_super_full += ".pdb";
-    else if (infmt == 3)
-        fname_super_full += ".cif";
     ofstream fp;
-    fp.open(fname_super_full.c_str());
-    fp << buf.str();
-    fp.close();
-    buf.str(string());
+    string fname_super_full = read_superposed_structure1(xname, fname_super,
+        tu_vec, ter_opt, mirror_opt, resi_vec1, seqM, seqxA);
 
     string struct1_basename = get_basename(fname_super_full);
     string struct2_basename = copy_flexalign_structure2_to_outdir(yname, fname_super);
@@ -2593,14 +2349,6 @@ void output_flexalign_chimerax(const string xname, const string yname,
         buf_cxc.str(string());
     }
 
-    cxc_list.clear();
-    resi1_sele.clear();
-    resi2_sele.clear();
-    curr_resi1.clear();
-    curr_resi2.clear();
-    chain1_sele.clear();
-    chain2_sele.clear();
-    resi2hinge_dict.clear();
 }
 
 // output the final results
@@ -2691,7 +2439,7 @@ void output_flexalign_results(const string xname, const string yname,
 
     if (o_opt == 1)
         output_flexalign_pymol(xname, yname, fname_super, tu_vec,
-                               t, u, ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
+                               ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
                                resi_vec1, resi_vec2, chainID1, chainID2);
     else if (o_opt == 2)
         output_flexalign_rasmol(xname, yname, fname_super, tu_vec,
