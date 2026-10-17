@@ -125,8 +125,8 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
         <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
         <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
         <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
-    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor grey\n";
-    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
+    std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect *A\ncolor grey\nselect *B\ncolor wheat\n";
+    std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor grey\nselect *B\ncolor wheat\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
     if (!mm_opt) rasmol_state.buf<<rasmol_CA_header;
     rasmol_state.buf_all<<rasmol_CA_header;
     if (!mm_opt) rasmol_state.buf_atm<<rasmol_cartoon_header;
@@ -136,22 +136,50 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
 
 inline std::string build_rasmol_segment_cmd(const std::vector<std::string>& seg_sele)
 {
-    // Same 35-color palette as the PyMOL writer, so all tools share one scheme
     const char* color1_list[] = {
         "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
-        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
-        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
-        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green"
+        "skyblue", "greenblue", "redorange", "hotpink", "seagreen", "violet", "gold", "bluetint",
+        "greentint", "pinktint", "yellowtint", "gray", "white", "black"
     };
     const int color_palette_size = static_cast<int>(sizeof(color1_list) / sizeof(color1_list[0]));
+    const int max_line_len = 250;
     std::string cmd;
     const int num_seg = static_cast<int>(seg_sele.size());
     for (int h = 0; h < num_seg; h++)
     {
         if (seg_sele[h].size() == 0)
             continue;
-        cmd += "select " + seg_sele[h] + "\n";
-        cmd += "color " + std::string(color1_list[h % color_palette_size]) + "\n";
+        const std::string color = color1_list[h % color_palette_size];
+        std::vector<std::string> token_list;
+        size_t begin = 0;
+        while (begin <= seg_sele[h].size())
+        {
+            size_t comma = seg_sele[h].find(',', begin);
+            if (comma == std::string::npos)
+            {
+                token_list.push_back(seg_sele[h].substr(begin));
+                break;
+            }
+            token_list.push_back(seg_sele[h].substr(begin, comma - begin));
+            begin = comma + 1;
+        }
+        std::string line = "select ";
+        bool line_empty = true;
+        for (size_t t = 0; t < token_list.size(); t++)
+        {
+            const int sep_len = line_empty ? 0 : 1;
+            if (static_cast<int>(line.size() + sep_len + token_list[t].size()) > max_line_len)
+            {
+                cmd += line + "\n";
+                cmd += "color " + color + "\n";
+                line = "select ";
+                line_empty = true;
+            }
+            line += line_empty ? token_list[t] : "," + token_list[t];
+            line_empty = false;
+        }
+        cmd += line + "\n";
+        cmd += "color " + color + "\n";
     }
     return cmd;
 }
