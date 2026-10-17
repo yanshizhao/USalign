@@ -826,8 +826,8 @@ void output_flexalign_rasmol(const string xname, const string yname,
            << ", TM-score=" << setw(7) << setiosflags(ios::fixed) << setprecision(5) << TM1
            << ", ID=" << setw(5) << setiosflags(ios::fixed) << setprecision(3)
            << ((n_ali8 > 0) ? Liden / n_ali8 : 0) << endl;
-    string rasmol_CA_header = "load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect *A\ncolor grey\nselect *B\ncolor wheat\n";
-    string rasmol_cartoon_header = "load inline\nselect all\ncartoon\nselect *A\ncolor grey\nselect *B\ncolor wheat\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
+    string rasmol_CA_header = "load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect *A\ncolor grey\nselect *B\ncolor yellowtint\n";
+    string rasmol_cartoon_header = "load inline\nselect all\ncartoon\nselect *A\ncolor grey\nselect *B\ncolor yellowtint\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
     if (!mm_opt)
         buf << rasmol_CA_header;
     buf_all << rasmol_CA_header;
