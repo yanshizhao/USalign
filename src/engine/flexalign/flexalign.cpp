@@ -1088,16 +1088,18 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                 else
                 {
                     pymol_state.resi1_sele[hinge_idx] += " or i. " + curr_resi1;
-                    pymol_state.resi1_bond[hinge_idx] += "bond structure1 and i. " + prev_resi1[hinge_idx] +
-                                  ", i. " + curr_resi1 + "\n";
+                    pymol_state.resi1_bond[hinge_idx] += "bond structure1" + pymol_state.chain1_sele +
+                                  " and i. " + prev_resi1[hinge_idx] + ", structure1" +
+                                  pymol_state.chain1_sele + " and i. " + curr_resi1 + "\n";
                 }
                 if (pymol_state.resi2_sele[hinge_idx].size() == 0)
                     pymol_state.resi2_sele[hinge_idx] = "i. " + curr_resi2;
                 else
                 {
                     pymol_state.resi2_sele[hinge_idx] += " or i. " + curr_resi2;
-                    pymol_state.resi2_bond[hinge_idx] += "bond structure2 and i. " + prev_resi2[hinge_idx] +
-                                  ", i. " + curr_resi2 + "\n";
+                    pymol_state.resi2_bond[hinge_idx] += "bond structure2" + pymol_state.chain2_sele +
+                                  " and i. " + prev_resi2[hinge_idx] + ", structure2" +
+                                  pymol_state.chain2_sele + " and i. " + curr_resi2 + "\n";
                 }
             }
             prev_resi1[hinge_idx] = curr_resi1;

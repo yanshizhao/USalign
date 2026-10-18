@@ -193,7 +193,7 @@ inline void extract_aligned_resi(FlexalignRasmolState& rasmol_state,
     rasmol_state.i2=-1;
     std::string seg_cmd;
     std::string chain1_suffix;
-    if (rasmol_state.chain1_sele.size()) chain1_suffix=":"+rasmol_state.chain1_sele;
+    chain1_suffix=":A";
     if (!mm_opt)
     {
         // Group aligned residues of structure 1 by hinge segment, following the
