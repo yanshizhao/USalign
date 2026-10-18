@@ -6,7 +6,30 @@
 #include "se.h"
 #include "common.h"
 
+#include <string>
+#include <vector>
+
 #define MAX_SEC_STRUCT_OPT 1
+
+const std::vector<std::string> flexalign_pymol_color_list = {
+    "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+    "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
+    "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
+    "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green"
+};
+
+const std::vector<std::string> flexalign_chimerax_color_list = {
+    "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+    "teal", "firebrick", "forest", "gold", "violet", "skyblue", "salmon", "aquamarine", "chocolate", "hotpink",
+    "lime", "olive", "slate", "cornflowerblue", "palegreen", "khaki", "lightpink", "lightblue", "orchid",
+    "plum", "tan", "dodgerblue", "coral", "mediumblue"
+};
+
+const std::vector<std::string> flexalign_rasmol_color_list = {
+    "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+    "skyblue", "greenblue", "redorange", "hotpink", "seagreen", "violet", "gold", "bluetint",
+    "greentint", "pinktint", "yellowtint", "gray", "white", "black"
+};
 
 inline void t_u2tu(const Vec3& t0, const RotMat& u0, std::vector<double> &tu_tmp)
 {
@@ -136,12 +159,7 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
 
 inline std::string build_rasmol_segment_cmd(const std::vector<std::string>& seg_sele)
 {
-    const char* color1_list[] = {
-        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
-        "skyblue", "greenblue", "redorange", "hotpink", "seagreen", "violet", "gold", "bluetint",
-        "greentint", "pinktint", "yellowtint", "gray", "white", "black"
-    };
-    const int color_palette_size = static_cast<int>(sizeof(color1_list) / sizeof(color1_list[0]));
+    const int color_palette_size = static_cast<int>(flexalign_rasmol_color_list.size());
     const int max_line_len = 250;
     std::string cmd;
     const int num_seg = static_cast<int>(seg_sele.size());
@@ -149,7 +167,7 @@ inline std::string build_rasmol_segment_cmd(const std::vector<std::string>& seg_
     {
         if (seg_sele[h].size() == 0)
             continue;
-        const std::string color = color1_list[h % color_palette_size];
+        const std::string color = flexalign_rasmol_color_list[h % color_palette_size];
         std::vector<std::string> token_list;
         size_t begin = 0;
         while (begin <= seg_sele[h].size())

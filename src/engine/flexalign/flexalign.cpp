@@ -1143,15 +1143,8 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     const std::vector<std::string>& resi1_bond = pymol_state.resi1_bond;
     const std::vector<std::string>& resi2_bond = pymol_state.resi2_bond;
     const int num_hinges = static_cast<int>(resi1_sele.size());
-    // Define 35 distinct PyMOL colors for Structure 1
-    // The first 10 are highly contrasting for standard cases
-    const char* color1_list[] = {
-        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink", // Top 10 highly contrasting
-        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
-        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
-        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green" // Extended palette to safely cover >31 hinges
-    };
-    const int color_palette_size = static_cast<int>(sizeof(color1_list) / sizeof(color1_list[0]));
+    const int pymol_palette_size = static_cast<int>(flexalign_pymol_color_list.size());
+    const int chimerax_palette_size = static_cast<int>(flexalign_chimerax_color_list.size());
     std::stringstream buf_pymol;
     std::vector<std::string> pml_list;
     pml_list.push_back(fname_super);
@@ -1241,7 +1234,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
             {
                 if (resi1_sele[h].size())
                     buf_pymol << "color #1" << chain1_sele << resi1_sele[h] << " "
-                        << color1_list[h % color_palette_size] << "\n";
+                        << flexalign_chimerax_color_list[h % chimerax_palette_size] << "\n";
             }
             buf_pymol << "set bgColor white\n" << std::endl;
             fp.open((pml_list[p] + ".cxc").c_str());
@@ -1325,7 +1318,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
         for (int h = 0; h < num_hinges; h++)
         {
             if (resi1_sele[h].size())
-                buf_pymol << "color " << color1_list[h % color_palette_size] << ", hinge_" << h << "_str1\n";
+                buf_pymol << "color " << flexalign_pymol_color_list[h % pymol_palette_size] << ", hinge_" << h << "_str1\n";
         }
         buf_pymol
             << "set ribbon_width, 6\n"
