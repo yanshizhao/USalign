@@ -1232,7 +1232,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
                     << "hide all cartoon\n"
                     << "show #1" << chain1_sele << " cartoon\n"
                     << "show #2" << chain2_sele << " cartoon\n"
-                    << "show solvent atoms,bonds\n";
+                    << "show ligand|solvent|ions atoms,bonds\n";
             }
             buf_pymol
                 << "color #1 grey\n"
@@ -1304,8 +1304,8 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
         else if (p == 4) // _all_atm_lig.pml
         {
             buf_pymol
-                << "show cartoon, structure1\n"
-                << "show cartoon, structure2\n"
+                << "show cartoon, structure1" << chain1_sele << "\n"
+                << "show cartoon, structure2" << chain2_sele << "\n"
                 << "show stick, not polymer\n"
                 << "show sphere, not polymer\n";
         }
