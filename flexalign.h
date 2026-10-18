@@ -5,6 +5,26 @@
 
 #include "TMalign.h"
 
+const vector<string> flexalign_pymol_color_list = {
+    "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+    "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
+    "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
+    "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green"
+};
+
+const vector<string> flexalign_chimerax_color_list = {
+    "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+    "teal", "firebrick", "forest", "gold", "violet", "skyblue", "salmon", "aquamarine", "chocolate", "hotpink",
+    "lime", "olive", "slate", "cornflowerblue", "palegreen", "khaki", "lightpink", "lightblue", "orchid",
+    "plum", "tan", "dodgerblue", "coral", "mediumblue"
+};
+
+const vector<string> flexalign_rasmol_color_list = {
+    "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
+    "skyblue", "greenblue", "redorange", "hotpink", "seagreen", "violet", "gold", "bluetint",
+    "greentint", "pinktint", "yellowtint", "gray", "white", "black"
+};
+
 void t_u2tu(double t0[3], double u0[3][3], vector<double> &tu_tmp)
 {
     int i, j, k;
@@ -705,11 +725,7 @@ void output_flexalign_rotation_matrix(const char *fname_matrix,
 
 string build_rasmol_segment_cmd(const vector<string> &seg_sele)
 {
-    const char *color1_list[] = {
-        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
-        "skyblue", "greenblue", "redorange", "hotpink", "seagreen", "violet", "gold", "bluetint",
-        "greentint", "pinktint", "yellowtint", "gray", "white", "black"};
-    const int color_palette_size = sizeof(color1_list) / sizeof(color1_list[0]);
+    const int color_palette_size = (int)flexalign_rasmol_color_list.size();
     const int max_line_len = 250;
     string cmd;
     const int num_seg = seg_sele.size();
@@ -717,7 +733,7 @@ string build_rasmol_segment_cmd(const vector<string> &seg_sele)
     {
         if (seg_sele[h].size() == 0)
             continue;
-        const string color = color1_list[h % color_palette_size];
+        const string color = flexalign_rasmol_color_list[h % color_palette_size];
         vector<string> token_list;
         size_t begin = 0;
         while (begin <= seg_sele[h].size())
@@ -1986,15 +2002,7 @@ void output_flexalign_pymol(const string xname, const string yname,
     pml_list.push_back(fname_super + "_all_atm");
     pml_list.push_back(fname_super + "_all_atm_lig");
 
-    // Define 35 distinct PyMOL colors for Structure 1 
-    // The first 10 are highly contrasting for standard cases
-    const char* color1_list[] = {
-        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink", // Top 10 highly contrasting
-        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
-        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
-        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green" // Extended palette to safely cover >31 hinges
-    };
-    int color_palette_size = sizeof(color1_list) / sizeof(color1_list[0]);
+    int pymol_palette_size = (int)flexalign_pymol_color_list.size();
 
     for (int p = 0; p < pml_list.size(); p++)
     {
@@ -2067,7 +2075,7 @@ void output_flexalign_pymol(const string xname, const string yname,
         // Color each hinge in Structure 1 with distinct colors
         for (int h = 0; h < num_hinges; h++) {
             if (resi1_sele[h].size()) {
-                buf_pymol << "color " << color1_list[h % color_palette_size] << ", hinge_" << h << "_str1\n";
+                buf_pymol << "color " << flexalign_pymol_color_list[h % pymol_palette_size] << ", hinge_" << h << "_str1\n";
             }
             // Structure 2 remains gray, so we don't apply specific colors to it
         }
@@ -2249,13 +2257,7 @@ void output_flexalign_chimerax(const string xname, const string yname,
     cxc_list.push_back(fname_super + "_all_atm");
     cxc_list.push_back(fname_super + "_all_atm_lig");
 
-    const char* color1_list[] = {
-        "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
-        "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
-        "lime", "olive", "slate", "paleblue", "palegreen", "paleyellow", "lightpink", "lightblue", "lightmagenta",
-        "dirtyviolet", "dash", "tv_blue", "tv_red", "tv_green"
-    };
-    int color_palette_size = sizeof(color1_list) / sizeof(color1_list[0]);
+    int chimerax_palette_size = (int)flexalign_chimerax_color_list.size();
 
     for (int p = 0; p < cxc_list.size(); p++)
     {
@@ -2338,7 +2340,7 @@ void output_flexalign_chimerax(const string xname, const string yname,
         {
             if (resi1_sele[h].size())
                 buf_cxc << "color #1" << chain1_sele << resi1_sele[h] << " "
-                    << color1_list[h % color_palette_size] << "\n";
+                    << flexalign_chimerax_color_list[h % chimerax_palette_size] << "\n";
         }
         buf_cxc << "set bgColor white\n" << endl;
 
