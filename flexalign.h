@@ -891,8 +891,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
     vector<string> seg_sele;
     string seg_cmd;
     string chain1_suffix;
-    if (chain1_sele.size())
-        chain1_suffix = ":" + chain1_sele;
+    chain1_suffix = ":A";
     if (!mm_opt)
     {
         if (num_hinges > 0)
@@ -1954,8 +1953,8 @@ void output_flexalign_pymol(const string xname, const string yname,
             else
             {
                 resi1_sele[hinge_idx] += " or i. " + curr_resi1;
-                resi1_bond[hinge_idx] += "bond structure1 and i. " + prev_resi1[hinge_idx] +
-                              ", i. " + curr_resi1 + "\n";
+                resi1_bond[hinge_idx] += "bond structure1" + chain1_sele + " and i. " + prev_resi1[hinge_idx] +
+                              ", structure1" + chain1_sele + " and i. " + curr_resi1 + "\n";
             }
 
             if (resi2_sele[hinge_idx].size() == 0)
@@ -1963,8 +1962,8 @@ void output_flexalign_pymol(const string xname, const string yname,
             else
             {
                 resi2_sele[hinge_idx] += " or i. " + curr_resi2;
-                resi2_bond[hinge_idx] += "bond structure2 and i. " + prev_resi2[hinge_idx] +
-                              ", i. " + curr_resi2 + "\n";
+                resi2_bond[hinge_idx] += "bond structure2" + chain2_sele + " and i. " + prev_resi2[hinge_idx] +
+                              ", structure2" + chain2_sele + " and i. " + curr_resi2 + "\n";
             }
 
             prev_resi1[hinge_idx] = curr_resi1;
@@ -2048,8 +2047,8 @@ void output_flexalign_pymol(const string xname, const string yname,
         else if (p == 4) // _all_atm_lig.pml
         {
             buf_pymol
-                << "show cartoon, structure1\n"
-                << "show cartoon, structure2\n"
+                << "show cartoon, structure1" << chain1_sele << "\n"
+                << "show cartoon, structure2" << chain2_sele << "\n"
                 << "show stick, not polymer\n"
                 << "show sphere, not polymer\n";
         }
@@ -2329,7 +2328,7 @@ void output_flexalign_chimerax(const string xname, const string yname,
                 << "hide all cartoon\n"
                 << "show #1" << chain1_sele << " cartoon\n"
                 << "show #2" << chain2_sele << " cartoon\n"
-                << "show solvent atoms,bonds\n";
+                << "show ligand|solvent|ions atoms,bonds\n";
         }
 
         buf_cxc
