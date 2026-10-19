@@ -1880,6 +1880,13 @@ string read_superposed_structure1(const string xname, const string fname_super,
     return fname_super_full;
 }
 
+string pymol_resi_chain_suffix(const string& resi)
+{
+    if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')
+        return "";
+    return " and c. " + string(1, resi[5]);
+}
+
 void output_flexalign_pymol(const string xname, const string yname,
                             const string fname_super, const vector<vector<double> > &tu_vec,
                             const int ter_opt,
@@ -1936,6 +1943,8 @@ void output_flexalign_pymol(const string xname, const string yname,
     vector<string> resi2_bond(num_hinges, "");
     vector<string> prev_resi1(num_hinges, "");
     vector<string> prev_resi2(num_hinges, "");
+    vector<string> prev_chain1(num_hinges, "");
+    vector<string> prev_chain2(num_hinges, "");
     string curr_resi1;
     string curr_resi2;
 
@@ -1953,6 +1962,8 @@ void output_flexalign_pymol(const string xname, const string yname,
 
             curr_resi1 = resi_vec1[i1].substr(0, 4);
             curr_resi2 = resi_vec2[i2].substr(0, 4);
+            string curr_chain1 = (split_opt == 0) ? pymol_resi_chain_suffix(resi_vec1[i1]) : "";
+            string curr_chain2 = (split_opt == 0) ? pymol_resi_chain_suffix(resi_vec2[i2]) : "";
 
             // Extract hinge index from the alignment mapping (seqM)
             char hinge_char = seqM[i];
@@ -1969,8 +1980,9 @@ void output_flexalign_pymol(const string xname, const string yname,
             else
             {
                 resi1_sele[hinge_idx] += " or i. " + curr_resi1;
-                resi1_bond[hinge_idx] += "bond structure1" + chain1_sele + " and i. " + prev_resi1[hinge_idx] +
-                              ", structure1" + chain1_sele + " and i. " + curr_resi1 + "\n";
+                if (split_opt != 0 || prev_chain1[hinge_idx] == curr_chain1)
+                    resi1_bond[hinge_idx] += "bond structure1" + chain1_sele + curr_chain1 + " and i. " + prev_resi1[hinge_idx] +
+                                  ", structure1" + chain1_sele + curr_chain1 + " and i. " + curr_resi1 + "\n";
             }
 
             if (resi2_sele[hinge_idx].size() == 0)
@@ -1978,12 +1990,15 @@ void output_flexalign_pymol(const string xname, const string yname,
             else
             {
                 resi2_sele[hinge_idx] += " or i. " + curr_resi2;
-                resi2_bond[hinge_idx] += "bond structure2" + chain2_sele + " and i. " + prev_resi2[hinge_idx] +
-                              ", structure2" + chain2_sele + " and i. " + curr_resi2 + "\n";
+                if (split_opt != 0 || prev_chain2[hinge_idx] == curr_chain2)
+                    resi2_bond[hinge_idx] += "bond structure2" + chain2_sele + curr_chain2 + " and i. " + prev_resi2[hinge_idx] +
+                                  ", structure2" + chain2_sele + curr_chain2 + " and i. " + curr_resi2 + "\n";
             }
 
             prev_resi1[hinge_idx] = curr_resi1;
             prev_resi2[hinge_idx] = curr_resi2;
+            prev_chain1[hinge_idx] = curr_chain1;
+            prev_chain2[hinge_idx] = curr_chain2;
         }
 
         // Wrap final selections in parentheses
