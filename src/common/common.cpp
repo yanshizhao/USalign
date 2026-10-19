@@ -501,6 +501,14 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
             prev_asym_id = asym_id;
         }
 
+        // first data row without any preceding MODEL/chain switch
+        if (PDB_lines.empty()) {
+            PDB_lines.push_back(tmp_str_vec);
+            mol_vec.push_back(0);
+
+            chainID_list.push_back(build_mmcif_chain_label(asym_id, model_index, split_opt, ter_opt));
+        }
+
         // molecule type counting
         if (AA[0] == ' ' && (AA[1] == 'D' || AA[1] == ' '))
             mol_vec.back()++;
