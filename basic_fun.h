@@ -472,7 +472,7 @@ size_t get_PDB_lines(const string filename,
         string AA="";       // residue name
         string atom="";
         string prev_resi="";
-        string model_index=""; // the same as model_idx but type is string
+        string model_index="1"; // the same as model_idx but type is string
         stringstream i8_stream;
         map<string, string> alt_id_dict; // resi -> alt_id
         string resi_chain;
@@ -661,6 +661,17 @@ size_t get_PDB_lines(const string filename,
                 }
             }
             if (prev_asym_id!=asym_id) prev_asym_id=asym_id;
+
+            if (PDB_lines.size()==0)
+            {
+                PDB_lines.push_back(tmp_str_vec);
+                mol_vec.push_back(0);
+                if (split_opt==1 && ter_opt==0) chainID_list.push_back(
+                    ':'+model_index);
+                else if (split_opt==2 && ter_opt==0)
+                    chainID_list.push_back(':'+model_index+','+asym_id);
+                else chainID_list.push_back(':'+asym_id);
+            }
 
             if (AA[0]==' ' && (AA[1]=='D'||AA[1]==' ')) mol_vec.back()++;
             else mol_vec.back()--;
