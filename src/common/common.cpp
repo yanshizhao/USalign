@@ -346,7 +346,7 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
     int atom_site_pos;
     std::vector<std::string> line_vec;
     std::string line, alt_id = ".", asym_id = ".", prev_asym_id = "";
-    std::string AA, atom, resi, prev_resi, model_index;
+    std::string AA, atom, resi, prev_resi, model_index = "1";
     std::map<std::string, std::string> alt_id_dict;
     std::string resi_chain;
     size_t i = 0;
@@ -403,7 +403,6 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
                 std::cerr << "Warning! Missing one of the following _atom_site data items: group_PDB, label_atom_id, label_comp_id, auth_asym_id/label_asym_id, auth_seq_id/label_seq_id, Cartn_x, Cartn_y, Cartn_z" << std::endl;
                 continue;
             }
-            continue;
         }
 
         // data line parsing
