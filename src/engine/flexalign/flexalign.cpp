@@ -13,7 +13,7 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
     build_pymol_hinge_map(pymol_state, seqM, seqxA, resi_vec1);
     read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
     build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt, o_opt);
-    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt, num_hinges, o_opt);
+    build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt, num_hinges, o_opt, split_opt);
     write_pymol_to_file(pymol_state, fname_super, yname, mm_opt, ter_opt, o_opt);
 }
 void run_flexalign_main(
@@ -1050,7 +1050,7 @@ void read_pymol_structure(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt, const int num_hinges, const int o_opt)
+    const int mm_opt, const int num_hinges, const int o_opt, const int split_opt)
 {
     int i1 = -1;
     int i2 = -1;
@@ -1061,6 +1061,8 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     pymol_state.resi2_bond.assign(num_hinges, "");
     std::vector<std::string> prev_resi1(num_hinges, "");
     std::vector<std::string> prev_resi2(num_hinges, "");
+    std::vector<std::string> prev_chain1(num_hinges, "");
+    std::vector<std::string> prev_chain2(num_hinges, "");
     if (!mm_opt)
     {
         for (int i = 0; i < seqM.size(); i++)
@@ -1071,6 +1073,8 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                 continue;
             std::string curr_resi1 = resi_vec1[i1].substr(0, 4);
             std::string curr_resi2 = resi_vec2[i2].substr(0, 4);
+            std::string curr_chain1 = (split_opt == 0) ? pymol_resi_chain_suffix(resi_vec1[i1]) : "";
+            std::string curr_chain2 = (split_opt == 0) ? pymol_resi_chain_suffix(resi_vec2[i2]) : "";
             // Extract hinge index from the alignment mapping (seqM)
             int hinge_idx = hinge_char_to_index(seqM[i]);
             // Safety check to prevent index out of bounds
@@ -1088,22 +1092,26 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                 else
                 {
                     pymol_state.resi1_sele[hinge_idx] += " or i. " + curr_resi1;
-                    pymol_state.resi1_bond[hinge_idx] += "bond structure1" + pymol_state.chain1_sele +
-                                  " and i. " + prev_resi1[hinge_idx] + ", structure1" +
-                                  pymol_state.chain1_sele + " and i. " + curr_resi1 + "\n";
+                    if (split_opt != 0 || prev_chain1[hinge_idx] == curr_chain1)
+                        pymol_state.resi1_bond[hinge_idx] += "bond structure1" + pymol_state.chain1_sele + curr_chain1 +
+                                      " and i. " + prev_resi1[hinge_idx] + ", structure1" +
+                                      pymol_state.chain1_sele + curr_chain1 + " and i. " + curr_resi1 + "\n";
                 }
                 if (pymol_state.resi2_sele[hinge_idx].size() == 0)
                     pymol_state.resi2_sele[hinge_idx] = "i. " + curr_resi2;
                 else
                 {
                     pymol_state.resi2_sele[hinge_idx] += " or i. " + curr_resi2;
-                    pymol_state.resi2_bond[hinge_idx] += "bond structure2" + pymol_state.chain2_sele +
-                                  " and i. " + prev_resi2[hinge_idx] + ", structure2" +
-                                  pymol_state.chain2_sele + " and i. " + curr_resi2 + "\n";
+                    if (split_opt != 0 || prev_chain2[hinge_idx] == curr_chain2)
+                        pymol_state.resi2_bond[hinge_idx] += "bond structure2" + pymol_state.chain2_sele + curr_chain2 +
+                                      " and i. " + prev_resi2[hinge_idx] + ", structure2" +
+                                      pymol_state.chain2_sele + curr_chain2 + " and i. " + curr_resi2 + "\n";
                 }
             }
             prev_resi1[hinge_idx] = curr_resi1;
             prev_resi2[hinge_idx] = curr_resi2;
+            prev_chain1[hinge_idx] = curr_chain1;
+            prev_chain2[hinge_idx] = curr_chain2;
         }
         // Wrap final selections in parentheses
         if (o_opt != 3)

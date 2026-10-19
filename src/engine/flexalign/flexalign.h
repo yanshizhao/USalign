@@ -422,6 +422,13 @@ inline void fill_pymol_chain_sele(std::string& chain_sele, const std::string& ch
         chain_sele = " and c. " + chain_id;
 }
 
+inline std::string pymol_resi_chain_suffix(const std::string& resi)
+{
+    if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')
+        return "";
+    return " and c. " + std::string(1, resi[5]);
+}
+
 inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string& resi)
 {
     if (resi_sele.size() == 0)
@@ -459,7 +466,7 @@ inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
-    const int mm_opt, const int num_hinges, const int o_opt);
+    const int mm_opt, const int num_hinges, const int o_opt, const int split_opt);
 
 void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     const std::string& fname_super,
