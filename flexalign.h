@@ -1301,7 +1301,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
             lig_idx2++;
             buf_all_atm_lig << line.substr(0, 6) << setw(5) << lig_idx1 + lig_idx2
                             << line.substr(11, 9) << " B" << line.substr(22, 32) << '\n';
-            if (chain1_sele.size() && line[21] != chain1_sele[0])
+            if (chain2_sele.size() && line[21] != chain2_sele[0])
                 continue;
             if (after_ter || line.compare(0, 6, "ATOM  "))
                 continue;
