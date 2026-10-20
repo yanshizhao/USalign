@@ -156,6 +156,14 @@ inline std::string normalize_chain_id(const std::string& chain_id)
     return trimmed;
 }
 
+inline std::string pick_mmcif_chain_id(const std::string& auth_id,
+    const std::string& label_id)
+{
+    std::string chain_id = normalize_chain_id(auth_id);
+    if (chain_id.empty()) chain_id = normalize_chain_id(label_id);
+    return chain_id;
+}
+
 size_t get_PDB_lines(const string filename,
     vector<vector<string> >&PDB_lines, vector<string> &chainID_list,
     vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
@@ -623,7 +631,7 @@ size_t get_PDB_lines(const string filename,
 
             if (chain2parse.size())
             {
-                string cid = normalize_chain_id(asym_id);
+                string cid = full_chain_id;
                 if (cid.empty()) cid = "_";
                 bool wanted = false;
                 for (size_t ci = 0; ci < chain2parse.size(); ci++)

@@ -1155,8 +1155,12 @@ void output_flexalign_rasmol(const string xname, const string yname,
                     resi += asym_id[0];
                 }
                 {
+                    const string auth_id = _atom_site.count("auth_asym_id")
+                        ? line_vec[_atom_site["auth_asym_id"]] : ".";
+                    const string label_id = _atom_site.count("label_asym_id")
+                        ? line_vec[_atom_site["label_asym_id"]] : ".";
                     const std::string key = make_hinge_key(
-                        normalize_chain_id(asym_id), resi);
+                        pick_mmcif_chain_id(auth_id, label_id), resi);
                     hinge = 0;
                     if (resi2hinge_dict.count(key)) hinge = resi2hinge_dict[key];
                 }
@@ -1876,8 +1880,12 @@ string read_superposed_structure1(const string xname, const string fname_super,
                     resi += asym_id[0];
                 }
                 {
+                    const string auth_id = _atom_site.count("auth_asym_id")
+                        ? line_vec[_atom_site["auth_asym_id"]] : ".";
+                    const string label_id = _atom_site.count("label_asym_id")
+                        ? line_vec[_atom_site["label_asym_id"]] : ".";
                     const std::string key = make_hinge_key(
-                        normalize_chain_id(asym_id), resi);
+                        pick_mmcif_chain_id(auth_id, label_id), resi);
                     hinge = 0;
                     if (resi2hinge_dict.count(key)) hinge = resi2hinge_dict[key];
                 }
