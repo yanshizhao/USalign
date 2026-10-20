@@ -655,6 +655,8 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
 
     std::vector<std::vector<std::string> >PDB_lines1; // text of chain1
     std::vector<std::vector<std::string> >PDB_lines2; // text of chain2
+    std::vector<std::vector<std::string> >full_chain_lines1; // full chain IDs of chain1
+    std::vector<std::vector<std::string> >full_chain_lines2; // full chain IDs of chain2
     std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
@@ -721,7 +723,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
-            pdb_parse_opts1);
+            pdb_parse_opts1, &full_chain_lines1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -763,7 +765,7 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                 {
                     user_opts.yname=parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
-                        pdb_parse_opts2);
+                        pdb_parse_opts2, &full_chain_lines2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
@@ -797,7 +799,8 @@ int TMalign(AlignCommonInput& common_inputs, const TMalignParams& tm_params)
                     else make_sec(ya, ylen, secy);
 
                     if (user_opts.byresi_opt) extract_aln_from_resi(parsed_input.sequence,
-                        seqx, seqy, resi_vec1, resi_vec2, user_opts.byresi_opt);
+                        seqx, seqy, resi_vec1, resi_vec2, user_opts.byresi_opt,
+                        &full_chain_lines1[chain_i], &full_chain_lines2[chain_j]);
 
                     ChainPairAlignResult chain_align_res = { 0};
                     chain_align_res.d0_out = 5.0;

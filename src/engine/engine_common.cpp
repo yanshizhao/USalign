@@ -357,7 +357,9 @@ void output_NWalign_results(
 
 int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string& seqx, const std::string& seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
-    const int byresi_opt)
+    const int byresi_opt,
+    const std::vector<std::string>* chain_vec1,
+    const std::vector<std::string>* chain_vec2)
 {
     sequence.clear();
     sequence.push_back("");
@@ -393,7 +395,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
         int i;
         for (i=0;i<xlen;i++)
         {
-            chainID=resi_vec1[i].substr(5);
+            chainID=(chain_vec1 && i<(int)chain_vec1->size()) ? (*chain_vec1)[i] : resi_vec1[i].substr(5);
             if (!chainID_vec.size()|| chainID_vec.back()!=chainID)
             {
                 chainID_vec.push_back(chainID);
@@ -405,7 +407,7 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
         chainID_vec.clear();
         for (i=0;i<ylen;i++)
         {
-            chainID=resi_vec2[i].substr(5);
+            chainID=(chain_vec2 && i<(int)chain_vec2->size()) ? (*chain_vec2)[i] : resi_vec2[i].substr(5);
             if (!chainID_vec.size()|| chainID_vec.back()!=chainID)
             {
                 chainID_vec.push_back(chainID);
@@ -423,8 +425,8 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
     {
         if (byresi_opt==2)
         {
-            chainID1=resi_vec1[i1].substr(5);
-            chainID2=resi_vec2[i2].substr(5);
+            chainID1=(chain_vec1 && i1<(int)chain_vec1->size()) ? (*chain_vec1)[i1] : resi_vec1[i1].substr(5);
+            chainID2=(chain_vec2 && i2<(int)chain_vec2->size()) ? (*chain_vec2)[i2] : resi_vec2[i2].substr(5);
         }
         else if (byresi_opt==3)
         {
@@ -484,7 +486,9 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
 int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string& seqx, const std::string& seqy,
     const std::vector<std::string> resi_vec1, const std::vector<std::string> resi_vec2,
     const std::vector<int> xlen_vec, const std::vector<int> ylen_vec,
-    const int chain_i, const int chain_j, const int byresi_opt)
+    const int chain_i, const int chain_j, const int byresi_opt,
+    const std::vector<std::string>* chain_vec1,
+    const std::vector<std::string>* chain_vec2)
 {
     sequence.clear();
     sequence.push_back("");

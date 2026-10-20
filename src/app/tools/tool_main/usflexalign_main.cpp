@@ -500,7 +500,8 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
 
                     if (user_opts.byresi_opt)
                         extract_aln_from_resi(parsed_input.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
-                            chain1_data.resi_vec, chain2_data.resi_vec, user_opts.byresi_opt);
+                            chain1_data.resi_vec, chain2_data.resi_vec, user_opts.byresi_opt,
+                            &chain1_data.chain_vec, &chain2_data.chain_vec);
 
                     FlexAlignResult flexalign_res;
                     run_flexalign(chain1_data, chain2_data, common_inputs, flex_params, flexalign_res);

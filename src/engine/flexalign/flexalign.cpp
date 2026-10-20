@@ -165,7 +165,8 @@ void run_flexalign_task(const FlexalignPairTask& task,
     task_input.user_options = task_user_opts;
     if (task_user_opts.byresi_opt)
         extract_aln_from_resi(task_input.parsed_input.sequence, chain1_data.chain_seq, chain2_data.chain_seq,
-            chain1_data.resi_vec, chain2_data.resi_vec, task_user_opts.byresi_opt);
+            chain1_data.resi_vec, chain2_data.resi_vec, task_user_opts.byresi_opt,
+            &chain1_data.chain_vec, &chain2_data.chain_vec);
 
     FlexAlignResult task_result;
     run_flexalign(chain1_data, chain2_data, task_input, flex_params, task_result, os);
