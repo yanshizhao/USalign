@@ -698,8 +698,13 @@ int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& coords, std:
 
         if (read_resi>=2) resi_vec.push_back(PDB_lines[i].substr(22,5)+
                                              PDB_lines[i][21]);
-        if (chain_vec) chain_vec->push_back(std::string(1, PDB_lines[i][21]));
+        if (chain_vec) chain_vec->push_back(normalize_chain_id(std::string(1, PDB_lines[i][21])));
         if (read_resi==1) resi_vec.push_back(PDB_lines[i].substr(22,5));
+    }
+    if (chain_vec)
+    {
+        if (chain_vec->size() != coords.size())
+            PrintErrorAndQuit("Internal error: chain_vec size mismatch");
     }
     return i;
 }
