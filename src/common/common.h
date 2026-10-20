@@ -183,6 +183,14 @@ inline std::string normalize_chain_id(const std::string& chain_id)
     return trimmed;
 }
 
+inline std::string pick_mmcif_chain_id(const std::string& auth_id,
+    const std::string& label_id)
+{
+    std::string chain_id = normalize_chain_id(auth_id);
+    if (chain_id.empty()) chain_id = normalize_chain_id(label_id);
+    return chain_id;
+}
+
 // Chain filter (PDB version, char chain_id)
 inline bool is_chain_wanted(char chain_id,
     const std::vector<std::string>& chain2parse)

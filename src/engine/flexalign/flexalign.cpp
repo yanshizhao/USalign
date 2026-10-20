@@ -508,8 +508,14 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                     if (rasmol_state.asym_id==".") rasmol_state.asym_id=" ";
                 }
                 {
+                    const std::string auth_id = rasmol_state.atom_site.count("auth_asym_id")
+                        ? rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]]
+                        : ".";
+                    const std::string label_id = rasmol_state.atom_site.count("label_asym_id")
+                        ? rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]]
+                        : ".";
                     const std::string key = make_hinge_key(
-                        normalize_chain_id(rasmol_state.asym_id), rasmol_state.resi);
+                        pick_mmcif_chain_id(auth_id, label_id), rasmol_state.resi);
                     hinge=0;
                     if (rasmol_state.resi2hinge_dict.count(key)) hinge=rasmol_state.resi2hinge_dict[key];
                 }
@@ -1026,8 +1032,12 @@ void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
                 read_state.asym_id = " ";
         }
         {
+            const std::string auth_id = atom_site.count("auth_asym_id")
+                ? line_vec[atom_site["auth_asym_id"]] : ".";
+            const std::string label_id = atom_site.count("label_asym_id")
+                ? line_vec[atom_site["label_asym_id"]] : ".";
             const std::string key = make_hinge_key(
-                normalize_chain_id(read_state.asym_id), read_state.resi);
+                pick_mmcif_chain_id(auth_id, label_id), read_state.resi);
             int hinge = 0;
             if (read_state.resi2hinge_dict.count(key))
                 hinge = read_state.resi2hinge_dict[key];

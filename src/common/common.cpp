@@ -461,7 +461,7 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
             full_chain_id = normalize_chain_id(line_vec[_atom_site["label_asym_id"]]);
 
         // chain filter (mmCIF version)
-        if (!is_chain_wanted_mmcif(asym_id, chain2parse))
+        if (!is_chain_wanted_mmcif(full_chain_id, chain2parse))
             continue;
 
         // MODEL filter
