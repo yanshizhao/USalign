@@ -1124,8 +1124,8 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                 continue;
             std::string curr_resi1 = resi_with_inscode(resi_vec1[i1]);
             std::string curr_resi2 = resi_with_inscode(resi_vec2[i2]);
-            std::string curr_chain_id1 = (split_opt == 0) ? chain_vec1[i1] : "";
-            std::string curr_chain_id2 = (split_opt == 0) ? chain_vec2[i2] : "";
+            std::string curr_chain_id1 = (split_opt != 2) ? chain_vec1[i1] : "";
+            std::string curr_chain_id2 = (split_opt != 2) ? chain_vec2[i2] : "";
             bool skip_chain1 = o_opt != 3 && !curr_chain_id1.empty()
                 && !pymol_chain_addressable(curr_chain_id1);
             bool skip_chain2 = o_opt != 3 && !curr_chain_id2.empty()
@@ -1166,7 +1166,7 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                     else
                     {
                         pymol_state.resi1_sele[hinge_idx] += " or i. " + curr_resi1 + curr_chain1;
-                        if (split_opt != 0 || prev_chain1[hinge_idx] == curr_chain_id1)
+                        if (split_opt == 2 || prev_chain1[hinge_idx] == curr_chain_id1)
                             pymol_state.resi1_bond[hinge_idx] += "bond structure1" + pymol_state.chain1_sele + curr_chain1 +
                                           " and i. " + prev_resi1[hinge_idx] + ", structure1" +
                                           pymol_state.chain1_sele + curr_chain1 + " and i. " + curr_resi1 + "\n";
@@ -1179,7 +1179,7 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
                     else
                     {
                         pymol_state.resi2_sele[hinge_idx] += " or i. " + curr_resi2 + curr_chain2;
-                        if (split_opt != 0 || prev_chain2[hinge_idx] == curr_chain_id2)
+                        if (split_opt == 2 || prev_chain2[hinge_idx] == curr_chain_id2)
                             pymol_state.resi2_bond[hinge_idx] += "bond structure2" + pymol_state.chain2_sele + curr_chain2 +
                                           " and i. " + prev_resi2[hinge_idx] + ", structure2" +
                                           pymol_state.chain2_sele + curr_chain2 + " and i. " + curr_resi2 + "\n";
