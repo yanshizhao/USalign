@@ -148,12 +148,21 @@ string Trim(const string &inputString)
     return result;
 }
 
+inline std::string normalize_chain_id(const std::string& chain_id)
+{
+    std::string trimmed = Trim(chain_id);
+    if (trimmed.empty() || trimmed == "." || trimmed == "?" || trimmed == "_")
+        return "";
+    return trimmed;
+}
+
 size_t get_PDB_lines(const string filename,
     vector<vector<string> >&PDB_lines, vector<string> &chainID_list,
     vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
     const string atom_opt, const bool autojustify, const int split_opt, 
     const int het_opt, const vector<string>&chain2parse,
-    const vector<string>&model2parse)
+    const vector<string>&model2parse,
+    vector<vector<string> > *full_chain_lines=NULL)
 {
     size_t i=0; // resi i.e. atom index
     string line;
@@ -304,11 +313,19 @@ size_t get_PDB_lines(const string filename,
                         alt_id_dict[resi_chain]=line[16];
                     else if (alt_id_dict[resi_chain]!=line[16]) continue;
 
-                    if (chain2parse.size() && ( (line[21]==' ' && 
-                        find(chain2parse.begin(),chain2parse.end(), "_"
-                            )==chain2parse.end())|| (line[21]!=' ' && 
-                        find(chain2parse.begin(), chain2parse.end(),
-                            string(1,line[21]))==chain2parse.end()))) continue;
+                    if (chain2parse.size())
+                    {
+                        string cid = normalize_chain_id(string(1, line[21]));
+                        if (cid.empty()) cid = "_";
+                        bool wanted = false;
+                        for (size_t ci = 0; ci < chain2parse.size(); ci++)
+                        {
+                            string wanted_id = normalize_chain_id(chain2parse[ci]);
+                            if (wanted_id.empty()) wanted_id = "_";
+                            if (wanted_id == cid) { wanted = true; break; }
+                        }
+                        if (!wanted) continue;
+                    }
                         
                     if (!chainID)
                     {
@@ -336,6 +353,7 @@ size_t get_PDB_lines(const string filename,
                             chainID_list.push_back(i8_stream.str());
                         }
                         PDB_lines.push_back(tmp_str_vec);
+                        if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
                         mol_vec.push_back(0);
                     }
                     else if (ter_opt>=2 && chainID!=line[21]) break;
@@ -356,6 +374,7 @@ size_t get_PDB_lines(const string filename,
                         }
                         chainID_list.push_back(i8_stream.str());
                         PDB_lines.push_back(tmp_str_vec);
+                        if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
                         mol_vec.push_back(0);
                     }
 
@@ -364,6 +383,8 @@ size_t get_PDB_lines(const string filename,
                     resi=line.substr(22,5); // including insertion code
 
                     PDB_lines.back().push_back(line);
+                    if (full_chain_lines) full_chain_lines->back().push_back(
+                        normalize_chain_id(string(1, line[21])));
                     if (line[17]==' ' && (line[18]=='D'||line[18]==' ')) mol_vec.back()++;
                     else mol_vec.back()--;
                     i++;
@@ -405,6 +426,7 @@ size_t get_PDB_lines(const string filename,
             i8_stream << ':' << model_idx;
             chainID_list.push_back(i8_stream.str());
             PDB_lines.push_back(tmp_str_vec);
+            if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
             mol_vec.push_back(0);
             for (i=0;i<L;i++)
             {
@@ -417,6 +439,7 @@ size_t get_PDB_lines(const string filename,
                 line=i8_stream.str();
                 i8_stream.str(string());
                 PDB_lines.back().push_back(line);
+                if (full_chain_lines) full_chain_lines->back().push_back("");
             }
             if  (compress_type==-1) getline(cin, line);
             else if (compress_type) getline(fin_gz, line);
@@ -441,6 +464,7 @@ size_t get_PDB_lines(const string filename,
             if (!((compress_type==-1)?cin.good():(compress_type?fin_gz.good():fin.good()))) break;
             chainID_list.push_back(':'+line.substr(0,i));
             PDB_lines.push_back(tmp_str_vec);
+            if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
             mol_vec.push_back(0);
             for (i=0;i<L;i++)
             {
@@ -453,6 +477,7 @@ size_t get_PDB_lines(const string filename,
                 line=i8_stream.str();
                 i8_stream.str(string());
                 PDB_lines.back().push_back(line);
+                if (full_chain_lines) full_chain_lines->back().push_back("");
                 if (line[0]>='a' && line[0]<='z') mol_vec.back()++; // RNA
                 else mol_vec.back()--;
             }
@@ -469,6 +494,7 @@ size_t get_PDB_lines(const string filename,
                             // chainID is char while asym_id is a string
                             // with possibly multiple char
         string prev_asym_id="";
+        string full_chain_id="";
         string AA="";       // residue name
         string atom="";
         string prev_resi="";
@@ -588,11 +614,25 @@ size_t get_PDB_lines(const string filename,
             else asym_id=line_vec[_atom_site["label_asym_id"]];
             if (asym_id==".") asym_id=" ";
 
-            if (chain2parse.size() && ( (asym_id==" " && 
-                find(chain2parse.begin(),chain2parse.end(), "_"
-                )==chain2parse.end())|| (asym_id!=" " && 
-                find(chain2parse.begin(), chain2parse.end(),asym_id
-                )==chain2parse.end()))) continue;
+            full_chain_id.clear();
+            if (_atom_site.count("auth_asym_id"))
+                full_chain_id=normalize_chain_id(line_vec[_atom_site["auth_asym_id"]]);
+            if (full_chain_id.empty() && _atom_site.count("label_asym_id"))
+                full_chain_id=normalize_chain_id(line_vec[_atom_site["label_asym_id"]]);
+
+            if (chain2parse.size())
+            {
+                string cid = normalize_chain_id(asym_id);
+                if (cid.empty()) cid = "_";
+                bool wanted = false;
+                for (size_t ci = 0; ci < chain2parse.size(); ci++)
+                {
+                    string wanted_id = normalize_chain_id(chain2parse[ci]);
+                    if (wanted_id.empty()) wanted_id = "_";
+                    if (wanted_id == cid) { wanted = true; break; }
+                }
+                if (!wanted) continue;
+            }
 
             if (model2parse.size() && _atom_site.count("pdbx_PDB_model_num") &&
                 find(model2parse.begin(), model2parse.end(),
@@ -608,15 +648,17 @@ size_t get_PDB_lines(const string filename,
                 if (PDB_lines.size()==0 || split_opt>=1)
                 {
                     PDB_lines.push_back(tmp_str_vec);
+                    if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
                     mol_vec.push_back(0);
                     prev_asym_id=asym_id;
 
+                    string full_chain_label = full_chain_id.empty() ? "_" : full_chain_id;
                     if (split_opt==1 && ter_opt==0) chainID_list.push_back(
                         ':'+model_index);
                     else if (split_opt==2 && ter_opt==0)
-                        chainID_list.push_back(':'+model_index+','+asym_id);
+                        chainID_list.push_back(':'+model_index+','+full_chain_label);
                     else //if (split_opt==2 && ter_opt==1)
-                        chainID_list.push_back(':'+asym_id);
+                        chainID_list.push_back(':'+full_chain_label);
                     //else
                         //chainID_list.push_back("");
                 }
@@ -648,14 +690,16 @@ size_t get_PDB_lines(const string filename,
                 if (split_opt>=2)
                 {
                     PDB_lines.push_back(tmp_str_vec);
+                    if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
                     mol_vec.push_back(0);
 
+                    string full_chain_label = full_chain_id.empty() ? "_" : full_chain_id;
                     if (split_opt==1 && ter_opt==0) chainID_list.push_back(
                         ':'+model_index);
                     else if (split_opt==2 && ter_opt==0)
-                        chainID_list.push_back(':'+model_index+','+asym_id);
+                        chainID_list.push_back(':'+model_index+','+full_chain_label);
                     else //if (split_opt==2 && ter_opt==1)
-                        chainID_list.push_back(':'+asym_id);
+                        chainID_list.push_back(':'+full_chain_label);
                     //else
                         //chainID_list.push_back("");
                 }
@@ -665,12 +709,14 @@ size_t get_PDB_lines(const string filename,
             if (PDB_lines.size()==0)
             {
                 PDB_lines.push_back(tmp_str_vec);
+                if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
                 mol_vec.push_back(0);
+                string full_chain_label = full_chain_id.empty() ? "_" : full_chain_id;
                 if (split_opt==1 && ter_opt==0) chainID_list.push_back(
                     ':'+model_index);
                 else if (split_opt==2 && ter_opt==0)
-                    chainID_list.push_back(':'+model_index+','+asym_id);
-                else chainID_list.push_back(':'+asym_id);
+                    chainID_list.push_back(':'+model_index+','+full_chain_label);
+                else chainID_list.push_back(':'+full_chain_label);
             }
 
             if (AA[0]==' ' && (AA[1]=='D'||AA[1]==' ')) mol_vec.back()++;
@@ -688,6 +734,7 @@ size_t get_PDB_lines(const string filename,
                 <<setw(8)<<line_vec[_atom_site["Cartn_y"]].substr(0,8)
                 <<setw(8)<<line_vec[_atom_site["Cartn_z"]].substr(0,8);
             PDB_lines.back().push_back(i8_stream.str());
+            if (full_chain_lines) full_chain_lines->back().push_back(full_chain_id);
             i8_stream.str(string());
         }
         _atom_site.clear();
@@ -703,6 +750,9 @@ size_t get_PDB_lines(const string filename,
     else if (compress_type==0) fin.close();
     line.clear();
     if (!split_opt) chainID_list.push_back("");
+    if (full_chain_lines &&
+        full_chain_lines->size() != PDB_lines.size())
+        PrintErrorAndQuit("Internal error: full_chain_lines size mismatch");
     return PDB_lines.size();
 }
 
