@@ -4,6 +4,7 @@
 #define flexalign_h 1
 
 #include "TMalign.h"
+#include <set>
 
 const char CHAIN_KEY_SEP = '\x1f';
 
@@ -799,6 +800,22 @@ void output_flexalign_rasmol(const string xname, const string yname,
             std::cerr << "Warning! Multi-character chain IDs are not supported by RasMol;"
                       << " skipping RasMol output." << std::endl;
             return;
+        }
+    for (size_t ri = 0; ri < resi_vec1.size(); ri++)
+        if (resi_vec1[ri].size() > 4 && resi_vec1[ri][4] != ' ')
+        {
+            std::cerr << "Warning! Insertion codes are not supported by RasMol;"
+                      << " residue selections will include both base and insertion residues."
+                      << std::endl;
+            break;
+        }
+    for (size_t ri = 0; ri < resi_vec2.size(); ri++)
+        if (resi_vec2[ri].size() > 4 && resi_vec2[ri][4] != ' ')
+        {
+            std::cerr << "Warning! Insertion codes are not supported by RasMol;"
+                      << " residue selections will include both base and insertion residues."
+                      << std::endl;
+            break;
         }
     stringstream buf;
     stringstream buf_all;
@@ -2002,6 +2019,28 @@ inline void fill_pymol_chain_sele(std::string& chain_sele, const std::string& ch
     }
 }
 
+inline std::string resi_with_inscode(const std::string& resi)
+{
+    std::string r = resi.substr(0, 4);
+    if (resi.size() >= 5 && resi[4] != ' ')
+        r += resi[4];
+    return r;
+}
+
+inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string& resi,
+    const std::string& chain_id, const std::string& prev_chain_id)
+{
+    if (!chimerax_chain_safe(chain_id))
+        return;
+    const std::string chain_prefix = chimerax_chain_prefix(chain_id);
+    if (resi_sele.size() == 0)
+        resi_sele = chain_prefix + ":" + Trim(resi);
+    else if (chain_id != prev_chain_id)
+        resi_sele += " " + chain_prefix + ":" + Trim(resi);
+    else
+        resi_sele += "," + Trim(resi);
+}
+
 string pymol_resi_chain_suffix(const string& resi)
 {
     if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')
@@ -2064,6 +2103,7 @@ void output_flexalign_pymol(const string xname, const string yname,
     vector<string> prev_resi2(num_hinges, "");
     vector<string> prev_chain1(num_hinges, "");
     vector<string> prev_chain2(num_hinges, "");
+    std::set<std::string> warned_chains;
     string curr_resi1;
     string curr_resi2;
 
@@ -2079,10 +2119,20 @@ void output_flexalign_pymol(const string xname, const string yname,
             i2 += (seqyA[i] != '-');
             if (seqM[i] == ' ' || seqxA[i] == '*') continue;
 
-            curr_resi1 = resi_vec1[i1].substr(0, 4);
-            curr_resi2 = resi_vec2[i2].substr(0, 4);
-            string curr_chain1 = (split_opt == 0) ? pymol_resi_chain_suffix(resi_vec1[i1]) : "";
-            string curr_chain2 = (split_opt == 0) ? pymol_resi_chain_suffix(resi_vec2[i2]) : "";
+            curr_resi1 = resi_with_inscode(resi_vec1[i1]);
+            curr_resi2 = resi_with_inscode(resi_vec2[i2]);
+            std::string curr_chain_id1 = (split_opt != 2) ? chain_vec1[i1] : "";
+            std::string curr_chain_id2 = (split_opt != 2) ? chain_vec2[i2] : "";
+            bool skip_chain1 = !curr_chain_id1.empty()
+                && !pymol_chain_addressable(curr_chain_id1);
+            bool skip_chain2 = !curr_chain_id2.empty()
+                && !pymol_chain_addressable(curr_chain_id2);
+            std::string curr_chain1 = skip_chain1 ? "" : pymol_chain_token(curr_chain_id1);
+            std::string curr_chain2 = skip_chain2 ? "" : pymol_chain_token(curr_chain_id2);
+            if (skip_chain1 && warned_chains.insert(curr_chain_id1).second)
+                warn_skipped_chain(curr_chain_id1, "PyMOL");
+            if (skip_chain2 && warned_chains.insert(curr_chain_id2).second)
+                warn_skipped_chain(curr_chain_id2, "PyMOL");
 
             // Extract hinge index from the alignment mapping (seqM)
             char hinge_char = seqM[i];
@@ -2094,30 +2144,36 @@ void output_flexalign_pymol(const string xname, const string yname,
             // Safety check to prevent index out of bounds
             if (hinge_idx >= num_hinges) hinge_idx = num_hinges - 1;
 
-            if (resi1_sele[hinge_idx].size() == 0)
-                resi1_sele[hinge_idx] = "i. " + curr_resi1;
-            else
+            if (!skip_chain1)
             {
-                resi1_sele[hinge_idx] += " or i. " + curr_resi1;
-                if (split_opt != 0 || prev_chain1[hinge_idx] == curr_chain1)
-                    resi1_bond[hinge_idx] += "bond structure1" + chain1_sele + curr_chain1 + " and i. " + prev_resi1[hinge_idx] +
-                                  ", structure1" + chain1_sele + curr_chain1 + " and i. " + curr_resi1 + "\n";
+                if (resi1_sele[hinge_idx].size() == 0)
+                    resi1_sele[hinge_idx] = "i. " + curr_resi1 + curr_chain1;
+                else
+                {
+                    resi1_sele[hinge_idx] += " or i. " + curr_resi1 + curr_chain1;
+                    if (split_opt == 2 || prev_chain1[hinge_idx] == curr_chain_id1)
+                        resi1_bond[hinge_idx] += "bond structure1" + chain1_sele + curr_chain1 + " and i. " + prev_resi1[hinge_idx] +
+                                      ", structure1" + chain1_sele + curr_chain1 + " and i. " + curr_resi1 + "\n";
+                }
             }
 
-            if (resi2_sele[hinge_idx].size() == 0)
-                resi2_sele[hinge_idx] = "i. " + curr_resi2;
-            else
+            if (!skip_chain2)
             {
-                resi2_sele[hinge_idx] += " or i. " + curr_resi2;
-                if (split_opt != 0 || prev_chain2[hinge_idx] == curr_chain2)
-                    resi2_bond[hinge_idx] += "bond structure2" + chain2_sele + curr_chain2 + " and i. " + prev_resi2[hinge_idx] +
-                                  ", structure2" + chain2_sele + curr_chain2 + " and i. " + curr_resi2 + "\n";
+                if (resi2_sele[hinge_idx].size() == 0)
+                    resi2_sele[hinge_idx] = "i. " + curr_resi2 + curr_chain2;
+                else
+                {
+                    resi2_sele[hinge_idx] += " or i. " + curr_resi2 + curr_chain2;
+                    if (split_opt == 2 || prev_chain2[hinge_idx] == curr_chain_id2)
+                        resi2_bond[hinge_idx] += "bond structure2" + chain2_sele + curr_chain2 + " and i. " + prev_resi2[hinge_idx] +
+                                      ", structure2" + chain2_sele + curr_chain2 + " and i. " + curr_resi2 + "\n";
+                }
             }
 
             prev_resi1[hinge_idx] = curr_resi1;
             prev_resi2[hinge_idx] = curr_resi2;
-            prev_chain1[hinge_idx] = curr_chain1;
-            prev_chain2[hinge_idx] = curr_chain2;
+            prev_chain1[hinge_idx] = curr_chain_id1;
+            prev_chain2[hinge_idx] = curr_chain_id2;
         }
 
         // Wrap final selections in parentheses
@@ -2349,6 +2405,9 @@ void output_flexalign_chimerax(const string xname, const string yname,
     vector<string> resi2_sele(num_hinges, "");
     string curr_resi1;
     string curr_resi2;
+    vector<string> prev_chain1(num_hinges, "");
+    vector<string> prev_chain2(num_hinges, "");
+    std::set<std::string> warned_chains;
 
     if (!mm_opt)
     {
@@ -2358,8 +2417,16 @@ void output_flexalign_chimerax(const string xname, const string yname,
             i2 += (seqyA[i] != '-');
             if (seqM[i] == ' ' || seqxA[i] == '*') continue;
 
-            curr_resi1 = resi_vec1[i1].substr(0, 4);
-            curr_resi2 = resi_vec2[i2].substr(0, 4);
+            curr_resi1 = resi_with_inscode(resi_vec1[i1]);
+            curr_resi2 = resi_with_inscode(resi_vec2[i2]);
+            std::string curr_chain_id1 = (split_opt != 2) ? chain_vec1[i1] : "";
+            std::string curr_chain_id2 = (split_opt != 2) ? chain_vec2[i2] : "";
+            if (!chimerax_chain_safe(curr_chain_id1)
+                && warned_chains.insert(curr_chain_id1).second)
+                warn_skipped_chain(curr_chain_id1, "ChimeraX");
+            if (!chimerax_chain_safe(curr_chain_id2)
+                && warned_chains.insert(curr_chain_id2).second)
+                warn_skipped_chain(curr_chain_id2, "ChimeraX");
 
             char hinge_char = seqM[i];
             int hinge_idx = 0;
@@ -2369,15 +2436,13 @@ void output_flexalign_chimerax(const string xname, const string yname,
 
             if (hinge_idx >= num_hinges) hinge_idx = num_hinges - 1;
 
-            if (resi1_sele[hinge_idx].size() == 0)
-                resi1_sele[hinge_idx] = ":" + Trim(curr_resi1);
-            else
-                resi1_sele[hinge_idx] += "," + Trim(curr_resi1);
+            append_chimerax_resi_sele(resi1_sele[hinge_idx], curr_resi1,
+                curr_chain_id1, prev_chain1[hinge_idx]);
+            append_chimerax_resi_sele(resi2_sele[hinge_idx], curr_resi2,
+                curr_chain_id2, prev_chain2[hinge_idx]);
 
-            if (resi2_sele[hinge_idx].size() == 0)
-                resi2_sele[hinge_idx] = ":" + Trim(curr_resi2);
-            else
-                resi2_sele[hinge_idx] += "," + Trim(curr_resi2);
+            prev_chain1[hinge_idx] = curr_chain_id1;
+            prev_chain2[hinge_idx] = curr_chain_id2;
         }
     }
 
