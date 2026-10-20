@@ -191,6 +191,17 @@ inline std::string pick_mmcif_chain_id(const std::string& auth_id,
     return chain_id;
 }
 
+inline std::string mmcif_resi5(const std::string& seq_id,
+    const std::string& ins_code)
+{
+    std::string resi = seq_id;
+    if (resi.size() > 4) resi = resi.substr(resi.size() - 4);
+    while (resi.size() < 4) resi = " " + resi;
+    if (!ins_code.empty() && ins_code != "?") resi += ins_code[0];
+    else resi += ' ';
+    return resi;
+}
+
 // Chain filter (PDB version, char chain_id)
 inline bool is_chain_wanted(char chain_id,
     const std::vector<std::string>& chain2parse)

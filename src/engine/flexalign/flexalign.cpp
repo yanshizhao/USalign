@@ -493,13 +493,13 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                 if (mirror_opt) rasmol_state.x[2]=-rasmol_state.x[2];
 
 
-                if (rasmol_state.atom_site.count("auth_seq_id"))
-                    rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["auth_seq_id"]];
-                else rasmol_state.resi=rasmol_state.line_vec[rasmol_state.atom_site["label_seq_id"]];
-                if (rasmol_state.atom_site.count("pdbx_PDB_ins_code") && 
-                    rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]]!="?")
-                    rasmol_state.resi+=rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]][0];
-                else rasmol_state.resi+=" ";
+                const std::string seq_id = rasmol_state.atom_site.count("auth_seq_id")
+                    ? rasmol_state.line_vec[rasmol_state.atom_site["auth_seq_id"]]
+                    : rasmol_state.line_vec[rasmol_state.atom_site["label_seq_id"]];
+                const std::string ins_code = rasmol_state.atom_site.count("pdbx_PDB_ins_code")
+                    ? rasmol_state.line_vec[rasmol_state.atom_site["pdbx_PDB_ins_code"]]
+                    : "?";
+                rasmol_state.resi = mmcif_resi5(seq_id, ins_code);
                 if (rasmol_state.read_resi>=2)
                 {
                     if (rasmol_state.atom_site.count("auth_asym_id"))
@@ -1013,15 +1013,13 @@ void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
         if (mirror_opt)
             x[2] = -x[2];
 
-        if (atom_site.count("auth_seq_id"))
-            read_state.resi = line_vec[atom_site["auth_seq_id"]];
-        else
-            read_state.resi = line_vec[atom_site["label_seq_id"]];
-        if (atom_site.count("pdbx_PDB_ins_code") &&
-            line_vec[atom_site["pdbx_PDB_ins_code"]] != "?")
-            read_state.resi += line_vec[atom_site["pdbx_PDB_ins_code"]][0];
-        else
-            read_state.resi += " ";
+        const std::string seq_id = atom_site.count("auth_seq_id")
+            ? line_vec[atom_site["auth_seq_id"]]
+            : line_vec[atom_site["label_seq_id"]];
+        const std::string ins_code = atom_site.count("pdbx_PDB_ins_code")
+            ? line_vec[atom_site["pdbx_PDB_ins_code"]]
+            : "?";
+        read_state.resi = mmcif_resi5(seq_id, ins_code);
         if (read_state.read_resi >= 2)
         {
             if (atom_site.count("auth_asym_id"))
