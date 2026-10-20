@@ -671,7 +671,7 @@ void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
             rasmol_state.lig_idx2++;
             rasmol_state.buf_all_atm_lig<<rasmol_state.line.substr(0,6)<<std::setw(5)<<rasmol_state.lig_idx1+rasmol_state.lig_idx2
                 <<rasmol_state.line.substr(11,9)<<" B"<<rasmol_state.line.substr(22,32)<<'\n';
-            if (rasmol_state.chain1_sele.size() && rasmol_state.line[21]!=rasmol_state.chain1_sele[0]) continue;
+            if (rasmol_state.chain2_sele.size() && rasmol_state.line[21]!=rasmol_state.chain2_sele[0]) continue;
             if (rasmol_state.after_ter || rasmol_state.line.compare(0,6,"ATOM  ")) continue;
             if (ter_opt>=2)
             {
