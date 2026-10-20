@@ -140,7 +140,8 @@ const std::set<std::string> aa_resn_set = {
 
 size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list, std::vector<int>& mol_vec,
-    const PdbParseOptions& parse_opts)
+    const PdbParseOptions& parse_opts,
+    std::vector<std::vector<std::string>> *full_chain_lines)
 {
     const int ter_opt = parse_opts.ter_opt;
     const std::string& atom_opt = parse_opts.atom_opt;
@@ -226,6 +227,7 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
                 chainID_list.push_back(":" + std::to_string(model_idx));
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
+            if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
         }
         else if (ter_opt>=2 && chainID!=line[21]) break;
 
@@ -236,6 +238,7 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
             chainID_list.push_back(build_split_chain_label(chainID, model_idx, ter_opt));
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
+            if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
         }
 
         // duplicate residue warning
@@ -245,6 +248,8 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
 
         // store
         PDB_lines.back().push_back(line);
+        if (full_chain_lines) full_chain_lines->back().push_back(
+            normalize_chain_id(std::string(1, line[21])));
         if (line[17]==' ' && (line[18]=='D'||line[18]==' ')) mol_vec.back()++;
         else mol_vec.back()--;
         i++;
@@ -255,7 +260,8 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
 size_t parse_spicker_format(std::istream& in,
     std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list,
-    std::vector<int>& mol_vec)
+    std::vector<int>& mol_vec,
+    std::vector<std::vector<std::string>> *full_chain_lines)
 {
     if (!in.good()) return 0;
     size_t L = 0, model_idx = 0;
@@ -275,6 +281,7 @@ size_t parse_spicker_format(std::istream& in,
         oss.str("");
         PDB_lines.push_back(tmp_str_vec);
         mol_vec.push_back(0);
+        if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
 
         for (int i = 0; i < (int)L; i++)
         {
@@ -285,6 +292,7 @@ size_t parse_spicker_format(std::istream& in,
                 << std::setw(8) << x << std::setw(8) << y
                 << std::setw(8) << z;
             PDB_lines.back().push_back(oss.str());
+            if (full_chain_lines) full_chain_lines->back().push_back("");
             oss.str("");
         }
         std::getline(in, line);
@@ -295,7 +303,8 @@ size_t parse_spicker_format(std::istream& in,
 size_t parse_xyz_format(std::istream& in,
     std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list,
-    std::vector<int>& mol_vec)
+    std::vector<int>& mol_vec,
+    std::vector<std::vector<std::string>> *full_chain_lines)
 {
     if (!in.good()) return 0;
     size_t L = 0, i = 0;
@@ -314,6 +323,7 @@ size_t parse_xyz_format(std::istream& in,
         chainID_list.push_back(":" + line.substr(0, name_end));
         PDB_lines.push_back(tmp_str_vec);
         mol_vec.push_back(0);
+        if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
 
         for (i = 0; i < L; i++)
         {
@@ -323,6 +333,7 @@ size_t parse_xyz_format(std::istream& in,
                 << "    " << line.substr(2, 8) << line.substr(11, 8)
                 << line.substr(20, 8);
             PDB_lines.back().push_back(oss.str());
+            if (full_chain_lines) full_chain_lines->back().push_back("");
             oss.str("");
             mol_vec.back() += (line[0] >= 'a' && line[0] <= 'z') ? 1 : -1;
         }
@@ -332,7 +343,8 @@ size_t parse_xyz_format(std::istream& in,
 
 size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list, std::vector<int>& mol_vec,
-    const PdbParseOptions& parse_opts)
+    const PdbParseOptions& parse_opts,
+    std::vector<std::vector<std::string>> *full_chain_lines)
 {
     const int ter_opt = parse_opts.ter_opt;
     const std::string& atom_opt = parse_opts.atom_opt;
@@ -345,7 +357,7 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
     std::map<std::string, int> _atom_site;
     int atom_site_pos;
     std::vector<std::string> line_vec;
-    std::string line, alt_id = ".", asym_id = ".", prev_asym_id = "";
+    std::string line, alt_id = ".", asym_id = ".", prev_asym_id = "", full_chain_id = "";
     std::string AA, atom, resi, prev_resi, model_index = "1";
     std::map<std::string, std::string> alt_id_dict;
     std::string resi_chain;
@@ -442,6 +454,12 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
             asym_id = line_vec[_atom_site["label_asym_id"]];
         if (asym_id == ".") asym_id = " ";
 
+        full_chain_id.clear();
+        if (_atom_site.count("auth_asym_id"))
+            full_chain_id = normalize_chain_id(line_vec[_atom_site["auth_asym_id"]]);
+        if (full_chain_id.empty() && _atom_site.count("label_asym_id"))
+            full_chain_id = normalize_chain_id(line_vec[_atom_site["label_asym_id"]]);
+
         // chain filter (mmCIF version)
         if (!is_chain_wanted_mmcif(asym_id, chain2parse))
             continue;
@@ -465,7 +483,10 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
                 mol_vec.push_back(0);
                 prev_asym_id = asym_id;
 
-                chainID_list.push_back(build_mmcif_chain_label(asym_id, model_index, split_opt, ter_opt));
+                if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
+                chainID_list.push_back(build_mmcif_chain_label(
+                    full_chain_id.empty() ? "_" : full_chain_id,
+                    model_index, split_opt, ter_opt));
             }
             alt_id_dict.clear();
         }
@@ -496,7 +517,10 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
                 PDB_lines.push_back(tmp_str_vec);
                 mol_vec.push_back(0);
 
-                chainID_list.push_back(build_mmcif_chain_label(asym_id, model_index, split_opt, ter_opt));
+                if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
+                chainID_list.push_back(build_mmcif_chain_label(
+                    full_chain_id.empty() ? "_" : full_chain_id,
+                    model_index, split_opt, ter_opt));
             }
             prev_asym_id = asym_id;
         }
@@ -506,7 +530,10 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
             PDB_lines.push_back(tmp_str_vec);
             mol_vec.push_back(0);
 
-            chainID_list.push_back(build_mmcif_chain_label(asym_id, model_index, split_opt, ter_opt));
+            if (full_chain_lines) full_chain_lines->push_back(tmp_str_vec);
+            chainID_list.push_back(build_mmcif_chain_label(
+                full_chain_id.empty() ? "_" : full_chain_id,
+                model_index, split_opt, ter_opt));
         }
 
         // molecule type counting
@@ -529,6 +556,7 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
             << std::setw(8) << line_vec[_atom_site["Cartn_y"]].substr(0, 8)
             << std::setw(8) << line_vec[_atom_site["Cartn_z"]].substr(0, 8);
         PDB_lines.back().push_back(oss.str());
+        if (full_chain_lines) full_chain_lines->back().push_back(full_chain_id);
         oss.str("");
     }
     return PDB_lines.size();
@@ -536,7 +564,8 @@ size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>
 
 size_t get_PDB_lines(const std::string filename,
     std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list,
-    std::vector<int> &mol_vec, const int infmt_opt, const PdbParseOptions& parse_opts)
+    std::vector<int> &mol_vec, const int infmt_opt, const PdbParseOptions& parse_opts,
+    std::vector<std::vector<std::string> > *full_chain_lines)
 {
     std::stringstream buf = read_file_to_memory(filename);
 
@@ -551,17 +580,26 @@ size_t get_PDB_lines(const std::string filename,
 
     size_t result = 0;
          if (fmt == FORMAT_PDB)
-        result = parse_pdb_format(buf, PDB_lines, chainID_list, mol_vec, parse_opts);
+        result = parse_pdb_format(buf, PDB_lines, chainID_list, mol_vec, parse_opts,
+            full_chain_lines);
     else if (fmt == FORMAT_SPICKER)
-        result = parse_spicker_format(buf, PDB_lines, chainID_list, mol_vec);
+        result = parse_spicker_format(buf, PDB_lines, chainID_list, mol_vec,
+            full_chain_lines);
     else if (fmt == FORMAT_XYZ)
-        result = parse_xyz_format(buf, PDB_lines, chainID_list, mol_vec);
+        result = parse_xyz_format(buf, PDB_lines, chainID_list, mol_vec,
+            full_chain_lines);
     else if (fmt == FORMAT_MMCIF)
-        result = parse_mmcif_format(buf, PDB_lines, chainID_list, mol_vec, parse_opts);
+        result = parse_mmcif_format(buf, PDB_lines, chainID_list, mol_vec, parse_opts,
+            full_chain_lines);
     else
         std::cerr << "Warning! Unknown file format (" << fmt << ")" << std::endl;
 
     if (!parse_opts.split_opt) chainID_list.push_back("");
+    if (full_chain_lines)
+    {
+        if (full_chain_lines->size() != PDB_lines.size())
+            PrintErrorAndQuit("Internal error: full_chain_lines size mismatch");
+    }
     return result;
 }
 
@@ -637,13 +675,19 @@ size_t get_FASTA_lines(const std::string filename,
 }
 
 int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& coords, std::string &seq,
-    std::vector<std::string> &resi_vec, const int read_resi)
+    std::vector<std::string> &resi_vec, const int read_resi,
+    std::vector<std::string> *chain_vec)
 {
     size_t i;
     seq.clear();
     seq.reserve(PDB_lines.size());
     coords.clear();
     coords.reserve(PDB_lines.size());
+    if (chain_vec)
+    {
+        chain_vec->clear();
+        chain_vec->reserve(PDB_lines.size());
+    }
     for (i=0;i<PDB_lines.size();i++)
     {
         coords.push_back({safe_stod(PDB_lines[i].substr(30, 8)),
@@ -653,6 +697,7 @@ int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& coords, std:
 
         if (read_resi>=2) resi_vec.push_back(PDB_lines[i].substr(22,5)+
                                              PDB_lines[i][21]);
+        if (chain_vec) chain_vec->push_back(std::string(1, PDB_lines[i][21]));
         if (read_resi==1) resi_vec.push_back(PDB_lines[i].substr(22,5));
     }
     return i;

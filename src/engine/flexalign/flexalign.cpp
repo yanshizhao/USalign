@@ -110,6 +110,7 @@ void fill_flexalign_params(
 struct FlexalignFileData
 {
     std::vector<std::vector<std::string> > pdb_lines;
+    std::vector<std::vector<std::string> > full_chain_lines;
     std::vector<std::string> chain_ids;
     std::vector<int> mol_types;
     int chain_num;
@@ -131,7 +132,7 @@ const FlexalignFileData* load_flexalign_file_cache(std::map<std::string, Flexali
     if (cached != cache.end()) return &cached->second;
     FlexalignFileData& file_data = cache[name];
     file_data.chain_num = (int)get_PDB_lines(name, file_data.pdb_lines, file_data.chain_ids,
-        file_data.mol_types, infmt_opt, pdb_parse_opts);
+        file_data.mol_types, infmt_opt, pdb_parse_opts, &file_data.full_chain_lines);
     return &file_data;
 }
 
@@ -147,12 +148,14 @@ void run_flexalign_task(const FlexalignPairTask& task,
 
     ParsedChain chain1_data;
     if (!parse_chain(xname, file1.pdb_lines, file1.chain_ids, file1.mol_types, task.chain1_idx,
-        task_user_opts.mol_opt, task_user_opts.mirror_opt, read_resi, task_user_opts.atom_opt, chain1_data))
+        task_user_opts.mol_opt, task_user_opts.mirror_opt, read_resi, task_user_opts.atom_opt, chain1_data,
+        &file1.full_chain_lines[task.chain1_idx]))
         return;
 
     ParsedChain chain2_data;
     if (!parse_chain(yname, file2.pdb_lines, file2.chain_ids, file2.mol_types, task.chain2_idx,
-        task_user_opts.mol_opt, 0, read_resi, task_user_opts.atom_opt, chain2_data))
+        task_user_opts.mol_opt, 0, read_resi, task_user_opts.atom_opt, chain2_data,
+        &file2.full_chain_lines[task.chain2_idx]))
         return;
 
     AlignCommonInput task_input = common_inputs;

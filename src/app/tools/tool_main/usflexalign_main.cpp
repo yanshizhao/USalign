@@ -436,6 +436,8 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
 
     std::vector<std::vector<std::string> > PDB_lines1; // text of chain1
     std::vector<std::vector<std::string> > PDB_lines2; // text of chain2
+    std::vector<std::vector<std::string> > full_chain_lines1; // full chain IDs of chain1
+    std::vector<std::vector<std::string> > full_chain_lines2; // full chain IDs of chain2
     std::vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
     std::vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     std::vector<std::string> chainID_list1;      // list of chainID1
@@ -457,7 +459,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
         // parse chain 1
         user_opts.xname=parsed_input.chain1_list[i];
         xchainnum=get_PDB_lines(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1, user_opts.infmt1_opt,
-            pdb_parse_opts1);
+            pdb_parse_opts1, &full_chain_lines1);
         if (!xchainnum)
         {
             std::cerr<<"Warning! Cannot parse file: "<<user_opts.xname
@@ -469,7 +471,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
             ParsedChain chain1_data;
             if (!parse_chain(user_opts.xname, PDB_lines1, chainID_list1, mol_vec1,
                     chain_i, user_opts.mol_opt, user_opts.mirror_opt, read_resi,
-                    user_opts.atom_opt, chain1_data))
+                    user_opts.atom_opt, chain1_data, &full_chain_lines1[chain_i]))
                 continue;
 
             int j_start = (user_opts.dir_opt.size() > 0) * (i + 1);
@@ -481,7 +483,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                 {
                     user_opts.yname = parsed_input.chain2_list[j];
                     ychainnum=get_PDB_lines(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2, user_opts.infmt2_opt,
-                        pdb_parse_opts2);
+                        pdb_parse_opts2, &full_chain_lines2);
                     if (!ychainnum)
                     {
                         std::cerr<<"Warning! Cannot parse file: "<<user_opts.yname<<". Chain number 0."<<std::endl;
@@ -493,7 +495,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                     ParsedChain chain2_data;
                     if (!parse_chain(user_opts.yname, PDB_lines2, chainID_list2, mol_vec2,
                             chain_j, user_opts.mol_opt, 0, read_resi,
-                            user_opts.atom_opt, chain2_data))
+                            user_opts.atom_opt, chain2_data, &full_chain_lines2[chain_j]))
                         continue;
 
                     if (user_opts.byresi_opt)
@@ -510,6 +512,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
                 {
                     user_opts.yname.clear();
                     PDB_lines2.clear();
+                    full_chain_lines2.clear();
                     chainID_list2.clear();
                     mol_vec2.clear();
                 }
@@ -520,6 +523,7 @@ void align_all_chain_pairs(AlignCommonInput& common_inputs, const FlexalignParam
 
         user_opts.xname.clear();
         PDB_lines1.clear();
+        full_chain_lines1.clear();
         chainID_list1.clear();
         mol_vec1.clear();
     } // i

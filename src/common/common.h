@@ -175,15 +175,28 @@ inline bool accept_alt_conf_mmcif(const std::string& resi_chain,
     return alt_id_dict[resi_chain] == alt_id;
 }
 
+inline std::string normalize_chain_id(const std::string& chain_id)
+{
+    std::string trimmed = Trim(chain_id);
+    if (trimmed.empty() || trimmed == "." || trimmed == "?" || trimmed == "_")
+        return "";
+    return trimmed;
+}
+
 // Chain filter (PDB version, char chain_id)
 inline bool is_chain_wanted(char chain_id,
     const std::vector<std::string>& chain2parse)
 {
     if (chain2parse.empty()) return true;
-    std::string cid(1, chain_id);
-    if (chain_id == ' ') cid = "_";
-    return std::find(chain2parse.begin(), chain2parse.end(), cid)
-           != chain2parse.end();
+    std::string cid = normalize_chain_id(std::string(1, chain_id));
+    if (cid.empty()) cid = "_";
+    for (size_t i = 0; i < chain2parse.size(); i++)
+    {
+        std::string wanted = normalize_chain_id(chain2parse[i]);
+        if (wanted.empty()) wanted = "_";
+        if (wanted == cid) return true;
+    }
+    return false;
 }
 
 // Chain filter (mmCIF version, string asym_id)
@@ -191,9 +204,15 @@ inline bool is_chain_wanted_mmcif(const std::string& asym_id,
     const std::vector<std::string>& chain2parse)
 {
     if (chain2parse.empty()) return true;
-    std::string cid = (asym_id == " ") ? "_" : asym_id;
-    return std::find(chain2parse.begin(), chain2parse.end(), cid)
-           != chain2parse.end();
+    std::string cid = normalize_chain_id(asym_id);
+    if (cid.empty()) cid = "_";
+    for (size_t i = 0; i < chain2parse.size(); i++)
+    {
+        std::string wanted = normalize_chain_id(chain2parse[i]);
+        if (wanted.empty()) wanted = "_";
+        if (wanted == cid) return true;
+    }
+    return false;
 }
 
 // MODEL filter (shared by PDB and mmCIF)
@@ -270,7 +289,8 @@ inline std::string build_mmcif_chain_label(const std::string& asym_id, const std
 // ============================================================
 size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list, std::vector<int>& mol_vec,
-    const PdbParseOptions& parse_opts);
+    const PdbParseOptions& parse_opts,
+    std::vector<std::vector<std::string>> *full_chain_lines=NULL);
 
 // ============================================================
 // parse_spicker_format — SPICKER format parser
@@ -278,7 +298,8 @@ size_t parse_pdb_format(std::istream& in, std::vector<std::vector<std::string>>&
 size_t parse_spicker_format(std::istream& in,
     std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list,
-    std::vector<int>& mol_vec);
+    std::vector<int>& mol_vec,
+    std::vector<std::vector<std::string>> *full_chain_lines=NULL);
 
 // ============================================================
 // parse_xyz_format — xyz format parser
@@ -286,14 +307,16 @@ size_t parse_spicker_format(std::istream& in,
 size_t parse_xyz_format(std::istream& in,
     std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list,
-    std::vector<int>& mol_vec);
+    std::vector<int>& mol_vec,
+    std::vector<std::vector<std::string>> *full_chain_lines=NULL);
 
 // ============================================================
 // parse_mmcif_format — PDBx/mmCIF format parser
 // ============================================================
 size_t parse_mmcif_format(std::istream& in, std::vector<std::vector<std::string>>& PDB_lines,
     std::vector<std::string>& chainID_list, std::vector<int>& mol_vec,
-    const PdbParseOptions& parse_opts);
+    const PdbParseOptions& parse_opts,
+    std::vector<std::vector<std::string>> *full_chain_lines=NULL);
 
 // compress_type constants
 constexpr int COMPRESS_FILE = 0;   // regular file
@@ -380,7 +403,8 @@ inline int detect_format(std::stringstream& buf, int infmt_opt)
 // ============================================================
 size_t get_PDB_lines(const std::string filename,
     std::vector<std::vector<std::string> >&PDB_lines, std::vector<std::string> &chainID_list,
-    std::vector<int> &mol_vec, const int infmt_opt, const PdbParseOptions& parse_opts);
+    std::vector<int> &mol_vec, const int infmt_opt, const PdbParseOptions& parse_opts,
+    std::vector<std::vector<std::string> > *full_chain_lines=NULL);
 
 /* read fasta file from filename. sequence is stored into FASTA_lines
  * while sequence name is stored into chainID_list.
@@ -393,7 +417,8 @@ size_t get_FASTA_lines(const std::string filename,
     std::vector<int> &mol_vec, const int ter_opt=3, const int split_opt=0);
 
 int read_PDB(const std::vector<std::string> &PDB_lines, CoordArray& coords, std::string &seq,
-    std::vector<std::string> &resi_vec, const int read_resi);
+    std::vector<std::string> &resi_vec, const int read_resi,
+    std::vector<std::string> *chain_vec=NULL);
 
 /* read user specified pairwise alignment from 'fname_lign' to 'sequence'.
  * This function should only be called by main function, as it will
@@ -710,6 +735,7 @@ struct ParsedChain
     std::string    chain_seq;              // sequence
     std::string    chain_sec;              // secondary structure
     std::vector<std::string> resi_vec;      // residue index (for -do output)
+    std::vector<std::string> chain_vec;     // full chain ID of each residue
     std::string    chain_id;               // chain ID
     std::string    filename;               // source filename (for output)
     std::vector<std::string> pdb_lines;    // raw PDB lines (for -do output)

@@ -940,7 +940,8 @@ inline bool parse_chain(
     int mirror_opt,
     int read_resi,
     const std::string& atom_opt,
-    ParsedChain& chain)
+    ParsedChain& chain,
+    const std::vector<std::string>* full_chain = NULL)
 {
     chain.filename = filename;
     int len = PDB_lines[chain_idx].size();
@@ -958,7 +959,13 @@ inline bool parse_chain(
     chain.chain_sec.resize(len + 1, '\0');
 
     chain.chain_len = read_PDB(PDB_lines[chain_idx], chain.chain_coords, chain.chain_seq,
-                       chain.resi_vec, read_resi);
+                       chain.resi_vec, read_resi, full_chain ? NULL : &chain.chain_vec);
+    if (full_chain)
+    {
+        if ((int)full_chain->size() != chain.chain_len)
+            PrintErrorAndQuit("Internal error: chain_vec size mismatch");
+        chain.chain_vec = *full_chain;
+    }
 
     if (mirror_opt) {
         for (int r = 0; r < chain.chain_len; r++)
