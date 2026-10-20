@@ -5,6 +5,8 @@
 #include "basic_fun.h"
 #include "BLOSUM.h"
 
+#include <atomic>
+
 #define MAX(A,B) ((A)>(B)?(A):(B))
 
 using namespace std;
@@ -528,6 +530,12 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     sequence.push_back("");
     sequence.push_back("");
 
+    static std::atomic<bool> s_chain_fallback_warned(false);
+    if ((byresi_opt==2 || byresi_opt==3) && (!chain_vec1 || !chain_vec2)
+        && !s_chain_fallback_warned.exchange(true))
+        std::cerr << "Warning! Full chain IDs are unavailable for -byresi 2/3;"
+            " falling back to 1-character chain IDs." << std::endl;
+
     int i1=0; // positions in resi_vec1
     int i2=0; // positions in resi_vec2
     int xlen=resi_vec1.size();
@@ -657,13 +665,12 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
 }
 
 /* extract pairwise sequence alignment from residue index vectors,
- * return length of alignment, including gap. */
+ * return length of alignment, including gap.
+ * This overload does not support full chain IDs. */
 int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     const vector<string> resi_vec1, const vector<string> resi_vec2,
     const vector<int> xlen_vec, const vector<int> ylen_vec,
-    const int chain_i, const int chain_j, const int byresi_opt,
-    const vector<string>* chain_vec1=NULL,
-    const vector<string>* chain_vec2=NULL)
+    const int chain_i, const int chain_j, const int byresi_opt)
 {
     sequence.clear();
     sequence.push_back("");
