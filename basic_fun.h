@@ -164,6 +164,7 @@ size_t get_PDB_lines(const string filename,
     const vector<string>&model2parse,
     vector<vector<string> > *full_chain_lines=NULL)
 {
+    if (full_chain_lines) full_chain_lines->clear();
     size_t i=0; // resi i.e. atom index
     string line;
     char chainID=0;
