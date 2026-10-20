@@ -512,6 +512,14 @@ inline void fill_pymol_chain_sele(std::string& chain_sele, const std::string& ch
     }
 }
 
+inline std::string resi_with_inscode(const std::string& resi)
+{
+    std::string r = resi.substr(0, 4);
+    if (resi.size() >= 5 && resi[4] != ' ')
+        r += resi[4];
+    return r;
+}
+
 inline std::string pymol_resi_chain_suffix(const std::string& resi)
 {
     if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')

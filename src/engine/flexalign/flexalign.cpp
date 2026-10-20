@@ -1122,8 +1122,8 @@ void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
             i2 += (seqyA[i] != '-');
             if (seqM[i] == ' ' || seqxA[i] == '*')
                 continue;
-            std::string curr_resi1 = resi_vec1[i1].substr(0, 4);
-            std::string curr_resi2 = resi_vec2[i2].substr(0, 4);
+            std::string curr_resi1 = resi_with_inscode(resi_vec1[i1]);
+            std::string curr_resi2 = resi_with_inscode(resi_vec2[i2]);
             std::string curr_chain_id1 = (split_opt == 0) ? chain_vec1[i1] : "";
             std::string curr_chain_id2 = (split_opt == 0) ? chain_vec2[i2] : "";
             bool skip_chain1 = o_opt != 3 && !curr_chain_id1.empty()
