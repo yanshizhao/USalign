@@ -786,6 +786,20 @@ void output_flexalign_rasmol(const string xname, const string yname,
                              const int xlen, const int ylen, const double d0A, const int n_ali8,
                              const double rmsd, const double TM1, const double Liden)
 {
+    for (size_t ci = 0; ci < chain_vec1.size(); ci++)
+        if (chain_vec1[ci].size() > 1)
+        {
+            std::cerr << "Warning! Multi-character chain IDs are not supported by RasMol;"
+                      << " skipping RasMol output." << std::endl;
+            return;
+        }
+    for (size_t ci = 0; ci < chain_vec2.size(); ci++)
+        if (chain_vec2[ci].size() > 1)
+        {
+            std::cerr << "Warning! Multi-character chain IDs are not supported by RasMol;"
+                      << " skipping RasMol output." << std::endl;
+            return;
+        }
     stringstream buf;
     stringstream buf_all;
     stringstream buf_atm;
@@ -1904,6 +1918,90 @@ string read_superposed_structure1(const string xname, const string fname_super,
     return fname_super_full;
 }
 
+inline bool pymol_chain_bare_safe(const std::string& chain_id)
+{
+    return chain_id.find_first_not_of(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
+        == std::string::npos;
+}
+
+inline bool pymol_chain_addressable(const std::string& chain_id)
+{
+    return chain_id.find(':') == std::string::npos &&
+           chain_id.find(',') == std::string::npos &&
+           chain_id.find('"') == std::string::npos;
+}
+
+inline std::string pymol_chain_token(const std::string& chain_id)
+{
+    if (chain_id.empty())
+        return "";
+    if (pymol_chain_bare_safe(chain_id))
+        return " and c. " + chain_id;
+    if (pymol_chain_addressable(chain_id))
+        return " and c. \"" + chain_id + "\"";
+    return "";
+}
+
+inline bool chimerax_chain_safe(const std::string& chain_id)
+{
+    if (chain_id.empty())
+        return true;
+    if (chain_id.find_first_not_of(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
+        == std::string::npos)
+        return true;
+    return chain_id.find('\'') == std::string::npos ||
+           chain_id.find('"') == std::string::npos;
+}
+
+inline std::string chimerax_chain_prefix(const std::string& chain_id)
+{
+    if (chain_id.empty())
+        return "";
+    if (chain_id.find_first_not_of(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
+        == std::string::npos)
+        return "/" + chain_id;
+    if (chain_id.find('\'') == std::string::npos)
+        return "//chain_id='" + chain_id + "'";
+    return "//chain_id=\"" + chain_id + "\"";
+}
+
+inline void warn_skipped_chain(const std::string& chain_id, const char* tool)
+{
+    std::cerr << "Warning! Chain '" << chain_id
+              << "' cannot be addressed by " << tool
+              << "; skipping its selectors." << std::endl;
+}
+
+inline void fill_pymol_chain_sele(std::string& chain_sele, const std::string& chain_id,
+    const int o_opt)
+{
+    if (chain_id.size() == 0 || chain_id == "_")
+        return;
+    if (o_opt == 3)
+    {
+        if (!chimerax_chain_safe(chain_id))
+        {
+            warn_skipped_chain(chain_id, "ChimeraX");
+            chain_sele = "/__USALIGN_SKIPPED__";
+            return;
+        }
+        chain_sele = chimerax_chain_prefix(chain_id);
+    }
+    else
+    {
+        if (!pymol_chain_addressable(chain_id))
+        {
+            warn_skipped_chain(chain_id, "PyMOL");
+            chain_sele = " and c. __USALIGN_SKIPPED__";
+            return;
+        }
+        chain_sele = pymol_chain_token(chain_id);
+    }
+}
+
 string pymol_resi_chain_suffix(const string& resi)
 {
     if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')
@@ -1936,23 +2034,19 @@ void output_flexalign_pymol(const string xname, const string yname,
     {
         if (split_opt == 2 && ter_opt >= 1) // align one chain from model 1
         {
-            if (chainID1.substr(1)!="_")
-                chain1_sele = " and c. " + chainID1.substr(1);
-            if (chainID2.substr(1)!="_")
-                chain2_sele = " and c. " + chainID2.substr(1);
+            fill_pymol_chain_sele(chain1_sele, chainID1.substr(1), 1);
+            fill_pymol_chain_sele(chain2_sele, chainID2.substr(1), 1);
         }
         else if (split_opt == 2 && ter_opt == 0) // align one chain from each model
         {
             for (i = 1; i < chainID1.size(); i++)
                 if (chainID1[i] == ',')
                     break;
-            if (chainID1.substr(i+1)!="_")
-                chain1_sele = " and c. " + chainID1.substr(i + 1);
+            fill_pymol_chain_sele(chain1_sele, chainID1.substr(i + 1), 1);
             for (i = 1; i < chainID2.size(); i++)
                 if (chainID2[i] == ',')
                     break;
-            if (chainID2.substr(i+1)!="_")
-                chain2_sele = " and c. " + chainID2.substr(i + 1);
+            fill_pymol_chain_sele(chain2_sele, chainID2.substr(i + 1), 1);
         }
     }
 
@@ -2231,23 +2325,19 @@ void output_flexalign_chimerax(const string xname, const string yname,
     {
         if (split_opt == 2 && ter_opt >= 1)
         {
-            if (chainID1.substr(1) != "_")
-                chain1_sele = "/" + chainID1.substr(1);
-            if (chainID2.substr(1) != "_")
-                chain2_sele = "/" + chainID2.substr(1);
+            fill_pymol_chain_sele(chain1_sele, chainID1.substr(1), 3);
+            fill_pymol_chain_sele(chain2_sele, chainID2.substr(1), 3);
         }
         else if (split_opt == 2 && ter_opt == 0)
         {
             for (i = 1; i < chainID1.size(); i++)
                 if (chainID1[i] == ',')
                     break;
-            if (chainID1.substr(i + 1) != "_")
-                chain1_sele = "/" + chainID1.substr(i + 1);
+            fill_pymol_chain_sele(chain1_sele, chainID1.substr(i + 1), 3);
             for (i = 1; i < chainID2.size(); i++)
                 if (chainID2[i] == ',')
                     break;
-            if (chainID2.substr(i + 1) != "_")
-                chain2_sele = "/" + chainID2.substr(i + 1);
+            fill_pymol_chain_sele(chain2_sele, chainID2.substr(i + 1), 3);
         }
     }
 
