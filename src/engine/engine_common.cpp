@@ -1,6 +1,8 @@
 #include "engine_common.h"
 #include "se.h"
 
+#include <atomic>
+
 void parameter_set4search(const int xlen, const int ylen,
     double &D0_MIN, double &Lnorm,
     double &score_d8, double &d0, double &d0_search, double &dcu0)
@@ -364,6 +366,12 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
     sequence.clear();
     sequence.push_back("");
     sequence.push_back("");
+
+    static std::atomic<bool> s_chain_fallback_warned(false);
+    if ((byresi_opt==2 || byresi_opt==3) && (!chain_vec1 || !chain_vec2)
+        && !s_chain_fallback_warned.exchange(true))
+        std::cerr << "Warning! Full chain IDs are unavailable for -byresi 2/3;"
+            " falling back to 1-character chain IDs." << std::endl;
 
     int i1=0; // positions in resi_vec1
     int i2=0; // positions in resi_vec2
