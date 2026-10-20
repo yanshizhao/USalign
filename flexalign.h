@@ -2045,13 +2045,6 @@ inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string&
         resi_sele += "," + Trim(resi);
 }
 
-string pymol_resi_chain_suffix(const string& resi)
-{
-    if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')
-        return "";
-    return " and c. " + string(1, resi[5]);
-}
-
 void output_flexalign_pymol(const string xname, const string yname,
                             const string fname_super, const vector<vector<double> > &tu_vec,
                             const int ter_opt,
