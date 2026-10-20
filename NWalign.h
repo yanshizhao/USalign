@@ -666,7 +666,8 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
 
 /* extract pairwise sequence alignment from residue index vectors,
  * return length of alignment, including gap.
- * This overload does not support full chain IDs. */
+ * This overload identifies chains by xlen_vec/ylen_vec offsets
+ * and does not use chain IDs. */
 int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     const vector<string> resi_vec1, const vector<string> resi_vec2,
     const vector<int> xlen_vec, const vector<int> ylen_vec,
