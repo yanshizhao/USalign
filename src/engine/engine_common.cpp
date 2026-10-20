@@ -430,8 +430,10 @@ int extract_aln_from_resi(std::vector<std::string> &sequence, const std::string&
         }
         else if (byresi_opt==3)
         {
-            chainID1=chainID_map1[resi_vec1[i1].substr(5)];
-            chainID2=chainID_map2[resi_vec2[i2].substr(5)];
+            chainID1=chainID_map1[(chain_vec1 && i1<(int)chain_vec1->size())
+                ? (*chain_vec1)[i1] : resi_vec1[i1].substr(5)];
+            chainID2=chainID_map2[(chain_vec2 && i2<(int)chain_vec2->size())
+                ? (*chain_vec2)[i2] : resi_vec2[i2].substr(5)];
         }
 
         if (chainID1==chainID2)
