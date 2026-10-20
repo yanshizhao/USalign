@@ -520,13 +520,6 @@ inline std::string resi_with_inscode(const std::string& resi)
     return r;
 }
 
-inline std::string pymol_resi_chain_suffix(const std::string& resi)
-{
-    if (resi.size() < 6 || resi[5] == ' ' || resi[5] == '_')
-        return "";
-    return " and c. " + std::string(1, resi[5]);
-}
-
 inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string& resi,
     const std::string& chain_id, const std::string& prev_chain_id)
 {
