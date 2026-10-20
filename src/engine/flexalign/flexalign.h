@@ -428,15 +428,88 @@ void read_pymol_structure(FlexalignPymolState& pymol_state,
     const std::string& xname, const std::vector<std::string>& resi_vec1,
     const DoubleMatrix& tu_vec, const int mirror_opt, const int ter_opt);
 
+inline bool pymol_chain_bare_safe(const std::string& chain_id)
+{
+    return chain_id.find_first_not_of(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
+        == std::string::npos;
+}
+
+inline bool pymol_chain_addressable(const std::string& chain_id)
+{
+    return chain_id.find(':') == std::string::npos &&
+           chain_id.find(',') == std::string::npos &&
+           chain_id.find('"') == std::string::npos;
+}
+
+inline std::string pymol_chain_token(const std::string& chain_id)
+{
+    if (chain_id.empty())
+        return "";
+    if (pymol_chain_bare_safe(chain_id))
+        return " and c. " + chain_id;
+    if (pymol_chain_addressable(chain_id))
+        return " and c. \"" + chain_id + "\"";
+    return "";
+}
+
+inline bool chimerax_chain_safe(const std::string& chain_id)
+{
+    if (chain_id.empty())
+        return true;
+    if (chain_id.find_first_not_of(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
+        == std::string::npos)
+        return true;
+    return chain_id.find('\'') == std::string::npos ||
+           chain_id.find('"') == std::string::npos;
+}
+
+inline std::string chimerax_chain_prefix(const std::string& chain_id)
+{
+    if (chain_id.empty())
+        return "";
+    if (chain_id.find_first_not_of(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")
+        == std::string::npos)
+        return "/" + chain_id;
+    if (chain_id.find('\'') == std::string::npos)
+        return "//chain_id='" + chain_id + "'";
+    return "//chain_id=\"" + chain_id + "\"";
+}
+
+inline void warn_skipped_chain(const std::string& chain_id, const char* tool)
+{
+    std::cerr << "Warning! Chain '" << chain_id
+              << "' cannot be addressed by " << tool
+              << "; skipping its selectors." << std::endl;
+}
+
 inline void fill_pymol_chain_sele(std::string& chain_sele, const std::string& chain_id,
     const int o_opt)
 {
     if (chain_id.size() == 0 || chain_id == "_")
         return;
     if (o_opt == 3)
-        chain_sele = "/" + chain_id;
+    {
+        if (!chimerax_chain_safe(chain_id))
+        {
+            warn_skipped_chain(chain_id, "ChimeraX");
+            chain_sele = "/__USALIGN_SKIPPED__";
+            return;
+        }
+        chain_sele = chimerax_chain_prefix(chain_id);
+    }
     else
-        chain_sele = " and c. " + chain_id;
+    {
+        if (!pymol_chain_addressable(chain_id))
+        {
+            warn_skipped_chain(chain_id, "PyMOL");
+            chain_sele = " and c. __USALIGN_SKIPPED__";
+            return;
+        }
+        chain_sele = pymol_chain_token(chain_id);
+    }
 }
 
 inline std::string pymol_resi_chain_suffix(const std::string& resi)
@@ -446,10 +519,16 @@ inline std::string pymol_resi_chain_suffix(const std::string& resi)
     return " and c. " + std::string(1, resi[5]);
 }
 
-inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string& resi)
+inline void append_chimerax_resi_sele(std::string& resi_sele, const std::string& resi,
+    const std::string& chain_id, const std::string& prev_chain_id)
 {
+    if (!chimerax_chain_safe(chain_id))
+        return;
+    const std::string chain_prefix = chimerax_chain_prefix(chain_id);
     if (resi_sele.size() == 0)
-        resi_sele = ":" + Trim(resi);
+        resi_sele = chain_prefix + ":" + Trim(resi);
+    else if (chain_id != prev_chain_id)
+        resi_sele += " " + chain_prefix + ":" + Trim(resi);
     else
         resi_sele += "," + Trim(resi);
 }
@@ -483,6 +562,7 @@ inline void build_pymol_chain_suffix(FlexalignPymolState& pymol_state,
 void build_pymol_resi_suffix(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>& resi_vec1, const std::vector<std::string>& resi_vec2,
+    const std::vector<std::string>& chain_vec1, const std::vector<std::string>& chain_vec2,
     const int mm_opt, const int num_hinges, const int o_opt, const int split_opt);
 
 void write_pymol_to_file(const FlexalignPymolState& pymol_state,
