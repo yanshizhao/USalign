@@ -164,6 +164,17 @@ inline std::string pick_mmcif_chain_id(const std::string& auth_id,
     return chain_id;
 }
 
+inline std::string mmcif_resi5(const std::string& seq_id,
+    const std::string& ins_code)
+{
+    std::string resi = seq_id;
+    if (resi.size() > 4) resi = resi.substr(resi.size() - 4);
+    while (resi.size() < 4) resi = " " + resi;
+    if (!ins_code.empty() && ins_code != "?") resi += ins_code[0];
+    else resi += ' ';
+    return resi;
+}
+
 size_t get_PDB_lines(const string filename,
     vector<vector<string> >&PDB_lines, vector<string> &chainID_list,
     vector<int> &mol_vec, const int ter_opt, const int infmt_opt,
