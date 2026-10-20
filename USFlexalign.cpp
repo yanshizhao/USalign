@@ -263,7 +263,8 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
                     (mol_vec2[chain_j] > 0) ? make_sec(seqy, ya, ylen, secy, atom_opt) : make_sec(ya, ylen, secy);
 
                     if (byresi_opt)
-                        extract_aln_from_resi(sequence, seqx, seqy, resi_vec1, resi_vec2, byresi_opt);
+                        extract_aln_from_resi(sequence, seqx, seqy, resi_vec1, resi_vec2, byresi_opt,
+                            &full_chain_lines1[chain_i], &full_chain_lines2[chain_j]);
 
                     // --- CORE DISPATCH LOGIC START ---
                     if (mode == FLEX_USBCAT)
