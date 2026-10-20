@@ -567,6 +567,7 @@ size_t get_PDB_lines(const std::string filename,
     std::vector<int> &mol_vec, const int infmt_opt, const PdbParseOptions& parse_opts,
     std::vector<std::vector<std::string> > *full_chain_lines)
 {
+    if (full_chain_lines) full_chain_lines->clear();
     std::stringstream buf = read_file_to_memory(filename);
 
     // If buf is in a fatal error state, return early
