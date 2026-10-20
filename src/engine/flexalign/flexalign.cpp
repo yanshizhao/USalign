@@ -7,10 +7,11 @@ void output_flexalign_pymol(const std::string xname, const std::string yname,
                             const int mm_opt, const int split_opt, const int mirror_opt,
                             const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
                             const std::vector<std::string> &resi_vec1, const std::vector<std::string> &resi_vec2,
+                            const std::vector<std::string> &chain_vec1,
                             const std::string chainID1, const std::string chainID2, const int o_opt){
     FlexalignPymolState pymol_state;
     const int num_hinges = static_cast<int>(tu_vec.size());
-    build_pymol_hinge_map(pymol_state, seqM, seqxA, resi_vec1);
+    build_pymol_hinge_map(pymol_state, seqM, seqxA, resi_vec1, chain_vec1);
     read_pymol_structure(pymol_state, xname, resi_vec1, tu_vec, mirror_opt, ter_opt);
     build_pymol_chain_suffix(pymol_state, chainID1, chainID2, mm_opt, split_opt, ter_opt, o_opt);
     build_pymol_resi_suffix(pymol_state, seqM, seqxA, seqyA, resi_vec1, resi_vec2, mm_opt, num_hinges, o_opt, split_opt);
@@ -390,8 +391,13 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
             if (mirror_opt) rasmol_state.x[2]=-rasmol_state.x[2];
             if (rasmol_state.read_resi==1) rasmol_state.resi=rasmol_state.line.substr(22,5);
             else rasmol_state.resi=rasmol_state.line.substr(22,5)+rasmol_state.line[21];
-            hinge=0;
-            if (rasmol_state.resi2hinge_dict.count(rasmol_state.resi)) hinge=rasmol_state.resi2hinge_dict[rasmol_state.resi];
+            {
+                const std::string key = make_hinge_key(
+                    normalize_chain_id(std::string(1, rasmol_state.line[21])),
+                    rasmol_state.line.substr(22,5));
+                hinge=0;
+                if (rasmol_state.resi2hinge_dict.count(key)) hinge=rasmol_state.resi2hinge_dict[key];
+            }
             tu2t_u(tu_vec[hinge],t,u);
             transform(t, u, rasmol_state.x, rasmol_state.x1);
 
@@ -497,10 +503,13 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                         rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["auth_asym_id"]];
                     else rasmol_state.asym_id=rasmol_state.line_vec[rasmol_state.atom_site["label_asym_id"]];
                     if (rasmol_state.asym_id==".") rasmol_state.asym_id=" ";
-                    rasmol_state.resi+=rasmol_state.asym_id[0];
                 }
-                hinge=0;
-                if (rasmol_state.resi2hinge_dict.count(rasmol_state.resi)) hinge=rasmol_state.resi2hinge_dict[rasmol_state.resi];
+                {
+                    const std::string key = make_hinge_key(
+                        normalize_chain_id(rasmol_state.asym_id), rasmol_state.resi);
+                    hinge=0;
+                    if (rasmol_state.resi2hinge_dict.count(key)) hinge=rasmol_state.resi2hinge_dict[key];
+                }
                 tu2t_u(tu_vec[hinge],t,u);
                 transform(t, u, rasmol_state.x, rasmol_state.x1);
 
@@ -861,6 +870,7 @@ void output_flexalign_rasmol(const std::string xname, const std::string yname,
     const int mm_opt, const int split_opt, const int mirror_opt,
     const std::string& seqM, const std::string& seqxA, const std::string& seqyA,
     const std::vector<std::string>&resi_vec1, const std::vector<std::string>&resi_vec2,
+    const std::vector<std::string>&chain_vec1,
     const std::string chainID1, const std::string chainID2,
     const int xlen, const int ylen, const double d0A, const int n_ali8,
     const double rmsd, const double TM1, const double Liden)
@@ -871,7 +881,7 @@ void output_flexalign_rasmol(const std::string xname, const std::string yname,
     rasmol_state.ca_idx2=0;
     rasmol_state.lig_idx2=0;
 
-    build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, xlen);
+    build_resi_hinge_map(rasmol_state, seqM, seqxA, resi_vec1, chain_vec1, xlen);
     rasmol_state.resi=resi_vec1[0];
     rasmol_state.read_resi=rasmol_state.resi.size()-4;
 
@@ -981,12 +991,15 @@ void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
                 read_state.asym_id = line_vec[atom_site["label_asym_id"]];
             if (read_state.asym_id == ".")
                 read_state.asym_id = " ";
-            read_state.resi += read_state.asym_id[0];
         }
-        int hinge = 0;
-        if (read_state.resi2hinge_dict.count(read_state.resi))
-            hinge = read_state.resi2hinge_dict[read_state.resi];
-        tu2t_u(tu_vec[hinge], read_state.t, read_state.u);
+        {
+            const std::string key = make_hinge_key(
+                normalize_chain_id(read_state.asym_id), read_state.resi);
+            int hinge = 0;
+            if (read_state.resi2hinge_dict.count(key))
+                hinge = read_state.resi2hinge_dict[key];
+            tu2t_u(tu_vec[hinge], read_state.t, read_state.u);
+        }
         Vec3 x1;
         transform(read_state.t, read_state.u, x, x1);
 
@@ -1364,6 +1377,7 @@ void output_flexalign_results(
     const int ylen = chain2_data.chain_len;
     const std::vector<std::string>& resi_vec1 = chain1_data.resi_vec;
     const std::vector<std::string>& resi_vec2 = chain2_data.resi_vec;
+    const std::vector<std::string>& chain_vec1 = chain1_data.chain_vec;
 
     if (opts.outfmt_opt<=0)
     {
@@ -1434,11 +1448,11 @@ void output_flexalign_results(
 
     if (opts.o_opt==1 || opts.o_opt==3) output_flexalign_pymol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
             opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
-            resi_vec1, resi_vec2, chainID1, chainID2, opts.o_opt);
+            resi_vec1, resi_vec2, chain_vec1, chainID1, chainID2, opts.o_opt);
     else if (opts.o_opt==2)
         output_flexalign_rasmol(xname, yname, opts.fname_super, flexalign_res.tu_vec,
             opts.ter_opt, mm_opt, opts.split_opt, opts.mirror_opt, flexalign_res.seqM, flexalign_res.seqxA, flexalign_res.seqyA,
-            resi_vec1, resi_vec2, chainID1, chainID2,
+            resi_vec1, resi_vec2, chain_vec1, chainID1, chainID2,
             xlen, ylen, flexalign_res.d0A, flexalign_res.n_ali8, flexalign_res.rmsd0, flexalign_res.TM1, flexalign_res.Liden);
 }
 

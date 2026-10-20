@@ -105,10 +105,20 @@ inline int hinge_char_to_index(char hinge_char)
     return 0;
 }
 
+const char CHAIN_KEY_SEP = '\x1f';
+
+inline std::string make_hinge_key(const std::string& chain_id, const std::string& resi)
+{
+    return chain_id + CHAIN_KEY_SEP + resi.substr(0, 5);
+}
+
 inline void build_resi_hinge_map(FlexalignRasmolState& rasmol_state,
     const std::string& seqM, const std::string& seqxA,
-    const std::vector<std::string>& resi_vec1, const int xlen)
+    const std::vector<std::string>& resi_vec1,
+    const std::vector<std::string>& chain_vec1, const int xlen)
 {
+    if ((int)chain_vec1.size() != (int)resi_vec1.size())
+        PrintErrorAndQuit("Internal error: chain_vec size mismatch");
     int j=-1;
     char hinge_char=0;
     int ali_len=seqM.size();
@@ -128,7 +138,7 @@ inline void build_resi_hinge_map(FlexalignRasmolState& rasmol_state,
                 if (hinge_char!=' ') break;
             }
         }
-        rasmol_state.resi2hinge_dict[resi_vec1[j]]=hinge_char-'0';
+        rasmol_state.resi2hinge_dict[make_hinge_key(chain_vec1[j], resi_vec1[j])]=hinge_char-'0';
     }
 }
 
@@ -360,10 +370,13 @@ inline char find_nearest_hinge_char(const std::string& seqM,
 
 inline void build_pymol_hinge_map(FlexalignPymolState& pymol_state,
     const std::string& seqM, const std::string& seqxA,
-    const std::vector<std::string>& resi_vec1)
+    const std::vector<std::string>& resi_vec1,
+    const std::vector<std::string>& chain_vec1)
 {
     int resi_idx = -1;
     const int xlen = resi_vec1.size();
+    if ((int)chain_vec1.size() != xlen)
+        PrintErrorAndQuit("Internal error: chain_vec size mismatch");
     for (int aln_pos = 0; aln_pos < seqxA.size(); aln_pos++)
     {
         if (seqxA[aln_pos] == '-')
@@ -372,7 +385,8 @@ inline void build_pymol_hinge_map(FlexalignPymolState& pymol_state,
         char hinge_char = seqM[aln_pos];
         if (hinge_char == ' ')
             hinge_char = find_nearest_hinge_char(seqM, aln_pos, xlen);
-        pymol_state.resi2hinge_dict[resi_vec1[resi_idx]] = hinge_char_to_index(hinge_char);
+        pymol_state.resi2hinge_dict[make_hinge_key(chain_vec1[resi_idx], resi_vec1[resi_idx])]
+            = hinge_char_to_index(hinge_char);
     }
 }
 
@@ -387,13 +401,16 @@ inline void read_pymol_pdb_atom_line(FlexalignPymolReadState& read_state,
     x[2] = atof(read_state.line.substr(46, 8).c_str());
     if (mirror_opt)
         x[2] = -x[2];
+    const std::string resi5 = read_state.line.substr(22, 5);
     if (read_state.read_resi == 1)
-        read_state.resi = read_state.line.substr(22, 5);
+        read_state.resi = resi5;
     else
-        read_state.resi = read_state.line.substr(22, 5) + read_state.line[21];
+        read_state.resi = resi5 + read_state.line[21];
+    const std::string key = make_hinge_key(
+        normalize_chain_id(std::string(1, read_state.line[21])), resi5);
     int hinge = 0;
-    if (read_state.resi2hinge_dict.count(read_state.resi))
-        hinge = read_state.resi2hinge_dict[read_state.resi];
+    if (read_state.resi2hinge_dict.count(key))
+        hinge = read_state.resi2hinge_dict[key];
     tu2t_u(tu_vec[hinge], read_state.t, read_state.u);
     Vec3 x1; // after transform
     transform(read_state.t, read_state.u, x, x1);
