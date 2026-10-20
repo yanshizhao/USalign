@@ -496,6 +496,8 @@ int main(int argc, char *argv[])
     /* declare previously global variables */
     vector<vector<string>> PDB_lines1; // text of chain1
     vector<vector<string>> PDB_lines2; // text of chain2
+    vector<vector<string>> full_chain_lines1;
+    vector<vector<string>> full_chain_lines2;
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
     vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     vector<string> chainID_list1;      // list of chainID1
@@ -524,7 +526,7 @@ int main(int argc, char *argv[])
         xname = chain1_list[i];
         xchainnum = get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
                                   ter_opt, infmt1_opt, atom_opt, false, split_opt, het_opt,
-                                  chain2parse1, model2parse1);
+                                  chain2parse1, model2parse1, &full_chain_lines1);
         if (!xchainnum)
         {
             cerr << "Warning! Cannot parse file: " << xname
@@ -572,7 +574,7 @@ int main(int argc, char *argv[])
                     yname = chain2_list[j];
                     ychainnum = get_PDB_lines(yname, PDB_lines2, chainID_list2,
                                               mol_vec2, ter_opt, infmt2_opt, atom_opt, false,
-                                              split_opt, het_opt, chain2parse2, model2parse2);
+                                              split_opt, het_opt, chain2parse2, model2parse2, &full_chain_lines2);
                     if (!ychainnum)
                     {
                         cerr << "Warning! Cannot parse file: " << yname
@@ -610,7 +612,8 @@ int main(int argc, char *argv[])
 
                     if (byresi_opt)
                         extract_aln_from_resi(sequence,
-                                              seqx, seqy, resi_vec1, resi_vec2, byresi_opt);
+                                              seqx, seqy, resi_vec1, resi_vec2, byresi_opt,
+                                              &full_chain_lines1[chain_i], &full_chain_lines2[chain_j]);
 
                     /* declare variable specific to this pair of TMalign */
                     double t0[3], u0[3][3];

@@ -520,7 +520,9 @@ void output_NWalign_results(
  * return length of alignment, including gap. */
 int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     const vector<string> resi_vec1, const vector<string> resi_vec2,
-    const int byresi_opt)
+    const int byresi_opt,
+    const vector<string>* chain_vec1=NULL,
+    const vector<string>* chain_vec2=NULL)
 {
     sequence.clear();
     sequence.push_back("");
@@ -557,7 +559,7 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
         int i;
         for (i=0;i<xlen;i++)
         {
-            chainID=resi_vec1[i].substr(5);
+            chainID=(chain_vec1 && i<(int)chain_vec1->size()) ? (*chain_vec1)[i] : resi_vec1[i].substr(5);
             if (!chainID_vec.size()|| chainID_vec.back()!=chainID)
             {
                 chainID_vec.push_back(chainID);
@@ -569,7 +571,7 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
         chainID_vec.clear();
         for (i=0;i<ylen;i++)
         {
-            chainID=resi_vec2[i].substr(5);
+            chainID=(chain_vec2 && i<(int)chain_vec2->size()) ? (*chain_vec2)[i] : resi_vec2[i].substr(5);
             if (!chainID_vec.size()|| chainID_vec.back()!=chainID)
             {
                 chainID_vec.push_back(chainID);
@@ -588,13 +590,15 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     {
         if (byresi_opt==2)
         {
-            chainID1=resi_vec1[i1].substr(5);
-            chainID2=resi_vec2[i2].substr(5);
+            chainID1=(chain_vec1 && i1<(int)chain_vec1->size()) ? (*chain_vec1)[i1] : resi_vec1[i1].substr(5);
+            chainID2=(chain_vec2 && i2<(int)chain_vec2->size()) ? (*chain_vec2)[i2] : resi_vec2[i2].substr(5);
         }
         else if (byresi_opt==3)
         {
-            chainID1=chainID_map1[resi_vec1[i1].substr(5)];
-            chainID2=chainID_map2[resi_vec2[i2].substr(5)];
+            chainID1=chainID_map1[(chain_vec1 && i1<(int)chain_vec1->size())
+                ? (*chain_vec1)[i1] : resi_vec1[i1].substr(5)];
+            chainID2=chainID_map2[(chain_vec2 && i2<(int)chain_vec2->size())
+                ? (*chain_vec2)[i2] : resi_vec2[i2].substr(5)];
         }
 
         if (chainID1==chainID2)
@@ -657,7 +661,9 @@ int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
 int extract_aln_from_resi(vector<string> &sequence, char *seqx, char *seqy,
     const vector<string> resi_vec1, const vector<string> resi_vec2,
     const vector<int> xlen_vec, const vector<int> ylen_vec,
-    const int chain_i, const int chain_j, const int byresi_opt)
+    const int chain_i, const int chain_j, const int byresi_opt,
+    const vector<string>* chain_vec1=NULL,
+    const vector<string>* chain_vec2=NULL)
 {
     sequence.clear();
     sequence.push_back("");

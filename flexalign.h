@@ -5,6 +5,13 @@
 
 #include "TMalign.h"
 
+const char CHAIN_KEY_SEP = '\x1f';
+
+inline std::string make_hinge_key(const std::string& chain_id, const std::string& resi)
+{
+    return chain_id + CHAIN_KEY_SEP + resi.substr(0, 5);
+}
+
 const vector<string> flexalign_pymol_color_list = {
     "blue", "red", "green", "yellow", "magenta", "cyan", "orange", "purple", "brown", "pink",
     "marine", "firebrick", "forest", "gold", "violet", "deepteal", "salmon", "aquamarine", "chocolate", "hotpink",
@@ -774,6 +781,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
                              const int mm_opt, const int split_opt, const int mirror_opt,
                              const char *seqM, const char *seqxA, const char *seqyA,
                              const vector<string> &resi_vec1, const vector<string> &resi_vec2,
+                             const vector<string> &chain_vec1, const vector<string> &chain_vec2,
                              const string chainID1, const string chainID2,
                              const int xlen, const int ylen, const double d0A, const int n_ali8,
                              const double rmsd, const double TM1, const double Liden)
@@ -792,6 +800,8 @@ void output_flexalign_rasmol(const string xname, const string yname,
     string asym_id; // chain ID
 
     map<string, int> resi2hinge_dict;
+    if ((int)chain_vec1.size() != (int)resi_vec1.size())
+        PrintErrorAndQuit("Internal error: chain_vec size mismatch");
     int r, i, j;
     j = -1;
     char hinge_char = 0;
@@ -827,7 +837,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
         {
             hinge_idx = hinge_char - 'A' + 36;
         }
-        resi2hinge_dict[resi_vec1[j]] = hinge_idx;
+        resi2hinge_dict[make_hinge_key(chain_vec1[j], resi_vec1[j])] = hinge_idx;
     }
     string resi = resi_vec1[0];
     int read_resi = resi.size() - 4;
@@ -976,9 +986,12 @@ void output_flexalign_rasmol(const string xname, const string yname,
                 resi = line.substr(22, 5);
             else
                 resi = line.substr(22, 5) + line[21];
-            hinge = 0;
-            if (resi2hinge_dict.count(resi))
-                hinge = resi2hinge_dict[resi];
+            {
+                const std::string key = make_hinge_key(
+                    normalize_chain_id(std::string(1, line[21])), line.substr(22, 5));
+                hinge = 0;
+                if (resi2hinge_dict.count(key)) hinge = resi2hinge_dict[key];
+            }
             tu2t_u(tu_vec[hinge], t, u);
             transform(t, u, x, x1);
             // buf_pdb<<line.substr(0,30)<<setiosflags(ios::fixed)
@@ -1110,9 +1123,12 @@ void output_flexalign_rasmol(const string xname, const string yname,
                         asym_id = " ";
                     resi += asym_id[0];
                 }
-                hinge = 0;
-                if (resi2hinge_dict.count(resi))
-                    hinge = resi2hinge_dict[resi];
+                {
+                    const std::string key = make_hinge_key(
+                        normalize_chain_id(asym_id), resi);
+                    hinge = 0;
+                    if (resi2hinge_dict.count(key)) hinge = resi2hinge_dict[key];
+                }
                 tu2t_u(tu_vec[hinge], t, u);
                 transform(t, u, x, x1);
 
@@ -1611,7 +1627,7 @@ void output_flexalign_rasmol(const string xname, const string yname,
 string read_superposed_structure1(const string xname, const string fname_super,
     const vector<vector<double> >& tu_vec,
     const int ter_opt, const int mirror_opt,
-    const vector<string>& resi_vec1,
+    const vector<string>& resi_vec1, const vector<string>& chain_vec1,
     const char* seqM, const char* seqxA)
 {
     int compress_type = 0; // uncompressed file
@@ -1637,6 +1653,8 @@ string read_superposed_structure1(const string xname, const string fname_super,
     fin.open(xname.c_str());
 
     map<string, int> resi2hinge_dict;
+    if ((int)chain_vec1.size() != (int)resi_vec1.size())
+        PrintErrorAndQuit("Internal error: chain_vec size mismatch");
     int r, i, j;
     j = -1;
     char hinge_char = 0;
@@ -1673,7 +1691,7 @@ string read_superposed_structure1(const string xname, const string fname_super,
         {
             hinge_idx = hinge_char - 'A' + 36;
         }
-        resi2hinge_dict[resi_vec1[j]] = hinge_idx;
+        resi2hinge_dict[make_hinge_key(chain_vec1[j], resi_vec1[j])] = hinge_idx;
     }
     string resi = resi_vec1[0];
     int read_resi = resi.size() - 4;
@@ -1713,9 +1731,12 @@ string read_superposed_structure1(const string xname, const string fname_super,
                 resi = line.substr(22, 5);
             else
                 resi = line.substr(22, 5) + line[21];
-            hinge = 0;
-            if (resi2hinge_dict.count(resi))
-                hinge = resi2hinge_dict[resi];
+            {
+                const std::string key = make_hinge_key(
+                    normalize_chain_id(std::string(1, line[21])), line.substr(22, 5));
+                hinge = 0;
+                if (resi2hinge_dict.count(key)) hinge = resi2hinge_dict[key];
+            }
             tu2t_u(tu_vec[hinge], t, u);
             transform(t, u, x, x1);
             buf << line.substr(0, 30) << setiosflags(ios::fixed)
@@ -1823,9 +1844,12 @@ string read_superposed_structure1(const string xname, const string fname_super,
                         asym_id = " ";
                     resi += asym_id[0];
                 }
-                hinge = 0;
-                if (resi2hinge_dict.count(resi))
-                    hinge = resi2hinge_dict[resi];
+                {
+                    const std::string key = make_hinge_key(
+                        normalize_chain_id(asym_id), resi);
+                    hinge = 0;
+                    if (resi2hinge_dict.count(key)) hinge = resi2hinge_dict[key];
+                }
                 tu2t_u(tu_vec[hinge], t, u);
                 transform(t, u, x, x1);
 
@@ -1893,6 +1917,7 @@ void output_flexalign_pymol(const string xname, const string yname,
                             const int mm_opt, const int split_opt, const int mirror_opt,
                             const char *seqM, const char *seqxA, const char *seqyA,
                             const vector<string> &resi_vec1, const vector<string> &resi_vec2,
+                            const vector<string> &chain_vec1, const vector<string> &chain_vec2,
                             const string chainID1, const string chainID2)
 {
     int i;
@@ -1903,7 +1928,7 @@ void output_flexalign_pymol(const string xname, const string yname,
     int hinge = 0;
     ofstream fp;
     string fname_super_full = read_superposed_structure1(xname, fname_super,
-        tu_vec, ter_opt, mirror_opt, resi_vec1, seqM, seqxA);
+        tu_vec, ter_opt, mirror_opt, resi_vec1, chain_vec1, seqM, seqxA);
 
     string chain1_sele;
     string chain2_sele;
@@ -2184,6 +2209,7 @@ void output_flexalign_chimerax(const string xname, const string yname,
                                const int mirror_opt, const char *seqM, const char *seqxA,
                                const char *seqyA, const vector<string> &resi_vec1,
                                const vector<string> &resi_vec2,
+                               const vector<string> &chain_vec1, const vector<string> &chain_vec2,
                                const string chainID1, const string chainID2)
 {
     int i;
@@ -2194,7 +2220,7 @@ void output_flexalign_chimerax(const string xname, const string yname,
     int hinge = 0;
     ofstream fp;
     string fname_super_full = read_superposed_structure1(xname, fname_super,
-        tu_vec, ter_opt, mirror_opt, resi_vec1, seqM, seqxA);
+        tu_vec, ter_opt, mirror_opt, resi_vec1, chain_vec1, seqM, seqxA);
 
     string struct1_basename = get_basename(fname_super_full);
     string struct2_basename = copy_flexalign_structure2_to_outdir(yname, fname_super);
@@ -2383,7 +2409,8 @@ void output_flexalign_results(const string xname, const string yname,
                               const int mm_opt, const int split_opt, const int o_opt,
                               const string fname_super, const int i_opt, const int a_opt,
                               const bool u_opt, const bool d_opt, const int mirror_opt,
-                              const vector<string> &resi_vec1, const vector<string> &resi_vec2)
+                              const vector<string> &resi_vec1, const vector<string> &resi_vec2,
+                              const vector<string> &chain_vec1, const vector<string> &chain_vec2)
 {
     if (outfmt_opt <= 0)
     {
@@ -2456,16 +2483,16 @@ void output_flexalign_results(const string xname, const string yname,
     if (o_opt == 1)
         output_flexalign_pymol(xname, yname, fname_super, tu_vec,
                                ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
-                               resi_vec1, resi_vec2, chainID1, chainID2);
+                               resi_vec1, resi_vec2, chain_vec1, chain_vec2, chainID1, chainID2);
     else if (o_opt == 2)
         output_flexalign_rasmol(xname, yname, fname_super, tu_vec,
                                 t, u, ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
-                                resi_vec1, resi_vec2, chainID1, chainID2,
+                                resi_vec1, resi_vec2, chain_vec1, chain_vec2, chainID1, chainID2,
                                 xlen, ylen, d0A, n_ali8, rmsd, TM1, Liden);
     else if (o_opt == 3)
         output_flexalign_chimerax(xname, yname, fname_super, tu_vec,
                                   ter_opt, mm_opt, split_opt, mirror_opt, seqM, seqxA, seqyA,
-                                  resi_vec1, resi_vec2, chainID1, chainID2);
+                                  resi_vec1, resi_vec2, chain_vec1, chain_vec2, chainID1, chainID2);
 }
 
 // Data structure to hold outputs of flexalign_main to avoid parameter clutter

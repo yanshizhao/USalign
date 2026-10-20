@@ -272,6 +272,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
     /* declare previously global variables */
     vector<vector<string> >PDB_lines1; // text of chain1
     vector<vector<string> >PDB_lines2; // text of chain2
+    vector<vector<string> > full_chain_lines1;
+    vector<vector<string> > full_chain_lines2;
     vector<int> mol_vec1;              // molecule type of chain1, RNA if >0
     vector<int> mol_vec2;              // molecule type of chain2, RNA if >0
     vector<string> chainID_list1;      // list of chainID1
@@ -300,7 +302,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
         xname = chain1_list[i];
         xchainnum = get_PDB_lines(xname, PDB_lines1, chainID_list1, mol_vec1,
                                   ter_opt, infmt1_opt, atom_opt, autojustify, split_opt, het_opt,
-                                  chain2parse1, model2parse1);
+                                  chain2parse1, model2parse1, &full_chain_lines1);
         if (!xchainnum)
         {
             cerr << "Warning! Cannot parse file: " << xname
@@ -348,7 +350,7 @@ int TMalign(string &xname, string &yname, const string &fname_super,
                     yname = chain2_list[j];
                     ychainnum = get_PDB_lines(yname, PDB_lines2, chainID_list2,
                                               mol_vec2, ter_opt, infmt2_opt, atom_opt, autojustify,
-                                              split_opt, het_opt, chain2parse2, model2parse2);
+                                              split_opt, het_opt, chain2parse2, model2parse2, &full_chain_lines2);
                     if (!ychainnum)
                     {
                         cerr << "Warning! Cannot parse file: " << yname
@@ -386,7 +388,8 @@ int TMalign(string &xname, string &yname, const string &fname_super,
 
                     if (byresi_opt)
                         extract_aln_from_resi(sequence,
-                                              seqx, seqy, resi_vec1, resi_vec2, byresi_opt);
+                                              seqx, seqy, resi_vec1, resi_vec2, byresi_opt,
+                                              &full_chain_lines1[chain_i], &full_chain_lines2[chain_j]);
 
                     /* declare variable specific to this pair of TMalign */
                     double t0[3], u0[3][3];
@@ -2886,6 +2889,8 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
 {
     vector<vector<string> > PDB_lines1;
     vector<vector<string> > PDB_lines2;
+    vector<vector<string> > full_chain_lines1;
+    vector<vector<string> > full_chain_lines2;
     vector<int> mol_vec1;
     vector<int> mol_vec2;
     vector<string> chainID_list1;
@@ -2904,7 +2909,7 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
         xname = chain1_list[i];
         xchainnum = get_PDB_lines(xname, PDB_lines1, chainID_list1,
                                   mol_vec1, ter_opt, infmt1_opt, atom_opt, autojustify,
-                                  split_opt, het_opt, chain2parse1, model2parse1);
+                                  split_opt, het_opt, chain2parse1, model2parse1, &full_chain_lines1);
         if (!xchainnum)
         {
             cerr << "Warning! Cannot parse file: " << xname << ". Chain number 0." << endl;
@@ -2938,7 +2943,7 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
                     yname = chain2_list[j];
                     ychainnum = get_PDB_lines(yname, PDB_lines2, chainID_list2,
                                               mol_vec2, ter_opt, infmt2_opt, atom_opt, autojustify,
-                                              split_opt, het_opt, chain2parse2, model2parse2);
+                                              split_opt, het_opt, chain2parse2, model2parse2, &full_chain_lines2);
                     if (!ychainnum)
                         continue;
                 }
@@ -2959,7 +2964,8 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
                     (mol_vec2[chain_j] > 0) ? make_sec(seqy, ya, ylen, secy, atom_opt) : make_sec(ya, ylen, secy);
 
                     if (byresi_opt)
-                        extract_aln_from_resi(sequence, seqx, seqy, resi_vec1, resi_vec2, byresi_opt);
+                        extract_aln_from_resi(sequence, seqx, seqy, resi_vec1, resi_vec2, byresi_opt,
+                            &full_chain_lines1[chain_i], &full_chain_lines2[chain_j]);
 
                     // --- CORE DISPATCH LOGIC START ---
                     if (mode == FLEX_USBCAT)
@@ -2996,7 +3002,7 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
                             (m_opt ? fname_matrix : "").c_str(),
                             outfmt_opt, ter_opt, false, split_opt, o_opt,
                             fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
-                            resi_vec1, resi_vec2);
+                            resi_vec1, resi_vec2, full_chain_lines1[chain_i], full_chain_lines2[chain_j]);
                     }
                     else
                     {
@@ -3039,7 +3045,7 @@ int flexalign_unified(string &xname, string &yname, const string &fname_super,
                             (m_opt ? fname_matrix : "").c_str(),
                             outfmt_opt, ter_opt, false, split_opt, o_opt,
                             fname_super, i_opt, a_opt, u_opt, d_opt, mirror_opt,
-                            resi_vec1, resi_vec2);
+                            resi_vec1, resi_vec2, full_chain_lines1[chain_i], full_chain_lines2[chain_j]);
                     }
                     // --- CORE DISPATCH LOGIC END ---
 

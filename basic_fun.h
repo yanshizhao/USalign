@@ -246,7 +246,7 @@ size_t get_PDB_lines(const string filename,
                                   line.compare(0,1,"#")==0)) // PDBx/mmCIF
                 return get_PDB_lines(filename,PDB_lines,chainID_list, mol_vec,
                     ter_opt, 3, atom_opt, autojustify, split_opt,het_opt,
-                    chain2parse, model2parse);
+                    chain2parse, model2parse, full_chain_lines);
             if (model2parse.size())
             {
                 if (line.size()>=6 && line.compare(0,5,"MODEL")==0)
