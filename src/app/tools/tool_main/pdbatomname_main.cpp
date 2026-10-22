@@ -38,7 +38,7 @@ size_t pdbAtomName(const std::string &infile,const std::string &outfile)
     std::stringstream buf;
     if (infile=="-") buf<<std::cin.rdbuf();
 #if defined(REDI_PSTREAM_H_SEEN)
-    else if (infile.size()>3 && infile.substr(infile.size()-3))
+    else if (infile.size()>3 && infile.substr(infile.size()-3,3)==".gz")
     {
         redi::ipstream fp_gz; // if file is compressed
         fp_gz.open("gunzip -c "+infile);

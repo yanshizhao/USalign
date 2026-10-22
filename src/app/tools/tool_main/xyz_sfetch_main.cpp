@@ -56,6 +56,8 @@ int main(int argc, char *argv[])
     std::string& list_opt = xyzsfetch_opts.list_opt;
 
     std::ifstream fin(filename.c_str());
+    const std::string index_file=join_outdir(xyzsfetch_opts.outdir_opt,
+        filename+".index");
 
     // list all entries in xyz file
     std::string line;
@@ -64,12 +66,12 @@ int main(int argc, char *argv[])
     int start_pos,end_pos; // position of starting and ending character
     if (list_opt.size()==0)
     {
-        std::ofstream fp(join_outdir(xyzsfetch_opts.outdir_opt, filename+".index").c_str());
+        std::ofstream fp(index_file.c_str());
         while (fin.good())
         {
             start_pos=fin.tellg();
             std::getline(fin, line);
-            L=std::stoi(line);
+            L=safe_stoi(line.c_str());
             getline(fin, line);
             if (!fin.good()) break;
             for(i=0;i<line.size();i++) if(line[i]==' '||line[i]=='\t') break;
@@ -115,16 +117,15 @@ int main(int argc, char *argv[])
     /* In xyz file, each line has 28 chacters plus an additional '\n'. In PDB
      * file, a residue number has up to 4 digits, which means a PDB chain
      * usually has up to 9999 residues. 29*9999 == 289971 < 300000 */
-    fp.open((filename+".index").c_str());
+    fp.open(index_file.c_str());
     if (!fp.is_open())
     {
-        std::cerr<<"ERROR! No index file at "+filename+".index"<<std::endl;
+        std::cerr<<"ERROR! No index file at "+index_file<<std::endl;
         std::cerr<<"Run the following command to create the index file:"<<std::endl;
         std::cerr<<argv[0]<<" "<<filename<<std::endl;
         exit(EXIT_SUCCESS);
     }
     std::string buf;
-    buf.resize(300000);
     std::string chain;
     while (fp.good())
     {
@@ -133,8 +134,10 @@ int main(int argc, char *argv[])
         if (std::find(chain_list.begin(), chain_list.end(),
             chain)==chain_list.end()) continue;
         fin.seekg(start_pos);
+        // Resize before each read: a shorter entry must not shrink the buffer
+        // for a longer one fetched later.
+        buf.resize(end_pos-start_pos);
         fin.read(&buf[0],end_pos-start_pos);
-        buf.resize(end_pos-start_pos); // ensures old text beyond this is ignored
         std::cout<<buf;
     }
     fp.close();
