@@ -19,6 +19,22 @@ else
     # Linux / macOS (native: no -static, cross-compile: STATIC_MINGW adds it)
     STATIC=
     STATIC_MINGW=-static
+
+    # macOS: prefer Homebrew GNU g++ when it is installed. Apple Clang has no
+    # OpenMP support, so the USalign target (which passes -fopenmp) needs GNU
+    # g++. USFlexalign builds with either compiler.
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        HOMEBREW_GXX := $(firstword $(wildcard \
+            $(foreach v,21 20 19 18 17 16 15 14 13 12 11 10,\
+                /opt/homebrew/bin/g++-$(v) /usr/local/bin/g++-$(v))))
+        ifneq ($(HOMEBREW_GXX),)
+            CC := $(HOMEBREW_GXX)
+        else
+            OMPFLAGS :=
+            $(info Note: Homebrew GCC not found; -fopenmp disabled (USalign will be built without OpenMP))
+        endif
+    endif
 endif
 LDFLAGS=$(STATIC) -lm
 PROGRAM=qTMclust USalign USFlexalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID

@@ -144,9 +144,14 @@ dispatches to the engine entry point.
        "make" builds the USalign program by default (see the section
        "Building the individual programs under app/" below for the other
        programs).
+       On macOS the Makefile uses Homebrew GNU g++ automatically when it is
+       installed (/opt/homebrew/bin/g++-* or /usr/local/bin/g++-*). Otherwise
+       it falls back to Apple Clang and disables -fopenmp, because Apple Clang
+       has no OpenMP support. USFlexalign builds with either compiler; USalign
+       needs GNU g++ for OpenMP acceleration (brew install gcc).
    1.2 Manual compilation in bash (do not add -static; macOS cannot link
        statically):
-           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/output_funcs/output.cpp
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
 2. Windows (MSYS2 / MinGW)
    2.1 Compile with make:
@@ -154,14 +159,17 @@ dispatches to the engine entry point.
            mingw32-make
        Same targets as in 1.1: only USalign is built by default.
    2.2 Manual compilation in PowerShell (-static is required on Windows):
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -lm -Isrc/common -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/common/common.cpp src/output_funcs/output.cpp
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
 3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
 
 Additional note:
 1. The -static flag enables static linking. A statically linked executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
 2. However, on Linux the "make" command does NOT pass -static: the resulting binary is dynamically linked and depends on the system libraries (e.g. libstdc++, libgomp and glibc), so copying it to another machine may fail if those libraries are missing or too old.
-3. On Windows, "mingw32-make" adds -static automatically.
+3. On Windows, the Makefile adds -static automatically when the OS environment
+   variable is Windows_NT. This depends on the OS variable, not on whether you
+   invoke make or mingw32-make. In a non-standard shell or toolchain, check that
+   the actual compilation command contains -static.
 4. If you need a statically linked Linux binary, add -static to the command in 1.2.
 5. macOS does not support static linking.
 6. Remove -fopenmp from all manual compilation commands if parallel acceleration is not required.
