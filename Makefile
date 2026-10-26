@@ -35,11 +35,16 @@ else ifneq ($(FAST_MATH),0)
 endif
 CFLAGS?=$(BASE_CXXFLAGS)
 CXXFLAGS?=$(CFLAGS)
-OUT_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+OUT_DIR:=$(CURDIR)/
 INC=-Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include
 
 # OPENMP=auto enables OpenMP only when the compiler used by that target can
 # compile and link a minimal program. OPENMP=0 is the portable serial build.
+ifeq ($(OS),Windows_NT)
+    NULL_DEV:=NUL
+else
+    NULL_DEV:=/dev/null
+endif
 OPENMP?=auto
 ifneq ($(origin OMPFLAGS),undefined)
     OMP_CXXFLAGS:=$(OMPFLAGS)
@@ -62,7 +67,7 @@ else
             OMP_CXXFLAGS:=
             OMP_LDFLAGS:=
         else
-            OPENMP_SUPPORTED:=$(shell printf 'int main(){return 0;}\n' | $(CXX) -x c++ -fopenmp -o /dev/null - >/dev/null 2>&1 && printf yes)
+            OPENMP_SUPPORTED:=$(shell printf 'int main(){return 0;}\n' | $(CXX) -x c++ -fopenmp -o $(NULL_DEV) - >/dev/null 2>&1 && printf yes)
             ifeq ($(OPENMP_SUPPORTED),yes)
                 OMP_CXXFLAGS:=-fopenmp
                 OMP_LDFLAGS:=-fopenmp
@@ -73,7 +78,7 @@ else
             endif
         endif
         ifneq ($(filter %.exe,$(MAKECMDGOALS)),)
-            MINGW_OPENMP_SUPPORTED:=$(shell printf 'int main(){return 0;}\n' | $(MINGW) -x c++ -fopenmp -o /dev/null - >/dev/null 2>&1 && printf yes)
+            MINGW_OPENMP_SUPPORTED:=$(shell printf 'int main(){return 0;}\n' | $(MINGW) -x c++ -fopenmp -o $(NULL_DEV) - >/dev/null 2>&1 && printf yes)
             ifeq ($(MINGW_OPENMP_SUPPORTED),yes)
                 MINGW_OMP_CXXFLAGS:=-fopenmp
                 MINGW_OMP_LDFLAGS:=-fopenmp
@@ -174,4 +179,4 @@ $(PROGRAM): %: %.exe
 endif
 
 clean:
-		$(RM) $(addprefix $(OUT_DIR),$(PROGRAM) $(addsuffix .exe,$(PROGRAM)))
+		$(RM) $(addprefix "$(OUT_DIR)",$(PROGRAM) $(addsuffix .exe,$(PROGRAM)))
