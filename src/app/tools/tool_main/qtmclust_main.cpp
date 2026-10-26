@@ -118,7 +118,7 @@ void read_init_cluster(const std::string&filename,
     std::string line;
     std::vector<std::string> line_vec;
     std::map<std::string, bool> cluster_cooccur;
-    fin.open(filename.c_str());
+    open_input_stream(fin, filename);
     while (fin.good())
     {
         std::getline(fin,line);
@@ -540,7 +540,7 @@ void run_hwrmsd_prefilter_stage(QTMclustRun& run)
             index_vec.size()>=cur_repr_num_cutoff) break;
         index_vec.push_back(chain_j);
         std::cout<<"#"<<chain_j<<"\t"<<chainID_list[chain_j]<<"\t"
-            <<setiosflags(std::ios::fixed)<<std::setprecision(4)<<TM<<std::endl;
+            <<std::setiosflags(std::ios::fixed)<<std::setprecision(4)<<TM<<std::endl;
     }
     std::cout<<index_vec.size()<<" out of "
         <<HwRMSDscore_list.size()<<" entries"<<std::endl;
@@ -632,7 +632,7 @@ bool run_tmalign_refine_stage(QTMclustRun& run)
             xlen, ylen, qtmclust_opts.sequence, align_opts);
 
         std::cout<<status<<'\t'<<chainID_list[chain_j]<<'\t'
-            <<setiosflags(std::ios::fixed)<<std::setprecision(4)
+            <<std::setiosflags(std::ios::fixed)<<std::setprecision(4)
             <<TM2<<'\t'<<TM1<<'\t'<<overwrite_fast_opt<<std::endl;
 
         double TM=TM3; // average length
@@ -704,11 +704,7 @@ void report_clusters(const std::vector<size_t>& clust_repr_vec,
         txt<<'\n';
     }
     if (fname_clust.size() && fname_clust!="-")
-    {
-        std::ofstream fp(fname_clust.c_str());
-        fp<<txt.str();
-        fp.close();
-    }
+        write_text_file(fname_clust, txt.str());
     else std::cout<<txt.str()<<std::endl;
 }
 
@@ -716,8 +712,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    std::clock_t t1, t2;
-    t1 = std::clock();
+    const std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     /**********************/
     //    get argument   
@@ -860,9 +855,8 @@ int main(int argc, char *argv[])
     std::vector<std::string>().swap(qtmclust_opts.model2parse);
     std::map<std::string, std::map<std::string,bool> >().swap(init_cluster);
 
-    t2 = std::clock();
-    float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
-    fcout("#Total CPU time is %5.2f seconds\n", diff);
+    const double diff = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - t1).count();
+    fcout("#Total elapsed time is %5.2f seconds\n", diff);
     return 0;
 }
-

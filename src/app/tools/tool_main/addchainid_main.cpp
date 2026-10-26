@@ -36,24 +36,7 @@ void splitlines(const std::string &line, std::vector<std::string> &lines,
 void addChainID(const std::string &infile,const std::string &outfile,
     const std::string &chainID)
 {
-    std::stringstream buf;
-    if (infile=="-") buf<<std::cin.rdbuf();
-#if defined(REDI_PSTREAM_H_SEEN)
-    else if (infile.size()>3 && infile.substr(infile.size()-3,3)==".gz")
-    {
-        redi::ipstream fp_gz; // if file is compressed
-        fp_gz.open("gunzip -c "+infile);
-        buf<<fp_gz.rdbuf();
-        fp_gz.close();
-    }
-#endif
-    else
-    {
-        std::ifstream fp;
-        fp.open(infile.c_str(),std::ios::in); //ifstream fp(filename,ios::in);
-        buf<<fp.rdbuf();
-        fp.close();
-    }
+    std::stringstream buf = read_file_to_memory(infile);
     std::vector<std::string> lines;
     splitlines(buf.str(),lines);
     buf.str(std::string());
@@ -80,9 +63,11 @@ void addChainID(const std::string &infile,const std::string &outfile,
     else
     {
         std::ofstream fout;
-        fout.open(outfile.c_str(),std::ios::out);
+        open_output_stream(fout, outfile, std::ios::out);
+        check_output_stream(fout, outfile);
         fout<<buf.str();
         fout.close();
+        if (fout.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + outfile);
     }
     buf.str(std::string());
     return;
@@ -131,4 +116,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

@@ -1142,8 +1142,8 @@ int mTMalign(AlignCommonInput& common_inputs)
         if (state.assign_list[i]<0) continue;
         buf <<">"<<state.xname_vec[i]<<"\tL="<<len_vec[i]
             <<"\td0="<<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<state.d0_vec[i]
-            <<"\tseqID="<<setiosflags(std::ios::fixed)<<std::setprecision(3)<<state.seqID_vec[i]
-            <<"\tTM-score="<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<state.TM_vec[i];
+            <<"\tseqID="<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)<<state.seqID_vec[i]
+            <<"\tTM-score="<<std::setiosflags(std::ios::fixed)<<std::setprecision(5)<<state.TM_vec[i];
         if (i==state.repr_idx) buf<<"\t*";
         buf<<'\n'<<seqxA_mat[i][i]<<std::endl;
     }

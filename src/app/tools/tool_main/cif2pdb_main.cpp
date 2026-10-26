@@ -62,11 +62,14 @@ void write_mmcif_to_pdb(const std::string filename,
                 continue;
             }
             std::cout<<     filename+Trim(chainID_list[c])+".pdb"<<std::endl;
+            const std::string chain_filename = filename+Trim(chainID_list[c])+".pdb";
             std::ofstream fout;
-            fout.open((filename+Trim(chainID_list[c])+".pdb").c_str());
+            open_output_stream(fout, chain_filename);
+            check_output_stream(fout, chain_filename);
             write_mmcif_chain_remark(fout, PDB_lines[c], chainID_list[c]);
             write_mmcif_chain_lines(fout, PDB_lines[c]);
             fout.close();
+            if (fout.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + chain_filename);
         }
     }
     else if (filename=="-")
@@ -86,7 +89,8 @@ void write_mmcif_to_pdb(const std::string filename,
     else
     {
         std::ofstream fout;
-        fout.open(filename.c_str());
+        open_output_stream(fout, filename);
+        check_output_stream(fout, filename);
         for (c=0;c<PDB_lines.size();c++)
         {
             if (PDB_lines[c].size()==0) continue;
@@ -99,6 +103,7 @@ void write_mmcif_to_pdb(const std::string filename,
         }
         fout<<"END"<<std::endl;
         fout.close();
+        if (fout.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + filename);
     }
 }
 
@@ -182,54 +187,19 @@ size_t resolve_chainID_for_mmcif(std::vector<std::vector<std::string> >&PDB_line
 
 void mmcif_open_input(MmcifInput& in, const std::string& filename)
 {
-#ifndef NO_PSTREAM
-    if (filename.size()>=3 &&
-        filename.substr(filename.size()-3,3)==".gz")
-    {
-        in.fin_gz.open("gunzip -c '"+filename+"'");
-        in.compress_type=1;
-    }
-    else if (filename.size()>=4 &&
-        filename.substr(filename.size()-4,4)==".bz2")
-    {
-        in.fin_gz.open("bzcat '"+filename+"'");
-        in.compress_type=2;
-    }
-    else
-    {
-        if (filename=="-") in.compress_type=-1;
-        else in.fin.open(filename.c_str());
-    }
-#else
-    if (filename.size()>=3 &&
-        filename.substr(filename.size()-3,3)==".gz")
-        PrintErrorAndQuit("ERROR! gz file is not supported on this platform");
-    else if (filename.size()>=4 &&
-        filename.substr(filename.size()-4,4)==".bz2")
-        PrintErrorAndQuit("ERROR! bz2 file is not supported on this platform");
-    else
-    {
-        if (filename=="-") in.compress_type=-1;
-        else in.fin.open(filename.c_str());
-    }
-#endif
+    in.filename = filename;
+    open_file_for_read(filename, in.fin, in.fin_gz, in.compress_type);
 }
 
 bool mmcif_input_good(const MmcifInput& in)
 {
-#ifndef NO_PSTREAM
     return (in.compress_type==-1)?std::cin.good():(in.compress_type?in.fin_gz.good():in.fin.good());
-#else
-    return (in.compress_type==-1)?std::cin.good():in.fin.good();
-#endif
 }
 
 void mmcif_read_line(MmcifInput& in, std::string& line)
 {
     if (in.compress_type==-1) std::getline(std::cin, line);
-#ifndef NO_PSTREAM
     else if (in.compress_type) std::getline(in.fin_gz, line);
-#endif
     else                      std::getline(in.fin, line);
 }
 
@@ -240,13 +210,11 @@ void mmcif_read_line_checked(MmcifInput& in, const std::string& filename, std::s
         if (std::cin.good()) std::getline(std::cin, line);
         else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
     }
-#ifndef NO_PSTREAM
     else if (in.compress_type)
     {
         if (in.fin_gz.good()) std::getline(in.fin_gz, line);
         else PrintErrorAndQuit("ERROR! Unexpected end of "+filename);
     }
-#endif
     else
     {
         if (in.fin.good()) std::getline(in.fin, line);
@@ -256,14 +224,7 @@ void mmcif_read_line_checked(MmcifInput& in, const std::string& filename, std::s
 
 void mmcif_close_input(MmcifInput& in)
 {
-    if (in.compress_type>=0)
-    {
-#ifndef NO_PSTREAM
-        if (in.compress_type) in.fin_gz.close();
-        else
-#endif
-        in.fin.close();
-    }
+    close_file_after_read(in.filename, in.fin, in.fin_gz, in.compress_type);
 }
 
 void mmcif_read_atom_fields(MmcifParseContext& mmcif_context, const std::string& line, const bool mse_opt)
@@ -566,4 +527,3 @@ int main(int argc, char *argv[])
     chain_opt.clear();
     return 0;
 }
-

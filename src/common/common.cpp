@@ -1,5 +1,6 @@
 #include "common.h"
-#ifdef _WIN32
+#include <cerrno>
+#ifdef USALIGN_NATIVE_WINDOWS
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -8,6 +9,7 @@
 #endif
 #include <windows.h>
 #include <direct.h>
+#include <io.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
@@ -33,9 +35,36 @@ void do_rotation(CoordArray& x, CoordArray& x1, int len, const Vec3& t, const Ro
 
 void PrintErrorAndQuit(const std::string sErrorString)
 {
-    std::cout << sErrorString << std::endl;
-    exit(1);
+    std::cerr << sErrorString << std::endl;
+    std::exit(EXIT_FAILURE);
 }
+
+#ifdef USALIGN_NATIVE_WINDOWS
+std::wstring utf8_to_wide_path(const std::string& path)
+{
+    if (path.empty()) return std::wstring();
+    const int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
+        path.c_str(), -1, NULL, 0);
+    if (length <= 0) PrintErrorAndQuit("ERROR! Path is not valid UTF-8: " + path);
+    std::vector<wchar_t> buffer(length);
+    if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.c_str(), -1,
+        buffer.data(), length))
+        PrintErrorAndQuit("ERROR! Cannot convert path to UTF-16: " + path);
+    std::wstring wide_path(buffer.data());
+    if (wide_path.size() < 240 || wide_path.compare(0, 4, L"\\\\?\\") == 0)
+        return wide_path;
+
+    DWORD absolute_length = GetFullPathNameW(wide_path.c_str(), 0, NULL, NULL);
+    if (absolute_length == 0) return wide_path;
+    std::vector<wchar_t> absolute_buffer(absolute_length);
+    if (!GetFullPathNameW(wide_path.c_str(), absolute_length,
+        absolute_buffer.data(), NULL)) return wide_path;
+    std::wstring absolute_path(absolute_buffer.data());
+    if (absolute_path.compare(0, 2, L"\\\\") == 0)
+        return L"\\\\?\\UNC\\" + absolute_path.substr(2);
+    return L"\\\\?\\" + absolute_path;
+}
+#endif
 
 std::string AAmap(char A)
 {
@@ -611,36 +640,17 @@ size_t get_FASTA_lines(const std::string filename,
     std::string line;
     std::vector<std::string> tmp_str_vec;
 
-    int compress_type=0; // uncompressed file
+    int compress_type=COMPRESS_FILE;
     std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz; // if file is compressed
-    if (filename.size()>=3 &&
-        filename.substr(filename.size()-3,3)==".gz")
-    {
-        fin_gz.open("gunzip -c '"+filename+"'");
-        compress_type=1;
-    }
-    else if (filename.size()>=4 &&
-        filename.substr(filename.size()-4,4)==".bz2")
-    {
-        fin_gz.open("bzcat '"+filename+"'");
-        compress_type=2;
-    }
-    else
-#endif
-    {
-        if (filename=="-") compress_type=-1;
-        else fin.open(filename.c_str());
-    }
+    CompressedStream fin_gz;
+    open_file_for_read(filename, fin, fin_gz, compress_type);
 
-    while ((compress_type==-1)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
+    while ((compress_type==COMPRESS_STDIN)?std::cin.good():(compress_type?fin_gz.good():fin.good()))
     {
-        if  (compress_type==-1) std::getline(std::cin, line);
+        if  (compress_type==COMPRESS_STDIN) std::getline(std::cin, line);
         else if (compress_type) std::getline(fin_gz, line);
         else                    std::getline(fin, line);
+        strip_trailing_cr(line);
 
         if (line.size()==0 || line[0]=='#') continue;
 
@@ -670,8 +680,7 @@ size_t get_FASTA_lines(const std::string filename,
     }
 
     line.clear();
-    if      (compress_type>=1) fin_gz.close();
-    else if (compress_type==0) fin.close();
+    close_file_after_read(filename, fin, fin_gz, compress_type);
     return FASTA_lines.size();
 }
 
@@ -718,12 +727,14 @@ void read_user_alignment(std::vector<std::string>&sequence, const std::string &f
     int n_p = 0;// number of structures in alignment file
     std::string line;
 
-    std::ifstream fileIn(fname_lign.c_str());
+    std::ifstream fileIn;
+    open_input_stream(fileIn, fname_lign);
     if (fileIn.is_open())
     {
         while (fileIn.good())
         {
             std::getline(fileIn, line);
+            strip_trailing_cr(line);
             if (line.compare(0, 1, ">") == 0)// Flag for a new structure
             {
                 if (n_p >= 2) break;
@@ -754,7 +765,8 @@ void read_user_alignment(std::vector<std::string>&sequence, const std::string &f
 void file2chainlist(std::vector<std::string>&chain_list, const std::string &name,
     const std::string &dir_opt, const std::string &suffix_opt)
 {
-    std::ifstream fp(name.c_str());
+    std::ifstream fp;
+    open_input_stream(fp, name);
     if (! fp.is_open())
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     std::string line;
@@ -803,7 +815,8 @@ void file2chainlist(std::vector<std::string>&chain_list, const std::string &name
 void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::string>&chain2_list,
     const std::string &name, const std::string &dirpair_opt, const std::string &suffix_opt)
 {
-    std::ifstream fp(name.c_str());
+    std::ifstream fp;
+    open_input_stream(fp, name);
     if (! fp.is_open())
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     std::string line;
@@ -924,10 +937,26 @@ void file2chainpairlist(std::vector<std::string>&chain1_list, std::vector<std::s
 std::string get_executable_dir()
 {
     std::string path;
-#ifdef _WIN32
-    char buf[MAX_PATH];
-    DWORD n = GetModuleFileNameA(NULL, buf, MAX_PATH);
-    if (n > 0 && n < MAX_PATH) path.assign(buf, n);
+#ifdef USALIGN_NATIVE_WINDOWS
+    std::vector<wchar_t> buf(512);
+    for (;;)
+    {
+        DWORD n = GetModuleFileNameW(NULL, buf.data(), static_cast<DWORD>(buf.size()));
+        if (n == 0) break;
+        if (n < buf.size() - 1)
+        {
+            const int bytes = WideCharToMultiByte(CP_UTF8, 0, buf.data(), n,
+                NULL, 0, NULL, NULL);
+            if (bytes > 0)
+            {
+                path.resize(bytes);
+                WideCharToMultiByte(CP_UTF8, 0, buf.data(), n, &path[0], bytes,
+                    NULL, NULL);
+            }
+            break;
+        }
+        buf.resize(buf.size() * 2);
+    }
 #elif defined(__APPLE__)
     uint32_t size = 0;
     _NSGetExecutablePath(NULL, &size);
@@ -936,10 +965,19 @@ std::string get_executable_dir()
         std::vector<char> buf(size);
         if (_NSGetExecutablePath(buf.data(), &size) == 0) path.assign(buf.data());
     }
-#else
-    char buf[4096];
-    ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
-    if (n > 0) path.assign(buf, n);
+#elif defined(__linux__)
+    std::vector<char> buf(512);
+    for (;;)
+    {
+        const ssize_t n = readlink("/proc/self/exe", buf.data(), buf.size());
+        if (n < 0) break;
+        if (static_cast<std::size_t>(n) < buf.size())
+        {
+            path.assign(buf.data(), n);
+            break;
+        }
+        buf.resize(buf.size() * 2);
+    }
 #endif
     if (path.empty()) return std::string(".");
     std::size_t slash = path.find_last_of("/\\");
@@ -949,21 +987,78 @@ std::string get_executable_dir()
 
 bool make_dirs(const std::string& dir_path)
 {
-    if (dir_path.empty()) return true;
-    std::string cur;
-    for (std::size_t i = 0; i < dir_path.size(); i++)
+    if (dir_path.empty() || dir_path == ".") return true;
+#ifdef USALIGN_NATIVE_WINDOWS
+    std::wstring path = utf8_to_wide_path(dir_path);
+    std::replace(path.begin(), path.end(), L'/', L'\\');
+
+    std::size_t start = 0;
+    if (path.compare(0, 8, L"\\\\?\\UNC\\") == 0)
     {
-        cur += dir_path[i];
-        if (dir_path[i] != '/' && dir_path[i] != '\\' && i + 1 != dir_path.size()) continue;
-        if (cur == "/" || cur == "\\") continue;
-        if (cur.size() == 2 && cur[1] == ':') continue;
-#ifdef _WIN32
-        _mkdir(cur.c_str());
-#else
-        mkdir(cur.c_str(), 0755);
-#endif
+        std::size_t server_end = path.find(L'\\', 8);
+        if (server_end == std::wstring::npos) return true;
+        std::size_t share_end = path.find(L'\\', server_end + 1);
+        if (share_end == std::wstring::npos) return true;
+        start = share_end + 1;
     }
+    else if (path.compare(0, 4, L"\\\\?\\") == 0)
+    {
+        start = path.find(L'\\', 4);
+        if (start == std::wstring::npos) return true;
+        ++start;
+    }
+    else if (path.compare(0, 2, L"\\\\") == 0)
+    {
+        std::size_t server_end = path.find(L'\\', 2);
+        if (server_end == std::wstring::npos) return true;
+        std::size_t share_end = path.find(L'\\', server_end + 1);
+        if (share_end == std::wstring::npos) return true;
+        start = share_end + 1;
+    }
+    else if (path.size() >= 3 && path[1] == L':' && path[2] == L'\\') start = 3;
+    else if (!path.empty() && path[0] == L'\\') start = 1;
+
+    for (std::size_t i = start; i <= path.size(); ++i)
+    {
+        if (i != path.size() && path[i] != L'\\') continue;
+        if (i == 0) continue;
+        const std::wstring current = path.substr(0, i);
+        if (current.empty()) continue;
+        if (_wmkdir(current.c_str()) == 0) continue;
+        if (errno != EEXIST) return false;
+        const DWORD attrs = GetFileAttributesW(current.c_str());
+        if (attrs == INVALID_FILE_ATTRIBUTES || !(attrs & FILE_ATTRIBUTE_DIRECTORY))
+            return false;
+    }
+#else
+    std::string path = dir_path;
+    std::replace(path.begin(), path.end(), '\\', '/');
+    std::string current;
+    for (std::size_t i = 0; i <= path.size(); ++i)
+    {
+        if (i < path.size()) current += path[i];
+        if (i < path.size() && path[i] != '/') continue;
+        while (current.size() > 1 && current[current.size() - 1] == '/')
+            current.erase(current.size() - 1);
+        if (current.empty() || current == "/" || current == ".") continue;
+        if (mkdir(current.c_str(), 0755) == 0) continue;
+        if (errno != EEXIST) return false;
+        struct stat info;
+        if (stat(current.c_str(), &info) != 0 || !S_ISDIR(info.st_mode)) return false;
+        if (i < path.size()) current += '/';
+    }
+#endif
     return true;
+}
+
+bool directory_is_writable(const std::string& dir_path)
+{
+#ifdef USALIGN_NATIVE_WINDOWS
+    const std::wstring wide_path = utf8_to_wide_path(dir_path);
+    return _waccess(wide_path.c_str(), 2) == 0;
+#else
+    return access(dir_path.c_str(), W_OK | X_OK) == 0;
+#endif
 }
 
 std::string get_default_outdir()
@@ -973,7 +1068,12 @@ std::string get_default_outdir()
 
 std::string resolve_outdir(const std::string& given_outdir)
 {
-    return given_outdir.empty() ? get_default_outdir() : given_outdir;
+    const std::string outdir = given_outdir.empty() ? get_default_outdir() : given_outdir;
+    if (!make_dirs(outdir))
+        PrintErrorAndQuit("ERROR! Cannot create output directory: " + outdir);
+    if (!directory_is_writable(outdir))
+        PrintErrorAndQuit("ERROR! Output directory is not writable: " + outdir);
+    return outdir;
 }
 
 void trace_back_sw(const std::string& seqx, const std::string& seqy,
@@ -1362,50 +1462,19 @@ void NWDP_TM(const DoubleMatrix& score, CharMatrix& path,
 
 std::stringstream read_file_to_memory(const std::string& filename)
 {
-
     std::stringstream buf;
-    bool read_ok = true;
-    bool specific_warning = false;
     int compress_type = COMPRESS_FILE;
     std::ifstream fin;
     CompressedStream fin_gz;
 
     open_file_for_read(filename, fin, fin_gz, compress_type);
-    if (compress_type == COMPRESS_FILE && !fin.is_open())
-    {
-        std::cerr << "Warning! Cannot open file: " << filename << std::endl;
-        return buf;
-    }
 
     if      (compress_type == COMPRESS_STDIN) buf << std::cin.rdbuf();
     else if (compress_type >= COMPRESS_GZ)    buf << fin_gz.rdbuf();
     else                                      buf << fin.rdbuf();
 
-    if (buf.bad()) read_ok = false;
-
-    if (compress_type >= COMPRESS_GZ) {
-        fin_gz.close();
-#ifdef REDI_PSTREAM_H_SEEN
-        {
-            // redi::ipstream::close() returns void. Get exit code from the
-            // underlying pstreambuf (via rdbuf()) to detect decompression failure.
-            const int ws = static_cast<redi::basic_pstreambuf<char>*>(
-                fin_gz.rdbuf())->status();
-            if (ws != 0) {
-                std::cerr << "Warning! Decompression of " << filename
-                          << " failed (exit code "
-                          << WEXITSTATUS(ws) << ")" << std::endl;
-                read_ok = false;
-                specific_warning = true;
-            }
-        }
-#endif
-    } else if (compress_type == COMPRESS_FILE) {
-        fin.close();
-    }
-
-    if (!read_ok && !specific_warning)
-        std::cerr << "Warning! Failed to read file: " << filename << std::endl;
+    if (buf.bad()) PrintErrorAndQuit("ERROR! Failed while reading file: " + filename);
+    close_file_after_read(filename, fin, fin_gz, compress_type);
 
     return buf;
 }
@@ -1732,4 +1801,3 @@ bool Kabsch(const CoordArray& x, const CoordArray& y, int n, int mode, double &r
     rms = rms1;
     return true;
 }
-

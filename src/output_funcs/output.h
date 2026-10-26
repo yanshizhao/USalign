@@ -99,7 +99,7 @@ inline void write_rasmol_mmcif_chain_a(std::ostream& os, TMalignRasmolState& ras
 {
     os<<"ATOM  "<<std::setw(6)<<std::setw(5)<<serial%100000<<' '<<rasmol_state.atom<<' '
         <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-        <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
         <<std::setw(8)<<rasmol_state.x1[0]
         <<std::setw(8)<<rasmol_state.x1[1]
         <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -125,28 +125,13 @@ void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
 inline void write_rasmol_to_file(const TMalignRasmolState& rasmol_state,
     const std::string& fname_super, const int mm_opt)
 {
-    std::ofstream fp;
     if (!mm_opt)
-    {
-        fp.open((fname_super).c_str());
-        fp<<rasmol_state.buf.str();
-        fp.close();
-    }
-    fp.open((fname_super+"_all").c_str());
-    fp<<rasmol_state.buf_all.str();
-    fp.close();
+        write_text_file(fname_super, rasmol_state.buf.str());
+    write_text_file(fname_super + "_all", rasmol_state.buf_all.str());
     if (!mm_opt)
-    {
-        fp.open((fname_super+"_atm").c_str());
-        fp<<rasmol_state.buf_atm.str();
-        fp.close();
-    }
-    fp.open((fname_super+"_all_atm").c_str());
-    fp<<rasmol_state.buf_all_atm.str();
-    fp.close();
-    fp.open((fname_super+"_all_atm_lig").c_str());
-    fp<<rasmol_state.buf_all_atm_lig.str();
-    fp.close();
+        write_text_file(fname_super + "_atm", rasmol_state.buf_atm.str());
+    write_text_file(fname_super + "_all_atm", rasmol_state.buf_all_atm.str());
+    write_text_file(fname_super + "_all_atm_lig", rasmol_state.buf_all_atm_lig.str());
 }
 
 void output_rasmol(const std::string xname, const std::string yname, const std::string fname_super, const Vec3& t,

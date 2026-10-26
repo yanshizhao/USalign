@@ -1,106 +1,177 @@
-CC=g++
-MINGW=x86_64-w64-mingw32-g++
-CFLAGS=-O3 -ffast-math -std=gnu++11
-OUT_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-# Keep compiler temporaries inside the tree so the build does not depend on a
-# writable system temp dir (e.g. C:\Windows\ when TEMP is unset under MSYS make).
-BUILD_TMP:=$(CURDIR)/.build_tmp
-$(shell mkdir -p $(BUILD_TMP))
-export TMPDIR:=$(BUILD_TMP)
-export TMP:=$(BUILD_TMP)
-export TEMP:=$(BUILD_TMP)
-INC=-Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include
-OMPFLAGS=-fopenmp
 ifeq ($(OS),Windows_NT)
-    # Windows (MSYS2, MinGW, PowerShell, cmd)
+    HOST_OS:=Windows_NT
+else
+    HOST_OS:=$(shell uname -s 2>/dev/null)
+endif
+
+# Use CXX/CXXFLAGS for C++ builds.  Keep command-line CC/CFLAGS overrides
+# compatible with older build instructions.
+ifeq ($(HOST_OS),Darwin)
+    HOMEBREW_GCC_PREFIX:=$(shell command -v brew >/dev/null 2>&1 && brew --prefix gcc 2>/dev/null)
+    HOMEBREW_GXX:=$(firstword $(wildcard $(HOMEBREW_GCC_PREFIX)/bin/g++-*))
+endif
+
+ifneq ($(filter default undefined,$(origin CXX)),)
+    ifeq ($(origin CC),command line)
+        CXX:=$(CC)
+    else ifneq ($(HOMEBREW_GXX),)
+        CXX:=$(HOMEBREW_GXX)
+    else
+        CXX:=g++
+    endif
+endif
+
+MINGW?=x86_64-w64-mingw32-g++
+FAST_MATH?=1
+REPRODUCIBLE?=0
+ifeq ($(REPRODUCIBLE),1)
+    FAST_MATH:=0
+endif
+BASE_CXXFLAGS=-O3 -std=gnu++11
+ifeq ($(FAST_MATH),1)
+    BASE_CXXFLAGS+=-ffast-math
+else ifneq ($(FAST_MATH),0)
+    $(error FAST_MATH must be 0 or 1)
+endif
+CFLAGS?=$(BASE_CXXFLAGS)
+CXXFLAGS?=$(CFLAGS)
+OUT_DIR:=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+INC=-Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include
+
+# OPENMP=auto enables OpenMP only when the compiler used by that target can
+# compile and link a minimal program. OPENMP=0 is the portable serial build.
+OPENMP?=auto
+ifneq ($(origin OMPFLAGS),undefined)
+    OMP_CXXFLAGS:=$(OMPFLAGS)
+    OMP_LDFLAGS:=$(OMPFLAGS)
+    MINGW_OMP_CXXFLAGS:=$(OMPFLAGS)
+    MINGW_OMP_LDFLAGS:=$(OMPFLAGS)
+else
+    ifeq ($(OPENMP),0)
+        OMP_CXXFLAGS:=
+        OMP_LDFLAGS:=
+        MINGW_OMP_CXXFLAGS:=
+        MINGW_OMP_LDFLAGS:=
+    else ifeq ($(OPENMP),1)
+        OMP_CXXFLAGS:=-fopenmp
+        OMP_LDFLAGS:=-fopenmp
+        MINGW_OMP_CXXFLAGS:=-fopenmp
+        MINGW_OMP_LDFLAGS:=-fopenmp
+    else ifeq ($(OPENMP),auto)
+        ifeq ($(strip $(MAKECMDGOALS)),clean)
+            OMP_CXXFLAGS:=
+            OMP_LDFLAGS:=
+        else
+            OPENMP_SUPPORTED:=$(shell printf 'int main(){return 0;}\n' | $(CXX) -x c++ -fopenmp -o /dev/null - >/dev/null 2>&1 && printf yes)
+            ifeq ($(OPENMP_SUPPORTED),yes)
+                OMP_CXXFLAGS:=-fopenmp
+                OMP_LDFLAGS:=-fopenmp
+            else
+                OMP_CXXFLAGS:=
+                OMP_LDFLAGS:=
+                $(warning $(CXX) does not support -fopenmp; building USalign without OpenMP. Select an OpenMP-capable compiler or use OPENMP=1 to force it.)
+            endif
+        endif
+        ifneq ($(filter %.exe,$(MAKECMDGOALS)),)
+            MINGW_OPENMP_SUPPORTED:=$(shell printf 'int main(){return 0;}\n' | $(MINGW) -x c++ -fopenmp -o /dev/null - >/dev/null 2>&1 && printf yes)
+            ifeq ($(MINGW_OPENMP_SUPPORTED),yes)
+                MINGW_OMP_CXXFLAGS:=-fopenmp
+                MINGW_OMP_LDFLAGS:=-fopenmp
+            else
+                MINGW_OMP_CXXFLAGS:=
+                MINGW_OMP_LDFLAGS:=
+                $(warning $(MINGW) does not support -fopenmp; building the Windows target without OpenMP.)
+            endif
+        endif
+    else
+        $(error OPENMP must be auto, 0, or 1)
+    endif
+endif
+ifeq ($(OS),Windows_NT)
+    EXEEXT=.exe
     STATIC=-static
     STATIC_MINGW=
 else
-    # Linux / macOS (native: no -static, cross-compile: STATIC_MINGW adds it)
+    EXEEXT=
     STATIC=
     STATIC_MINGW=-static
-
-    # macOS: prefer Homebrew GNU g++ when it is installed. Apple Clang has no
-    # OpenMP support, so the USalign target (which passes -fopenmp) needs GNU
-    # g++. USFlexalign builds with either compiler.
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Darwin)
-        HOMEBREW_GXX := $(firstword $(wildcard \
-            $(foreach v,21 20 19 18 17 16 15 14 13 12 11 10,\
-                /opt/homebrew/bin/g++-$(v) /usr/local/bin/g++-$(v))))
-        ifneq ($(HOMEBREW_GXX),)
-            CC := $(HOMEBREW_GXX)
-        else
-            OMPFLAGS :=
-            $(info Note: Homebrew GCC not found; -fopenmp disabled (USalign will be built without OpenMP))
-        endif
-    endif
 endif
-LDFLAGS=$(STATIC) -lm
+LDFLAGS?=$(STATIC)
+LDLIBS?=-lm
 PROGRAM=qTMclust USalign USFlexalign TMalign TMscore MMalign se pdb2xyz xyz_sfetch pdb2fasta biounitasym pdb2ss NWalign HwRMSD cif2pdb pdbAtomName addChainID
+PROGRAM_TARGETS=$(addsuffix $(EXEEXT),$(PROGRAM))
 
 ENGINE_CPP=src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp
 USALIGN_ENGINE_CPP=src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp
 COMMON_CPP=src/common/common.cpp
 OUTPUT_CPP=src/output_funcs/output.cpp
 ENGINE_COMMON_CPP=src/engine/engine_common.cpp
+HEADERS=$(wildcard src/*.h src/*/*.h src/*/*/*.h src/*/*/*/*.h src/*.hpp src/*/*.hpp src/*/*/*.hpp src/*/*/*/*.hpp)
 
-all: USalign
+.PHONY: all clean
 
-qTMclust: src/app/tools/tool_main/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+all: USalign$(EXEEXT)
 
-USalign: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+qTMclust$(EXEEXT): src/app/tools/tool_main/qtmclust_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-USalign.exe: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${MINGW} ${STATIC_MINGW} ${CFLAGS} ${INC} ${OMPFLAGS} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+USalign$(EXEEXT): src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(OMP_CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(OMP_LDFLAGS) $(LDLIBS)
 
-USFlexalign: src/app/tools/tool_main/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+ifneq ($(OS),Windows_NT)
+USalign.exe: src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp $(ENGINE_CPP) $(USALIGN_ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(MINGW) $(CXXFLAGS) $(MINGW_OMP_CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(STATIC_MINGW) $(MINGW_OMP_LDFLAGS) $(LDLIBS)
+endif
 
-TMalign: src/app/tools/tool_main/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+USFlexalign$(EXEEXT): src/app/tools/tool_main/usflexalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-TMscore: src/app/tools/tool_main/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+TMalign$(EXEEXT): src/app/tools/tool_main/tmalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-MMalign: src/app/tools/tool_main/mmalign_main.cpp src/engine/mmalign/MMalign.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+TMscore$(EXEEXT): src/app/tools/tool_main/tmscore_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-se: src/app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+MMalign$(EXEEXT): src/app/tools/tool_main/mmalign_main.cpp src/engine/mmalign/MMalign.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-pdb2ss: src/app/tools/tool_main/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+se$(EXEEXT): src/app/tools/tool_main/se_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-pdb2xyz: src/app/tools/tool_main/pdb2xyz_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+pdb2ss$(EXEEXT): src/app/tools/tool_main/pdb2ss_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-xyz_sfetch: src/app/tools/tool_main/xyz_sfetch_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+pdb2xyz$(EXEEXT): src/app/tools/tool_main/pdb2xyz_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-pdb2fasta: src/app/tools/tool_main/pdb2fasta_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+xyz_sfetch$(EXEEXT): src/app/tools/tool_main/xyz_sfetch_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-biounitasym: src/app/tools/tool_main/biounitasym_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+pdb2fasta$(EXEEXT): src/app/tools/tool_main/pdb2fasta_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-NWalign: src/app/tools/tool_main/nwalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+biounitasym$(EXEEXT): src/app/tools/tool_main/biounitasym_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-HwRMSD: src/app/tools/tool_main/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+NWalign$(EXEEXT): src/app/tools/tool_main/nwalign_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-cif2pdb: src/app/tools/tool_main/cif2pdb_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+HwRMSD$(EXEEXT): src/app/tools/tool_main/hwrmsd_main.cpp $(ENGINE_CPP) $(COMMON_CPP) $(ENGINE_COMMON_CPP) $(OUTPUT_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-pdbAtomName: src/app/tools/tool_main/pdbatomname_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+cif2pdb$(EXEEXT): src/app/tools/tool_main/cif2pdb_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
 
-addChainID: src/app/tools/tool_main/addchainid_main.cpp $(COMMON_CPP)
-		${CC} ${CFLAGS} ${INC} $^ -o $(OUT_DIR)$@ ${LDFLAGS}
+pdbAtomName$(EXEEXT): src/app/tools/tool_main/pdbatomname_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
+
+addChainID$(EXEEXT): src/app/tools/tool_main/addchainid_main.cpp $(COMMON_CPP) $(HEADERS)
+		$(CXX) $(CXXFLAGS) $(INC) $(filter %.cpp,$^) -o "$(OUT_DIR)$@" $(LDFLAGS) $(LDLIBS)
+
+ifeq ($(OS),Windows_NT)
+.PHONY: $(PROGRAM)
+$(PROGRAM): %: %.exe
+endif
 
 clean:
-		rm -f $(addprefix $(OUT_DIR),${PROGRAM})
-		rm -rf $(BUILD_TMP)
+		$(RM) $(addprefix $(OUT_DIR),$(PROGRAM) $(addsuffix .exe,$(PROGRAM)))

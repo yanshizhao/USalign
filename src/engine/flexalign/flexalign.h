@@ -154,9 +154,9 @@ inline void build_rasmol_headers(FlexalignRasmolState& rasmol_state,
         <<" (TM-score is normalized by "<<std::setw(4)<<ylen<<", d0="
         <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<std::setw(6)<<d0A<<")"
         <<"\nREMARK Aligned length="<<std::setw(4)<<n_ali8<<", RMSD="
-        <<std::setw(6)<<setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
-        <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
-        <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<std::setw(6)<<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
+        <<", TM-score="<<std::setw(7)<<std::setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
+        <<", ID="<<std::setw(5)<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
         <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
     std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect *A\ncolor grey\nselect *B\ncolor yellowtint\n";
     std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor grey\nselect *B\ncolor yellowtint\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\n";
@@ -262,28 +262,13 @@ void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
 inline void write_rasmol_to_file(const FlexalignRasmolState& rasmol_state,
     const std::string& fname_super, const int mm_opt)
 {
-    std::ofstream fp;
     if (!mm_opt)
-    {
-        fp.open(fname_super + ".spt");
-        fp << rasmol_state.buf.str();
-        fp.close();
-    }
-    fp.open(fname_super + "_all.spt");
-    fp << rasmol_state.buf_all.str();
-    fp.close();
+        write_text_file(fname_super + ".spt", rasmol_state.buf.str());
+    write_text_file(fname_super + "_all.spt", rasmol_state.buf_all.str());
     if (!mm_opt)
-    {
-        fp.open(fname_super + "_atm.spt");
-        fp << rasmol_state.buf_atm.str();
-        fp.close();
-    }
-    fp.open(fname_super + "_all_atm.spt");
-    fp << rasmol_state.buf_all_atm.str();
-    fp.close();
-    fp.open(fname_super + "_all_atm_lig.spt");
-    fp << rasmol_state.buf_all_atm_lig.str();
-    fp.close();
+        write_text_file(fname_super + "_atm.spt", rasmol_state.buf_atm.str());
+    write_text_file(fname_super + "_all_atm.spt", rasmol_state.buf_all_atm.str());
+    write_text_file(fname_super + "_all_atm_lig.spt", rasmol_state.buf_all_atm_lig.str());
 }
 
 void output_flexalign_rasmol(const std::string xname, const std::string yname,
@@ -332,7 +317,12 @@ struct FlexalignPymolReadState
 
 inline bool read_pymol_line(FlexalignPymolReadState& read_state)
 {
-    if (read_state.compress_type)
+    if (read_state.compress_type == COMPRESS_STDIN)
+    {
+        if (!std::cin.good()) return false;
+        getline(std::cin, read_state.line);
+    }
+    else if (read_state.compress_type >= COMPRESS_GZ)
     {
         if (!read_state.fin_gz.good())
             return false;
@@ -344,6 +334,7 @@ inline bool read_pymol_line(FlexalignPymolReadState& read_state)
             return false;
         getline(read_state.fin, read_state.line);
     }
+    strip_trailing_cr(read_state.line);
     return true;
 }
 

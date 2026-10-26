@@ -814,8 +814,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    std::clock_t t1, t2;
-    t1 = std::clock();
+    const std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     /**********************/
     //    get argument   
@@ -832,7 +831,6 @@ int main(int argc, char *argv[])
     if (ctrl_opts.parallel_threads > 1)
     {
         omp_set_max_active_levels(1);
-        omp_set_nested(0);
         omp_set_dynamic(0);
     }
 #endif
@@ -893,8 +891,8 @@ int main(int argc, char *argv[])
             break;
     }
 
-    t2 = std::clock();
-    float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
-    if (user_opts.outfmt_opt<2) fcout("#Total CPU time is %5.2f seconds\n", diff);
+    const double diff = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - t1).count();
+    if (user_opts.outfmt_opt<2) fcout("#Total elapsed time is %5.2f seconds\n", diff);
     return 0;
 }

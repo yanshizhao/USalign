@@ -752,8 +752,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2) print_help();
 
-    std::clock_t t1, t2;
-    t1 = std::clock();
+    const std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     MMalignOptions mmalign_opts;
     parse_arguments(argc, argv, mmalign_opts);
@@ -778,9 +777,8 @@ int main(int argc, char *argv[])
     else
         align_oligomer_pairs(complex1, complex2, mmalign_opts, sequence);
 
-    t2 = std::clock();
-    float diff = (static_cast<float>(t2) - static_cast<float>(t1))/CLOCKS_PER_SEC;
-    fcout("#Total CPU time is %5.2f seconds\n", diff);
+    const double diff = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - t1).count();
+    fcout("#Total elapsed time is %5.2f seconds\n", diff);
     return 0;
 }
-

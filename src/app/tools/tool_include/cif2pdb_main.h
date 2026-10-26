@@ -20,11 +20,10 @@
 struct MmcifInput
 {
     std::ifstream fin;
-#ifndef NO_PSTREAM
-    redi::ipstream fin_gz; // if file is compressed
-#endif
+    CompressedStream fin_gz;
+    std::string filename;
     int compress_type;     // uncompressed file
-    MmcifInput() : compress_type(0) {}
+    MmcifInput() : compress_type(COMPRESS_FILE) {}
 };
 
 struct MmcifParseContext

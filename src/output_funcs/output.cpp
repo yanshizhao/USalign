@@ -164,7 +164,6 @@ static void write_pymol_scripts(const std::string& fname_super, const int o_opt,
     const std::string& resi1_bond, const std::string& resi2_bond)
 {
     std::stringstream buf_pymol;
-    std::ofstream fp;
     // write pymol script
     std::vector<std::string> pml_list;
     pml_list.push_back(fname_super+"");
@@ -285,11 +284,9 @@ static void write_pymol_scripts(const std::string& fname_super, const int o_opt,
             <<std::endl;
 
         if (o_opt==1) // pymol
-            fp.open((pml_list[p]+".pml").c_str());
+            write_text_file(pml_list[p]+".pml", buf_pymol.str());
         else if (o_opt==3) // chimerax
-            fp.open((pml_list[p]+".cxc").c_str());
-        fp<<buf_pymol.str();
-        fp.close();
+            write_text_file(pml_list[p]+".cxc", buf_pymol.str());
         buf_pymol.str(std::string());
     }
 }
@@ -299,27 +296,10 @@ static void read_superposed_structure1(const std::string& xname,
     const int ter_opt, const int mirror_opt,
     int& infmt, std::string& superposed_pdb_block)
 {
-    int compress_type=0; // uncompressed file
+    int compress_type=COMPRESS_FILE;
     std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz; // if file is compressed
-    if (xname.size()>=3 && 
-        xname.substr(xname.size()-3,3)==".gz")
-    {
-        fin_gz.open("gunzip -c "+xname);
-        compress_type=1;
-    }
-    else if (xname.size()>=4 && 
-        xname.substr(xname.size()-4,4)==".bz2")
-    {
-        fin_gz.open("bzcat "+xname);
-        compress_type=2;
-    }
-    else
-#endif
-        fin.open(xname.c_str());
+    CompressedStream fin_gz;
+    open_file_for_read(xname, fin, fin_gz, compress_type);
 
     std::stringstream buf;
     std::string line;
@@ -442,8 +422,7 @@ static void read_superposed_structure1(const std::string& xname,
             if (ter_opt>=1 && line.compare(0,3,"END")==0) break;
         }
     }
-    if (compress_type) fin_gz.close();
-    else               fin.close();
+    close_file_after_read(xname, fin, fin_gz, compress_type);
     superposed_pdb_block=buf.str();
 }
 
@@ -458,9 +437,11 @@ static void write_superposed_structure1(const std::string& yname,
     struct1_basename=get_basename(fname_super_full);
     copy_structure2_to_outdir(yname, fname_super, struct2_basename);
     std::ofstream fp;
-    fp.open(fname_super_full.c_str());
+    open_output_stream(fp, fname_super_full);
+    check_output_stream(fp, fname_super_full);
     fp<<superposed_pdb_block;
     fp.close();
+    if (fp.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + fname_super_full);
 }
 
 static void build_pymol_chain_selection(const int mm_opt, const int split_opt,
@@ -601,22 +582,19 @@ void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
     else if (o_opt==3) buf_pymol
         <<"set bgColor white\n"<<std::endl;
 
-    std::ofstream fp;
     if (o_opt==1)
     {
-        fp.open((fname_super+"_all_atm.pml").c_str());
-        fp<<buf_pymol.str();
-        fp.close();
-        fp.open((fname_super+"_all_atm_lig.pml").c_str());
-        fp<<buf_pymol.str()
+        write_text_file(fname_super+"_all_atm.pml", buf_pymol.str());
+        buf_pymol
             <<"show stick, not polymer\n"
             <<"show sphere, not polymer\n"
             <<std::endl;
+        write_text_file(fname_super+"_all_atm_lig.pml", buf_pymol.str());
     }
     else if (o_opt==3)
     {
-        fp.open((fname_super+"_all_atm.cxc").c_str());
-        fp<<buf_pymol.str()
+        std::stringstream no_ligand;
+        no_ligand<<buf_pymol.str()
             <<"hide ligand bonds\n"
             <<"hide ligand atoms\n"
             <<"hide solvent bonds\n"
@@ -624,12 +602,9 @@ void output_mTMalign_pymol(const std::vector<std::string>& chain_list,
             <<"hide ions bonds\n"
             <<"hide ions atoms\n"
             <<std::endl;
-        fp.close();
-        fp.open((fname_super+"_all_atm_lig.cxc").c_str());
-        fp<<buf_pymol.str()<<std::endl;
+        write_text_file(fname_super+"_all_atm.cxc", no_ligand.str());
+        write_text_file(fname_super+"_all_atm_lig.cxc", buf_pymol.str());
     }
-
-    fp.close();
     buf_pymol.str(std::string());
 }
 void output_rasmol(const std::string xname, const std::string yname, const std::string fname_super, const Vec3& t,
@@ -653,9 +628,9 @@ void output_rasmol(const std::string xname, const std::string yname, const std::
         <<" (TM-score is normalized by "<<std::setw(4)<<ylen<<", d0="
         <<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<std::setw(6)<<d0A<<")"
         <<"\nREMARK Aligned length="<<std::setw(4)<<n_ali8<<", RMSD="
-        <<std::setw(6)<<setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
-        <<", TM-score="<<std::setw(7)<<setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
-        <<", ID="<<std::setw(5)<<setiosflags(std::ios::fixed)<<std::setprecision(3)
+        <<std::setw(6)<<std::setiosflags(std::ios::fixed)<<std::setprecision(2)<<rmsd
+        <<", TM-score="<<std::setw(7)<<std::setiosflags(std::ios::fixed)<<std::setprecision(5)<<TM1
+        <<", ID="<<std::setw(5)<<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
         <<((n_ali8>0)?Liden/n_ali8:0)<<std::endl;
     std::string rasmol_CA_header="load inline\nselect *A\nwireframe .45\nselect *B\nwireframe .20\nselect all\ncolor white\n";
     std::string rasmol_cartoon_header="load inline\nselect all\ncartoon\nselect *A\ncolor blue\nselect *B\ncolor red\nselect ligand\nwireframe 0.25\nselect solvent\nspacefill 0.25\nselect all\nexit\n"+rasmol_state.buf_tm.str();
@@ -727,16 +702,7 @@ void output_rotation_matrix(const std::string& fname_matrix,
     if (fname_matrix == "-")
        os<<ss.str();
     else
-    {
-        std::fstream fout;
-        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
-        if (fout)
-        {
-            fout<<ss.str();
-            fout.close();
-        }
-        else os << "Open file to output rotation matrix fail.\n";
-    }
+        write_text_file(fname_matrix, ss.str());
     ss.str(std::string());
 }
 void output_results(const ChainPairDesc& chain_pair,
@@ -1002,7 +968,7 @@ void read_rasmol_structure2(TMalignRasmolState& rasmol_state,
     std::ifstream fin;
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
-    fin.open(yname.c_str());
+    open_input_stream(fin, yname);
     while (fin.good())
     {
         std::getline(fin, rasmol_state.line);
@@ -1171,7 +1137,7 @@ void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
     std::ifstream fin;
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
-    fin.open(xname.c_str());
+    open_input_stream(fin, xname);
     while (fin.good())
     {
         std::getline(fin, rasmol_state.line);
@@ -1191,7 +1157,7 @@ void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
             rasmol_state.lig_idx1++;
             rasmol_state.buf_all_atm_lig<<rasmol_state.line.substr(0,6)<<std::setw(5)<<rasmol_state.lig_idx1
                 <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             if (rasmol_state.chain1_sele.size() && rasmol_state.line[21]!=rasmol_state.chain1_sele[0]) continue;
             if (rasmol_state.after_ter || rasmol_state.line.compare(0,6,"ATOM  ")) continue;
@@ -1206,27 +1172,27 @@ void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
             }
             rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1
                 <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),rasmol_state.resi_aln1.end(),
                 rasmol_state.line.substr(22,4))!=rasmol_state.resi_aln1.end())
             {
                 rasmol_state.buf_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1
                     <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
-                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                     <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             }
             if (rasmol_state.line.substr(12,4)!=" CA " && rasmol_state.line.substr(12,4)!=" C3'") continue;
             rasmol_state.ca_idx1++;
             rasmol_state.buf_all<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1<<' '
                 <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1]<<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             if (std::find(rasmol_state.resi_aln1.begin(),rasmol_state.resi_aln1.end(),
                 rasmol_state.line.substr(22,4))==rasmol_state.resi_aln1.end()) continue;
             if (!mm_opt) rasmol_state.buf<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1<<' '
                 <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1]<<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1);
         }
@@ -1310,7 +1276,7 @@ void read_rasmol_structure1(TMalignRasmolState& rasmol_state,
                             <<rasmol_state.line_vec[rasmol_state._atom_site["group_PDB"]]<<std::right
                             <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '<<rasmol_state.atom<<' '
                             <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                            <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                            <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                             <<std::setw(8)<<rasmol_state.x1[0]
                             <<std::setw(8)<<rasmol_state.x1[1]
                             <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -1403,25 +1369,8 @@ void read_mTMalign_chain_pdb(const std::string& name, const std::string& fname_s
     Vec3 t;
     RotMat u;
         std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-        std::ifstream fin_gz;
-#else
-        redi::ipstream fin_gz; // if file is compressed
-        if (name.size()>=3 &&
-            name.substr(name.size()-3,3)==".gz")
-        {
-            fin_gz.open("gunzip -c "+name);
-            compress_type=1;
-        }
-        else if (name.size()>=4 &&
-            name.substr(name.size()-4,4)==".bz2")
-        {
-            fin_gz.open("bzcat "+name);
-            compress_type=2;
-        }
-        else
-#endif
-        fin.open(name.c_str());
+        CompressedStream fin_gz;
+        open_file_for_read(name, fin, fin_gz, compress_type);
 
         std::stringstream buf;
         buf<<fname_super<<'.'<<chain_idx<<".pdb";
@@ -1543,51 +1492,39 @@ void read_mTMalign_chain_pdb(const std::string& name, const std::string& fname_s
             }
             else if (line.size()) buf<<line<<'\n';
         }
-        if (compress_type) fin_gz.close();
-        else               fin.close();
+        close_file_after_read(name, fin, fin_gz, compress_type);
 
         std::ofstream fp;
-        fp.open(filename.c_str());
+        open_output_stream(fp, filename);
+        check_output_stream(fp, filename);
         fp<<buf.str();
         fp.close();
+        if (fp.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + filename);
         buf.str(std::string()); // clear stream
 }
 
 void copy_structure2_to_outdir(const std::string& yname,
     const std::string& fname_super, std::string& struct2_basename)
 {
-    int compress_type = 0;
+    int compress_type = COMPRESS_FILE;
     std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz;
-    if (yname.size() >= 3 && yname.substr(yname.size() - 3, 3) == ".gz") {
-        fin_gz.open("gunzip -c " + yname);
-        compress_type = 1;
-    }
-    else if (yname.size() >= 4 && yname.substr(yname.size() - 4, 4) == ".bz2") {
-        fin_gz.open("bzcat " + yname);
-        compress_type = 2;
-    }
-    else
-#endif
-        fin.open(yname.c_str());
+    CompressedStream fin_gz;
+    open_file_for_read(yname, fin, fin_gz, compress_type);
 
     std::stringstream buf;
     if (compress_type) buf << fin_gz.rdbuf();
     else               buf << fin.rdbuf();
-    if (compress_type) fin_gz.close();
-    else               fin.close();
+    close_file_after_read(yname, fin, fin_gz, compress_type);
 
     std::string struct2_path = fname_super + "_structure2";
     if (detect_format(buf, FORMAT_AUTO) == FORMAT_MMCIF) struct2_path += ".cif";
     else                                                 struct2_path += ".pdb";
 
     std::ofstream fp;
-    fp.open(struct2_path.c_str());
+    open_output_stream(fp, struct2_path);
+    check_output_stream(fp, struct2_path);
     fp << buf.str();
     fp.close();
+    if (fp.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + struct2_path);
     struct2_basename = get_basename(struct2_path);
 }
-

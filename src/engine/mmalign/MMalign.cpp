@@ -477,7 +477,7 @@ void read_chainmap(AlignCommonInput& common_inputs, MMalignParsed& parsed)
     bool fromStdin = (chain_map_file == "-");
     if (!fromStdin)
     {
-        fin.open(chain_map_file.c_str());
+        open_input_stream(fin, chain_map_file);
         if (!fin)
         {
             fcout(std::cerr, "Warning! Cannot open chainmap file: %s; chains will be "
@@ -2854,27 +2854,10 @@ size_t get_full_PDB_lines(const std::string filename,
     char chainID=0;
     std::vector<std::string> tmp_str_vec;
     
-    int compress_type=0; // uncompressed file
+    int compress_type=COMPRESS_FILE;
     std::ifstream fin;
-#ifndef REDI_PSTREAM_H_SEEN
-    std::ifstream fin_gz;
-#else
-    redi::ipstream fin_gz; // if file is compressed
-    if (filename.size()>=3 && 
-        filename.substr(filename.size()-3,3)==".gz")
-    {
-        fin_gz.open("gunzip -c '"+filename+"'");
-        compress_type=1;
-    }
-    else if (filename.size()>=4 && 
-        filename.substr(filename.size()-4,4)==".bz2")
-    {
-        fin_gz.open("bzcat '"+filename+"'");
-        compress_type=2;
-    }
-    else
-#endif
-        fin.open(filename.c_str());
+    CompressedStream fin_gz;
+    open_file_for_read(filename, fin, fin_gz, compress_type);
 
     if (infmt_opt==0||infmt_opt==-1) // PDB format
     {
@@ -2883,8 +2866,11 @@ size_t get_full_PDB_lines(const std::string filename,
             if (compress_type) std::getline(fin_gz, line);
             else               std::getline(fin, line);
             if (infmt_opt==-1 && line.compare(0,5,"loop_")==0) // PDBx/mmCIF
+            {
+                close_file_after_read(filename, fin, fin_gz, compress_type);
                 return get_full_PDB_lines(filename,PDB_lines,
                     ter_opt, 3, split_opt,het_opt);
+            }
             if (i > 0)
             {
                 if      (ter_opt>=1 && line.compare(0,3,"END")==0) break;
@@ -3122,8 +3108,7 @@ size_t get_full_PDB_lines(const std::string filename,
         AA.clear();
     }
 
-    if (compress_type) fin_gz.close();
-    else               fin.close();
+    close_file_after_read(filename, fin, fin_gz, compress_type);
     return PDB_lines.size();
 }
 
@@ -3174,10 +3159,7 @@ void output_superposed_chains(const std::vector<std::string>&chain_list, const i
                    <<line.substr(54)<<'\n';
             }
             buf<<"TER"<<std::endl;
-            std::ofstream fp;
-            fp.open(filename.c_str());
-            fp<<buf.str();
-            fp.close();
+            write_text_file(filename, buf.str());
             buf.str(std::string());
             PDB_lines[chain_i].clear();
             m++;
@@ -4675,16 +4657,6 @@ void output_dock_rotation_matrix(const std::string& fname_matrix,
     if (fname_matrix == "-")
        std::cout<<ss.str();
     else
-    {
-        std::fstream fout;
-        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
-        if (fout)
-        {
-            fout<<ss.str();
-            fout.close();
-        }
-        else std::cout << "Open file to output rotation matrix fail.\n";
-    }
+        write_text_file(fname_matrix, ss.str());
     ss.str(std::string());
 }
-

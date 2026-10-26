@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <chrono>
 #include <cstring>
 #include <sstream>
 #include <iostream>
@@ -18,7 +19,12 @@
 #include <map>
 #include <set>
 #include <climits>
+#include <cerrno>
 // Basic geometry operations
+
+#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__)) && !defined(__CYGWIN__)
+#define USALIGN_NATIVE_WINDOWS
+#endif
 
 
 using CoordArray    = std::vector<std::array<double, 3> >;   // Array of 3D coordinates (x,y,z)
@@ -357,32 +363,101 @@ using CompressedStream = redi::ipstream;
 using CompressedStream = std::ifstream;
 #endif
 
+inline bool has_suffix(const std::string& value, const std::string& suffix)
+{
+    return value.size() >= suffix.size() &&
+        value.compare(value.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+inline void strip_trailing_cr(std::string& line)
+{
+    if (!line.empty() && line[line.size() - 1] == '\r') line.erase(line.size() - 1);
+}
+
+#ifdef USALIGN_NATIVE_WINDOWS
+std::wstring utf8_to_wide_path(const std::string& path);
+#endif
+
+inline void open_input_stream(std::ifstream& stream, const std::string& filename,
+    std::ios::openmode mode = std::ios::in)
+{
+#ifdef USALIGN_NATIVE_WINDOWS
+    const std::wstring wide_path = utf8_to_wide_path(filename);
+    stream.open(wide_path.c_str(), mode);
+#else
+    stream.open(filename.c_str(), mode);
+#endif
+}
+
+inline void open_output_stream(std::ofstream& stream, const std::string& filename,
+    std::ios::openmode mode = std::ios::out)
+{
+#ifdef USALIGN_NATIVE_WINDOWS
+    const std::wstring wide_path = utf8_to_wide_path(filename);
+    stream.open(wide_path.c_str(), mode);
+#else
+    stream.open(filename.c_str(), mode);
+#endif
+}
+
 inline void open_file_for_read(const std::string& filename,
     std::ifstream& fin, CompressedStream& fin_gz, int& compress_type)
 {
     compress_type = COMPRESS_FILE;
-#ifdef REDI_PSTREAM_H_SEEN
-    if (filename.size() >= 3 &&
-        filename.substr(filename.size() - 3, 3) == ".gz")
-    {
-        fin_gz.open("gunzip -c '" + filename + "'");
-        compress_type = COMPRESS_GZ;
-        return;
-    }
-    if (filename.size() >= 4 &&
-        filename.substr(filename.size() - 4, 4) == ".bz2")
-    {
-        fin_gz.open("bzcat '" + filename + "'");
-        compress_type = COMPRESS_BZ2;
-        return;
-    }
-#endif
     if (filename == "-")
     {
         compress_type = COMPRESS_STDIN;
         return;
     }
-    fin.open(filename.c_str());
+#ifdef REDI_PSTREAM_H_SEEN
+    if (has_suffix(filename, ".gz"))
+    {
+        redi::pstreams::argv_type argv;
+        argv.push_back("gunzip");
+        argv.push_back("-c");
+        argv.push_back(filename);
+        fin_gz.open(argv[0], argv);
+        compress_type = COMPRESS_GZ;
+    }
+    else if (has_suffix(filename, ".bz2"))
+    {
+        redi::pstreams::argv_type argv;
+        argv.push_back("bzcat");
+        argv.push_back(filename);
+        fin_gz.open(argv[0], argv);
+        compress_type = COMPRESS_BZ2;
+    }
+    if (compress_type >= COMPRESS_GZ)
+    {
+        if (!fin_gz.good())
+            PrintErrorAndQuit("ERROR! Cannot start decompressor for: " + filename);
+        return;
+    }
+#else
+    if (has_suffix(filename, ".gz") || has_suffix(filename, ".bz2"))
+        PrintErrorAndQuit("ERROR! Compressed input is not supported on this platform: " + filename);
+#endif
+    open_input_stream(fin, filename, std::ios::in | std::ios::binary);
+    if (!fin.is_open()) PrintErrorAndQuit("ERROR! Cannot open file: " + filename);
+}
+
+inline void close_file_after_read(const std::string& filename,
+    std::ifstream& fin, CompressedStream& fin_gz, const int compress_type)
+{
+    if (compress_type >= COMPRESS_GZ)
+    {
+        fin_gz.close();
+#ifdef REDI_PSTREAM_H_SEEN
+        const int status = static_cast<redi::basic_pstreambuf<char>*>(fin_gz.rdbuf())->status();
+        if (status == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+            PrintErrorAndQuit("ERROR! Decompression failed for: " + filename);
+#endif
+    }
+    else if (compress_type == COMPRESS_FILE)
+    {
+        if (fin.bad()) PrintErrorAndQuit("ERROR! Failed while reading file: " + filename);
+        fin.close();
+    }
 }
 
 // ============================================================
@@ -447,7 +522,8 @@ void read_user_alignment(std::vector<std::string>&sequence, const std::string &f
 
 inline bool isfile(const std::string& filename)
 {
-    std::ifstream ifs(filename);
+    std::ifstream ifs;
+    open_input_stream(ifs, filename);
     return ifs.good();
 }
 
@@ -951,8 +1027,8 @@ struct ControlOptions
     double      TMpass_opt;
 
     ControlOptions() : mm_opt(0), cp_opt(0), full_opt(false), closeK_opt(-1),
-                       se_opt(false), do_opt(false), parallel_threads(0),
-                       h_opt(false), v_opt(false), chainmapfile(""),
+                       chainmapfile(""), se_opt(false), do_opt(false),
+                       parallel_threads(0), h_opt(false), v_opt(false),
                        suffix_opt(""), usbcat_opt(false), hinge_opt(9),
                        hinge_set(false), TMpass_opt(0.85) {}
 };
@@ -1158,6 +1234,7 @@ inline void split_next(int argc, char* argv[], int& i, const char* opt,
 
 std::string get_executable_dir();
 bool make_dirs(const std::string& dir_path);
+bool directory_is_writable(const std::string& dir_path);
 std::string get_default_outdir();
 std::string resolve_outdir(const std::string& given_outdir);
 
@@ -1166,10 +1243,28 @@ inline std::string join_outdir(const std::string& outdir, const std::string& nam
     if (name.empty() || name == "-" || outdir.empty() || outdir == ".") return name;
     if (name[0] == '/' || name[0] == '\\') return name;
     if (name.size() > 1 && name[1] == ':') return name;
-    make_dirs(outdir);
+    if (!make_dirs(outdir))
+        PrintErrorAndQuit("ERROR! Cannot create output directory: " + outdir);
     if (outdir[outdir.size() - 1] == '/' || outdir[outdir.size() - 1] == '\\')
         return outdir + name;
     return outdir + "/" + name;
+}
+
+template<class OutputStream>
+inline void check_output_stream(const OutputStream& stream, const std::string& filename)
+{
+    if (!stream.is_open() || stream.fail())
+        PrintErrorAndQuit("ERROR! Cannot open output file: " + filename);
+}
+
+inline void write_text_file(const std::string& filename, const std::string& contents)
+{
+    std::ofstream stream;
+    open_output_stream(stream, filename, std::ios::out | std::ios::trunc);
+    check_output_stream(stream, filename);
+    stream << contents;
+    stream.close();
+    if (stream.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + filename);
 }
 
 template<class CliOptions>
@@ -1287,7 +1382,8 @@ inline void build_file_list(const CliOptions& cli_opts, std::vector<std::string>
         chain_list.push_back(cli_opts.xname);
     else
     {
-        std::ifstream fp(cli_opts.xname);
+        std::ifstream fp;
+        open_input_stream(fp, cli_opts.xname);
         if (! fp.is_open())
             PrintErrorAndQuit("Can not open file: " + cli_opts.xname + "\n");
         std::string line;

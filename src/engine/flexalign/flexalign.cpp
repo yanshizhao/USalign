@@ -355,16 +355,7 @@ void output_flexalign_matrix(const std::string& fname_matrix,
     if (fname_matrix == "-")
        os<<ss.str();
     else
-    {
-        std::fstream fout;
-        fout.open(fname_matrix, std::ios::out | std::ios::trunc);
-        if (fout)
-        {
-            fout<<ss.str();
-            fout.close();
-        }
-        else os << "Open file to output rotation matrix fail.\n";
-    }
+        write_text_file(fname_matrix, ss.str());
     ss.str(std::string());
 }
 
@@ -377,7 +368,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
     Vec3 t; RotMat u;
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
-    fin.open(xname.c_str());
+    open_input_stream(fin, xname);
     int hinge=0;
     while (fin.good())
     {
@@ -408,7 +399,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
             rasmol_state.lig_idx1++;
             rasmol_state.buf_all_atm_lig<<rasmol_state.line.substr(0,6)<<std::setw(5)<<rasmol_state.lig_idx1
                 <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             if (rasmol_state.chain1_sele.size() && rasmol_state.line[21]!=rasmol_state.chain1_sele[0]) continue;
             if (rasmol_state.after_ter || rasmol_state.line.compare(0,6,"ATOM  ")) continue;
@@ -423,27 +414,27 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
             }
             rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1
                 <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             if (!mm_opt && std::find(rasmol_state.resi_aln1.begin(),rasmol_state.resi_aln1.end(),
                 rasmol_state.line.substr(22,4))!=rasmol_state.resi_aln1.end())
             {
                 rasmol_state.buf_atm<<"ATOM  "<<std::setw(5)<<rasmol_state.lig_idx1
                     <<rasmol_state.line.substr(11,9)<<" A"<<rasmol_state.line.substr(22,8)
-                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                    <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                     <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1] <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             }
             if (rasmol_state.line.substr(12,4)!=" CA " && rasmol_state.line.substr(12,4)!=" C3'") continue;
             rasmol_state.ca_idx1++;
             rasmol_state.buf_all<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1<<' '
                 <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1]<<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             if (std::find(rasmol_state.resi_aln1.begin(),rasmol_state.resi_aln1.end(),
                 rasmol_state.line.substr(22,4))==rasmol_state.resi_aln1.end()) continue;
             if (!mm_opt) rasmol_state.buf<<"ATOM  "<<std::setw(5)<<rasmol_state.ca_idx1<<' '
                 <<rasmol_state.line.substr(12,4)<<' '<<rasmol_state.line.substr(17,3)<<" A"<<rasmol_state.line.substr(22,8)
-                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                 <<std::setw(8)<<rasmol_state.x1[0]<<std::setw(8)<<rasmol_state.x1[1]<<std::setw(8)<<rasmol_state.x1[2]<<'\n';
             rasmol_state.idx_vec.push_back(rasmol_state.ca_idx1);
         }
@@ -579,7 +570,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                             <<rasmol_state.line_vec[rasmol_state.atom_site["group_PDB"]]<<std::right
                             <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '<<rasmol_state.atom<<' '
                             <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                            <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                            <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                             <<std::setw(8)<<rasmol_state.x1[0]
                             <<std::setw(8)<<rasmol_state.x1[1]
                             <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -589,7 +580,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                             rasmol_state.buf_all_atm<<"ATOM  "<<std::setw(6)
                                 <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '<<rasmol_state.atom<<' '
                                 <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                                 <<std::setw(8)<<rasmol_state.x1[0]
                                 <<std::setw(8)<<rasmol_state.x1[1]
                                 <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -599,7 +590,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                                 rasmol_state.buf_atm<<"ATOM  "<<std::setw(6)
                                     <<std::setw(5)<<rasmol_state.lig_idx1%100000<<' '
                                     <<rasmol_state.atom<<' '<<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                                     <<std::setw(8)<<rasmol_state.x1[0]
                                     <<std::setw(8)<<rasmol_state.x1[1]
                                     <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -610,7 +601,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                                 rasmol_state.buf_all<<"ATOM  "<<std::setw(6)
                                     <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
                                     <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                                     <<std::setw(8)<<rasmol_state.x1[0]
                                     <<std::setw(8)<<rasmol_state.x1[1]
                                     <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -620,7 +611,7 @@ void read_rasmol_structure1(FlexalignRasmolState& rasmol_state,
                                     rasmol_state.buf<<"ATOM  "<<std::setw(6)
                                     <<std::setw(5)<<rasmol_state.ca_idx1%100000<<' '<<rasmol_state.atom<<' '
                                     <<rasmol_state.AA<<" A"<<rasmol_state.resi<<rasmol_state.inscode<<"   "
-                                    <<setiosflags(std::ios::fixed)<<std::setprecision(3)
+                                    <<std::setiosflags(std::ios::fixed)<<std::setprecision(3)
                                     <<std::setw(8)<<rasmol_state.x1[0]
                                     <<std::setw(8)<<rasmol_state.x1[1]
                                     <<std::setw(8)<<rasmol_state.x1[2]<<'\n';
@@ -664,7 +655,7 @@ void read_rasmol_structure2(FlexalignRasmolState& rasmol_state,
     int i;
     rasmol_state.after_ter=false;
     rasmol_state.asym_id="";
-    fin.open(yname.c_str());
+    open_input_stream(fin, yname);
     while (fin.good())
     {
         std::getline(fin, rasmol_state.line);
@@ -1063,7 +1054,9 @@ void read_pymol_mmcif_loop(FlexalignPymolReadState& read_state,
         if (!read_pymol_line(read_state))
             break;
     }
-    if (read_state.compress_type ? read_state.fin_gz.good() : read_state.fin.good())
+    if ((read_state.compress_type == COMPRESS_STDIN && std::cin.good()) ||
+        (read_state.compress_type >= COMPRESS_GZ && read_state.fin_gz.good()) ||
+        (read_state.compress_type == COMPRESS_FILE && read_state.fin.good()))
         buf << read_state.line << '\n';
 }
 
@@ -1097,10 +1090,8 @@ void read_pymol_structure(FlexalignPymolState& pymol_state,
                 break;
         }
     }
-    if (read_state.compress_type)
-        read_state.fin_gz.close();
-    else
-        read_state.fin.close();
+    close_file_after_read(xname, read_state.fin, read_state.fin_gz,
+        read_state.compress_type);
     pymol_state.infmt = read_state.infmt;
 }
 
@@ -1225,10 +1216,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
     const std::string struct1_basename = get_basename(fname_super_full);
     std::string struct2_basename;
     copy_structure2_to_outdir(yname, fname_super, struct2_basename);
-    std::ofstream fp;
-    fp.open(fname_super_full.c_str());
-    fp << pymol_state.buf.str();
-    fp.close();
+    write_text_file(fname_super_full, pymol_state.buf.str());
 
     const std::string& chain1_sele = pymol_state.chain1_sele;
     const std::string& chain2_sele = pymol_state.chain2_sele;
@@ -1331,9 +1319,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
                         << flexalign_chimerax_color_list[h % chimerax_palette_size] << "\n";
             }
             buf_pymol << "set bgColor white\n" << std::endl;
-            fp.open((pml_list[p] + ".cxc").c_str());
-            fp << buf_pymol.str();
-            fp.close();
+            write_text_file(pml_list[p] + ".cxc", buf_pymol.str());
             buf_pymol.str(std::string());
             continue;
         }
@@ -1425,9 +1411,7 @@ void write_pymol_to_file(const FlexalignPymolState& pymol_state,
             << ") or (structure2" << chain2_sele << "))\n"
             << std::endl;
 
-        fp.open((pml_list[p] + ".pml").c_str());
-        fp << buf_pymol.str();
-        fp.close();
+        write_text_file(pml_list[p] + ".pml", buf_pymol.str());
         buf_pymol.str(std::string());
     }
 }
@@ -2367,4 +2351,3 @@ void recompute_global_metrics(
     flexalign_res.rmsd_ali = flexalign_res.rmsd0;
     flexalign_res.L_ali = flexalign_res.n_ali;
 }
-

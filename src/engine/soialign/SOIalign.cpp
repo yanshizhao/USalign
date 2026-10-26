@@ -1,6 +1,7 @@
 #include "SOIalign.h"
 
-#ifdef _OPENMP
+#if defined(_OPENMP) && _OPENMP >= 201307
+#define USALIGN_OMP_DECLARE_REDUCTION 1
 struct SOIEgsMaxCell { double score; int i; int j; };
 #pragma omp declare reduction(soiegsmax : SOIEgsMaxCell : \
     omp_out = (omp_in.score > omp_out.score || \
@@ -23,7 +24,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
 
     // stage 1 - make initial assignment, starting from the highest score pair
     bool omp_active = false;
-#ifdef _OPENMP
+#ifdef USALIGN_OMP_DECLARE_REDUCTION
     omp_active = (parallel_threads>1 && omp_get_active_level()==0);
 #endif
     while(1)
@@ -33,7 +34,7 @@ void soi_egs(DoubleMatrix& score, const int xlen, const int ylen, std::vector<in
         int maxj=-1;
         if (omp_active)
         {
-#ifdef _OPENMP
+#ifdef USALIGN_OMP_DECLARE_REDUCTION
             SOIEgsMaxCell best = {0, -1, -1};
             #pragma omp parallel for schedule(static) num_threads(parallel_threads) reduction(soiegsmax:best)
             for (int i=0;i<xlen;i++)

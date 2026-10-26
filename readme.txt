@@ -98,7 +98,7 @@
    2026/10/07: Output files now default to a "results" folder created next to
                the executable; change it with '-outdir <dir>' ('-outdir .' for
                the current directory). Source files reorganized into src/common/,
-               src/engine/, orchestration/, src/output_funcs/ and app/; "make" now
+               src/engine/, src/output_funcs/ and src/app/; "make" now
                builds only USalign by default (list other tools explicitly);
                example inputs moved to the "example" folder.
    2026/10/08: src/app/usalign/usalign.cpp reduced to CLI routing only (parsing,
@@ -116,12 +116,12 @@
 All C++ sources live under src/, organized into four layers, from the bottom up:
 
     src/common/       foundation shared by all other layers (common.h holds the
-                      shared data structures, the CLI helper templates and the
-                      single chain-pair dispatcher align_chain_pair, implemented
-                      in src/common/orchestration.cpp)
+                      shared data structures and CLI helper templates)
     src/engine/       alignment engines (one sub-directory per engine):
                       tmalign/ mmalign/ mmdock/ mtmalign/ soialign/ flexalign/
-                      tmscore/ hwrmsd/ se/ upgma/
+                      tmscore/ hwrmsd/ se/ upgma/. Shared engine declarations
+                      and the align_chain_pair dispatcher are in
+                      engine_common.h/.cpp.
     src/output_funcs/ formatting of alignment results into text / PDB / scripts
     src/app/          the USalign entry point (src/app/usalign/usalign.cpp +
                       src/app/usalign/usalign.h, routing only) and the other
@@ -137,31 +137,57 @@ dispatches to the engine entry point.
 =========================
  How to install US-align
 =========================
-1. Linux / macOS
+1. Linux
    1.1 Compile with make (Recommended):
            make clean
            make
        "make" builds the USalign program by default (see the section
        "Building the individual programs under app/" below for the other
        programs).
-       On macOS the Makefile uses Homebrew GNU g++ automatically when it is
-       installed (/opt/homebrew/bin/g++-* or /usr/local/bin/g++-*). Otherwise
-       it falls back to Apple Clang and disables -fopenmp, because Apple Clang
-       has no OpenMP support. USFlexalign builds with either compiler; USalign
-       needs GNU g++ for OpenMP acceleration (brew install gcc).
-   1.2 Manual compilation in bash (do not add -static; macOS cannot link
-       statically):
-           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
+   1.2 Manual compilation in bash (keep -lm after the source files):
+           g++ -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
-2. Windows (MSYS2 / MinGW)
-   2.1 Compile with make:
+2. macOS
+   Apple Clang and GNU GCC are both supported. The /usr/bin/g++ command supplied
+   by macOS is Apple Clang, not GNU g++. Apple Clang normally builds the serial
+   program because it does not provide OpenMP by default:
+           make clean
+           make CXX=clang++ OPENMP=0
+       For OpenMP parallel acceleration, install Homebrew GCC. The Makefile
+       automatically finds its versioned g++ executable and enables OpenMP:
+           brew install gcc
+           make clean
+           make
+       You may also select GNU g++ explicitly with CXX=path/to/g++-<version>;
+       the legacy CC=path/to/g++-<version> form remains supported. To use Apple
+       Clang with a separately installed libomp, pass the appropriate
+       OMP_CXXFLAGS and OMP_LDFLAGS explicitly. Do not add -static on macOS.
+
+3. Windows (MSYS2 / MinGW)
+   3.1 Run the Makefile from an MSYS2 MinGW/UCRT64 shell. The recipes require
+       the POSIX tools supplied by MSYS2; cmd.exe and PowerShell are supported
+       only for the manual command in 3.2:
            mingw32-make clean
            mingw32-make
-       Same targets as in 1.1: only USalign is built by default.
-   2.2 Manual compilation in PowerShell (-static is required on Windows):
-           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
+       Only USalign.exe is built by default. Named targets such as
+       "mingw32-make TMalign" create the corresponding .exe file.
+   3.2 Manual compilation in PowerShell (-static is recommended when the
+       executable must be redistributed without MinGW runtime DLLs):
+           g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include -o USalign.exe src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
-3. Note: the "make" command automatically includes the -fopenmp flag to enable OpenMP parallel acceleration for the USalign program. If you do not need OpenMP parallel acceleration, simply remove the -fopenmp flag during compilation.
+4. Note: OPENMP=auto is the Makefile default. It adds -fopenmp when the
+   compiler used by the specific target can compile and link it. To disable
+   OpenMP explicitly on Linux or macOS, run:
+           make OPENMP=0
+   On Windows, run:
+           mingw32-make OPENMP=0
+   The legacy OMPFLAGS= override is also supported. Remove -fopenmp from
+   manual compilation commands when parallel acceleration is not required.
+
+5. The optimized build uses -ffast-math by default. Use FAST_MATH=0 or
+   REPRODUCIBLE=1 when strict IEEE floating-point behavior is more important
+   than maximum speed:
+           make FAST_MATH=0
 
 Additional note:
 1. The -static flag enables static linking. A statically linked executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
@@ -177,12 +203,17 @@ Additional note:
 Compressed file support:
 1. On Linux, macOS and WSL2, US-align reads gz and bz2 compressed files in
    addition to uncompressed files, provided that the "gunzip" and "bzcat"
-   commands are respectively available.
+   commands are respectively available. File names are passed as process
+   arguments rather than shell commands, so spaces, quotes and shell
+   metacharacters are supported and are not executed by a shell.
 2. Due to the lack of POSIX support, US-align natively compiled on Windows
    without WSL2 cannot read compressed files.
 
 Compiler requirements:
-1. US-align requires a compiler with C++11 support. It is known to be compilable by g++ version 6 or later (C++14 is the default standard since g++ 6), clang++ version 12.0.5 or later and mingw-w64 version 9.3 or later.
+1. US-align requires a compiler with C++11 support. It is known to be compilable
+   by g++ version 6 or later, Apple Clang and clang++ version 12.0.5 or later,
+   and mingw-w64 version 9.3 or later. OpenMP availability is independent of
+   basic compiler support; Apple Clang normally uses OPENMP=0.
 2. The Makefile sets -std=gnu++11 explicitly, so the build always compiles in C++11 mode regardless of the compiler's default standard. g++ 4.8.x/5.x defaults to C++98, but it will still work as long as it supports the gnu++11 mode. If you compile manually, remember to include -std=gnu++11 (see the manual compilation commands above).
 
 Install via package managers:
@@ -229,6 +260,8 @@ folder created next to the executable. Use
     -outdir .        write output files to the current directory
 
 to change this. Results that are not saved to a file are printed to stdout.
+The program exits with a nonzero status if the output directory cannot be
+created or is not writable, or if an output file cannot be opened or written.
 
 =========================
  How to view the results
@@ -292,7 +325,7 @@ cif2pdb       make cif2pdb            src/app/tools/tool_main/cif2pdb_main.cpp
 biounitasym   make biounitasym        src/app/tools/tool_main/biounitasym_main.cpp
 pdbAtomName   make pdbAtomName        src/app/tools/tool_main/pdbatomname_main.cpp
 addChainID    make addChainID         src/app/tools/tool_main/addchainid_main.cpp
-xyz_sfetch    make xyz_sfetch         app/tools/xyz_sfetch_main.cpp
+xyz_sfetch    make xyz_sfetch         src/app/tools/tool_main/xyz_sfetch_main.cpp
 
 On Windows use "mingw32-make <target>". To compile a program manually, use the
 same command as in the "Install" section but replace "src/app/usalign/usalign.cpp" with the

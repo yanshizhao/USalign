@@ -133,7 +133,7 @@ static void renew_matrix(
         }
     }
     mat = std::move(new_mat);
-    names = move(new_names);
+    names = std::move(new_names);
 }
 
 
@@ -421,7 +421,8 @@ bool save_svg(const UPGMA_Tree* tree, const std::string& filename)
     if (leaf_count == 0) return false;
     int svg_width = 600;
 
-    std::ofstream ofs(filename);
+    std::ofstream ofs;
+    open_output_stream(ofs, filename);
     if (!ofs) return false;
 
     ofs << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
@@ -431,7 +432,8 @@ bool save_svg(const UPGMA_Tree* tree, const std::string& filename)
     // recursively draw lines and leaf labels
     draw_svg_tree(ofs, children, depth, ypos, root_name);
     ofs << "</svg>\n";
-    return true;
+    ofs.close();
+    return !ofs.fail();
 }
 
 
@@ -479,7 +481,10 @@ std::vector<std::string> clean_chain_names(const std::vector<std::string>& names
 void save_distance_matrix(const std::vector<std::string>& names,
     const std::vector<std::vector<double>>& dist_mat, int chain_num, const std::string& outdir)
 {
-    std::ofstream dmf(join_outdir(outdir, "upgma_tree.dist"));
+    const std::string filename = join_outdir(outdir, "upgma_tree.dist");
+    std::ofstream dmf;
+    open_output_stream(dmf, filename);
+    check_output_stream(dmf, filename);
     dmf << chain_num << "\n";
     for (int i = 0; i < chain_num; i++) {
         std::string name = names[i].substr(0, 10);
@@ -492,6 +497,7 @@ void save_distance_matrix(const std::vector<std::string>& names,
         dmf << "\n";
     }
     dmf.close();
+    if (dmf.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + filename);
 }
 
 
@@ -513,12 +519,18 @@ void output_upgma_tree(
 
     // 2. Save Newick format tree
     std::string newick = get_tree_string(tree.get(), 5);
-    std::ofstream nf(join_outdir(outdir, "upgma_tree.txt"));
+    const std::string tree_filename = join_outdir(outdir, "upgma_tree.txt");
+    std::ofstream nf;
+    open_output_stream(nf, tree_filename);
+    check_output_stream(nf, tree_filename);
     nf << newick << "\n";
     nf.close();
+    if (nf.fail()) PrintErrorAndQuit("ERROR! Failed to write output file: " + tree_filename);
 
     // 3. Save SVG and distance matrix
-    save_svg(tree.get(), join_outdir(outdir, "upgma_tree.svg"));
+    const std::string svg_filename = join_outdir(outdir, "upgma_tree.svg");
+    if (!save_svg(tree.get(), svg_filename))
+        PrintErrorAndQuit("ERROR! Failed to write output file: " + svg_filename);
     save_distance_matrix(clean_names, dist_mat, chain_num, outdir);
 
     // 4. Print tree to terminal
@@ -527,4 +539,3 @@ void output_upgma_tree(
     print_tree(tree.get(), std::cout);
     std::cout << "\n";
 }
-
