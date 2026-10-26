@@ -38,6 +38,25 @@ CXXFLAGS?=$(CFLAGS)
 OUT_DIR:=$(CURDIR)/
 INC=-Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include
 
+
+UNIVERSAL?=0
+UNIVERSAL_MIN?=11.0
+ifeq ($(UNIVERSAL),1)
+    ifneq ($(HOST_OS),Darwin)
+        $(error UNIVERSAL=1 is only supported on macOS; HOST_OS is "$(HOST_OS)")
+    endif
+    # Apple Clang identifies itself in --version; Homebrew's GNU GCC does not.
+    # Probing by compiling is not an option here: two -arch flags make the driver
+    # run the frontend twice, and a stdin source can only be consumed once.
+    CXX_IS_APPLE_CLANG:=$(shell $(CXX) --version 2>/dev/null | head -1 | grep -c clang)
+    ifeq ($(CXX_IS_APPLE_CLANG),0)
+        $(error $(CXX) is not Apple Clang, so UNIVERSAL=1 cannot be honored; select Apple Clang with CXX=clang++ or use UNIVERSAL=0)
+    endif
+    override CXX+=-arch arm64 -arch x86_64 -mmacosx-version-min=$(UNIVERSAL_MIN)
+else ifneq ($(UNIVERSAL),0)
+    $(error UNIVERSAL must be 0 or 1)
+endif
+
 # OPENMP=auto enables OpenMP only when the compiler used by that target can
 # compile and link a minimal program. OPENMP=0 is the portable serial build.
 ifeq ($(OS),Windows_NT)

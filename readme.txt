@@ -144,61 +144,94 @@ dispatches to the engine entry point.
        "make" builds the USalign program by default (see the section
        "Building the individual programs under app/" below for the other
        programs).
-   1.2 Manual compilation in bash (keep -lm after the source files):
+
+   1.2 Run:
+           ./USalign structure1.pdb structure2.pdb
+
+   1.3 Manual compilation (keep -lm after the source files; remove -fopenmp if
+       OpenMP is unavailable):
            g++ -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
 2. macOS
-   Apple Clang and GNU GCC are both supported. The /usr/bin/g++ command supplied
-   by macOS is Apple Clang, not GNU g++. Apple Clang normally builds the serial
-   program because it does not provide OpenMP by default:
+   Build from the source root. Two choices: Apple Clang (installed with the
+   Xcode Command Line Tools, no OpenMP) or Homebrew GCC (OpenMP).
+
+   2.1 Serial build with Apple Clang, no extra software needed:
            make clean
            make CXX=clang++ OPENMP=0
-       For OpenMP parallel acceleration, install Homebrew GCC. The Makefile
-       automatically finds its versioned g++ executable and enables OpenMP:
+
+   2.2 Parallel build with OpenMP. Homebrew GCC is required, because the g++
+       that ships with macOS is Apple Clang and cannot compile OpenMP:
            brew install gcc
+           eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv 2>/dev/null)"
            make clean
            make
-       You may also select GNU g++ explicitly with CXX=path/to/g++-<version>;
-       the legacy CC=path/to/g++-<version> form remains supported. To use Apple
-       Clang with a separately installed libomp, pass the appropriate
-       OMP_CXXFLAGS and OMP_LDFLAGS explicitly. Do not add -static on macOS.
+       The eval line works on both Apple Silicon (/opt/homebrew) and Intel
+       (/usr/local) Macs. Run it first: without brew on PATH, make cannot find
+       the Homebrew compiler, falls back to Apple Clang, and produces a serial
+       binary with a "does not support -fopenmp" warning. Add the same line to
+       ~/.zshrc to make it permanent.
+
+   2.3 Run. The current directory is not on PATH, so prefix the program with ./:
+           ./USalign structure1.pdb structure2.pdb
+           ./USalign structure1.pdb structure2.pdb -mm 7 -threads 8
+       -threads only accelerates the OpenMP build; the serial build accepts it
+       and runs on one thread.
+
+   2.4 Optional: universal binary that runs natively on both Apple Silicon and
+       Intel Macs:
+           make clean
+           make USalign UNIVERSAL=1
+       Built for macOS 11.0 or later; set another minimum with UNIVERSAL_MIN=12.0.
+       Check the result with 'lipo -info USalign'. UNIVERSAL=1 requires Apple
+       Clang, so it cannot be combined with the OpenMP build in 2.2.
+
+   2.5 Manual compilation, equivalent to 2.1 and 2.2. Paste from the source
+       root; both commands work on any Mac without editing.
+       Serial:
+           clang++ -O3 -ffast-math -std=gnu++11 -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
+       Parallel (run the 2.2 eval line first; the g++-version number differs
+       between machines, so the compiler is looked up rather than hardcoded):
+           $(ls $(brew --prefix gcc)/bin/g++-* | head -1) -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include -o USalign src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
 3. Windows (MSYS2 / MinGW)
    3.1 Run the Makefile from an MSYS2 MinGW/UCRT64 shell. The recipes require
        the POSIX tools supplied by MSYS2; cmd.exe and PowerShell are supported
-       only for the manual command in 3.2:
+       only for the manual command in 3.3:
            mingw32-make clean
            mingw32-make
        Only USalign.exe is built by default. Named targets such as
        "mingw32-make TMalign" create the corresponding .exe file.
-   3.2 Manual compilation in PowerShell (-static is recommended when the
+
+   3.2 Run:
+           USalign.exe structure1.pdb structure2.pdb
+
+   3.3 Manual compilation in PowerShell (-static is recommended when the
        executable must be redistributed without MinGW runtime DLLs):
            g++ -static -O3 -ffast-math -std=gnu++11 -fopenmp -Isrc/common -Isrc/engine -Isrc/engine/tmalign -Isrc/engine/flexalign -Isrc/engine/mmalign -Isrc/engine/mmdock -Isrc/engine/mtmalign -Isrc/engine/soialign -Isrc/engine/se -Isrc/engine/tmscore -Isrc/engine/hwrmsd -Isrc/engine/upgma -Isrc/output_funcs -Isrc/app/tools -Isrc/app/tools/tool_include -o USalign.exe src/app/usalign/usalign.cpp src/engine/upgma/UPGMA.cpp src/engine/tmalign/TMalign.cpp src/engine/flexalign/flexalign.cpp src/engine/tmscore/TMscore.cpp src/engine/hwrmsd/HwRMSD.cpp src/engine/soialign/SOIalign.cpp src/engine/se/se.cpp src/engine/mmalign/MMalign.cpp src/engine/mmdock/MMdock.cpp src/engine/mtmalign/mTMalign.cpp src/common/common.cpp src/engine/engine_common.cpp src/output_funcs/output.cpp -lm
 
-4. Note: OPENMP=auto is the Makefile default. It adds -fopenmp when the
-   compiler used by the specific target can compile and link it. To disable
-   OpenMP explicitly on Linux or macOS, run:
+4. Build options common to all platforms. OPENMP=auto is the Makefile default:
+   it adds -fopenmp only when the compiler of that target can compile and link
+   it, so no manual step is needed. Override with OPENMP=0 to force a serial
+   build, or OMPFLAGS to pass your own flags:
            make OPENMP=0
-   On Windows, run:
-           mingw32-make OPENMP=0
-   The legacy OMPFLAGS= override is also supported. Remove -fopenmp from
-   manual compilation commands when parallel acceleration is not required.
-
-5. The optimized build uses -ffast-math by default. Use FAST_MATH=0 or
-   REPRODUCIBLE=1 when strict IEEE floating-point behavior is more important
-   than maximum speed:
+   The optimized build uses -ffast-math. Use FAST_MATH=0 or REPRODUCIBLE=1 when
+   strict IEEE floating-point behavior matters more than speed:
            make FAST_MATH=0
+   On Windows, run both as "mingw32-make ...".
 
-Additional note:
-1. The -static flag enables static linking. A statically linked executable has no external runtime dependencies and can be copied to and run directly on other compatible machines.
-2. However, on Linux the "make" command does NOT pass -static: the resulting binary is dynamically linked and depends on the system libraries (e.g. libstdc++, libgomp and glibc), so copying it to another machine may fail if those libraries are missing or too old.
-3. On Windows, the Makefile adds -static automatically when the OS environment
-   variable is Windows_NT. This depends on the OS variable, not on whether you
-   invoke make or mingw32-make. In a non-standard shell or toolchain, check that
-   the actual compilation command contains -static.
-4. If you need a statically linked Linux binary, add -static to the command in 1.2.
-5. macOS does not support static linking.
-6. Remove -fopenmp from all manual compilation commands if parallel acceleration is not required.
+Static vs dynamic linking. -static links the runtime in, so the executable can
+be copied to another compatible machine and run as is. What the Makefile does
+per platform:
+1. Linux: "make" does NOT add -static. The binary is dynamically linked against
+   libstdc++, libgomp and glibc, and may fail on a machine whose libraries are
+   missing or too old. Add -static to the command in 1.3 if you need a portable
+   binary.
+2. Windows: the Makefile adds -static automatically whenever the OS environment
+   variable is Windows_NT, regardless of whether you call make or mingw32-make.
+   In a custom shell or toolchain, check that the command actually contains
+   -static.
+3. macOS: static linking is not supported; do not add -static.
 
 Compressed file support:
 1. On Linux, macOS and WSL2, US-align reads gz and bz2 compressed files in
